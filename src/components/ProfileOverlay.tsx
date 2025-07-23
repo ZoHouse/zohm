@@ -185,7 +185,7 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ isVisible, onClose }) =
                   <h3 className="font-semibold text-lg">
                     {memberProfile?.name || 'Unnamed User'}
                   </h3>
-                  <p className="text-sm text-gray-300">{formatAddress(address)}</p>
+                  <p className="text-sm text-gray-300">{address ? formatAddress(address) : 'No wallet connected'}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className={`px-2 py-1 text-xs rounded-full ${role === 'Founder' ? 'bg-yellow-900 text-yellow-300' : 'bg-gray-700 text-gray-300'}`}>
                       {role}

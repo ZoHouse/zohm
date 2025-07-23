@@ -24,6 +24,7 @@ export interface NFTData {
   image: string;
   contract: NFTContract;
   metadata?: NFTMetadata;
+  mediaType: 'image' | 'gif' | 'video' | 'unknown';
 }
 
 interface OpenSeaAsset {
@@ -56,19 +57,23 @@ export async function fetchNFTs(walletAddress: string): Promise<NFTData[]> {
     }
     
     const data: OpenSeaResponse = await response.json();
-    const nfts: NFTData[] = data.assets.map((asset: OpenSeaAsset) => ({
-      tokenId: asset.token_id,
-      name: asset.name || `#${asset.token_id}`,
-      description: asset.description || '',
-      image: asset.image_url || asset.image_thumbnail_url || '',
-      contract: {
-        address: asset.asset_contract.address,
-        name: asset.asset_contract.name,
-        symbol: asset.asset_contract.symbol,
-        tokenType: asset.asset_contract.token_type
-      },
-      metadata: asset.metadata
-    }));
+    const nfts: NFTData[] = data.assets.map((asset: OpenSeaAsset) => {
+      const imageUrl = asset.image_url || asset.image_thumbnail_url || '';
+      return {
+        tokenId: asset.token_id,
+        name: asset.name || `#${asset.token_id}`,
+        description: asset.description || '',
+        image: imageUrl,
+        contract: {
+          address: asset.asset_contract.address,
+          name: asset.asset_contract.name,
+          symbol: asset.asset_contract.symbol,
+          tokenType: asset.asset_contract.token_type
+        },
+        metadata: asset.metadata,
+        mediaType: getMediaType(imageUrl)
+      };
+    });
     
     console.log(`✅ Fetched ${nfts.length} NFTs`);
     return nfts;
@@ -123,17 +128,19 @@ export async function fetchNFTsFromContract(
     
     // For simplicity, we'll just return a placeholder NFT
     // In a real implementation, you'd iterate through tokenIds
+    const placeholderImage = 'https://via.placeholder.com/300x300?text=Founder+NFT';
     const placeholderNFT: NFTData = {
       tokenId: '1',
       name: 'Founder NFT',
       description: 'Zo House Founder NFT',
-      image: 'https://via.placeholder.com/300x300?text=Founder+NFT',
+      image: placeholderImage,
       contract: {
         address: contractAddress,
         name: 'Zo House Founder',
         symbol: 'ZHF',
         tokenType: 'ERC721'
-      }
+      },
+      mediaType: getMediaType(placeholderImage)
     };
     
     nfts.push(placeholderNFT);

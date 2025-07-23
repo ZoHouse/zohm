@@ -200,9 +200,9 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                         <h4 className="font-semibold text-sm truncate" title={nft.name}>
                           {nft.name}
                         </h4>
-                        {nft.collection && (
-                          <p className="text-xs text-gray-400 truncate" title={nft.collection}>
-                            {nft.collection}
+                        {nft.contract.name && (
+                          <p className="text-xs text-gray-400 truncate" title={nft.contract.name}>
+                            {nft.contract.name}
                           </p>
                         )}
                       </div>
@@ -237,7 +237,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                       </div>
                       <div>
                         <h4 className="font-semibold">{selectedNFT.name}</h4>
-                        <p className="text-sm text-gray-400">{selectedNFT.collection}</p>
+                        <p className="text-sm text-gray-400">{selectedNFT.contract.name}</p>
                         <p className="text-xs text-gray-500 capitalize">{selectedNFT.mediaType}</p>
                       </div>
                     </div>

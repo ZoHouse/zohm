@@ -170,7 +170,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                       key={`${nft.contract.address}-${nft.tokenId}`}
                       onClick={() => handleNFTClick(nft)}
                       className={`relative liquid-glass-card p-3 cursor-pointer transition-all hover:scale-105 ${
-                        selectedNFT?.contractAddress === nft.contractAddress && 
+                        selectedNFT?.contract.address === nft.contract.address && 
                         selectedNFT?.tokenId === nft.tokenId
                           ? 'ring-2 ring-blue-500 bg-blue-900/20'
                           : ''

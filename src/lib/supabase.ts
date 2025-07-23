@@ -107,7 +107,7 @@ export async function verifyMembersTable() {
 
   } catch (error) {
     console.error('❌ Exception during table verification:', error);
-    return { exists: false, error: error.message };
+    return { exists: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 

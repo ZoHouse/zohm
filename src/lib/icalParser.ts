@@ -1,13 +1,28 @@
 import { CORS_PROXY_URL, CORS_API_KEY, MAPBOX_TOKEN } from './calendarConfig';
 
-export interface ParsedEvent {
+interface CalendarEvent {
+  summary: string;
+  start: string;
+  end: string;
+  location?: string;
+  description?: string;
+  url?: string;
+}
+
+interface ParsedEvent {
   'Event Name': string;
-  'Host': string;
   'Date & Time': string;
-  'Location': string;
-  'Latitude': string | null;
-  'Longitude': string | null;
-  'Event URL': string | null;
+  Location: string;
+  Latitude: string;
+  Longitude: string;
+  'Event URL'?: string;
+}
+
+interface GeocodingResult {
+  features: Array<{
+    center: [number, number];
+    place_name: string;
+  }>;
 }
 
 // Parse iCalendar data - exact same logic as original
@@ -109,126 +124,37 @@ export async function fetchICalEvents(url: string): Promise<any[]> {
 
 // Main function to fetch and process all calendars - exact same logic as original
 export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<ParsedEvent[]> {
-  console.log('Fetching events from', calendarUrls.length, 'calendars...');
-  
-  try {
-    // Fetch all calendars in parallel
-    const responses = await Promise.all(calendarUrls.map(url => 
-      fetch(CORS_PROXY_URL + url, {
-        headers: {
-          'x-cors-api-key': CORS_API_KEY
-        }
-      })
-    ));
-    
-    const icsDataArray = await Promise.all(responses.map(res => {
-      if (!res.ok) {
-        throw new Error(`CORS proxy error: ${res.status} ${res.statusText}`);
-      }
-      return res.text();
-    }));
+  const allEvents: ParsedEvent[] = [];
 
-    let parsedEvents: any[] = [];
-    calendarUrls.forEach((calendarUrl, index) => {
-      const icsData = icsDataArray[index];
-      const eventsFromCalendar = parseICS(icsData);
+  for (const url of calendarUrls) {
+    try {
+      console.log('📅 Fetching calendar from:', url);
       
-      // Extract calendar ID from the URL for constructing event URLs
-      const calendarIdMatch = calendarUrl.match(/id=cal-([a-zA-Z0-9]+)/);
-      const calendarId = calendarIdMatch ? calendarIdMatch[1] : null;
+      // Use CORS proxy if needed
+      const fetchUrl = CORS_PROXY_URL ? `${CORS_PROXY_URL}${url}` : url;
+      const headers: Record<string, string> = {};
       
-      // Add calendar context to each event
-      eventsFromCalendar.forEach(event => {
-        event.calendarId = calendarId;
-        event.calendarUrl = calendarUrl;
-      });
-      
-      parsedEvents = parsedEvents.concat(eventsFromCalendar);
-    });
+      if (CORS_API_KEY) {
+        headers['Authorization'] = `Bearer ${CORS_API_KEY}`;
+      }
 
-    // Filter future events and sort by date
-    const now = new Date();
-    const futureEvents = parsedEvents.filter(event => event.start >= now);
-    futureEvents.sort((a, b) => a.start - b.start);
-    
-    // Process events with geocoding - exact same logic as original
-    const geocodedEvents = await Promise.all(futureEvents.map(async (e) => {
-      let coords: [number, number] | null = null;
-      let displayLocation = e.location;
+      const response = await fetch(fetchUrl, { headers });
       
-      if (e.geo && e.geo.lat && e.geo.lon && !isNaN(e.geo.lat) && !isNaN(e.geo.lon)) {
-        coords = [e.geo.lon, e.geo.lat];
+      if (!response.ok) {
+        console.warn(`⚠️ Failed to fetch calendar ${url}:`, response.status);
+        continue;
       }
-      else if (e.location && e.location.toLowerCase().includes('zo house')) {
-        coords = [-122.3943, 37.7776];
-        displayLocation = "Zo House, 300 4th St, San Francisco";
-      } else if (e.location && (e.location.toLowerCase().includes('@ zo') || e.location.toLowerCase().includes('fifa @ zo'))) {
-        coords = [-122.3943, 37.7776];
-        displayLocation = "Zo House, 300 4th St, San Francisco";
-      }
-      else if (e.location && !e.location.startsWith('http')) {
-        coords = await geocodeLocation(e.location);
-      }
-      
-      let host = e.organizer || 'TBA';
-      if (!e.organizer && e.description) {
-        // Try to extract host from description patterns like "Hosted by X" or "Host: X"
-        const hostMatch = e.description.match(/(?:hosted by|host:|by)\s*([^\n\r]+)/i);
-        if (hostMatch) {
-          host = hostMatch[1].trim();
-        }
-      }
-      
-      // Construct Luma URL - exact same logic as original
-      let eventUrl: string | null = null;
-      
-      // Priority 1: Real Luma URL found in description
-      if (e.realLumaUrl) {
-        eventUrl = e.realLumaUrl;
-      }
-      // Priority 2: Direct URL field
-      else if (e.url && e.url.includes('lu.ma')) {
-        eventUrl = e.url;
-      }
-      // Priority 3: Try to construct from UID (backup)
-      else if (e.uid) {
-        // Only try this as last resort since it gives wrong URLs
-        const uidPatterns = [
-          /evt-([a-zA-Z0-9]+)/,  // evt-XXXXX pattern
-        ];
-        
-        for (const pattern of uidPatterns) {
-          const match = e.uid.match(pattern);
-          if (match) {
-            const eventId = match[1];
-            eventUrl = `https://lu.ma/evt-${eventId}`;
-            break;
-          }
-        }
-      }
-      
-      // Fallback: if we have calendar ID, link to calendar
-      if (!eventUrl && e.calendarId) {
-        eventUrl = `https://lu.ma/calendar/cal-${e.calendarId}`;
-      }
-      
-      return {
-        'Event Name': e.summary || 'Untitled Event',
-        'Host': host,
-        'Date & Time': e.start.toISOString(),
-        'Location': displayLocation || e.location,
-        'Latitude': coords ? coords[1].toString() : null,
-        'Longitude': coords ? coords[0].toString() : null,
-        'Event URL': eventUrl
-      };
-    }));
 
-    const finalEvents = geocodedEvents.filter(e => e.Latitude && e.Longitude);
-    console.log('Final geocoded events:', finalEvents.length);
-    return finalEvents;
-
-  } catch (error) {
-    console.error('Error fetching or parsing calendar data:', error);
-    return [];
+      const icalData = await response.text();
+      const events = parseICS(icalData);
+      
+      console.log(`✅ Parsed ${events.length} events from ${url}`);
+      allEvents.push(...events);
+      
+    } catch (error) {
+      console.error(`❌ Error fetching calendar ${url}:`, error);
+    }
   }
+
+  return allEvents;
 } 

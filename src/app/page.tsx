@@ -10,6 +10,7 @@ import ProfileOverlay from '@/components/ProfileOverlay';
 import { pingSupabase, verifyMembersTable } from '@/lib/supabase';
 import { fetchAllCalendarEvents } from '@/lib/icalParser';
 import { CALENDAR_URLS } from '@/lib/calendarConfig';
+import mapboxgl from 'mapbox-gl';
 
 interface EventData {
   'Event Name': string;
@@ -24,7 +25,7 @@ export default function Home() {
   const [activeSection, setActiveSection] = useState<'members' | 'events' | 'cultures'>('events');
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
   const [flyToEvent, setFlyToEvent] = useState<EventData | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -136,7 +137,7 @@ export default function Home() {
     }, 100);
   };
 
-  const handleMapReady = (map: any, closeAllPopups: () => void) => {
+  const handleMapReady = (map: mapboxgl.Map, closeAllPopups: () => void) => {
     setMapInstance(map);
     setClosePopupsFn(() => closeAllPopups);
     console.log('Map is ready!');

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { getAllMembers } from '@/lib/supabase';
 
 interface EventData {
   'Event Name': string;

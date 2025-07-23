@@ -1,13 +1,29 @@
 import { ethers } from 'ethers';
 
-export interface NFTData {
-  contractAddress: string;
-  tokenId: string;
-  name?: string;
-  description?: string;
+interface NFTMetadata {
+  name: string;
+  description: string;
   image: string;
-  collection?: string;
-  mediaType: 'image' | 'gif' | 'video' | 'unknown';
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+}
+
+interface NFTContract {
+  address: string;
+  name: string;
+  symbol: string;
+  tokenType: string;
+}
+
+interface NFTData {
+  tokenId: string;
+  name: string;
+  description: string;
+  image: string;
+  contract: NFTContract;
+  metadata?: NFTMetadata;
 }
 
 // Simple ERC-721 ABI for getting token metadata

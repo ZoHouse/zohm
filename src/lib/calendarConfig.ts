@@ -11,5 +11,5 @@ export const CORS_PROXY_URL = 'https://proxy.cors.sh/';
 export const CORS_API_KEY = 'temp_7db057c99de626add346faa324315c4d';
 
 // Map Configuration (same as original)
-export const MAPBOX_TOKEN = 'pk.eyJ1Ijoia3VzaGFsem8iLCJhIjoiY20wcDZtNjUwMDFxNzJpcjYxZjlsN2g3NiJ9.d194ACznKNqKJNfzKyanNQ';
+export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 export const DEFAULT_CENTER: [number, number] = [77.6413, 12.9141]; // Bangalore, Karnataka 

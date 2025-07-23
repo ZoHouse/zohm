@@ -5,11 +5,18 @@ import { ethers } from 'ethers';
 import { CONTRACTS, DEV_MODE } from '@/config/contracts';
 
 interface WalletState {
-  address: string | null;
   isConnected: boolean;
+  address: string | null;
+  role: string;
   isLoading: boolean;
   error: string | null;
-  role: 'Founder' | 'Member' | null;
+}
+
+interface NFTData {
+  tokenId: string;
+  name: string;
+  image: string;
+  description?: string;
 }
 
 interface UserLocationCoords {
@@ -109,150 +116,45 @@ export const useWallet = () => {
   }, [isMetaMaskInstalled]);
 
   // Check Founder NFT balance and return count
-  const checkFounderNFT = useCallback(async (address: string) => {
+  const checkFounderNFT = useCallback(async (address: string): Promise<boolean> => {
     try {
-      console.log('🔍 Checking Founder NFT for address:', address);
-      
-      // Check if we should bypass NFT check in development mode
-      if (DEV_MODE.BYPASS_NFT_CHECK) {
-        console.log('🔧 Development mode: Bypassing NFT check');
-        
-        if (typeof window !== 'undefined') {
-          window.userState = window.userState || {};
-          window.userState.role = 'Founder';
-          window.userState.founderNftCount = 1;
-        }
-
-        setWalletState(prev => ({
-          ...prev,
-          role: 'Founder'
-        }));
-
-        return { hasNFT: true, count: 1 };
-      }
-      
-      // Create provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(
-        FOUNDER_NFT_CONTRACT.address,
-        FOUNDER_NFT_CONTRACT.abi,
-        provider
-      );
-
-      // Check balance
-      const balance = await contract.balanceOf(address);
-      const nftCount = Number(balance);
-      const hasFounderNFT = nftCount > 0;
-
-      console.log('🎫 Founder NFT balance:', nftCount);
-
-      if (hasFounderNFT) {
-        // Update role in state and window.userState
-        if (typeof window !== 'undefined') {
-          window.userState = window.userState || {};
-          window.userState.role = 'Founder';
-          window.userState.founderNftCount = nftCount;
-        }
-
-        setWalletState(prev => ({
-          ...prev,
-          role: 'Founder'
-        }));
-
-        return { hasNFT: true, count: nftCount };
-      } else {
-        if (typeof window !== 'undefined') {
-          window.userState = window.userState || {};
-          window.userState.role = 'Member';
-          window.userState.founderNftCount = 0;
-        }
-
-        setWalletState(prev => ({
-          ...prev,
-          role: 'Member'
-        }));
-
-        return { hasNFT: false, count: 0 };
-      }
-
-    } catch (error: any) {
-      console.error('Error checking Founder NFT:', error);
-      setWalletState(prev => ({
-        ...prev,
-        error: `NFT verification failed: ${error.message || 'Unknown error'}`
-      }));
-
-      return { hasNFT: false, count: 0 };
+      // Check if user has founder NFT
+      const response = await fetch(`/api/check-nft?address=${address}`);
+      const data = await response.json();
+      return data.hasNFT || false;
+    } catch (error) {
+      console.error('Error checking founder NFT:', error);
+      return false;
     }
   }, []);
 
   // Fetch wallet PFP from ENS or other sources
-  const fetchWalletPFP = useCallback(async (address: string) => {
+  const fetchWalletPFP = useCallback(async (address: string): Promise<string | null> => {
     try {
-      console.log('🖼️ Fetching PFP for address:', address);
-      
-      // Try ENS avatar first
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const ensName = await provider.lookupAddress(address);
-      
-      if (ensName) {
-        const resolver = await provider.getResolver(ensName);
-        if (resolver) {
-          const avatar = await resolver.getAvatar();
-          if (avatar) {
-            console.log('✅ Found ENS avatar:', avatar);
-            return avatar;
-          }
-        }
-      }
-
-      // Fallback to Ethereum Avatar API
-      const avatarUrl = `https://metadata.ens.domains/mainnet/avatar/${address}`;
-      const response = await fetch(avatarUrl);
-      
-      if (response.ok) {
-        const avatarData = await response.text();
-        if (avatarData && avatarData !== 'null' && !avatarData.includes('error')) {
-          console.log('✅ Found avatar via ENS API:', avatarData);
-          return avatarData;
-        }
-      }
-
-      // Generate a default avatar using the wallet address
-      const defaultAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
-      console.log('🔄 Using default generated avatar');
-      return defaultAvatar;
-
+      // Fetch wallet PFP from NFT collection
+      const response = await fetch(`/api/fetch-pfp?address=${address}`);
+      const data = await response.json();
+      return data.pfp || null;
     } catch (error) {
-      console.error('Error fetching PFP:', error);
-      // Return a default avatar on error
-      return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
+      console.error('Error fetching wallet PFP:', error);
+      return null;
     }
   }, []);
 
   // Sync with Supabase
-  const syncWithSupabase = useCallback(async (address: string, role: string, memberData: any) => {
+  const syncWithSupabase = useCallback(async (address: string, role: string, memberData: NFTData) => {
     try {
-      // Check if geolocation is available
-      let lat = 0, lng = 0;
-
-      if (typeof window !== 'undefined' && window.userLocationCoords) {
-        const { lat: userLat, lng: userLng } = window.userLocationCoords;
-        lat = userLat;
-        lng = userLng;
-      }
-
       // Import Supabase client dynamically to avoid SSR issues
       const { supabase } = await import('@/lib/supabase');
 
-      // Prepare member data with all new fields
       const finalMemberData = {
         wallet: address,
-        role: role,
-        pfp: memberData.pfp || null,
-        founder_nfts_count: memberData.founder_nfts_count || 0,
-        lat: memberData.lat || lat,
-        lng: memberData.lng || lng,
+        role,
+        name: memberData.name || '',
+        bio: '',
+        culture: '',
+        pfp: memberData.image || '',
+        founder_nfts_count: role === 'Founder' ? 1 : 0,
         last_seen: new Date().toISOString()
       };
 
@@ -269,7 +171,6 @@ export const useWallet = () => {
 
       console.log('✅ Successfully synced with Supabase:', data);
       return true;
-
     } catch (error) {
       console.error('Error syncing with Supabase:', error);
       return false;
@@ -289,7 +190,7 @@ export const useWallet = () => {
       }
 
       // Check NFT balance and get count
-      const { hasNFT, count } = await checkFounderNFT(address);
+      const hasNFT = await checkFounderNFT(address);
       
       // Use default avatar - user will select NFT via gallery
       const defaultAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
@@ -305,13 +206,11 @@ export const useWallet = () => {
       }
 
       // Prepare member data with all new fields
-      const memberData = {
-        wallet: address,
-        role: hasNFT ? 'Founder' : 'Member',
-        pfp: defaultAvatar,
-        founder_nfts_count: count,
-        ...locationData,
-        last_seen: new Date().toISOString()
+      const memberData: NFTData = {
+        tokenId: '', // Placeholder, will be fetched from NFT collection
+        name: '', // Placeholder, will be fetched from NFT collection
+        image: defaultAvatar,
+        description: '' // Placeholder
       };
 
       await syncWithSupabase(address, hasNFT ? 'Founder' : 'Member', memberData);

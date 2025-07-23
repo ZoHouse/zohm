@@ -7,9 +7,9 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection }) => {
   const navItems = [
-    { id: 'members', icon: '👥', label: 'Members' },
-    { id: 'events', icon: '📅', label: 'Events' },
-    { id: 'cultures', icon: '🌍', label: 'Cultures' },
+    { id: 'members' as const, icon: '👥', label: 'Members' },
+    { id: 'events' as const, icon: '📅', label: 'Events' },
+    { id: 'cultures' as const, icon: '🌍', label: 'Cultures' },
   ];
 
   return (
@@ -18,7 +18,7 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection }) => {
         {navItems.map(item => (
           <button
             key={item.id}
-            onClick={() => onSectionChange(item.id as any)}
+            onClick={() => onSectionChange(item.id)}
             className={`flex flex-col items-center justify-center w-20 h-16 rounded-full transition-all duration-300 relative glass-icon-button ${
               activeSection === item.id
                 ? 'bg-white/20 border-white/20'

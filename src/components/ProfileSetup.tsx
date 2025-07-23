@@ -151,7 +151,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-bold">What's your name?</h3>
+            <h3 className="text-lg font-bold">What&apos;s your name?</h3>
             <p className="text-gray-300 text-sm">This is how other members will see you</p>
             <input
               type="text"
@@ -169,7 +169,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-bold">Tell us about yourself</h3>
-            <p className="text-gray-300 text-sm">Share your interests, background, or what you're working on</p>
+            <p className="text-gray-300 text-sm">Share your interests, background, or what you&apos;re working on</p>
             <textarea
               value={profileData.bio}
               onChange={(e) => updateProfileData('bio', e.target.value)}
@@ -187,7 +187,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-bold">What's your primary culture?</h3>
+            <h3 className="text-lg font-bold">What&apos;s your primary culture?</h3>
             <p className="text-gray-300 text-sm">Choose the community that best represents your interests</p>
             <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
               {CULTURE_OPTIONS.map((culture) => (
@@ -212,7 +212,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-bold">Calendar Integration (Optional)</h3>
-            <p className="text-gray-300 text-sm">Share your calendar so others can see when you're available</p>
+            <p className="text-gray-300 text-sm">Share your calendar so others can see when you&apos;re available</p>
             <input
               type="url"
               value={profileData.calendar_url}

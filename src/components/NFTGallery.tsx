@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createNFTFetcher, NFTData } from '@/lib/nftFetcher';
+import { NFTData, fetchNFTs } from '@/lib/nftFetcher';
 import MediaDisplay from './MediaDisplay';
 
 interface NFTGalleryProps {
@@ -27,31 +27,21 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
 
   useEffect(() => {
     if (isVisible && walletAddress) {
-      fetchNFTs();
+      fetchNFTs(walletAddress).then(userNFTs => {
+        if (userNFTs.length === 0) {
+          setError('No NFTs found in this wallet');
+        } else {
+          setNfts(userNFTs);
+          console.log(`Found ${userNFTs.length} NFTs:`, userNFTs);
+        }
+      }).catch(err => {
+        console.error('Error fetching NFTs:', err);
+        setError('Failed to load NFTs. Please try again.');
+      }).finally(() => {
+        setIsLoading(false);
+      });
     }
   }, [isVisible, walletAddress]);
-
-  const fetchNFTs = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const nftFetcher = await createNFTFetcher();
-      const userNFTs = await nftFetcher.fetchAllNFTs(walletAddress);
-      
-      if (userNFTs.length === 0) {
-        setError('No NFTs found in this wallet');
-      } else {
-        setNfts(userNFTs);
-        console.log(`Found ${userNFTs.length} NFTs:`, userNFTs);
-      }
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      setError('Failed to load NFTs. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleNFTClick = (nft: NFTData) => {
     if (onSelectNFT) {
@@ -151,7 +141,19 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
               <div className="text-center">
                 <p className="text-red-400 mb-4">{error}</p>
                 <button 
-                  onClick={fetchNFTs}
+                  onClick={() => fetchNFTs(walletAddress).then(userNFTs => {
+                    if (userNFTs.length === 0) {
+                      setError('No NFTs found in this wallet');
+                    } else {
+                      setNfts(userNFTs);
+                      console.log(`Found ${userNFTs.length} NFTs:`, userNFTs);
+                    }
+                  }).catch(err => {
+                    console.error('Error fetching NFTs:', err);
+                    setError('Failed to load NFTs. Please try again.');
+                  }).finally(() => {
+                    setIsLoading(false);
+                  })}
                   className="solid-button"
                 >
                   Try Again

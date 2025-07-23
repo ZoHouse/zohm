@@ -9,9 +9,10 @@ interface MapCanvasProps {
   events: ParsedEvent[];
   onMapReady?: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
   flyToEvent?: ParsedEvent | null;
+  className?: string;
 }
 
-export default function MapCanvas({ events, onMapReady, flyToEvent }: MapCanvasProps) {
+export default function MapCanvas({ events, onMapReady, flyToEvent, className }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -363,7 +364,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent }: MapCanvasP
   return (
     <div 
       ref={mapContainer} 
-      className="w-full h-full"
+      className={className || "w-full h-full"}
       style={{ minHeight: '100vh' }}
     />
   );

@@ -53,8 +53,11 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
     }
   };
 
-  const handleSelectNFT = (nft: NFTData) => {
-    setSelectedNFT(nft);
+  const handleNFTClick = (nft: NFTData) => {
+    if (onSelectNFT) {
+      onSelectNFT(nft);
+      onClose();
+    }
   };
 
   const handleConfirmSelection = () => {
@@ -121,7 +124,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
             ].filter(tab => tab.count > 0).map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setFilterType(tab.key as any)}
+                onClick={() => setFilterType(tab.key as 'all' | 'image' | 'gif' | 'video')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
                   filterType === tab.key
                     ? 'bg-blue-600 text-white'
@@ -160,10 +163,10 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
               {/* NFT Grid */}
               <div className="flex-1 overflow-y-auto mb-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {filteredNFTs.map((nft, index) => (
+                  {filteredNFTs.map((nft) => (
                     <div
-                      key={`${nft.contractAddress}-${nft.tokenId}`}
-                      onClick={() => handleSelectNFT(nft)}
+                      key={`${nft.contract.address}-${nft.tokenId}`}
+                      onClick={() => handleNFTClick(nft)}
                       className={`relative liquid-glass-card p-3 cursor-pointer transition-all hover:scale-105 ${
                         selectedNFT?.contractAddress === nft.contractAddress && 
                         selectedNFT?.tokenId === nft.tokenId

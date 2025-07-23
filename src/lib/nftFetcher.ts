@@ -17,13 +17,66 @@ interface NFTContract {
   tokenType: string;
 }
 
-interface NFTData {
+export interface NFTData {
   tokenId: string;
   name: string;
   description: string;
   image: string;
   contract: NFTContract;
   metadata?: NFTMetadata;
+}
+
+interface OpenSeaAsset {
+  token_id: string;
+  name?: string;
+  description?: string;
+  image_url?: string;
+  image_thumbnail_url?: string;
+  asset_contract: {
+    address: string;
+    name: string;
+    symbol: string;
+    token_type: string;
+  };
+  metadata?: any;
+}
+
+interface OpenSeaResponse {
+  assets: OpenSeaAsset[];
+}
+
+export async function fetchNFTs(walletAddress: string): Promise<NFTData[]> {
+  try {
+    console.log('🔄 Fetching NFTs for wallet:', walletAddress);
+    
+    const response = await fetch(`https://api.opensea.io/api/v1/assets?owner=${walletAddress}&order_direction=desc&offset=0&limit=50`);
+    
+    if (!response.ok) {
+      throw new Error(`OpenSea API error: ${response.status}`);
+    }
+    
+    const data: OpenSeaResponse = await response.json();
+    const nfts: NFTData[] = data.assets.map((asset: OpenSeaAsset) => ({
+      tokenId: asset.token_id,
+      name: asset.name || `#${asset.token_id}`,
+      description: asset.description || '',
+      image: asset.image_url || asset.image_thumbnail_url || '',
+      contract: {
+        address: asset.asset_contract.address,
+        name: asset.asset_contract.name,
+        symbol: asset.asset_contract.symbol,
+        tokenType: asset.asset_contract.token_type
+      },
+      metadata: asset.metadata
+    }));
+    
+    console.log(`✅ Fetched ${nfts.length} NFTs`);
+    return nfts;
+    
+  } catch (error) {
+    console.error('❌ Error fetching NFTs:');
+    return [];
+  }
 }
 
 // Simple ERC-721 ABI for getting token metadata

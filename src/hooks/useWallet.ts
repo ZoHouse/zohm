@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ethers } from 'ethers';
-import { CONTRACTS, DEV_MODE } from '@/config/contracts';
+import { useState, useCallback, useEffect } from 'react';
 
 interface WalletState {
   isConnected: boolean;
@@ -19,30 +17,21 @@ interface NFTData {
   description?: string;
 }
 
-interface UserLocationCoords {
+interface LocationData {
   lat: number;
   lng: number;
 }
 
+// Global types for window object
 declare global {
   interface Window {
     ethereum?: any;
-    userState?: {
-      wallet?: string;
-      role?: string;
-      founderNftCount?: number;
-    };
-    userLocationCoords?: UserLocationCoords;
+    userLocationCoords?: LocationData;
+    userState?: any;
   }
 }
 
-// Use configuration from contracts.ts
-const FOUNDER_NFT_CONTRACT = {
-  address: CONTRACTS.FOUNDER_NFT.address,
-  abi: CONTRACTS.FOUNDER_NFT.abi
-};
-
-export const useWallet = () => {
+export function useWallet() {
   const [walletState, setWalletState] = useState<WalletState>({
     address: null,
     isConnected: false,

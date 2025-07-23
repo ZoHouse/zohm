@@ -190,7 +190,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                           alt={nft.name || 'NFT'}
                           mediaType={nft.mediaType}
                           className="w-full h-full object-cover"
-                          fallbackSeed={`${nft.contractAddress}-${nft.tokenId}`}
+                          fallbackSeed={`${nft.contract.address}-${nft.tokenId}`}
                           showMediaType={true}
                         />
                       </div>
@@ -208,7 +208,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                       </div>
 
                       {/* Selection Indicator */}
-                      {selectedNFT?.contractAddress === nft.contractAddress && 
+                                              {selectedNFT?.contract.address === nft.contract.address && 
                        selectedNFT?.tokenId === nft.tokenId && (
                         <div className="absolute inset-0 bg-blue-500/20 rounded-lg flex items-center justify-center">
                           <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center">
@@ -232,7 +232,7 @@ const NFTGallery: React.FC<NFTGalleryProps> = ({
                           alt={selectedNFT.name || 'Selected NFT'}
                           mediaType={selectedNFT.mediaType}
                           className="w-full h-full object-cover"
-                          fallbackSeed={`${selectedNFT.contractAddress}-${selectedNFT.tokenId}`}
+                          fallbackSeed={`${selectedNFT.contract.address}-${selectedNFT.tokenId}`}
                         />
                       </div>
                       <div>

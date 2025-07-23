@@ -58,13 +58,6 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
     }
   };
 
-  const handleEventClick = (event: EventData) => {
-    if (onEventClick) {
-      console.log('Event card clicked, triggering onEventClick:', event['Event Name']);
-      onEventClick(event);
-    }
-  };
-
   const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
   if (!isVisible) return null;

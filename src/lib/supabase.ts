@@ -6,27 +6,25 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Test connection function
+// Test Supabase connection
 export async function pingSupabase() {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('members')
-      .select('*')
-      .limit(1);
+      .select('count', { count: 'exact', head: true });
 
-    if (error) {
-      if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('✅ Supabase connection working! (Table "members" not found, but connection is valid)');
-        console.log('💡 Create a "members" table in Supabase to test data retrieval');
-        return true;
-      } else {
-        console.error('❌ Supabase connection error:', error);
-        return false;
-      }
+    if (error && error.code === 'PGRST116') {
+      // Table doesn't exist, but connection is working
+      console.log('✅ Supabase connection working! (Table "members" not found, but connection is valid)');
+      console.log('💡 Create a "members" table in Supabase to test data retrieval');
+      return true;
+    } else if (error) {
+      console.error('❌ Supabase connection error:', error);
+      return false;
+    } else {
+      console.log('✅ Supabase connection successful!');
+      return true;
     }
-
-    console.log('✅ Supabase connection successful! Data:', data);
-    return true;
   } catch (error) {
     console.error('❌ Failed to ping Supabase:', error);
     return false;

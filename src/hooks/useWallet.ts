@@ -22,12 +22,22 @@ interface LocationData {
   lng: number;
 }
 
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
+}
+
 // Global types for window object
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: EthereumProvider;
     userLocationCoords?: LocationData;
-    userState?: any;
+    userState?: {
+      wallet?: string;
+      role?: string;
+      founderNftCount?: number;
+    };
   }
 }
 
@@ -35,76 +45,58 @@ export function useWallet() {
   const [walletState, setWalletState] = useState<WalletState>({
     address: null,
     isConnected: false,
+    role: 'Member',
     isLoading: false,
-    error: null,
-    role: null
+    error: null
   });
-
-  // Initialize wallet state from window.userState if available
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.userState?.wallet) {
-      setWalletState(prev => ({
-        ...prev,
-        address: window.userState?.wallet || null,
-        isConnected: !!window.userState?.wallet,
-        role: (window.userState?.role as 'Founder' | 'Member') || null
-      }));
-    }
-  }, []);
 
   // Check if MetaMask is installed
   const isMetaMaskInstalled = useCallback(() => {
     return typeof window !== 'undefined' && typeof window.ethereum !== 'undefined';
   }, []);
 
-  // Connect to MetaMask
+  // Connect to wallet
   const connectWallet = useCallback(async (): Promise<string | null> => {
     if (!isMetaMaskInstalled()) {
-      setWalletState(prev => ({ ...prev, error: 'MetaMask is not installed.' }));
+      setWalletState(prev => ({
+        ...prev,
+        error: 'MetaMask is not installed. Please install MetaMask to continue.'
+      }));
       return null;
     }
 
-    setWalletState(prev => ({ ...prev, isLoading: true, error: null }));
-
     try {
-      // Request account access
-      const accounts = await window.ethereum.request({
+      setWalletState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const accounts = await window.ethereum!.request({
         method: 'eth_requestAccounts'
-      });
+      }) as string[];
 
-      if (accounts.length === 0) {
-        throw new Error('No accounts found.');
+      if (accounts.length > 0) {
+        const address = accounts[0];
+        setWalletState(prev => ({
+          ...prev,
+          address,
+          isConnected: true,
+          isLoading: false
+        }));
+
+        return address;
+      } else {
+        throw new Error('No accounts found');
       }
-
-      const address = accounts[0];
-      
-      // Update window.userState
-      if (typeof window !== 'undefined') {
-        window.userState = { ...window.userState, wallet: address };
-      }
-
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setWalletState(prev => ({
         ...prev,
-        address,
-        isConnected: true,
+        error: `Failed to connect wallet: ${errorMessage}`,
         isLoading: false
-      }));
-
-      console.log('🔗 Wallet connected:', address);
-      return address;
-
-    } catch (error: any) {
-      console.error('Wallet connection failed:', error);
-      setWalletState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error.message || 'Failed to connect wallet'
       }));
       return null;
     }
   }, [isMetaMaskInstalled]);
 
-  // Check Founder NFT balance and return count
+  // Check if user has founder NFT
   const checkFounderNFT = useCallback(async (address: string): Promise<boolean> => {
     try {
       // Check if user has founder NFT
@@ -114,19 +106,6 @@ export function useWallet() {
     } catch (error) {
       console.error('Error checking founder NFT:', error);
       return false;
-    }
-  }, []);
-
-  // Fetch wallet PFP from ENS or other sources
-  const fetchWalletPFP = useCallback(async (address: string): Promise<string | null> => {
-    try {
-      // Fetch wallet PFP from NFT collection
-      const response = await fetch(`/api/fetch-pfp?address=${address}`);
-      const data = await response.json();
-      return data.pfp || null;
-    } catch (error) {
-      console.error('Error fetching wallet PFP:', error);
-      return null;
     }
   }, []);
 
@@ -166,16 +145,15 @@ export function useWallet() {
     }
   }, []);
 
-  // Main Quantum Sync function
-  const quantumSync = useCallback(async () => {
-    console.log('🧬 Initiating Quantum Sync...');
-    
-    setWalletState(prev => ({ ...prev, isLoading: true, error: null }));
-
+  // Main quantum sync function
+  const quantumSync = useCallback(async (): Promise<boolean> => {
     try {
+      setWalletState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      // Connect wallet
       const address = await connectWallet();
       if (!address) {
-        throw new Error('Wallet connection failed. Please try again.');
+        return false;
       }
 
       // Check NFT balance and get count
@@ -183,16 +161,6 @@ export function useWallet() {
       
       // Use default avatar - user will select NFT via gallery
       const defaultAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
-      console.log('🖼️ Using default avatar, user can select NFT later');
-
-      // Get location if available
-      let locationData = {};
-      if (typeof window !== 'undefined' && window.userLocationCoords) {
-        locationData = {
-          lat: window.userLocationCoords.lat,
-          lng: window.userLocationCoords.lng
-        };
-      }
 
       // Prepare member data with all new fields
       const memberData: NFTData = {
@@ -202,18 +170,22 @@ export function useWallet() {
         description: '' // Placeholder
       };
 
+      // Sync with Supabase
       await syncWithSupabase(address, hasNFT ? 'Founder' : 'Member', memberData);
 
-      setWalletState(prev => ({ ...prev, isLoading: false }));
-      console.log('🎉 Quantum Sync completed successfully!');
-      return true;
-
-    } catch (error: any) {
-      console.error('Quantum Sync failed:', error);
       setWalletState(prev => ({
         ...prev,
-        isLoading: false,
-        error: error.message || 'Quantum Sync failed. Please check your wallet and try again.'
+        role: hasNFT ? 'Founder' : 'Member',
+        isLoading: false
+      }));
+
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setWalletState(prev => ({
+        ...prev,
+        error: `Quantum sync failed: ${errorMessage}`,
+        isLoading: false
       }));
       return false;
     }
@@ -224,30 +196,23 @@ export function useWallet() {
     setWalletState({
       address: null,
       isConnected: false,
+      role: 'Member',
       isLoading: false,
-      error: null,
-      role: null
+      error: null
     });
-
-    if (typeof window !== 'undefined') {
-      window.userState = {};
-    }
-
-    console.log('🔌 Wallet disconnected');
   }, []);
 
   // Format address for display
   const formatAddress = useCallback((address: string) => {
-    if (!address) return '';
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   }, []);
 
   return {
     ...walletState,
-    quantumSync,
     connectWallet,
     disconnectWallet,
+    quantumSync,
     formatAddress,
     isMetaMaskInstalled: isMetaMaskInstalled()
   };
-}; 
+} 

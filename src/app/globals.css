@@ -141,3 +141,50 @@ h1, h2, h3 {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Zo House marker pulse animation */
+@keyframes zo-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Zo House marker specific styles */
+.zo-house-marker {
+  position: absolute !important;
+  transform-origin: center !important;
+  pointer-events: auto !important;
+}
+
+.mapboxgl-marker.zo-house-marker {
+  z-index: 1000 !important;
+}
+
+/* Zo House event marker styles */
+.zo-house-event-marker {
+  position: absolute !important;
+  transform-origin: center !important;
+  pointer-events: auto !important;
+}
+
+.mapboxgl-marker .zo-house-event-marker {
+  z-index: 1000 !important;
+}
+
+/* Tailwind utility classes for markers */
+.w-12 {
+  width: 3rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.z-20 {
+  z-index: 20;
+}

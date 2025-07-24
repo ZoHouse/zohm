@@ -5,27 +5,27 @@ import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
 
-// Zo House locations
+// Zo House locations with precise coordinates
 const ZO_HOUSES = [
   {
     name: "Zo House SF",
     lat: 37.7817309,
-    lng: -122.483599,
+    lng: -122.401198,
     address: "300 4th St, San Francisco, CA 94107, United States",
     description: "Zo House San Francisco - The original crypto hub"
   },
   {
     name: "Zo House Koramangala",
-    lat: 12.9329546,
-    lng: 77.593301,
-    address: "S.T. Bed, 1st Block Koramangala, Koramangala, Bengaluru, Karnataka",
+    lat: 12.9325,
+    lng: 77.635,
+    address: "S-1, P-2, Anaa Infra's Signature Towers, Nirguna Mandir Layout, Cauvery Colony, S.T. Bed, 1st Block Koramangala, Bengaluru, Karnataka 560095, India",
     description: "Zo House Bangalore - Innovation center in India's Silicon Valley"
   },
   {
     name: "Zo House Whitefield",
-    lat: 12.9724546,
-    lng: 77.7049641,
-    address: "Outer Circle, Dodsworth Layout, Whitefield, Bengaluru, Karnataka", 
+    lat: 12.9725,
+    lng: 77.745,
+    address: "Outer Circle, Dodsworth Layout, Whitefield, Bengaluru, Karnataka, India", 
     description: "Zo House Whitefield - Expanding the ecosystem"
   }
 ];
@@ -44,6 +44,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
   const [markersMap, setMarkersMap] = useState<Map<string, mapboxgl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
+  const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -91,39 +92,38 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
   const addZoHouseMarkers = () => {
     if (!map.current) return;
 
-    ZO_HOUSES.forEach((house) => {
+    // Clear any existing Zo House markers
+    zoHouseMarkers.current.forEach(marker => {
       try {
-        // Create custom HTML element for the animated GIF marker
-        const markerElement = document.createElement('div');
-        markerElement.className = 'zo-house-marker';
-        markerElement.style.cssText = `
-          width: 60px;
-          height: 60px;
-          background-image: url('/Zo_flexing_white.gif');
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          cursor: pointer;
-          border-radius: 50%;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          transition: transform 0.3s ease;
-        `;
+        marker.remove();
+      } catch (error) {
+        console.warn('Error removing existing marker:', error);
+      }
+    });
+    zoHouseMarkers.current = [];
 
-        // Add hover effects
-        markerElement.addEventListener('mouseenter', () => {
-          markerElement.style.transform = 'scale(1.1)';
-        });
-        markerElement.addEventListener('mouseleave', () => {
-          markerElement.style.transform = 'scale(1)';
-        });
+    console.log('🏠 Adding Zo House markers with precise coordinates...');
+    ZO_HOUSES.forEach((house) => {
+      console.log(`📍 Adding marker for ${house.name} at [${house.lat}, ${house.lng}]`);
+      try {
+        // Create custom PNG marker for Zo House (using proven approach)
+        const markerElement = document.createElement('img');
+        markerElement.src = '/Zo_flexing_white.png';
+        markerElement.style.width = '50px';
+        markerElement.style.height = '50px';
+        markerElement.style.borderRadius = '50%';
+        markerElement.style.cursor = 'pointer';
+        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+        markerElement.title = house.name;
 
-        // Create marker with custom element
-        const zoMarker = new mapboxgl.Marker({
-          element: markerElement,
-          anchor: 'center'
-        })
-        .setLngLat([house.lng, house.lat])
-        .addTo(map.current);
+        const zoMarker = new mapboxgl.Marker(markerElement)
+          .setLngLat([house.lng, house.lat])
+          .addTo(map.current);
+
+        console.log(`🏠 Added PNG marker for ${house.name}`);
+
+        // Store marker reference
+        zoHouseMarkers.current.push(zoMarker);
 
         // Create popup content for Zo House
         const zoPopupContent = `
@@ -140,7 +140,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         const zoPopup = new mapboxgl.Popup({
           className: 'glass-popup-container',
           closeButton: true,
-          offset: [0, -30], // Higher offset due to larger marker
+          offset: [0, -45], // Higher offset due to larger marker
           maxWidth: '320px'
         }).setHTML(zoPopupContent);
 
@@ -291,13 +291,23 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
           // Update map center to user location
           map.current.setCenter(coords);
           
-          // Add user location marker
-          const userMarker = new mapboxgl.Marker({
-            color: '#e67e5c',
-            scale: 1.5
-          })
-          .setLngLat(coords)
-          .addTo(map.current);
+                  // Store your coordinates for Zo House Koramangala (no visible marker)
+        // Update Zo House Koramangala coordinates with your exact location
+        const koramangalaHouse = ZO_HOUSES.find(house => house.name === "Zo House Koramangala");
+        if (koramangalaHouse) {
+          koramangalaHouse.lat = coords[1]; // Your latitude
+          koramangalaHouse.lng = coords[0]; // Your longitude
+          console.log(`🏠 Updated Zo House Koramangala coordinates to your exact location!`);
+          
+          // Remove existing Zo House markers and re-add them with updated coordinates
+          zoHouseMarkers.current.forEach(marker => marker.remove());
+          zoHouseMarkers.current = [];
+          
+          // Re-add Zo House markers with updated coordinates
+          setTimeout(() => {
+            addZoHouseMarkers();
+          }, 1000);
+        }
 
           // Create popup content matching the event popup style
           const userPopupContent = `
@@ -354,7 +364,15 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
 
   // Add markers for events
   useEffect(() => {
-    if (!map.current || !mapLoaded || !events.length) return;
+    console.log('🔄 Event markers useEffect triggered');
+    console.log('Map current:', !!map.current);
+    console.log('Map loaded:', mapLoaded);
+    console.log('Events length:', events.length);
+    
+    if (!map.current || !mapLoaded || !events.length) {
+      console.log('❌ Skipping event markers - conditions not met');
+      return;
+    }
 
     // Clear existing markers
     markersMap.forEach(marker => {
@@ -367,8 +385,14 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
     
     const newMarkersMap = new Map<string, mapboxgl.Marker>();
 
-    events.forEach((event) => {
-      if (!event.Latitude || !event.Longitude || !map.current) return;
+    console.log('📋 Processing events:', events.length);
+    events.forEach((event, index) => {
+      console.log(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
+      
+      if (!event.Latitude || !event.Longitude || !map.current) {
+        console.log(`❌ Skipping event ${index + 1} - missing coordinates or map`);
+        return;
+      }
 
       const lat = parseFloat(event.Latitude);
       const lng = parseFloat(event.Longitude);
@@ -376,7 +400,19 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       if (isNaN(lat) || isNaN(lng)) return;
 
       try {
-        const marker = new mapboxgl.Marker()
+        // For now, skip event markers - just use Zo House markers
+        console.log(`⏭️ Skipping event marker for: ${event['Event Name']} (using Zo House markers only)`);
+        
+        // Create invisible marker for popup functionality
+        const invisibleElement = document.createElement('div');
+        invisibleElement.style.cssText = `
+          width: 1px;
+          height: 1px;
+          background: transparent;
+          cursor: pointer;
+        `;
+        
+        const marker = new mapboxgl.Marker(invisibleElement)
           .setLngLat([lng, lat])
           .addTo(map.current);
 
@@ -435,11 +471,20 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         const eventKey = `${event['Event Name']}-${event.Latitude}-${event.Longitude}`;
         newMarkersMap.set(eventKey, marker);
       } catch (error) {
-        console.warn('Error creating marker for event:', event['Event Name'], error);
+        console.error('❌ Error creating marker for event:', event['Event Name'], error);
+        console.error('Event details:', event);
       }
     });
 
     setMarkersMap(newMarkersMap);
+    
+    // Debug: Add a test marker to see if markers work at all
+    if (map.current && newMarkersMap.size === 0) {
+      console.log('🧪 Adding test marker since no events were processed');
+      const testMarker = new mapboxgl.Marker({ color: '#ff0000' })
+        .setLngLat([77.634402, 12.932658]) // Zo House Bangalore
+        .addTo(map.current);
+    }
   }, [events, mapLoaded, currentOpenPopup]);
 
   // Handle flyToEvent

@@ -328,6 +328,8 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
 export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]): Promise<ParsedEvent[]> {
   const events = await fetchAllCalendarEvents(calendarUrls);
   
+  console.log(`🔄 Processing ${events.length} events for geocoding...`);
+  
   // Process events to add geocoding for those missing coordinates
   const processedEvents = await Promise.all(
     events.map(async (event) => {
@@ -339,17 +341,47 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
       // Try to geocode the location
       if (event.Location && !event.Location.startsWith('http')) {
         console.log(`🗺️ Geocoding location: ${event.Location}`);
+        
+        // Check if it's a Zo House event and use known coordinates
+        if (event.Location.toLowerCase().includes('zo house')) {
+          if (event.Location.toLowerCase().includes('bangalore') || event.Location.toLowerCase().includes('koramangala')) {
+            console.log(`🏠 Using Zo House Bangalore coordinates for: ${event.Location}`);
+            return {
+              ...event,
+              Latitude: '12.932658',
+              Longitude: '77.634402'
+            };
+          } else if (event.Location.toLowerCase().includes('san francisco') || event.Location.toLowerCase().includes('sf')) {
+            console.log(`🏠 Using Zo House SF coordinates for: ${event.Location}`);
+            return {
+              ...event,
+              Latitude: '37.7817309',
+              Longitude: '-122.401198'
+            };
+          } else if (event.Location.toLowerCase().includes('whitefield')) {
+            console.log(`🏠 Using Zo House Whitefield coordinates for: ${event.Location}`);
+            return {
+              ...event,
+              Latitude: '12.9725',
+              Longitude: '77.745'
+            };
+          }
+        }
+        
         try {
           const coords = await geocodeLocation(event.Location);
           if (coords) {
+            console.log(`✅ Geocoding successful for: ${event.Location} → [${coords.lat}, ${coords.lng}]`);
             return {
               ...event,
               Latitude: coords.lat.toString(),
               Longitude: coords.lng.toString()
             };
+          } else {
+            console.warn(`❌ Geocoding failed for: ${event.Location}`);
           }
         } catch (geocodeError) {
-          console.warn(`⚠️ Geocoding failed for ${event.Location}:`, geocodeError);
+          console.warn(`⚠️ Geocoding error for ${event.Location}:`, geocodeError);
         }
       }
       
@@ -357,6 +389,9 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
       return event;
     })
   );
+  
+  console.log(`✅ Finished processing events. Events with coordinates:`, processedEvents.filter(e => e.Latitude && e.Longitude).length);
+  console.log(`📋 Final events:`, processedEvents.map(e => ({ name: e['Event Name'], location: e.Location, coords: e.Latitude && e.Longitude ? `[${e.Latitude}, ${e.Longitude}]` : 'None' })));
   
   return processedEvents;
 } 

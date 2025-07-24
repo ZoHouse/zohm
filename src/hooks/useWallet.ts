@@ -55,6 +55,29 @@ export function useWallet() {
     return typeof window !== 'undefined' && typeof window.ethereum !== 'undefined';
   }, []);
 
+  // Check existing role from Supabase
+  const checkExistingRole = useCallback(async (address: string): Promise<string> => {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data, error } = await supabase
+        .from('members')
+        .select('role')
+        .eq('wallet', address.toLowerCase())
+        .single();
+
+      if (error || !data) {
+        console.log('No existing member record found');
+        return 'Member';
+      }
+
+      console.log('✅ Found existing role:', data.role);
+      return data.role || 'Member';
+    } catch (error) {
+      console.error('Error checking existing role:', error);
+      return 'Member';
+    }
+  }, []);
+
   // Connect to wallet
   const connectWallet = useCallback(async (): Promise<string | null> => {
     if (!isMetaMaskInstalled()) {
@@ -74,9 +97,12 @@ export function useWallet() {
 
       if (accounts.length > 0) {
         const address = accounts[0];
+        
+        // For now, just connect and let quantumSync handle role verification
         setWalletState(prev => ({
           ...prev,
           address,
+          role: 'Member', // Default, will be updated by quantumSync
           isConnected: true,
           isLoading: false
         }));
@@ -94,7 +120,7 @@ export function useWallet() {
       }));
       return null;
     }
-  }, [isMetaMaskInstalled]);
+  }, [isMetaMaskInstalled, checkExistingRole]);
 
   // Check if user has founder NFT
   const checkFounderNFT = useCallback(async (address: string): Promise<boolean> => {
@@ -118,26 +144,39 @@ export function useWallet() {
       const finalMemberData = {
         wallet: address,
         role,
-        name: memberData.name || '',
-        bio: '',
-        culture: '',
-        pfp: memberData.image || '',
+        name: memberData.name || null, // Use null instead of empty string
+        bio: null,                     // This will trigger profile setup
+        culture: null,                 // This will trigger profile setup
+        lat: null,                     // This will trigger profile setup
+        lng: null,                     // This will trigger profile setup
+        pfp: memberData.image || null,
         founder_nfts_count: role === 'Founder' ? 1 : 0,
         last_seen: new Date().toISOString()
       };
 
       console.log('💾 Syncing with Supabase:', finalMemberData);
 
-      const { data, error } = await supabase
+      // First, try to update existing record
+      const { data: updateData, error: updateError } = await supabase
         .from('members')
-        .upsert(finalMemberData, { onConflict: 'wallet' });
+        .update(finalMemberData)
+        .eq('wallet', address.toLowerCase());
 
-      if (error) {
-        console.error('Supabase sync error:', error);
-        return false;
+      // If no rows were updated, insert new record
+      if (updateError || (updateData && updateData.length === 0)) {
+        console.log('🔄 No existing record, inserting new one');
+        const { data: insertData, error: insertError } = await supabase
+          .from('members')
+          .insert(finalMemberData);
+        
+        if (insertError) {
+          console.error('Supabase insert error:', insertError);
+          return false;
+        }
+        console.log('✅ Successfully inserted into Supabase:', insertData);
+      } else {
+        console.log('✅ Successfully updated Supabase:', updateData);
       }
-
-      console.log('✅ Successfully synced with Supabase:', data);
       return true;
     } catch (error) {
       console.error('Error syncing with Supabase:', error);
@@ -158,6 +197,7 @@ export function useWallet() {
 
       // Check NFT balance and get count
       const hasNFT = await checkFounderNFT(address);
+      console.log('🔍 NFT Check Result:', { address, hasNFT });
       
       // Use default avatar - user will select NFT via gallery
       const defaultAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
@@ -170,12 +210,17 @@ export function useWallet() {
         description: '' // Placeholder
       };
 
-      // Sync with Supabase
-      await syncWithSupabase(address, hasNFT ? 'Founder' : 'Member', memberData);
-
+      // Determine the correct role
+      const newRole = hasNFT ? 'Founder' : 'Member';
+      console.log('🎯 Setting Role:', { hasNFT, newRole });
+      
+      // Sync with Supabase with the correct role
+      await syncWithSupabase(address, newRole, memberData);
+      
+      // Force state update with the correct role
       setWalletState(prev => ({
         ...prev,
-        role: hasNFT ? 'Founder' : 'Member',
+        role: newRole,
         isLoading: false
       }));
 

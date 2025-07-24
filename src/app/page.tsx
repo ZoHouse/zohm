@@ -7,7 +7,10 @@ import EventsOverlay from '@/components/EventsOverlay';
 import MembersOverlay from '@/components/MembersOverlay';
 import CulturesOverlay from '@/components/CulturesOverlay';
 import ProfileOverlay from '@/components/ProfileOverlay';
+import ProfileSetup from '@/components/ProfileSetup';
 import { pingSupabase, verifyMembersTable } from '@/lib/supabase';
+import { useProfileGate } from '@/hooks/useProfileGate';
+import { useWallet } from '@/hooks/useWallet';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { CALENDAR_URLS } from '@/lib/calendarConfig';
 import mapboxgl from 'mapbox-gl';
@@ -28,6 +31,10 @@ export default function Home() {
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
   const [flyToEvent, setFlyToEvent] = useState<EventData | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Add profile gate and wallet hooks
+  const wallet = useWallet();
+  const profileGate = useProfileGate();
 
   useEffect(() => {
     // Initialize Supabase connection
@@ -117,6 +124,16 @@ export default function Home() {
     console.log('Previous section was:', activeSection);
     console.log('closePopupsFn available:', !!closePopupsFn);
     
+    // For Members section, check profile gate first
+    if (section === 'members' && wallet.isConnected) {
+      const hasAccess = profileGate.checkProfileAccess();
+      if (!hasAccess) {
+        console.log('🚨 Profile setup required for Members section');
+        // Still switch to members section so the profile setup shows in context
+        // The MembersOverlay will handle showing the profile setup popup
+      }
+    }
+    
     // If switching away from events, close any open popups on the map
     if (section !== 'events' && closePopupsFn) {
       console.log('📍 Calling closePopupsFn because switching away from events');
@@ -195,6 +212,16 @@ export default function Home() {
         isVisible={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
+
+      {/* Global Profile Setup Gate */}
+      {profileGate.showProfileSetup && wallet.isConnected && wallet.address && (
+        <ProfileSetup
+          isVisible={profileGate.showProfileSetup}
+          walletAddress={wallet.address}
+          onComplete={profileGate.completeProfileSetup}
+          onClose={() => profileGate.setShowProfileSetup(false)}
+        />
+      )}
 
       {/* Bottom Navigation */}
       <NavBar 

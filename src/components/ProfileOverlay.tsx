@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/useWallet';
+import { useProfileGate } from '@/hooks/useProfileGate';
 import { supabase } from '@/lib/supabase';
 import ProfileSetup from './ProfileSetup';
 import NFTGallery from './NFTGallery';
@@ -20,63 +21,30 @@ interface MemberProfile {
   founder_nfts_count?: number;
   calendar_url?: string;
   created_at?: string;
+  lat?: number;
+  lng?: number;
 }
 
 const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ isVisible, onClose }) => {
   const { isConnected, address, role, formatAddress, quantumSync, isLoading } = useWallet();
-  const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showNFTGallery, setShowNFTGallery] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  
+  // Use the profile gate hook for consistent profile management
+  const profileGate = useProfileGate();
+  const { memberProfile, isProfileComplete, isLoadingProfile, showProfileSetup, setShowProfileSetup } = profileGate;
 
-  // Load member profile when connected
-  useEffect(() => {
-    if (isVisible && isConnected && address) {
-      loadMemberProfile();
-    }
-  }, [isVisible, isConnected, address]);
-
-  const loadMemberProfile = async () => {
-    if (!address) return;
-    
-    setIsLoadingProfile(true);
-    try {
-      const { data, error } = await supabase
-        .from('members')
-        .select('name, bio, culture, pfp, founder_nfts_count, calendar_url, created_at')
-        .eq('wallet', address)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
-        return;
-      }
-
-      setMemberProfile(data);
-      
-      // Check if profile setup is needed
-      if (data && (!data.name || !data.bio || !data.culture)) {
-        setShowProfileSetup(true);
-      }
-    } catch (error) {
-      console.error('Exception loading profile:', error);
-    } finally {
-      setIsLoadingProfile(false);
-    }
-  };
+  // Profile loading is now handled by useProfileGate hook
 
   const handleQuantumSync = async () => {
     const success = await quantumSync();
     if (success) {
       // Reload profile after sync
-      await loadMemberProfile();
+      await profileGate.loadMemberProfile();
     }
   };
 
   const handleProfileSetupComplete = () => {
-    setShowProfileSetup(false);
-    // Reload profile to show updated data
-    loadMemberProfile();
+    profileGate.completeProfileSetup();
   };
 
   const handleNFTSelection = async (nft: NFTData) => {
@@ -96,8 +64,8 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ isVisible, onClose }) =
         return;
       }
 
-      // Update local state
-      setMemberProfile(prev => prev ? { ...prev, pfp: nft.image } : null);
+      // Reload profile to get updated data
+      await profileGate.loadMemberProfile();
       console.log('✅ Profile picture updated successfully');
     } catch (error) {
       console.error('Exception updating profile picture:', error);
@@ -106,8 +74,6 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ isVisible, onClose }) =
 
   // Early return after all hooks
   if (!isVisible) return null;
-
-  const isProfileComplete = memberProfile && memberProfile.name && memberProfile.bio && memberProfile.culture;
 
   // Show NFT Gallery
   if (showNFTGallery && isConnected && address) {

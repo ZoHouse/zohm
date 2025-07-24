@@ -15,6 +15,8 @@ interface ProfileData {
   bio: string;
   culture: string;
   calendar_url: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 const CULTURE_OPTIONS = [
@@ -44,7 +46,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     name: '',
     bio: '',
     culture: '',
-    calendar_url: ''
+    calendar_url: '',
+    lat: null,
+    lng: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,6 +79,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
         }
         break;
       case 4:
+        if (!profileData.lat || !profileData.lng) {
+          newErrors.location = 'Please select your location';
+        }
+        break;
+      case 5:
         if (profileData.calendar_url && !isValidUrl(profileData.calendar_url)) {
           newErrors.calendar_url = 'Please enter a valid URL';
         }
@@ -96,7 +105,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      if (currentStep < 4) {
+      if (currentStep < 5) {
         setCurrentStep(currentStep + 1);
       } else {
         handleSubmit();
@@ -119,6 +128,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
           name: profileData.name.trim(),
           bio: profileData.bio.trim(),
           culture: profileData.culture,
+          lat: profileData.lat,
+          lng: profileData.lng,
           calendar_url: profileData.calendar_url.trim() || null,
           last_seen: new Date().toISOString()
         })
@@ -138,11 +149,28 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     }
   };
 
-  const updateProfileData = (field: keyof ProfileData, value: string) => {
+  const updateProfileData = (field: keyof ProfileData, value: string | number) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateProfileData('lat', position.coords.latitude);
+          updateProfileData('lng', position.coords.longitude);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setErrors(prev => ({ ...prev, location: 'Could not get your location. Please select a city.' }));
+        }
+      );
+    } else {
+      setErrors(prev => ({ ...prev, location: 'Geolocation is not supported by this browser.' }));
     }
   };
 
@@ -211,6 +239,55 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 4:
         return (
           <div className="space-y-4">
+            <h3 className="text-lg font-bold">Where are you located?</h3>
+            <p className="text-gray-300 text-sm">This helps connect you with nearby members</p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={getUserLocation}
+                className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                📍 Use My Current Location
+              </button>
+              <div className="text-center text-gray-400 text-sm">or</div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { name: 'San Francisco', lat: 37.7749, lng: -122.4194 },
+                  { name: 'New York', lat: 40.7128, lng: -74.0060 },
+                  { name: 'London', lat: 51.5074, lng: -0.1278 },
+                  { name: 'Bangalore', lat: 12.9716, lng: 77.5946 },
+                  { name: 'Singapore', lat: 1.3521, lng: 103.8198 },
+                  { name: 'Tokyo', lat: 35.6762, lng: 139.6503 }
+                ].map((city) => (
+                  <button
+                    key={city.name}
+                    onClick={() => {
+                      updateProfileData('lat', city.lat);
+                      updateProfileData('lng', city.lng);
+                    }}
+                    className={`p-2 text-sm rounded-lg border transition-colors ${
+                      profileData.lat === city.lat && profileData.lng === city.lng
+                        ? 'bg-blue-600 border-blue-500 text-white'
+                        : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    {city.name}
+                  </button>
+                ))}
+              </div>
+              {profileData.lat && profileData.lng && (
+                <div className="text-center text-green-400 text-sm">
+                  ✅ Location set: {profileData.lat.toFixed(2)}, {profileData.lng.toFixed(2)}
+                </div>
+              )}
+            </div>
+            {errors.location && <p className="text-red-400 text-sm">{errors.location}</p>}
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-4">
             <h3 className="text-lg font-bold">Calendar Integration (Optional)</h3>
             <p className="text-gray-300 text-sm">Share your calendar so others can see when you&apos;re available</p>
             <input
@@ -243,7 +320,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-bold">Profile Setup</h2>
-            <p className="text-gray-400 text-sm">Step {currentStep} of 4</p>
+            <p className="text-gray-400 text-sm">Step {currentStep} of 5</p>
           </div>
           <button
             onClick={onClose}
@@ -256,7 +333,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex space-x-2">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4, 5].map((step) => (
               <div
                 key={step}
                 className={`flex-1 h-2 rounded-full ${
@@ -298,7 +375,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             disabled={isLoading}
             className="solid-button px-6 py-2"
           >
-            {isLoading ? 'Saving...' : currentStep === 4 ? 'Complete Setup' : 'Next'}
+            {isLoading ? 'Saving...' : currentStep === 5 ? 'Complete Setup' : 'Next'}
           </button>
         </div>
       </div>

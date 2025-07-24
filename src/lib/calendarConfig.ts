@@ -1,14 +1,14 @@
 // Calendar Configuration - Extracted from original map.zo project
 // These are the exact same calendar URLs used in the working HTML version
 
-export const CALENDAR_URLS = [
-  'https://api.lu.ma/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM', // Bangalore
-  'https://api.lu.ma/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ'  // San Francisco
+// Calendar IDs for our API route
+export const CALENDAR_IDS = [
+  'cal-ZVonmjVxLk7F2oM', // Bangalore
+  'cal-3YNnBTToy9fnnjQ'  // San Francisco
 ];
 
-// CORS Proxy Configuration (same as original)
-export const CORS_PROXY_URL = 'https://proxy.cors.sh/';
-export const CORS_API_KEY = 'temp_7db057c99de626add346faa324315c4d';
+// Generate URLs for our API route
+export const CALENDAR_URLS = CALENDAR_IDS.map(id => `/api/calendar?id=${id}`);
 
 // Map Configuration (same as original)
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;

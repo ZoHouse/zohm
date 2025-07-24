@@ -8,7 +8,7 @@ import MembersOverlay from '@/components/MembersOverlay';
 import CulturesOverlay from '@/components/CulturesOverlay';
 import ProfileOverlay from '@/components/ProfileOverlay';
 import { pingSupabase, verifyMembersTable } from '@/lib/supabase';
-import { fetchAllCalendarEvents } from '@/lib/icalParser';
+import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { CALENDAR_URLS } from '@/lib/calendarConfig';
 import mapboxgl from 'mapbox-gl';
 
@@ -60,7 +60,7 @@ export default function Home() {
         const calendarUrls = CALENDAR_URLS;
         
         console.log('🔄 Fetching live events from iCal feeds...');
-        const liveEvents = await fetchAllCalendarEvents(calendarUrls);
+        const liveEvents = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
         
         if (liveEvents.length > 0) {
           console.log('✅ Loaded', liveEvents.length, 'live events');

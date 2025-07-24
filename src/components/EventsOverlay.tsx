@@ -88,6 +88,16 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
         <input type="text" placeholder="Search events" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1 px-3 py-2 border border-white/10 rounded-lg bg-black/30 text-white/80 placeholder-white/40 focus:outline-none focus:border-white/30" />
         <button className="glass-icon-button px-4 py-2 text-sm">View All</button>
       </div>
+      <div className="flex justify-center">
+        <a 
+          href="https://zostel.typeform.com/to/LgcBfa0M" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="solid-button px-6 py-2 text-sm hover:scale-105 transition-transform"
+        >
+          🎉 Host Events at Zo
+        </a>
+      </div>
     </div>
   );
 

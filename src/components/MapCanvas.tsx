@@ -5,6 +5,31 @@ import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
 
+// Zo House locations
+const ZO_HOUSES = [
+  {
+    name: "Zo House SF",
+    lat: 37.7817309,
+    lng: -122.483599,
+    address: "300 4th St, San Francisco, CA 94107, United States",
+    description: "Zo House San Francisco - The original crypto hub"
+  },
+  {
+    name: "Zo House Koramangala",
+    lat: 12.9329546,
+    lng: 77.593301,
+    address: "S.T. Bed, 1st Block Koramangala, Koramangala, Bengaluru, Karnataka",
+    description: "Zo House Bangalore - Innovation center in India's Silicon Valley"
+  },
+  {
+    name: "Zo House Whitefield",
+    lat: 12.9724546,
+    lng: 77.7049641,
+    address: "Outer Circle, Dodsworth Layout, Whitefield, Bengaluru, Karnataka", 
+    description: "Zo House Whitefield - Expanding the ecosystem"
+  }
+];
+
 interface MapCanvasProps {
   events: ParsedEvent[];
   onMapReady?: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
@@ -60,6 +85,93 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
     } catch (error) {
       console.warn('Error closing popups:', error);
     }
+  };
+
+  // Add Zo House markers with custom animated icon
+  const addZoHouseMarkers = () => {
+    if (!map.current) return;
+
+    ZO_HOUSES.forEach((house) => {
+      try {
+        // Create custom HTML element for the animated GIF marker
+        const markerElement = document.createElement('div');
+        markerElement.className = 'zo-house-marker';
+        markerElement.style.cssText = `
+          width: 60px;
+          height: 60px;
+          background-image: url('/Zo_flexing_white.gif');
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          cursor: pointer;
+          border-radius: 50%;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          transition: transform 0.3s ease;
+        `;
+
+        // Add hover effects
+        markerElement.addEventListener('mouseenter', () => {
+          markerElement.style.transform = 'scale(1.1)';
+        });
+        markerElement.addEventListener('mouseleave', () => {
+          markerElement.style.transform = 'scale(1)';
+        });
+
+        // Create marker with custom element
+        const zoMarker = new mapboxgl.Marker({
+          element: markerElement,
+          anchor: 'center'
+        })
+        .setLngLat([house.lng, house.lat])
+        .addTo(map.current);
+
+        // Create popup content for Zo House
+        const zoPopupContent = `
+          <h3>🏠 ${house.name}</h3>
+          <p>📍 ${house.address}</p>
+          <p>✨ ${house.description}</p>
+          <div style="margin-top: 16px;">
+            <button onclick="window.open('https://zo.house', '_blank')" class="solid-button">
+              Visit Website
+            </button>
+          </div>
+        `;
+
+        const zoPopup = new mapboxgl.Popup({
+          className: 'glass-popup-container',
+          closeButton: true,
+          offset: [0, -30], // Higher offset due to larger marker
+          maxWidth: '320px'
+        }).setHTML(zoPopupContent);
+
+        zoMarker.setPopup(zoPopup);
+
+        // Handle marker click
+        markerElement.addEventListener('click', () => {
+          if (currentOpenPopup && currentOpenPopup !== zoPopup) {
+            try {
+              currentOpenPopup.remove();
+              activePopups.current.delete(currentOpenPopup);
+            } catch (error) {
+              console.warn('Error removing popup:', error);
+            }
+          }
+          setCurrentOpenPopup(zoPopup);
+          activePopups.current.add(zoPopup);
+          
+          zoPopup.on('close', () => {
+            if (currentOpenPopup === zoPopup) {
+              setCurrentOpenPopup(null);
+            }
+            activePopups.current.delete(zoPopup);
+          });
+        });
+
+        console.log(`✅ Added Zo House marker: ${house.name}`);
+      } catch (error) {
+        console.warn('Error creating Zo House marker:', house.name, error);
+      }
+    });
   };
 
   // Initialize map with proper error handling
@@ -146,6 +258,9 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
 
         // Get user location
         getUserLocation();
+        
+        // Add Zo House markers
+        addZoHouseMarkers();
       });
 
     } catch (error) {
@@ -184,8 +299,19 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
           .setLngLat(coords)
           .addTo(map.current);
 
-          const userPopup = new mapboxgl.Popup({ offset: 25, closeButton: false })
-            .setHTML('<strong>📍 Your Location</strong><br><small>This is where you are</small>');
+          // Create popup content matching the event popup style
+          const userPopupContent = `
+            <h3>📍 Your Location</h3>
+            <p>🔵 Current position</p>
+            <p>📱 Auto-detected via GPS</p>
+          `;
+
+          const userPopup = new mapboxgl.Popup({ 
+            className: 'glass-popup-container',
+            closeButton: true,
+            offset: [0, -15],
+            maxWidth: '280px'
+          }).setHTML(userPopupContent);
           
           userMarker.setPopup(userPopup);
           

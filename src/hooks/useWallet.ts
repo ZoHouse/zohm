@@ -135,27 +135,20 @@ export function useWallet() {
 
       console.log('💾 Syncing with Supabase:', finalMemberData);
 
-      // First, try to update existing record
-      const { data: updateData, error: updateError } = await supabase
+      // Use upsert to handle both insert and update
+      const { data, error } = await supabase
         .from('members')
-        .update(finalMemberData)
-        .eq('wallet', address.toLowerCase());
+        .upsert(finalMemberData, { 
+          onConflict: 'wallet',
+          ignoreDuplicates: false 
+        })
+        .select();
 
-      // If no rows were updated, insert new record
-      if (updateError || (updateData && updateData.length === 0)) {
-        console.log('🔄 No existing record, inserting new one');
-        const { data: insertData, error: insertError } = await supabase
-          .from('members')
-          .insert(finalMemberData);
-        
-        if (insertError) {
-          console.error('Supabase insert error:', insertError);
-          return false;
-        }
-        console.log('✅ Successfully inserted into Supabase:', insertData);
-      } else {
-        console.log('✅ Successfully updated Supabase:', updateData);
+      if (error) {
+        console.error('Supabase upsert error:', error);
+        return false;
       }
+      console.log('✅ Successfully synced with Supabase:', data);
       return true;
     } catch (error) {
       console.error('Error syncing with Supabase:', error);

@@ -323,8 +323,6 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
             maxWidth: '280px'
           }).setHTML(userPopupContent);
           
-          userMarker.setPopup(userPopup);
-          
           // Show popup briefly
           setTimeout(() => {
             if (map.current) {

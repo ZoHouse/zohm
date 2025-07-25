@@ -55,28 +55,7 @@ export function useWallet() {
     return typeof window !== 'undefined' && typeof window.ethereum !== 'undefined';
   }, []);
 
-  // Check existing role from Supabase
-  const checkExistingRole = useCallback(async (address: string): Promise<string> => {
-    try {
-      const { supabase } = await import('@/lib/supabase');
-      const { data, error } = await supabase
-        .from('members')
-        .select('role')
-        .eq('wallet', address.toLowerCase())
-        .single();
 
-      if (error || !data) {
-        console.log('No existing member record found');
-        return 'Member';
-      }
-
-      console.log('✅ Found existing role:', data.role);
-      return data.role || 'Member';
-    } catch (error) {
-      console.error('Error checking existing role:', error);
-      return 'Member';
-    }
-  }, []);
 
   // Connect to wallet
   const connectWallet = useCallback(async (): Promise<string | null> => {

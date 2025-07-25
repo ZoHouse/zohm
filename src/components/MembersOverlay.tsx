@@ -241,14 +241,27 @@ const MembersOverlay: React.FC<MembersOverlayProps> = ({ isVisible, openProfile 
   const renderHeader = () => (
     <div className="flex flex-col gap-4 p-4">
       <div className="text-center">
-        {wallet.isConnected && wallet.address ? (
+                {wallet.isConnected && wallet.address ? (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-center gap-2">
               <div className="glass-icon-button px-4 py-2 font-semibold text-sm">🔗 {wallet.formatAddress(wallet.address)}</div>
               <button onClick={wallet.disconnectWallet} className="bg-red-500 text-white px-3 py-2 rounded-lg text-xs hover:bg-red-600">✕</button>
             </div>
+            
+            {/* View Profile Button */}
+            <div className="flex justify-center">
+              <button 
+                onClick={() => {
+                  if (openProfile) openProfile();
+                }}
+                className="glass-icon-button px-4 py-2 text-sm"
+              >
+                👤 View Profile
+              </button>
+            </div>
 
-          </div>
+
+            </div>
         ) : (
           <button onClick={handleQuantumSync} disabled={wallet.isLoading} className="solid-button px-6 py-2 text-sm">
             {wallet.isLoading ? '🔄 Syncing...' : '🧬 Quantum Sync'}

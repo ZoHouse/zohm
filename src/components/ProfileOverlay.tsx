@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { supabase } from '@/lib/supabase';
@@ -13,17 +13,7 @@ interface ProfileOverlayProps {
   onClose: () => void;
 }
 
-interface MemberProfile {
-  name?: string;
-  bio?: string;
-  culture?: string;
-  pfp?: string;
-  founder_nfts_count?: number;
-  calendar_url?: string;
-  created_at?: string;
-  lat?: number;
-  lng?: number;
-}
+
 
 const ProfileOverlay: React.FC<ProfileOverlayProps> = ({ isVisible, onClose }) => {
   const { isConnected, address, role, formatAddress, quantumSync, isLoading } = useWallet();

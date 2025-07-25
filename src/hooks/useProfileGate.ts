@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from './useWallet';
 import { supabase } from '@/lib/supabase';
 
@@ -31,10 +31,8 @@ export function useProfileGate() {
     memberProfile.culture?.trim() !== '' &&
     memberProfile.lat !== 0 && memberProfile.lng !== 0;
 
-
-
   // Load member profile
-  const loadMemberProfile = async () => {
+  const loadMemberProfile = useCallback(async () => {
     if (!address) return;
     
     setIsLoadingProfile(true);
@@ -52,14 +50,12 @@ export function useProfileGate() {
 
       setMemberProfile(data);
       
-
-      
     } catch (error) {
       console.error('Exception loading profile:', error);
     } finally {
       setIsLoadingProfile(false);
     }
-  };
+  }, [address]);
 
   // Load profile when connected
   useEffect(() => {
@@ -68,7 +64,7 @@ export function useProfileGate() {
     } else {
       setMemberProfile(null);
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, loadMemberProfile]);
 
   // Function to check access and trigger setup if needed
   const checkProfileAccess = (): boolean => {

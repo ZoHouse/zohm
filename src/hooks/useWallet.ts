@@ -120,7 +120,7 @@ export function useWallet() {
       }));
       return null;
     }
-  }, [isMetaMaskInstalled, checkExistingRole]);
+  }, [isMetaMaskInstalled]);
 
   // Check if user has founder NFT
   const checkFounderNFT = useCallback(async (address: string): Promise<boolean> => {
@@ -252,12 +252,38 @@ export function useWallet() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   }, []);
 
+  // Manual role setter for testing (also updates database)
+  const setRole = useCallback(async (role: string) => {
+    if (!walletState.address) return;
+    
+    // Update state immediately
+    setWalletState(prev => ({ ...prev, role }));
+    
+    // Also update database
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase
+        .from('members')
+        .update({ role })
+        .eq('wallet', walletState.address.toLowerCase());
+      
+      if (error) {
+        console.error('Error updating role in database:', error);
+      } else {
+        console.log('✅ Role updated in database:', role);
+      }
+    } catch (error) {
+      console.error('Exception updating role:', error);
+    }
+  }, [walletState.address]);
+
   return {
     ...walletState,
     connectWallet,
     disconnectWallet,
     quantumSync,
     formatAddress,
+    setRole,
     isMetaMaskInstalled: isMetaMaskInstalled()
   };
 } 

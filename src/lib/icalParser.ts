@@ -85,7 +85,7 @@ export function parseICS(icsData: string): ParsedEvent[] {
     let multiLineKey = '';
     
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
+                    const line = lines[i].trim();
       
       // Handle line continuation (lines starting with space or tab)
       if (line.startsWith(' ') || line.startsWith('\t')) {
@@ -144,7 +144,7 @@ export function parseICS(icsData: string): ParsedEvent[] {
       } else if (inEvent && line.includes(':')) {
         const colonIndex = line.indexOf(':');
         const key = line.substring(0, colonIndex);
-        let value = line.substring(colonIndex + 1);
+        const value = line.substring(colonIndex + 1);
         
         // Debug specific keys for important events
         if (key === 'SUMMARY' && (value.includes('Monad') || value.includes('Musa'))) {

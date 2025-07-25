@@ -118,7 +118,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
 
         const zoMarker = new mapboxgl.Marker(markerElement)
           .setLngLat([house.lng, house.lat])
-          .addTo(map.current);
+          .addTo(map.current!);
 
         console.log(`🏠 Added PNG marker for ${house.name}`);
 
@@ -328,7 +328,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
           // Show popup briefly
           setTimeout(() => {
             if (map.current) {
-              userPopup.addTo(map.current);
+              userPopup.addTo(map.current!);
               setTimeout(() => {
                 userPopup.remove();
               }, 3000);
@@ -414,7 +414,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         
         const marker = new mapboxgl.Marker(invisibleElement)
           .setLngLat([lng, lat])
-          .addTo(map.current);
+          .addTo(map.current!);
 
         const formattedDate = new Date(event['Date & Time']).toLocaleDateString('en-US', {
           weekday: 'short',
@@ -483,7 +483,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       console.log('🧪 Adding test marker since no events were processed');
       const testMarker = new mapboxgl.Marker({ color: '#ff0000' })
         .setLngLat([77.634402, 12.932658]) // Zo House Bangalore
-        .addTo(map.current);
+        .addTo(map.current!);
     }
   }, [events, mapLoaded, currentOpenPopup]);
 
@@ -515,7 +515,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       if (marker) {
         const popup = marker.getPopup();
         if (popup && map.current) {
-          popup.addTo(map.current);
+          popup.addTo(map.current!);
           setCurrentOpenPopup(popup);
           activePopups.current.add(popup); // Add to tracked popups
           

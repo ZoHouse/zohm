@@ -214,7 +214,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
           }
         };
 
-        const getTypeColor = (type: PartnerNode['type']): string => {
+        const getTypeColor = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
           switch (type) {
             case 'house': return '#10b981'; // emerald
             case 'collective': return '#3b82f6'; // blue

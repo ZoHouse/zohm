@@ -9,7 +9,9 @@ export async function GET(_req: NextRequest) {
       .order('name');
 
     if (error) {
-      if ((error as any).code === 'PGRST116' || (error as any).message?.includes('does not exist')) {
+      const code = (error as { code?: string; message?: string }).code;
+      const message = (error as { code?: string; message?: string }).message;
+      if (code === 'PGRST116' || message?.includes('does not exist')) {
         return NextResponse.json({ ok: true, nodes: [], note: 'nodes table not found yet' }, { status: 200 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });

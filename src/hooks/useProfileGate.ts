@@ -95,7 +95,7 @@ export function useProfileGate() {
 
 
 
-  const completeProfileSetup = (newData: Partial<MemberProfile>) => {
+  const completeProfileSetup = (newData: Partial<MemberProfile> = {}) => {
     setShowProfileSetup(false);
     // Optimistically update the profile
     setMemberProfile(prev => ({ ...prev, ...newData, name: newData.name || prev?.name || '' }));

@@ -4,14 +4,13 @@ import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
-import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
 
 // Zo House locations with precise coordinates
 const ZO_HOUSES = [
   {
     name: "Zo House SF",
-    lat: 37.781903723962394,
-    lng: -122.40089759537564,
+    lat: 37.7817309,
+    lng: -122.401198,
     address: "300 4th St, San Francisco, CA 94107, United States",
     description: "Zo House San Francisco - The original crypto hub"
   },
@@ -47,7 +46,6 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
-  const [listenerBound, setListenerBound] = useState(false);
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -178,49 +176,150 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
     });
   };
 
-  // Add DB node markers (excluding Zo Houses) with default image marker
-  const addPartnerNodeMarkers = async () => {
+  // Add partner node markers with custom icons
+  const addPartnerNodeMarkers = () => {
     if (!map.current) return;
 
-    partnerNodeMarkers.current.forEach(m => {
-      try { m.remove(); } catch {}
+    // Clear any existing partner node markers
+    partnerNodeMarkers.current.forEach(marker => {
+      try {
+        marker.remove();
+      } catch (error) {
+        console.warn('Error removing existing partner node marker:', error);
+      }
     });
     partnerNodeMarkers.current = [];
 
-    try {
-      const nodes = await getNodesFromDB();
-      if (!nodes) return;
-      const filtered = nodes.filter(n => n.latitude != null && n.longitude != null && !(n.name || '').toLowerCase().startsWith('zo house'));
+    console.log('🌐 Adding partner node markers...');
+    return; // legacy code removed; partner nodes now rendered via overlay
+    
+    // PARTNER_NODES.forEach(node => {
+      try {
+        const nodePopup = new mapboxgl.Popup({
+          closeButton: true,
+          closeOnClick: false,
+          className: 'glass-popup partner-node-popup'
+        });
 
-      filtered.forEach((n: PartnerNodeRecord) => {
-        try {
-          const img = document.createElement('img');
-          const srcs = ['/locationmarker copy.jpg', '/locationmarker.jpg', '/icons/icon-96x96.png'];
-          let idx = 0;
-          img.src = encodeURI(srcs[idx]);
-          img.style.width = '32px';
-          img.style.height = '32px';
-          img.style.borderRadius = '50%';
-          img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-          img.style.cursor = 'pointer';
-          img.alt = n.name;
-          img.onerror = () => {
-            idx += 1;
-            if (idx < srcs.length) {
-              img.src = encodeURI(srcs[idx]);
-            } else {
-              img.style.background = '#111';
+        // Get type-specific icon and color
+        const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
+          switch (type) {
+            case 'house': return '🏠';
+            case 'collective': return '🌐';
+            case 'protocol': return '⚡';
+            case 'space': return '🏢';
+            case 'festival': return '🎪';
+            case 'dao': return '🏛️';
+            default: return '🔗';
+          }
+        };
+
+        const getTypeColor = (type: PartnerNode['type']): string => {
+          switch (type) {
+            case 'house': return '#10b981'; // emerald
+            case 'collective': return '#3b82f6'; // blue
+            case 'protocol': return '#8b5cf6'; // violet
+            case 'space': return '#f59e0b'; // amber
+            case 'festival': return '#ec4899'; // pink
+            case 'dao': return '#06b6d4'; // cyan
+            default: return '#6b7280'; // gray
+          }
+        };
+
+        // Create custom marker element
+        const markerElement = document.createElement('div');
+        markerElement.className = 'partner-node-marker';
+        markerElement.innerHTML = `
+          <div class="partner-node-marker-inner" style="background-color: ${getTypeColor(node.type)}; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s ease;">
+            ${getTypeIcon(node.type)}
+          </div>
+        `;
+
+        // Add hover effects
+        markerElement.addEventListener('mouseenter', () => {
+          markerElement.style.transform = 'scale(1.1)';
+        });
+        markerElement.addEventListener('mouseleave', () => {
+          markerElement.style.transform = 'scale(1)';
+        });
+
+        // Create marker
+        const nodeMarker = new mapboxgl.Marker({
+          element: markerElement,
+          anchor: 'center'
+        })
+        .setLngLat([node.location.longitude, node.location.latitude])
+        .addTo(map.current);
+
+        partnerNodeMarkers.current.push(nodeMarker);
+
+        // Format member count
+        const formatMemberCount = (count?: number): string => {
+          if (!count) return '';
+          if (count < 1000) return `${count} members`;
+          return `${(count / 1000).toFixed(1)}k members`;
+        };
+
+        // Create popup content
+        const popupContent = `
+          <div class="p-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span style="font-size: 20px;">${getTypeIcon(node.type)}</span>
+              <div>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #2a251d;">${node.name}</h3>
+                <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: capitalize;">${node.type} • ${node.status}</p>
+              </div>
+            </div>
+            <p style="margin: 8px 0; font-size: 13px; color: #2a251d; line-height: 1.4;">${node.description}</p>
+            <div style="margin: 8px 0; font-size: 12px; color: #6b7280;">
+              📍 ${node.location.city}, ${node.location.country}
+              ${node.memberCount ? ` • ${formatMemberCount(node.memberCount)}` : ''}
+            </div>
+            <div style="margin: 8px 0;">
+              ${node.features.slice(0, 3).map(feature => 
+                `<span style="display: inline-block; padding: 2px 6px; margin: 2px; background: #f3f4f6; color: #374151; font-size: 11px; border-radius: 4px;">${feature}</span>`
+              ).join('')}
+              ${node.features.length > 3 ? `<span style="display: inline-block; padding: 2px 6px; margin: 2px; background: #e5e7eb; color: #6b7280; font-size: 11px; border-radius: 4px;">+${node.features.length - 3}</span>` : ''}
+            </div>
+            ${node.website ? `
+              <a href="${node.website}" target="_blank" rel="noopener noreferrer" 
+                 style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: ${getTypeColor(node.type)}; color: white; text-decoration: none; font-size: 12px; border-radius: 6px; font-weight: 500;">
+                Visit Node
+              </a>
+            ` : ''}
+          </div>
+        `;
+
+        nodePopup.setHTML(popupContent);
+
+        // Handle marker click
+        markerElement.addEventListener('click', () => {
+          if (currentOpenPopup && currentOpenPopup !== nodePopup) {
+            try {
+              currentOpenPopup.remove();
+              activePopups.current.delete(currentOpenPopup);
+            } catch (error) {
+              console.warn('Error removing popup:', error);
             }
-          };
+          }
+          setCurrentOpenPopup(nodePopup);
+          activePopups.current.add(nodePopup);
+          
+          nodePopup.addTo(map.current);
+          
+          nodePopup.on('close', () => {
+            if (currentOpenPopup === nodePopup) {
+              setCurrentOpenPopup(null);
+            }
+            activePopups.current.delete(nodePopup);
+          });
+        });
 
-          const marker = new mapboxgl.Marker({ element: img, anchor: 'bottom' })
-            .setLngLat([Number(n.longitude), Number(n.latitude)])
-            .addTo(map.current!);
-
-          partnerNodeMarkers.current.push(marker);
-        } catch {}
-      });
-    } catch {}
+        console.log(`✅ Added partner node marker: ${node.name}`);
+      } catch (error) {
+        console.warn('Error creating partner node marker:', node.name, error);
+      }
+    // });
   };
 
   // Initialize map with proper error handling
@@ -303,29 +402,6 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         // Notify parent that map is ready
         if (onMapReady) {
           onMapReady(map.current, closeAllPopups);
-        }
-
-        // Listen for external fly-to-coords events (from Nodes overlay)
-        if (!listenerBound) {
-          window.addEventListener('fly-to-coords', (e: Event) => {
-            const detail = (e as CustomEvent).detail as { lat: number; lng: number };
-            try {
-              console.log('🛫 Fly-to received:', detail);
-              if (typeof detail.lat !== 'number' || typeof detail.lng !== 'number' || isNaN(detail.lat) || isNaN(detail.lng)) {
-                console.warn('Invalid fly-to coordinates', detail);
-                return;
-              }
-              const center: [number, number] = [Number(detail.lng), Number(detail.lat)];
-              // Stop any ongoing animations before flying
-              try { map.current?.stop(); } catch {}
-              // Two-stage fly for precision on some devices
-              map.current?.easeTo({ center, zoom: 16, duration: 400, easing: (t) => t });
-              map.current?.once('moveend', () => {
-                map.current?.flyTo({ center, zoom: 18.2, speed: 1.2, curve: 1.44, easing: (t) => t });
-              });
-            } catch {}
-          });
-          setListenerBound(true);
         }
 
         // Get user location
@@ -454,26 +530,19 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       if (isNaN(lat) || isNaN(lng)) return;
 
       try {
-        // Create visible default marker for events
-        const img = document.createElement('img');
-        const srcs = ['/locationmarker copy.jpg', '/locationmarker.jpg', '/icons/icon-96x96.png'];
-        let idx = 0;
-        img.src = encodeURI(srcs[idx]);
-        img.style.width = '28px';
-        img.style.height = '28px';
-        img.style.borderRadius = '50%';
-        img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-        img.style.cursor = 'pointer';
-        img.onerror = () => {
-          idx += 1;
-          if (idx < srcs.length) {
-            img.src = encodeURI(srcs[idx]);
-          } else {
-            img.style.background = '#111';
-          }
-        };
-
-        const marker = new mapboxgl.Marker(img)
+        // For now, skip event markers - just use Zo House markers
+        console.log(`⏭️ Skipping event marker for: ${event['Event Name']} (using Zo House markers only)`);
+        
+        // Create invisible marker for popup functionality
+        const invisibleElement = document.createElement('div');
+        invisibleElement.style.cssText = `
+          width: 1px;
+          height: 1px;
+          background: transparent;
+          cursor: pointer;
+        `;
+        
+        const marker = new mapboxgl.Marker(invisibleElement)
           .setLngLat([lng, lat])
           .addTo(map.current!);
 

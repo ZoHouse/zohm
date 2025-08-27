@@ -1,46 +1,36 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
 
 interface NodesOverlayProps {
   isVisible: boolean;
-  onNodeSelect?: (node: PartnerNodeRecord) => void;
 }
 
-const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible, onNodeSelect }) => {
+const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone'>('all');
   const [allNodes, setAllNodes] = useState<PartnerNodeRecord[]>([]);
-  const [dbLoaded, setDbLoaded] = useState(false);
 
   useEffect(() => {
     const loadFromDB = async () => {
       const data = await getNodesFromDB();
       if (data) setAllNodes(data);
-      setDbLoaded(true);
     };
     loadFromDB();
   }, []);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const filteredNodes = useMemo(() => {
-    let nodes = allNodes;
-    if (activeFilter !== 'all') {
-      nodes = nodes.filter(n => n.type === activeFilter);
-    }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      nodes = nodes.filter(n =>
-        n.name.toLowerCase().includes(term) ||
-        n.description.toLowerCase().includes(term) ||
-        n.city.toLowerCase().includes(term) ||
-        n.country.toLowerCase().includes(term) ||
-        (n.features || []).some(f => f.toLowerCase().includes(term))
-      );
-    }
-    return nodes;
-  }, [allNodes, activeFilter, searchTerm]);
+  const filteredNodes = allNodes.filter(n =>
+    (activeFilter === 'all' || n.type === activeFilter) &&
+    (
+      !searchTerm ||
+      n.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.country.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
   const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone'): string => {
     switch (type) {
@@ -94,16 +84,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible, onNodeSelect }) 
       </div>
       <div className="flex-1 overflow-y-auto">
         {filteredNodes.map(node => (
-          <div 
-            key={node.id} 
-            className="paper-card cursor-pointer"
-            onClick={() => {
-              if (onNodeSelect && node.latitude != null && node.longitude != null) {
-                console.log('🧭 Node select fly-to:', node.name, node.latitude, node.longitude);
-                onNodeSelect(node);
-              }
-            }}
-          >
+          <div key={node.id} className="paper-card">
             <div className="flex items-start justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{getTypeIcon(node.type)}</span>

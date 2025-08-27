@@ -111,12 +111,6 @@ export default function Home() {
     console.log('Map is ready!');
   };
 
-  const flyToCoords = (lat: number, lng: number) => {
-    if (!closePopupsFn) return;
-    closePopupsFn();
-    window.dispatchEvent(new CustomEvent('fly-to-coords', { detail: { lat: Number(lat), lng: Number(lng) } }));
-  };
-
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
@@ -160,14 +154,7 @@ export default function Home() {
         closeMapPopups={closePopupsFn}
       />
       {/* Members overlay removed */}
-      <NodesOverlay 
-        isVisible={activeSection === 'nodes'} 
-        onNodeSelect={(node) => {
-          if (node.latitude != null && node.longitude != null) {
-            flyToCoords(node.latitude, node.longitude);
-          }
-        }}
-      />
+      <NodesOverlay isVisible={activeSection === 'nodes'} />
       <QuestsOverlay isVisible={activeSection === 'quests'} />
 
       {/* Global Overlays */}

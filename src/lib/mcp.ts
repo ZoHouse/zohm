@@ -33,7 +33,7 @@ export async function withMomentum<T>(
  * Preserves existing state during updates
  * Only applies changes that don't break current flow
  */
-export function preserveFlow<T extends Record<string, any>>(
+export function preserveFlow<T extends Record<string, unknown>>(
   current: T,
   updates: Partial<T>
 ): T {
@@ -53,7 +53,7 @@ export function preserveFlow<T extends Record<string, any>>(
  * Wraps operations with graceful error boundaries
  * Errors bend the flow rather than breaking it
  */
-export function withGracefulError<T extends (...args: any[]) => any>(
+export function withGracefulError<T extends (...args: unknown[]) => unknown>(
   fn: T,
   errorHandler: (error: Error, ...args: Parameters<T>) => ReturnType<T>
 ): T {
@@ -72,13 +72,13 @@ export function withGracefulError<T extends (...args: any[]) => any>(
 export interface MCPErrorState {
   hasError: boolean;
   error?: Error;
-  fallbackValue?: any;
+  fallbackValue?: unknown;
   retryable: boolean;
 }
 
 export function createErrorState(
   error: Error | null,
-  fallback?: any,
+  fallback?: unknown,
   retryable = true
 ): MCPErrorState {
   return {
@@ -206,13 +206,13 @@ export function createSmoothTransition<T>(
 /**
  * Wraps a component/function to follow MCP principles
  */
-export function withMCP<T extends (...args: any[]) => any>(
+export function withMCP<T extends (...args: unknown[]) => ReturnType<T>>(
   fn: T,
   options: {
     preserveMomentum?: boolean;
     gracefulErrors?: boolean;
     checkpoints?: string[];
-    logger?: (message: string, data?: any) => void;
+    logger?: (message: string, data?: unknown) => void;
   } = {}
 ): T {
   const { preserveMomentum = true, gracefulErrors = true, checkpoints = [], logger } = options;

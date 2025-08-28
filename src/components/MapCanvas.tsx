@@ -191,9 +191,9 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
     partnerNodeMarkers.current = [];
 
     console.log('🌐 Adding partner node markers...');
-    return; // legacy code removed; partner nodes now rendered via overlay
+    return; // partner node markers handled elsewhere
     
-    // PARTNER_NODES.forEach(node => {
+    /* Legacy example code removed
       try {
         const nodePopup = new mapboxgl.Popup({
           closeButton: true,
@@ -229,11 +229,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         // Create custom marker element
         const markerElement = document.createElement('div');
         markerElement.className = 'partner-node-marker';
-        markerElement.innerHTML = `
-          <div class="partner-node-marker-inner" style="background-color: ${getTypeColor(node.type)}; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s ease;">
-            ${getTypeIcon(node.type)}
-          </div>
-        `;
+        markerElement.innerHTML = '';
 
         // Add hover effects
         markerElement.addEventListener('mouseenter', () => {
@@ -261,34 +257,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         };
 
         // Create popup content
-        const popupContent = `
-          <div class="p-1">
-            <div class="flex items-center gap-2 mb-2">
-              <span style="font-size: 20px;">${getTypeIcon(node.type)}</span>
-              <div>
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #2a251d;">${node.name}</h3>
-                <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: capitalize;">${node.type} • ${node.status}</p>
-              </div>
-            </div>
-            <p style="margin: 8px 0; font-size: 13px; color: #2a251d; line-height: 1.4;">${node.description}</p>
-            <div style="margin: 8px 0; font-size: 12px; color: #6b7280;">
-              📍 ${node.location.city}, ${node.location.country}
-              ${node.memberCount ? ` • ${formatMemberCount(node.memberCount)}` : ''}
-            </div>
-            <div style="margin: 8px 0;">
-              ${node.features.slice(0, 3).map(feature => 
-                `<span style="display: inline-block; padding: 2px 6px; margin: 2px; background: #f3f4f6; color: #374151; font-size: 11px; border-radius: 4px;">${feature}</span>`
-              ).join('')}
-              ${node.features.length > 3 ? `<span style="display: inline-block; padding: 2px 6px; margin: 2px; background: #e5e7eb; color: #6b7280; font-size: 11px; border-radius: 4px;">+${node.features.length - 3}</span>` : ''}
-            </div>
-            ${node.website ? `
-              <a href="${node.website}" target="_blank" rel="noopener noreferrer" 
-                 style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: ${getTypeColor(node.type)}; color: white; text-decoration: none; font-size: 12px; border-radius: 6px; font-weight: 500;">
-                Visit Node
-              </a>
-            ` : ''}
-          </div>
-        `;
+        const popupContent = '';
 
         nodePopup.setHTML(popupContent);
 
@@ -315,11 +284,11 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
           });
         });
 
-        console.log(`✅ Added partner node marker: ${node.name}`);
+        console.log('✅ Partner node marker (legacy)');
       } catch (error) {
-        console.warn('Error creating partner node marker:', node.name, error);
+        console.warn('Error creating partner node marker:', error);
       }
-    // });
+    */
   };
 
   // Initialize map with proper error handling

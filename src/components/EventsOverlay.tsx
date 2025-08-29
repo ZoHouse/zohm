@@ -74,7 +74,7 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
       />
       <div className="flex-1 overflow-y-auto">
         {filteredEvents.map((event, index) => (
-          <div key={index} onClick={() => onEventClick?.(event)} className="paper-card flex justify-between items-center">
+          <div key={index} onClick={() => { closeMapPopups?.(); onEventClick?.(event); }} className="paper-card flex justify-between items-center">
             <div>
               <h3 className="font-bold text-lg mb-1">{event['Event Name']}</h3>
               <p className="text-sm">{formatDate(event['Date & Time'])}</p>

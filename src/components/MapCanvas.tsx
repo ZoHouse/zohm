@@ -499,19 +499,17 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       if (isNaN(lat) || isNaN(lng)) return;
 
       try {
-        // For now, skip event markers - just use Zo House markers
-        console.log(`⏭️ Skipping event marker for: ${event['Event Name']} (using Zo House markers only)`);
+        // Create custom image marker element
+        const markerElement = document.createElement('img');
+        markerElement.src = '/event-marker.jpg';
+        markerElement.alt = 'Event location';
+        markerElement.style.width = '36px';
+        markerElement.style.height = '36px';
+        markerElement.style.borderRadius = '50%';
+        markerElement.style.cursor = 'pointer';
+        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
         
-        // Create invisible marker for popup functionality
-        const invisibleElement = document.createElement('div');
-        invisibleElement.style.cssText = `
-          width: 1px;
-          height: 1px;
-          background: transparent;
-          cursor: pointer;
-        `;
-        
-        const marker = new mapboxgl.Marker(invisibleElement)
+        const marker = new mapboxgl.Marker(markerElement)
           .setLngLat([lng, lat])
           .addTo(map.current!);
 
@@ -547,7 +545,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
         marker.setPopup(popup);
         
         // Handle marker click
-        marker.on('click', () => {
+        markerElement.addEventListener('click', () => {
           if (currentOpenPopup && currentOpenPopup !== popup) {
             try {
               currentOpenPopup.remove();

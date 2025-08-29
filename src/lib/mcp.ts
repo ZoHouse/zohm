@@ -59,7 +59,7 @@ export function withGracefulError<T extends (...args: unknown[]) => unknown>(
 ): T {
   return ((...args: Parameters<T>): ReturnType<T> => {
     try {
-      return fn(...args);
+      return fn(...args) as ReturnType<T>;
     } catch (error) {
       return errorHandler(error as Error, ...args);
     }

@@ -216,7 +216,6 @@ export default function Home() {
             className="w-16 h-16 mx-auto mb-4"
           />
           <p className="text-lg">Tuning into Zo World</p>
-          <small className="text-white/60">Fetching live events from calendars...</small>
         </div>
       </div>
     );

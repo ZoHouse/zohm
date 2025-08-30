@@ -355,7 +355,7 @@ export interface QuestEntry {
   id: string;
   title: string;
   description: string;
-  points: number;
+  reward: number;
 }
 
 export async function getLeaderboards(): Promise<LeaderboardEntry[] | null> {
@@ -385,7 +385,7 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
     const { data, error } = await supabase
       .from('quests')
       .select('*')
-      .order('points', { ascending: false });
+      .order('reward', { ascending: false });
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {

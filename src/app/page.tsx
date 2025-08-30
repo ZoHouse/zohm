@@ -16,6 +16,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { CALENDAR_URLS } from '@/lib/calendarConfig';
 import mapboxgl from 'mapbox-gl';
+import WalletConnectButton from '@/components/WalletConnectButton';
 
 interface EventData {
   'Event Name': string;
@@ -181,6 +182,12 @@ export default function Home() {
         isVisible={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />
+
+⁠ {/* Wallet Connect Button */}
+      <WalletConnectButton 
+        onProfileClick={() => setIsDashboardOpen(true)} 
+        onProfileSetupClick={() => profileGate.setShowProfileSetup(true)}
+      /> ⁠
 
       {/* Global Profile Setup Gate */}
       {profileGate.showProfileSetup && wallet.isConnected && wallet.address && (

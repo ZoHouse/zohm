@@ -10,7 +10,7 @@ import QuestsOverlay from '@/components/QuestsOverlay';
 import ProfileSetup from '@/components/ProfileSetup';
 import QuantumSyncOverlay from '@/components/QuantumSyncOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
-import { pingSupabase, verifyMembersTable } from '@/lib/supabase';
+import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { useWallet } from '@/hooks/useWallet';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
@@ -34,6 +34,7 @@ export default function Home() {
   const [flyToEvent, setFlyToEvent] = useState<EventData | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   
   // Add profile gate and wallet hooks
   const wallet = useWallet();
@@ -106,6 +107,15 @@ export default function Home() {
     }, 100);
   };
 
+  const handleNodeClick = (node: PartnerNodeRecord) => {
+    console.log('Home page received node click:', node.name);
+    setFlyToNode(node);
+
+    setTimeout(() => {
+      setFlyToNode(null);
+    }, 100);
+  };
+
   const handleMapReady = (map: mapboxgl.Map, closeAllPopups: () => void) => {
     setClosePopupsFn(() => closeAllPopups);
     console.log('Map is ready!');
@@ -134,6 +144,7 @@ export default function Home() {
         className="absolute inset-0" 
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
+        flyToNode={flyToNode}
         events={events}
       />
 
@@ -154,7 +165,11 @@ export default function Home() {
         closeMapPopups={closePopupsFn}
       />
       {/* Members overlay removed */}
-      <NodesOverlay isVisible={activeSection === 'nodes'} />
+      <NodesOverlay 
+        isVisible={activeSection === 'nodes'}
+        onNodeClick={handleNodeClick}
+        closeMapPopups={closePopupsFn}
+      />
       <QuestsOverlay isVisible={activeSection === 'quests'} />
 
       {/* Global Overlays */}

@@ -5,9 +5,11 @@ import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
 
 interface NodesOverlayProps {
   isVisible: boolean;
+  onNodeClick?: (node: PartnerNodeRecord) => void;
+  closeMapPopups?: (() => void) | null;
 }
 
-const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible }) => {
+const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible, onNodeClick, closeMapPopups }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone'>('all');
   const [allNodes, setAllNodes] = useState<PartnerNodeRecord[]>([]);
@@ -84,7 +86,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible }) => {
       </div>
       <div className="flex-1 overflow-y-auto">
         {filteredNodes.map(node => (
-          <div key={node.id} className="paper-card">
+          <div key={node.id} className="paper-card" onClick={() => { closeMapPopups?.(); onNodeClick?.(node); }}>
             <div className="flex items-start justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{getTypeIcon(node.type)}</span>

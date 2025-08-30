@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
+import { PartnerNodeRecord } from '@/lib/supabase';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
 
 // Zo House locations with precise coordinates
@@ -34,10 +35,11 @@ interface MapCanvasProps {
   events: ParsedEvent[];
   onMapReady?: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
   flyToEvent?: ParsedEvent | null;
+  flyToNode?: PartnerNodeRecord | null;
   className?: string;
 }
 
-export default function MapCanvas({ events, onMapReady, flyToEvent, className }: MapCanvasProps) {
+export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, className }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -644,6 +646,73 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, className }:
       console.warn('Error flying to event:', error);
     }
   }, [flyToEvent, markersMap, mapLoaded, currentOpenPopup]);
+
+  // Handle flyToNode (Partner Nodes)
+  useEffect(() => {
+    if (!flyToNode || !map.current || !mapLoaded) return;
+
+    const lat = typeof flyToNode.latitude === 'number' ? flyToNode.latitude : null;
+    const lng = typeof flyToNode.longitude === 'number' ? flyToNode.longitude : null;
+
+    if (lat === null || lng === null) return;
+
+    try {
+      // Close any currently open popup
+      if (currentOpenPopup) {
+        currentOpenPopup.remove();
+      }
+
+      // Prepare popup content for the node
+      const membersText = '';
+      const popupContent = `
+        <h3>${flyToNode.name}</h3>
+        <p>🏷️ ${flyToNode.type.replace('_', ' ')}</p>
+        <p>📍 ${flyToNode.city}, ${flyToNode.country}</p>
+        <p class="line-clamp-3">${flyToNode.description || ''}</p>
+        ${flyToNode.website ? `<div style="margin-top: 12px;"><a href="${flyToNode.website}" target="_blank" class="paper-button">Visit</a></div>` : ''}
+      `;
+
+      const nodePopup = new mapboxgl.Popup({
+        className: 'paper-card',
+        closeButton: true,
+        offset: [0, -15],
+        maxWidth: '300px',
+        anchor: 'bottom'
+      })
+      .setLngLat([lng, lat])
+      .setHTML(popupContent);
+
+      // Animate camera to node location
+      map.current.flyTo({
+        center: [lng, lat],
+        zoom: 17.5,
+        speed: 1.2,
+        curve: 1.4,
+        easing: (t: number) => t
+      });
+
+      const onMoveEnd = () => {
+        setTimeout(() => {
+          if (!map.current) return;
+          nodePopup.addTo(map.current!);
+          setCurrentOpenPopup(nodePopup);
+          activePopups.current.add(nodePopup);
+          nodePopup.on('close', () => {
+            if (currentOpenPopup === nodePopup) {
+              setCurrentOpenPopup(null);
+            }
+            activePopups.current.delete(nodePopup);
+          });
+        }, 150);
+
+        map.current?.off('moveend', onMoveEnd);
+      };
+
+      map.current.on('moveend', onMoveEnd);
+    } catch (error) {
+      console.warn('Error flying to node:', error);
+    }
+  }, [flyToNode, mapLoaded, currentOpenPopup]);
 
   return (
     <div 

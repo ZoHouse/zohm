@@ -48,7 +48,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
-  const resizeHandlerRef = useRef<(() => void) | undefined>();
+  const resizeHandlerRef = useRef<(() => void) | undefined>(undefined);
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;

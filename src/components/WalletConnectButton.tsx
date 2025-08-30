@@ -7,9 +7,11 @@ import { supabase } from '@/lib/supabase';
 interface WalletConnectButtonProps {
   onProfileClick?: () => void;
   onProfileSetupClick?: () => void;
+  onWalletConnected?: () => void; // New callback for when wallet connects
+  inline?: boolean; // Whether to render inline instead of absolute positioned
 }
 
-export default function WalletConnectButton({ onProfileClick, onProfileSetupClick }: WalletConnectButtonProps) {
+export default function WalletConnectButton({ onProfileClick, onProfileSetupClick, onWalletConnected, inline = false }: WalletConnectButtonProps) {
   const { 
     isConnected, 
     address, 
@@ -72,7 +74,16 @@ export default function WalletConnectButton({ onProfileClick, onProfileSetupClic
   }, [isConnected, address]);
 
   const handleConnect = async () => {
-    await connectWallet();
+    console.log('🔴 Red pill button clicked!');
+    const walletAddress = await connectWallet();
+    console.log('💰 Wallet connection result:', walletAddress);
+    // If wallet connected successfully, trigger the ritual
+    if (walletAddress && onWalletConnected) {
+      console.log('🎭 Calling onWalletConnected callback');
+      onWalletConnected();
+    } else {
+      console.log('❌ No wallet address or callback not provided');
+    }
   };
 
   const handleDisconnect = () => {
@@ -152,13 +163,17 @@ export default function WalletConnectButton({ onProfileClick, onProfileSetupClic
     );
   }
 
+  const containerClass = inline 
+    ? "" 
+    : "absolute top-4 left-4 z-30";
+
   return (
-    <div className="absolute top-4 left-4 z-30">
+    <div className={containerClass}>
       <button 
         onClick={handleConnect}
-        className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#333] text-[#f4f1ea] rounded-lg text-sm font-medium transition-colors border-2 border-[#1a1a1a] shadow-[3px_3px_0px_rgba(0,0,0,0.2)] hover:shadow-[4px_4px_0px_rgba(0,0,0,0.3)]"
+        className="red-pill-button"
       >
-        Connect Wallet
+        Take the Red Pill
       </button>
     </div>
   );

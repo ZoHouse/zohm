@@ -3,9 +3,10 @@
 interface NavBarProps {
   onSectionChange: (section: 'events' | 'nodes' | 'quests') => void;
   activeSection: 'events' | 'nodes' | 'quests';
+  onDashboardClick?: () => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection }) => {
+const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashboardClick }) => {
   const navItems = [
     { id: 'events' as const, label: 'Events' },
     { id: 'nodes' as const, label: 'Nodes' },
@@ -14,7 +15,7 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection }) => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-      <div className="paper-nav max-w-md mx-auto">
+      <div className="paper-nav max-w-lg mx-auto">
         <nav className="flex items-center justify-around">
           {navItems.map(item => (
             <button
@@ -25,6 +26,14 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection }) => {
               {item.label}
             </button>
           ))}
+          
+          {/* Dashboard Button */}
+          <button
+            onClick={onDashboardClick}
+            className="paper-nav-item"
+          >
+            Dashboard
+          </button>
         </nav>
       </div>
     </div>

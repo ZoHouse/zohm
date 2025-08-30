@@ -20,6 +20,18 @@ interface ProfileData {
   lng: number | null;
 }
 
+interface ProfileUpdate {
+  wallet: string;
+  name: string;
+  last_seen: string;
+  role: string;
+  bio?: string;
+  culture?: string;
+  lat?: number;
+  lng?: number;
+  calendar_url?: string;
+}
+
 const CULTURE_OPTIONS = [
   'Follow your heart',
   'Zo Accelerator',
@@ -128,6 +140,13 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     }
   };
 
+  const handleCompleteEarly = () => {
+    // Allow completing with just name (minimum required)
+    if (profileData.name.trim()) {
+      handleSubmit();
+    }
+  };
+
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -150,19 +169,32 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       });
 
       // Try upsert instead of update in case user doesn't exist
+      // Only save fields that have been filled
+      const profileUpdate: ProfileUpdate = {
+        wallet: walletAddress.toLowerCase(),
+        name: profileData.name.trim(),
+        last_seen: new Date().toISOString(),
+        role: 'Member' // Default role
+      };
+
+      // Only add optional fields if they have values
+      if (profileData.bio.trim()) {
+        profileUpdate.bio = profileData.bio.trim();
+      }
+      if (profileData.culture) {
+        profileUpdate.culture = profileData.culture;
+      }
+      if (profileData.lat && profileData.lng) {
+        profileUpdate.lat = profileData.lat;
+        profileUpdate.lng = profileData.lng;
+      }
+      if (profileData.calendar_url.trim()) {
+        profileUpdate.calendar_url = profileData.calendar_url.trim();
+      }
+
       const { data, error } = await supabase
         .from('members')
-        .upsert({
-          wallet: walletAddress.toLowerCase(),
-          name: profileData.name.trim(),
-          bio: profileData.bio.trim(),
-          culture: profileData.culture,
-          lat: profileData.lat,
-          lng: profileData.lng,
-          calendar_url: profileData.calendar_url.trim() || null,
-          last_seen: new Date().toISOString(),
-          role: 'Member' // Default role
-        }, {
+        .upsert(profileUpdate, {
           onConflict: 'wallet'
         })
         .select();
@@ -170,10 +202,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       console.log('💾 Supabase upsert result:', { data, error });
 
       if (error) {
+        console.error('❌ Supabase error details:', error);
         throw error;
       }
 
       console.log('✅ Profile setup completed successfully');
+      console.log('📊 Saved profile data:', data);
       onComplete();
       
       // Open dashboard after successful profile creation
@@ -412,13 +446,26 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             Back
           </button>
           
-          <button
-            onClick={handleNext}
-            disabled={isLoading}
-            className="paper-button px-4 sm:px-6 py-2 text-sm sm:text-base"
-          >
-            {isLoading ? 'Saving...' : currentStep === 5 ? 'Complete Setup' : 'Next'}
-          </button>
+          <div className="flex gap-2">
+            {/* Complete Later button - show after step 1 if name is filled */}
+            {currentStep > 1 && profileData.name.trim() && (
+              <button
+                onClick={handleCompleteEarly}
+                disabled={isLoading}
+                className="paper-card px-3 sm:px-4 py-2 text-sm sm:text-base hover:shadow-md"
+              >
+                Complete Later
+              </button>
+            )}
+            
+            <button
+              onClick={handleNext}
+              disabled={isLoading}
+              className="paper-button px-4 sm:px-6 py-2 text-sm sm:text-base"
+            >
+              {isLoading ? 'Saving...' : currentStep === 5 ? 'Complete Setup' : 'Next'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

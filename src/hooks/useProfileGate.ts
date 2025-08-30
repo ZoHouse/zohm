@@ -29,14 +29,10 @@ export function useProfileGate() {
     console.log('🔧 showProfileSetup changed to:', showProfileSetup);
   }, [showProfileSetup]);
 
-  // Check if profile is complete (all mandatory fields)
+  // Check if profile is complete (only name is mandatory for initial access)
   const isProfileComplete = memberProfile && 
-    memberProfile.name && memberProfile.bio && memberProfile.culture &&
-    memberProfile.lat && memberProfile.lng &&
-    memberProfile.name?.trim() !== '' && 
-    memberProfile.bio?.trim() !== '' && 
-    memberProfile.culture?.trim() !== '' &&
-    memberProfile.lat !== 0 && memberProfile.lng !== 0;
+    memberProfile.name && 
+    memberProfile.name?.trim() !== '';
 
   // Load member profile
   const loadMemberProfile = useCallback(async () => {

@@ -35,7 +35,7 @@ body {
 }
 
 
-/* Modern Glass Utilities */
+/* Legacy glass utilities - unused, can be removed in future cleanup */
 .liquid-glass-pane {
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(40px) saturate(200%);
@@ -99,15 +99,25 @@ h1, h2, h3 {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-h1, h2, h3 {
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
 /* Hide mapbox controls on mobile */
 .mapboxgl-ctrl-bottom-left,
 .mapboxgl-ctrl-bottom-right {
   display: none !important;
+}
+
+/* CSS custom properties for viewport calculations */
+:root {
+  --vh: 1vh;
+  --mobile-vh: 100vh;
+  --available-height: 100vh;
+  --real-vh: 100vh;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Disable default mapbox popup animations - appear directly at pin */
+.paper-card .mapboxgl-popup-content {
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Scrollbar Styling */
@@ -246,6 +256,24 @@ h1, h2, h3 {
       0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
+  /* Mobile viewport fixes */
+  body, html {
+    height: 100vh;
+    height: calc(var(--available-height, 100vh));
+    height: 100dvh;
+    height: -webkit-fill-available;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Prevent scrolling and bounce on mobile */
+  body {
+    position: fixed;
+    width: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Mobile button active states */
   .glass-icon-button:active {
     transform: scale(0.95);
@@ -345,6 +373,16 @@ h1, h2, h3 {
   overflow: hidden;
 }
 
+/* Ensure map popups are visible and clickable */
+.mapboxgl-popup {
+  z-index: 1000 !important;
+}
+
+.mapboxgl-popup-content {
+  z-index: 1001 !important;
+  pointer-events: auto !important;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -380,6 +418,40 @@ h1, h2, h3 {
 .paper-card:hover {
   box-shadow: 4px 4px 0px var(--paper-ink);
   transform: translate(-4px, -4px);
+}
+
+/* Disable hover lift for specific cards when needed */
+.paper-card.no-hover:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Zo House event styling - Orange theme */
+.zo-house-event {
+  border-color: #ea580c !important; /* Orange-600 */
+  background-color: #fff7ed; /* Orange-50 */
+}
+
+.zo-house-event:hover {
+  box-shadow: 4px 4px 0px #ea580c !important;
+  border-color: #ea580c !important;
+}
+
+.zo-house-badge {
+  color: #ea580c;
+  margin-right: 8px;
+}
+
+.zo-house-button {
+  background-color: #ea580c !important; /* Orange-600 */
+  border-color: #ea580c !important;
+  color: white !important;
+}
+
+.zo-house-button:hover {
+  background-color: #dc2626 !important; /* Red-600 for hover */
+  border-color: #dc2626 !important;
+  box-shadow: 2px 2px 0px #dc2626 !important;
 }
 
 .paper-button {

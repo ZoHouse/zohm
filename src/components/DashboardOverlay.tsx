@@ -4,7 +4,6 @@ import React from 'react';
 import ProfilePanel from './ProfilePanel';
 import MainQuestCard from './MainQuestCard';
 import SideQuestCard from './SideQuestCard';
-import MiniMap from './MiniMap';
 import { X } from 'lucide-react';
 
 interface DashboardOverlayProps {
@@ -17,44 +16,44 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose 
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8">
-      {/* Backdrop */}
+      {/* Backdrop - subtle, no blur for paper UI */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-lg"
+        className="absolute inset-0 bg-black/30"
         onClick={onClose}
       />
 
-      {/* Main Container */}
-      <div className="relative w-full h-full max-w-7xl mx-auto flex flex-col pointer-events-auto">
-        {/* Header for Close Button */}
-        <div className="relative flex-shrink-0 h-12 sm:h-16">
-            <button
-              onClick={onClose}
-              className="absolute top-2 sm:top-4 right-0 glass-icon-button w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center z-10"
-              aria-label="Close dashboard"
-            >
-              <X size={16} className="sm:w-5 sm:h-5" />
-            </button>
+      {/* Paper UI Modal Container */}
+      <div className="relative paper-overlay w-[95vw] max-w-6xl h-[90vh] mx-auto flex flex-col overflow-hidden pointer-events-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold">Dashboard</h2>
+          <button
+            onClick={onClose}
+            className="paper-button w-8 h-8 flex items-center justify-center"
+            aria-label="Close dashboard"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-grow flex flex-col lg:flex-row gap-3 sm:gap-6 h-[calc(100%-3rem)] sm:h-[calc(100%-4rem)]">
-            {/* Left Side: Profile Panel */}
-            <div className="w-full lg:w-1/3 h-1/3 lg:h-full">
-                <ProfilePanel />
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+          {/* Left: Profile Panel */}
+          <div className="lg:col-span-1 h-full overflow-hidden">
+            <div className="h-full overflow-auto">
+              <ProfilePanel />
             </div>
+          </div>
 
-            {/* Right Side: Main Content */}
-            <div className="w-full lg:w-2/3 h-2/3 lg:h-full flex flex-col gap-3 sm:gap-6">
-                <div className="h-1/3 lg:h-1/4">
-                    <MainQuestCard />
-                </div>
-                <div className="h-1/3 lg:h-1/4">
-                    <SideQuestCard />
-                </div>
-                <div className="h-1/3 lg:h-1/2">
-                    <MiniMap />
-                </div>
+          {/* Right: Cards */}
+          <div className="lg:col-span-2 h-full grid grid-rows-2 gap-4 overflow-hidden">
+            <div className="paper-card">
+              <MainQuestCard />
             </div>
+            <div className="paper-card">
+              <SideQuestCard />
+            </div>
+          </div>
         </div>
       </div>
     </div>

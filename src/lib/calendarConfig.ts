@@ -1,16 +1,46 @@
-// Calendar Configuration - Extracted from original map.zo project
-// These are the exact same calendar URLs used in the working HTML version
+// Calendar Configuration - Using Supabase for scalable calendar management
+import { getActiveCalendars } from './supabase';
 
-// Calendar IDs for our API route
-export const CALENDAR_IDS = [
-  'cal-ZVonmjVxLk7F2oM', // Bangalore
-  'cal-3YNnBTToy9fnnjQ', // San Francisco
-  'cal-4BIGfE8WhTFQj9H'  // ETHGlobal (global + Delhi etc.)
+// Minimal fallback for emergency cases only
+const EMERGENCY_FALLBACK_URLS = [
+  '/api/calendar?id=cal-ZVonmjVxLk7F2oM', // Zo House Bangalore
+  '/api/calendar?id=cal-3YNnBTToy9fnnjQ', // Zo House San Francisco
+  '/api/calendar?id=cal-4BIGfE8WhTFQj9H'  // ETHGlobal
 ];
 
-// Generate URLs for our API route
-export const CALENDAR_URLS = CALENDAR_IDS.map(id => `/api/calendar?id=${id}`);
+// Dynamic calendar URLs from database
+export async function getCalendarUrls(): Promise<string[]> {
+  try {
+    const calendars = await getActiveCalendars();
+    if (!calendars || calendars.length === 0) {
+      console.log('📅 Database unavailable, using emergency fallback calendar URLs');
+      return EMERGENCY_FALLBACK_URLS;
+    }
+    
+    // Convert URLs to use our proxy API to avoid CORS issues
+    const urls = calendars.map(calendar => {
+      if (calendar.url.startsWith('http')) {
+        // Direct URL - proxy it through our API
+        return `/api/calendar?url=${encodeURIComponent(calendar.url)}`;
+      } else {
+        // Already a relative API URL
+        return calendar.url;
+      }
+    });
+    
+    console.log('📅 Loaded calendar URLs from database:', urls);
+    return urls;
+  } catch (error) {
+    console.error('Error fetching calendar URLs, using emergency fallback:', error);
+    return EMERGENCY_FALLBACK_URLS;
+  }
+}
 
-// Map Configuration (same as original)
-export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+// Map Configuration (supports multiple common env var names)
+export const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_GL_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX ||
+  '';
 export const DEFAULT_CENTER: [number, number] = [77.6413, 12.9141]; // Bangalore, Karnataka 

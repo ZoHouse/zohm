@@ -24,6 +24,11 @@ export function useProfileGate() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
+  // Debug logging for showProfileSetup changes
+  useEffect(() => {
+    console.log('🔧 showProfileSetup changed to:', showProfileSetup);
+  }, [showProfileSetup]);
+
   // Check if profile is complete (all mandatory fields)
   const isProfileComplete = memberProfile && 
     memberProfile.name && memberProfile.bio && memberProfile.culture &&

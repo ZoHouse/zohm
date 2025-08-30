@@ -401,3 +401,110 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
     return null;
   }
 }
+
+// Calendar management
+export interface CalendarSource {
+  id: string;
+  name: string;
+  url: string;
+  type: 'luma' | 'ical' | 'google' | 'outlook';
+  is_active: boolean;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const createCalendarsTableSQL = `
+create table if not exists calendars (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  url text not null unique,
+  type text not null check (type in ('luma','ical','google','outlook')),
+  is_active boolean not null default true,
+  description text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+create index if not exists idx_calendars_active on calendars(is_active);
+create index if not exists idx_calendars_type on calendars(type);
+
+-- Insert default calendars
+insert into calendars (name, url, type, description) values
+('Zo House Bangalore', '/api/calendar?id=cal-ZVonmjVxLk7F2oM', 'luma', 'Bangalore events calendar'),
+('Zo House San Francisco', '/api/calendar?id=cal-3YNnBTToy9fnnjQ', 'luma', 'San Francisco events calendar'),
+('ETHGlobal Events', '/api/calendar?id=cal-4BIGfE8WhTFQj9H', 'luma', 'Global ETH events and Delhi'),
+('Singapore Token Events', '/api/calendar?id=cal-WfTOVDTJaAVqK3S', 'luma', 'Singapore blockchain and token events calendar'),
+('ETH Delhi Side Events', 'https://api2.luma.com/ics/get?entity=calendar&id=cal-9YHHydCy2chZBAY', 'ical', 'ETH Delhi side events - India Blockchain Month, hackathons, coworking sessions, founder meetups'),
+('Mumbai Events', 'https://api2.luma.com/ics/get?entity=discover&id=discplace-Q5hkYsjZs1ZDJcU', 'ical', 'Mumbai community events - running clubs, meetups, founder events'),
+('Cursor Community', 'https://api2.luma.com/ics/get?entity=calendar&id=cal-61Cv6COs4g9GKw7', 'ical', 'Global Cursor AI editor meetups, workshops, and developer community events'),
+('Singapore Events', 'https://api2.luma.com/ics/get?entity=discover&id=discplace-mUbtdfNjfWaLQ72', 'ical', 'Singapore tech, AI, blockchain, and startup events - TOKEN2049, SuiFest, founder meetups'),
+('Taipei Blockchain Week', 'https://api2.luma.com/ics/get?entity=calendar&id=cal-8CC17T4kHupzdLP', 'ical', 'Taipei Blockchain Week - Major Asia blockchain conference with exclusive parties, VIP events, and networking'),
+('Warsaw Blockchain Week', 'https://api2.luma.com/ics/get?entity=calendar&id=cal-B6JZWMLYZHCwPVD', 'ical', 'Warsaw Blockchain Week - European blockchain conference with ETHWarsaw, hackathons, and networking events'),
+('Korea Blockchain Week', 'https://api2.luma.com/ics/get?entity=calendar&id=cal-RyyePFWFxRM2ly8', 'ical', 'Korea Blockchain Week - Seoul blockchain conference with exclusive yacht parties, builder cafes, and fitness meetups')
+on conflict (url) do nothing;
+`;
+
+export async function getActiveCalendars(): Promise<CalendarSource[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('calendars')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+
+    if (error) {
+      if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+        console.log('ℹ️ calendars table not found. Database may need setup.');
+        return [];
+      }
+      console.error('Error fetching calendars:', error);
+      return null;
+    }
+    return (data as CalendarSource[]) || [];
+  } catch (e) {
+    console.error('Exception fetching calendars:', e);
+    return null;
+  }
+}
+
+export async function addCalendar(calendar: Omit<CalendarSource, 'id' | 'created_at' | 'updated_at'>): Promise<CalendarSource | null> {
+  try {
+    const { data, error } = await supabase
+      .from('calendars')
+      .insert([calendar])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding calendar:', error);
+      return null;
+    }
+
+    console.log('✅ Calendar added:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception adding calendar:', error);
+    return null;
+  }
+}
+
+export async function updateCalendarStatus(id: string, isActive: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('calendars')
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating calendar status:', error);
+      return false;
+    }
+
+    console.log(`✅ Calendar ${id} status updated to ${isActive ? 'active' : 'inactive'}`);
+    return true;
+  } catch (error) {
+    console.error('Exception updating calendar status:', error);
+    return false;
+  }
+}

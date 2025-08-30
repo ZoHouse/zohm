@@ -89,7 +89,13 @@ export function parseICS(icsData: string): ParsedEvent[] {
       
       // Handle line continuation (lines starting with space or tab)
       if (line.startsWith(' ') || line.startsWith('\t')) {
-        multiLineValue += line.substring(1);
+        // For URLs, don't add spaces between continued lines
+        const continuationText = line.substring(1);
+        if (multiLineValue.includes('https://') || continuationText.includes('https://')) {
+          multiLineValue += continuationText;
+        } else {
+          multiLineValue += ' ' + continuationText;
+        }
         continue;
       }
       
@@ -251,11 +257,13 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
       break;
       
     case 'DESCRIPTION':
-      // Extract URL from description for Event URL
-      const urlMatch = value.match(/https:\/\/lu\.ma\/[^\s\n]+/);
+      // Extract URL from description for Event URL - handle long URLs properly
+      const urlMatch = value.match(/https:\/\/lu\.ma\/[^\s\n\\]+/);
       if (urlMatch) {
-        event['Event URL'] = urlMatch[0];
-        console.log(`🔗 Found event URL: ${urlMatch[0]}`);
+        // Remove any trailing backslashes or escape characters
+        const cleanUrl = urlMatch[0].replace(/\\+$/, '');
+        event['Event URL'] = cleanUrl;
+        console.log(`🔗 Found event URL: ${cleanUrl}`);
       }
       
       // If location is missing or is a URL, try to extract address from description

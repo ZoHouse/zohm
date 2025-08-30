@@ -37,10 +37,10 @@ const MainQuestCard = () => {
     };
 
     return (
-        <div className="relative liquid-glass-pane rounded-lg overflow-hidden h-full flex flex-col p-6">
+        <div className="relative paper-card overflow-hidden h-full flex flex-col p-4">
             <div className="flex justify-between items-center mb-2">
                 <h3 className="font-bold text-xl">Main Quest</h3>
-                <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className="glass-icon-button p-1.5">
+                <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className="paper-button px-2 py-1">
                     {isEditing ? <Save size={16} /> : <Edit size={16} />}
                 </button>
             </div>
@@ -51,11 +51,11 @@ const MainQuestCard = () => {
                     value={mainQuestUrl}
                     onChange={(e) => setMainQuestUrl(e.target.value)}
                     placeholder="https://your-main-quest.com"
-                    className="bg-transparent border-b-2 border-gray-500 focus:border-blue-500 outline-none text-lg w-full mb-4"
+                    className="paper-input w-full mb-4"
                     autoFocus
                 />
             ) : (
-                <p className="text-gray-300 text-sm mb-4 flex-grow">
+                <p className="text-sm mb-4 flex-grow">
                     {mainQuestUrl || 'No main quest link provided.'}
                 </p>
             )}
@@ -64,7 +64,8 @@ const MainQuestCard = () => {
                 href={mainQuestUrl || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`solid-button w-full py-2.5 mt-auto flex items-center justify-center space-x-2 ${!mainQuestUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+                aria-disabled={!mainQuestUrl}
+                className={`paper-button w-full py-2.5 mt-auto flex items-center justify-center gap-2 ${!mainQuestUrl ? 'opacity-50 pointer-events-none' : ''}`}
             >
                 <BookOpen size={16} />
                 <span>Open Quest</span>

@@ -4,16 +4,23 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const calendarId = searchParams.get('id');
+    const directUrl = searchParams.get('url');
     
-    if (!calendarId) {
-      return NextResponse.json({ error: 'Calendar ID is required' }, { status: 400 });
+    let fetchUrl: string;
+    
+    if (directUrl) {
+      // Direct URL provided (for external iCal feeds)
+      fetchUrl = decodeURIComponent(directUrl);
+      console.log('🔄 Fetching direct calendar:', fetchUrl);
+    } else if (calendarId) {
+      // Luma calendar ID provided (legacy format)
+      fetchUrl = `https://api.lu.ma/ics/get?entity=calendar&id=${calendarId}`;
+      console.log('🔄 Fetching Luma calendar:', fetchUrl);
+    } else {
+      return NextResponse.json({ error: 'Calendar ID or URL is required' }, { status: 400 });
     }
     
-    const lumaUrl = `https://api.lu.ma/ics/get?entity=calendar&id=${calendarId}`;
-    
-    console.log('🔄 Fetching calendar:', lumaUrl);
-    
-    const response = await fetch(lumaUrl, {
+    const response = await fetch(fetchUrl, {
       headers: {
         'Accept': 'text/calendar, text/plain, */*',
         'User-Agent': 'Zo-House-Calendar/1.0'

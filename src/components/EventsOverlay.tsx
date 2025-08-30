@@ -20,26 +20,17 @@ interface EventsOverlayProps {
 
 const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEventClick, closeMapPopups }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeLocation, setActiveLocation] = useState('all');
   const [filteredEvents, setFilteredEvents] = useState<EventData[]>(events);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     let filtered = events;
-    if (activeLocation !== 'all') {
-      filtered = filtered.filter(event => {
-        const loc = event.Location.toLowerCase();
-        if (activeLocation === 'bangalore') return loc.includes('bangalore') || loc.includes('bengaluru');
-        if (activeLocation === 'sanfrancisco') return loc.includes('san francisco') || loc.includes('sf');
-        return true;
-      });
-    }
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(e => e['Event Name'].toLowerCase().includes(lower) || e.Location.toLowerCase().includes(lower));
     }
     setFilteredEvents(filtered);
-  }, [events, searchTerm, activeLocation]);
+  }, [events, searchTerm]);
 
   const formatDate = (date: string) => {
     const eventDate = new Date(date);
@@ -49,22 +40,19 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
     });
   };
 
+  // Check if event is from Zo House (based on location containing "Zo House")
+  const isZoHouseEvent = (event: EventData) => {
+    return event.Location && (
+      event.Location.toLowerCase().includes('zo house') ||
+      event.Location.toLowerCase().includes('zohouse')
+    );
+  };
+
   if (!isVisible) return null;
 
   const renderContent = () => (
     <>
       <h2 className="text-2xl font-bold mb-4 text-center">Events</h2>
-      <div className="flex gap-2 mb-4">
-        {['all', 'bangalore', 'sanfrancisco'].map(loc => (
-          <button 
-            key={loc} 
-            onClick={() => setActiveLocation(loc)} 
-            className={`paper-button flex-1 ${activeLocation === loc ? 'active' : ''}`}
-          >
-            {loc === 'all' ? 'All' : loc === 'bangalore' ? 'BLR' : 'SF'}
-          </button>
-        ))}
-      </div>
       <input 
         type="text"
         placeholder="Search events..."
@@ -73,22 +61,38 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
         className="paper-input w-full mb-4"
       />
       <div className="flex-1 overflow-y-auto">
-        {filteredEvents.map((event, index) => (
-          <div key={index} onClick={() => { closeMapPopups?.(); onEventClick?.(event); }} className="paper-card flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-lg mb-1">{event['Event Name']}</h3>
-              <p className="text-sm">{formatDate(event['Date & Time'])}</p>
-              <p className="text-sm">{event.Location}</p>
-            </div>
-            {event['Event URL'] && (
-              <div className="flex-shrink-0 ml-4">
-                <a href={event['Event URL']} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="paper-button">
-                  Register
-                </a>
+        {filteredEvents.map((event, index) => {
+          const isZoEvent = isZoHouseEvent(event);
+          return (
+            <div 
+              key={index} 
+              onClick={() => { closeMapPopups?.(); onEventClick?.(event); }} 
+              className={`paper-card flex justify-between items-center gap-3 ${isZoEvent ? 'zo-house-event' : ''}`}
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg mb-1 line-clamp-2">
+                  {isZoEvent && <span className="zo-house-badge">🏠</span>}
+                  {event['Event Name']}
+                </h3>
+                <p className="text-sm">{formatDate(event['Date & Time'])}</p>
+                <p className="text-sm line-clamp-1">{event.Location}</p>
               </div>
-            )}
-          </div>
-        ))}
+              {event['Event URL'] && (
+                <div className="flex-shrink-0">
+                  <a 
+                    href={event['Event URL']} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    onClick={e => e.stopPropagation()} 
+                    className={`paper-button text-sm px-3 py-1 ${isZoEvent ? 'zo-house-button' : ''}`}
+                  >
+                    Register
+                  </a>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <a 
         href="https://zostel.typeform.com/to/LgcBfa0M" 

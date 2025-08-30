@@ -48,6 +48,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
+  const resizeHandlerRef = useRef<(() => void) | undefined>();
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -73,18 +74,6 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       
       // Reset current popup state
       setCurrentOpenPopup(null);
-      
-      // Fallback: also close any DOM popups that might exist
-      const popupElements = document.querySelectorAll('.mapboxgl-popup');
-      console.log('Found', popupElements.length, 'popup elements in DOM');
-      popupElements.forEach(popupElement => {
-        try {
-          popupElement.remove();
-        } catch (error) {
-          console.warn('Error removing popup element:', error);
-        }
-      });
-      
       console.log('✅ All popups closed');
     } catch (error) {
       console.warn('Error closing popups:', error);
@@ -152,6 +141,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
 
         // Handle marker click
         markerElement.addEventListener('click', () => {
+          // Ensure previous popups are closed via central mechanism
+          closeAllPopups();
           if (currentOpenPopup && currentOpenPopup !== zoPopup) {
             try {
               currentOpenPopup.remove();
@@ -159,6 +150,12 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
             } catch (error) {
               console.warn('Error removing popup:', error);
             }
+          }
+          // Open the popup anchored to this marker
+          try {
+            zoMarker.togglePopup();
+          } catch (error) {
+            console.warn('Error opening Zo House popup:', error);
           }
           setCurrentOpenPopup(zoPopup);
           activePopups.current.add(zoPopup);
@@ -311,11 +308,31 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         style: 'mapbox://styles/mapbox/standard'
       });
 
+      // Ensure the map resizes correctly when container size changes
+      const handleResize = () => {
+        try {
+          map.current?.resize();
+        } catch (error) {
+          console.warn('Map resize error:', error);
+        }
+      };
+      resizeHandlerRef.current = handleResize;
+      window.addEventListener('resize', handleResize);
+
       // Wait for map to load before setting up features
       map.current.on('load', () => {
         if (!map.current) return;
         
         setMapLoaded(true);
+
+        // Force a resize after load to render tiles if container was hidden/absolute
+        try {
+          map.current.resize();
+          setTimeout(() => map.current && map.current.resize(), 50);
+          setTimeout(() => map.current && map.current.resize(), 250);
+        } catch (error) {
+          console.warn('Post-load resize error:', error);
+        }
         
         // Set up night mode and hide labels
         try {
@@ -460,6 +477,14 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         map.current = null;
         setMapLoaded(false);
       }
+      // Clean up resize listener
+      if (resizeHandlerRef.current) {
+        try {
+          window.removeEventListener('resize', resizeHandlerRef.current);
+        } catch (error) {
+          // ignore
+        }
+      }
     };
   }, []);
 
@@ -534,6 +559,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           ` : ''}
         `;
 
+        // Create popup once and reuse it
         const popup = new mapboxgl.Popup({
             className: 'paper-card',
             closeButton: true,
@@ -544,27 +570,40 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           .setLngLat([lng, lat])
           .setHTML(popupContent);
 
-        marker.setPopup(popup);
-        
-        // Handle marker click
-        markerElement.addEventListener('click', () => {
-          if (currentOpenPopup && currentOpenPopup !== popup) {
-            try {
-              currentOpenPopup.remove();
-              activePopups.current.delete(currentOpenPopup); // Remove from tracked popups
-            } catch (error) {
-              console.warn('Error removing popup:', error);
-            }
-          }
-          setCurrentOpenPopup(popup);
-          activePopups.current.add(popup); // Add to tracked popups
+        // Handle marker click - use the single popup
+        markerElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log('🖱️ Event marker clicked:', event['Event Name']);
           
-          popup.on('close', () => {
-            if (currentOpenPopup === popup) {
-              setCurrentOpenPopup(null);
+          try {
+            // Close all other popups first
+            activePopups.current.forEach(p => {
+              if (p !== popup) {
+                try { p.remove(); } catch (err) { /* ignore */ }
+              }
+            });
+            activePopups.current.clear();
+            
+            // Open this popup if not already open
+            if (!popup.isOpen() && map.current) {
+              popup.addTo(map.current);
+              activePopups.current.add(popup);
+              setCurrentOpenPopup(popup);
+              
+              console.log('✅ Event popup opened for:', event['Event Name']);
+              
+              // Handle popup close
+              popup.once('close', () => {
+                activePopups.current.delete(popup);
+                if (currentOpenPopup === popup) {
+                  setCurrentOpenPopup(null);
+                }
+              });
             }
-            activePopups.current.delete(popup); // Remove from tracked popups
-          });
+            
+          } catch (error) {
+            console.error('❌ Error opening event popup:', error);
+          }
         });
 
         // Store marker in map

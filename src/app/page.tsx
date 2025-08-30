@@ -5,16 +5,14 @@ import MapCanvas from '@/components/MapCanvas';
 import NavBar from '@/components/NavBar';
 import EventsOverlay from '@/components/EventsOverlay';
 import NodesOverlay from '@/components/NodesOverlay';
-import ProfileOverlay from '@/components/ProfileOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import ProfileSetup from '@/components/ProfileSetup';
-import QuantumSyncOverlay from '@/components/QuantumSyncOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { useWallet } from '@/hooks/useWallet';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
-import { CALENDAR_URLS } from '@/lib/calendarConfig';
+import { getCalendarUrls } from '@/lib/calendarConfig';
 import mapboxgl from 'mapbox-gl';
 import WalletConnectButton from '@/components/WalletConnectButton';
 
@@ -33,7 +31,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
   const [flyToEvent, setFlyToEvent] = useState<EventData | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   
@@ -68,14 +65,15 @@ export default function Home() {
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
       try {
-        // Use calendar URLs from configuration
-        const calendarUrls = CALENDAR_URLS;
+        // Get calendar URLs dynamically from database
+        const calendarUrls = await getCalendarUrls();
         
         console.log('🔄 Fetching live events from iCal feeds...');
+        console.log('📅 Using calendar URLs:', calendarUrls);
         const liveEvents = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
         
         if (liveEvents.length > 0) {
-          console.log('✅ Loaded', liveEvents.length, 'live events');
+          console.log('✅ Loaded', liveEvents.length, 'live events from', calendarUrls.length, 'calendars');
           setEvents(liveEvents);
         } else {
           console.log('⚠️ No live events found');
@@ -178,10 +176,6 @@ export default function Home() {
         isVisible={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
       />
-      <ProfileOverlay 
-        isVisible={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
 
 ⁠ {/* Wallet Connect Button */}
       <WalletConnectButton 
@@ -190,12 +184,13 @@ export default function Home() {
       /> ⁠
 
       {/* Global Profile Setup Gate */}
-      {profileGate.showProfileSetup && wallet.isConnected && wallet.address && (
+      {profileGate.showProfileSetup && (
         <ProfileSetup
           isVisible={profileGate.showProfileSetup}
-          walletAddress={wallet.address}
+          walletAddress={wallet.address || ''}
           onComplete={profileGate.completeProfileSetup}
           onClose={() => profileGate.setShowProfileSetup(false)}
+          onOpenDashboard={() => setIsDashboardOpen(true)}
         />
       )}
 
@@ -205,121 +200,7 @@ export default function Home() {
         activeSection={activeSection}
       />
 
-      {/* Custom Styles for Mapbox and Mobile Viewport */}
-      <style jsx global>{`
-        /* Hide any mapbox controls that might interfere with bottom nav */
-        .mapboxgl-ctrl-bottom-left,
-        .mapboxgl-ctrl-bottom-right {
-          display: none !important;
-        }
 
-        /* CSS custom properties for viewport calculations */
-        :root {
-          --vh: 1vh;
-          --mobile-vh: 100vh;
-          --available-height: 100vh;
-          --real-vh: 100vh;
-          --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-        }
-
-        /* Popup styles */
-        .glass-popup {
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(10px);
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Disable default mapbox popup animations - appear directly at pin */
-        .paper-card .mapboxgl-popup-content {
-          animation: none !important;
-          transform: none !important;
-        }
-
-        .glass-popup h3 {
-          margin: 0 0 8px 0;
-          color: #2a251d;
-          font-size: 1rem;
-          font-weight: 600;
-        }
-
-        .glass-popup p {
-          margin: 4px 0;
-          color: #2a251d;
-          font-size: 0.85rem;
-          opacity: 0.8;
-        }
-
-        .popup-register-btn {
-          background: #d4a574;
-          color: #f4f1ea;
-          padding: 8px 16px;
-          border-radius: 8px;
-          text-decoration: none;
-          font-weight: 500;
-          font-size: 0.85rem;
-          display: inline-block;
-          margin-top: 8px;
-          transition: all 0.3s ease;
-          border: 1px solid #d4a574;
-        }
-
-        .popup-register-btn:hover {
-          background: #8b5fbf;
-          border-color: #8b5fbf;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
-        }
-
-        /* Line clamp utility */
-        .line-clamp-3 {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        /* Mobile viewport fixes */
-        @media (max-width: 768px) {
-          body, html {
-            height: 100vh;
-            height: calc(var(--available-height, 100vh));
-            height: 100dvh;
-            height: -webkit-fill-available;
-            overflow: hidden;
-            position: relative;
-          }
-
-          /* Prevent scrolling and bounce on mobile */
-          body {
-            position: fixed;
-            width: 100%;
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: touch;
-          }
-
-          /* Mobile-specific animations */
-          @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-          }
-
-          @keyframes slideDown {
-            from { transform: translateY(0); }
-            to { transform: translateY(100%); }
-          }
-
-          .mobile-sheet-enter {
-            animation: slideUp 0.3s ease-out;
-          }
-
-          .mobile-sheet-exit {
-            animation: slideDown 0.3s ease-in;
-          }
-        }
-      `}</style>
     </main>
   );
 }

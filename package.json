@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@allbridge/bridge-core-sdk": "^3.24.0",
     "@supabase/supabase-js": "^2.52.0",
     "@types/mapbox-gl": "^3.4.1",
     "ethers": "^6.15.0",

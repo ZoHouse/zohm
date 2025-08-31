@@ -86,7 +86,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
         <button className="paper-button" onClick={() => setShowLeaderboard(true)}>View Leaderboard</button>
       </div>
       {!quests || quests.length === 0 ? (
-        <div className="text-center text-gray-600">No quests yet</div>
+        <div className="text-center text-gray-600">No quests available</div>
       ) : (
         <div className="space-y-3 overflow-y-auto">
           {quests.map((q) => (
@@ -95,13 +95,26 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
                 <div>
                   <h3 className="font-semibold text-lg mb-1">{q.title}</h3>
                   <p className="text-sm text-gray-700 mb-2">{q.description}</p>
-                  <div className="text-xs text-gray-600">{q.reward} XP</div>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <span>{q.reward} XP</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      q.status === 'active' ? 'bg-green-100 text-green-800' :
+                      q.status === 'completed' ? 'bg-gray-100 text-gray-600' :
+                      q.status === 'developing' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {q.status}
+                    </span>
+                  </div>
                 </div>
                 <button 
-                  className="paper-button whitespace-nowrap"
-                  onClick={() => handleJoinQuest(q)}
+                  className={`paper-button whitespace-nowrap ${
+                    q.status === 'completed' ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
+                  }`}
+                  onClick={() => q.status !== 'completed' && handleJoinQuest(q)}
+                  disabled={q.status === 'completed'}
                 >
-                  Join Quest
+                  {q.status === 'completed' ? 'Completed' : 'Join Quest'}
                 </button>
               </div>
             </div>

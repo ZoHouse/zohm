@@ -33,28 +33,51 @@ export function useProfileGate() {
   const isProfileComplete = memberProfile && 
     memberProfile.name && 
     memberProfile.name?.trim() !== '';
+    
+  // Debug logging for profile completion
+  useEffect(() => {
+    console.log('🔧 Profile completion check:', {
+      memberProfile,
+      hasName: !!(memberProfile?.name),
+      nameTrimmed: memberProfile?.name?.trim(),
+      isProfileComplete
+    });
+  }, [memberProfile, isProfileComplete]);
 
   // Load member profile
   const loadMemberProfile = useCallback(async () => {
     if (!address) return;
     
+    console.log('🔄 Loading profile for address:', address);
     setIsLoadingProfile(true);
+    
     try {
       const { data, error } = await supabase
         .from('members')
         .select('name, bio, culture, pfp, founder_nfts_count, calendar_url, created_at, lat, lng, main_quest_url, side_quest_url')
         .eq('wallet', address.toLowerCase())
         .single();
+        
+      console.log('🔍 Database query details:', {
+        queryAddress: address.toLowerCase(),
+        resultData: data,
+        error: error
+      });
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading profile:', error);
-        return;
+        return null;
       }
 
+      console.log('📊 Profile data loaded:', data);
       setMemberProfile(data);
+      
+      // Return the profile data so the caller can use it immediately
+      return data;
       
     } catch (error) {
       console.error('Exception loading profile:', error);
+      return null;
     } finally {
       setIsLoadingProfile(false);
     }
@@ -97,9 +120,14 @@ export function useProfileGate() {
 
 
   const completeProfileSetup = (newData: Partial<MemberProfile> = {}) => {
+    console.log('✅ Completing profile setup with data:', newData);
     setShowProfileSetup(false);
     // Optimistically update the profile
-    setMemberProfile(prev => ({ ...prev, ...newData, name: newData.name || prev?.name || '' }));
+    setMemberProfile(prev => {
+      const updated = { ...prev, ...newData, name: newData.name || prev?.name || '' };
+      console.log('🔄 Updated member profile:', updated);
+      return updated;
+    });
   };
 
   return {

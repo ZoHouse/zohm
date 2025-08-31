@@ -8,7 +8,7 @@ import NodesOverlay from '@/components/NodesOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import ProfileSetup from '@/components/ProfileSetup';
 import DashboardOverlay from '@/components/DashboardOverlay';
-import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
+import { pingSupabase, verifyMembersTable, PartnerNodeRecord, supabase } from '@/lib/supabase';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { useWallet } from '@/hooks/useWallet';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
@@ -35,15 +35,15 @@ export default function Home() {
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
 
   const [showRitual, setShowRitual] = useState(false); // Simple ritual state
-  const [isCheckingProfile, setIsCheckingProfile] = useState(false); // Loading state for profile check
+  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null); // User profile status
   
   // Add profile gate and wallet hooks
   const wallet = useWallet();
   const profileGate = useProfileGate();
 
   useEffect(() => {
-    // Initialize Supabase connection
-    const initSupabase = async () => {
+    // Initialize Supabase connection and check user profile status
+    const initApp = async () => {
       try {
         const basicConnection = await pingSupabase();
         if (basicConnection) {
@@ -54,6 +54,34 @@ export default function Home() {
           if (tableVerification.exists) {
             console.log('✅ Members table verification complete');
             console.log('📊 Table status:', tableVerification);
+            
+            // Check if user is already connected and has a profile
+            if (wallet.isConnected && wallet.address) {
+              console.log('🔍 Checking if user profile exists...');
+              setUserProfileStatus('loading');
+              
+              try {
+                const { data, error } = await supabase
+                  .from('members')
+                  .select('name')
+                  .eq('wallet', wallet.address.toLowerCase())
+                  .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                  console.error('Error checking user profile:', error);
+                  setUserProfileStatus('not_exists');
+                } else if (data && data.name) {
+                  console.log('✅ User profile already exists:', data.name);
+                  setUserProfileStatus('exists');
+                } else {
+                  console.log('❌ User profile not found');
+                  setUserProfileStatus('not_exists');
+                }
+              } catch (error) {
+                console.error('Exception checking user profile:', error);
+                setUserProfileStatus('not_exists');
+              }
+            }
           } else {
             console.warn('⚠️ Members table needs setup:', tableVerification.error);
           }
@@ -63,7 +91,7 @@ export default function Home() {
       }
     };
 
-    initSupabase();
+    initApp();
 
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
@@ -105,7 +133,41 @@ export default function Home() {
     
     // Cleanup timeout if component unmounts
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [wallet.isConnected, wallet.address]);
+
+  // Effect to check user profile when wallet connects
+  useEffect(() => {
+    if (wallet.isConnected && wallet.address && userProfileStatus === null) {
+      console.log('🔍 Wallet connected, checking user profile...');
+      setUserProfileStatus('loading');
+      
+      const checkUserProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('members')
+            .select('name')
+            .eq('wallet', wallet.address!.toLowerCase())
+            .single();
+          
+          if (error && error.code !== 'PGRST116') {
+            console.error('Error checking user profile:', error);
+            setUserProfileStatus('not_exists');
+          } else if (data && data.name) {
+            console.log('✅ User profile already exists:', data.name);
+            setUserProfileStatus('exists');
+          } else {
+            console.log('❌ User profile not found');
+            setUserProfileStatus('not_exists');
+          }
+        } catch (error) {
+          console.error('Exception checking user profile:', error);
+          setUserProfileStatus('not_exists');
+        }
+      };
+      
+      checkUserProfile();
+    }
+  }, [wallet.isConnected, wallet.address, userProfileStatus]);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -135,7 +197,7 @@ export default function Home() {
     console.log('Map is ready!');
   };
 
-  // Handle red pill click - connect wallet then check profile
+  // Handle red pill click - connect wallet
   const handleRedPillClick = async () => {
     console.log('🔴 Red pill clicked! Connecting wallet...');
     console.log('🔍 Current wallet state:', {
@@ -150,13 +212,11 @@ export default function Home() {
       return;
     }
     
-    let walletAddress = wallet.address;
-    
-    // If not connected, connect wallet first
-    if (!wallet.isConnected || !walletAddress) {
+    // Connect wallet if not already connected
+    if (!wallet.isConnected) {
       try {
         console.log('📱 Requesting wallet connection...');
-        walletAddress = await wallet.connectWallet();
+        const walletAddress = await wallet.connectWallet();
         console.log('📱 Wallet connection result:', walletAddress);
         
         if (!walletAddress) {
@@ -171,39 +231,33 @@ export default function Home() {
       }
     }
     
-    console.log('💰 Wallet connected:', walletAddress);
-    
-    // Set checking state to prevent map flash
-    setIsCheckingProfile(true);
-    
-    // Trigger profile loading and wait for it
-    await profileGate.loadMemberProfile();
-    
-    console.log('🔍 Profile check after loading:', {
-      isLoadingProfile: profileGate.isLoadingProfile,
-      isProfileComplete: profileGate.isProfileComplete,
-      memberProfile: profileGate.memberProfile
-    });
-    
-    setIsCheckingProfile(false);
-    
-    if (profileGate.isProfileComplete) {
-      console.log('✅ Profile already complete! Skipping ritual, going to map.');
-      // User has complete profile, skip ritual and go to map
-      // The map will show since showRitual stays false
-    } else {
-      console.log('🎭 Profile incomplete, opening ritual...');
-      setShowRitual(true);
-    }
+    console.log('💰 Wallet connected, profile check will happen automatically during loading');
+    // The profile check will happen automatically in the useEffect when wallet connects
   };
 
+  // Debug wallet state when dashboard is opened
+  useEffect(() => {
+    if (isDashboardOpen) {
+      console.log('🔍 Dashboard opened - Wallet state:', {
+        isConnected: wallet.isConnected,
+        address: wallet.address,
+        role: wallet.role,
+        isMetaMaskInstalled: wallet.isMetaMaskInstalled
+      });
+    }
+  }, [isDashboardOpen, wallet.isConnected, wallet.address, wallet.role, wallet.isMetaMaskInstalled]);
 
 
   // Handle ritual completion
   const handleRitualComplete = () => {
     console.log('✅ Ritual completed! Welcome to Zo World...');
     setShowRitual(false);
+    console.log('🔄 Calling profileGate.completeProfileSetup()...');
     profileGate.completeProfileSetup();
+    console.log('✅ Profile setup completion called');
+    
+    // Update the profile status to indicate user now has a profile
+    setUserProfileStatus('exists');
   };
 
   if (isLoading) {
@@ -216,6 +270,9 @@ export default function Home() {
             className="w-16 h-16 mx-auto mb-4"
           />
           <p className="text-lg">Tuning into Zo World</p>
+          {userProfileStatus === 'loading' && (
+            <p className="text-sm mt-2">Checking your profile...</p>
+          )}
         </div>
       </div>
     );
@@ -252,24 +309,63 @@ export default function Home() {
     );
   }
 
-  // Show checking state while determining if ritual is needed
-  if (isCheckingProfile) {
+  // If user is connected and already has a profile, skip ritual and go to main page
+  if (wallet.isConnected && userProfileStatus === 'exists') {
+    console.log('✅ User already has profile, going directly to main page');
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
-        <div className="text-center text-white">
+      <main className="relative w-full h-screen overflow-hidden bg-[#f4f1ea]">
+        {/* Map Canvas */}
+        <MapCanvas 
+          className="absolute inset-0" 
+          onMapReady={handleMapReady}
+          flyToEvent={flyToEvent}
+          flyToNode={flyToNode}
+          events={events}
+        />
+
+        {/* Logo/Header */}
+        <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-[500px] px-4">
           <img 
-            src="/spinner_Z_4.gif" 
-            alt="Loading" 
-            className="w-16 h-16 mx-auto mb-4"
+            src="/Z_to_House.gif" 
+            alt="Zo House Events Calendar" 
+            className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
           />
-          <p className="text-lg">Checking your profile...</p>
         </div>
-      </div>
+
+        {/* All Overlays */}
+        <EventsOverlay 
+          isVisible={activeSection === 'events'} 
+          events={events}
+          onEventClick={handleEventClick}
+          closeMapPopups={closePopupsFn}
+        />
+        <NodesOverlay 
+          isVisible={activeSection === 'nodes'}
+          onNodeClick={handleNodeClick}
+          closeMapPopups={closePopupsFn}
+        />
+        <QuestsOverlay isVisible={activeSection === 'quests'} />
+
+        {/* Global Overlays */}
+        <DashboardOverlay 
+          isVisible={isDashboardOpen}
+          onClose={() => setIsDashboardOpen(false)}
+        />
+
+        {/* Bottom Navigation */}
+        <NavBar 
+          onSectionChange={handleSectionChange}
+          activeSection={activeSection}
+          onDashboardClick={() => setIsDashboardOpen(true)}
+        />
+      </main>
     );
   }
 
-  // Show ritual when red pill is clicked
-  if (showRitual) {
+
+
+  // Show ritual when user doesn't have a profile
+  if (showRitual || (wallet.isConnected && userProfileStatus === 'not_exists')) {
     console.log('🎭 Showing ritual screen');
     return (
       <div className="fixed inset-0 bg-black">

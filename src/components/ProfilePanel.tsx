@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 const ProfilePanel = () => {
-    const { address, formatAddress, role } = useWallet();
+    const { address, formatAddress, role, isConnected, connectWallet } = useWallet();
     const { memberProfile, isLoadingProfile, loadMemberProfile } = useProfileGate();
     const [isCopied, setIsCopied] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -117,6 +117,32 @@ const ProfilePanel = () => {
             default: return null;
         }
     };
+
+    // Show wallet connection prompt if not connected
+    if (!isConnected) {
+        return (
+            <div className="flex flex-col space-y-6 p-6 paper-card h-full items-center justify-center">
+                <p className="text-lg text-center">Wallet not connected</p>
+                <p className="text-sm text-center text-gray-500">Please connect your wallet to view your profile</p>
+                <button 
+                    onClick={connectWallet} 
+                    className="paper-button px-4 py-2"
+                >
+                    Connect Wallet
+                </button>
+            </div>
+        );
+    }
+
+    // Show loading state while wallet is connecting
+    if (!address) {
+        return (
+            <div className="flex flex-col space-y-6 p-6 paper-card h-full items-center justify-center">
+                <p className="text-lg text-center">Connecting wallet...</p>
+                <p className="text-sm text-center text-gray-500">Please wait while we connect to your wallet</p>
+            </div>
+        );
+    }
 
     if (isLoadingProfile) {
         return (

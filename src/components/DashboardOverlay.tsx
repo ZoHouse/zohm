@@ -5,6 +5,7 @@ import ProfilePanel from './ProfilePanel';
 import MainQuestCard from './MainQuestCard';
 import SideQuestCard from './SideQuestCard';
 import { X } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
 
 interface DashboardOverlayProps {
   isVisible: boolean;
@@ -12,6 +13,8 @@ interface DashboardOverlayProps {
 }
 
 const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose }) => {
+  const { isConnected, address } = useWallet();
+
   if (!isVisible) return null;
 
   return (
@@ -41,7 +44,14 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose 
           {/* Left: Profile Panel */}
           <div className="lg:col-span-1 h-full overflow-hidden">
             <div className="h-full overflow-auto">
-              <ProfilePanel />
+              {isConnected && address ? (
+                <ProfilePanel />
+              ) : (
+                <div className="flex flex-col space-y-6 p-6 paper-card h-full items-center justify-center">
+                  <p className="text-lg text-center">Wallet not connected</p>
+                  <p className="text-sm text-center text-gray-500">Please connect your wallet to view the dashboard</p>
+                </div>
+              )}
             </div>
           </div>
 

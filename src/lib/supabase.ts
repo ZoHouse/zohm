@@ -356,6 +356,7 @@ export interface QuestEntry {
   title: string;
   description: string;
   reward: number;
+  status: string;
 }
 
 export async function getLeaderboards(): Promise<LeaderboardEntry[] | null> {

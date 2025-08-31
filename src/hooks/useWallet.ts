@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface WalletState {
   isConnected: boolean;
@@ -54,8 +54,6 @@ export function useWallet() {
   const isMetaMaskInstalled = useCallback(() => {
     return typeof window !== 'undefined' && typeof window.ethereum !== 'undefined';
   }, []);
-
-
 
   // Connect to wallet
   const connectWallet = useCallback(async (): Promise<string | null> => {
@@ -248,6 +246,95 @@ export function useWallet() {
       console.error('Exception updating role:', error);
     }
   }, [walletState.address]);
+
+  // Check for existing wallet connection on mount
+  useEffect(() => {
+    const checkExistingConnection = async () => {
+      if (!isMetaMaskInstalled()) return;
+
+      try {
+        // Check if user is already connected
+        const accounts = await window.ethereum!.request({
+          method: 'eth_accounts'
+        }) as string[];
+
+        if (accounts.length > 0) {
+          const address = accounts[0];
+          console.log('🔍 Found existing wallet connection:', address);
+          
+          setWalletState(prev => ({
+            ...prev,
+            address,
+            isConnected: true,
+            isLoading: false
+          }));
+
+          // Check NFT status for existing connection
+          const hasNFT = await checkFounderNFT(address);
+          const newRole = hasNFT ? 'Founder' : 'Member';
+          
+          setWalletState(prev => ({
+            ...prev,
+            role: newRole
+          }));
+        }
+      } catch (error) {
+        console.error('Error checking existing wallet connection:', error);
+      }
+    };
+
+    checkExistingConnection();
+  }, [isMetaMaskInstalled, checkFounderNFT]);
+
+  // Listen for wallet connection changes
+  useEffect(() => {
+    if (!isMetaMaskInstalled()) return;
+
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[];
+      if (accounts.length === 0) {
+        // User disconnected
+        setWalletState(prev => ({
+          ...prev,
+          address: null,
+          isConnected: false,
+          role: 'Member'
+        }));
+      } else {
+        // User switched accounts
+        const address = accounts[0];
+        setWalletState(prev => ({
+          ...prev,
+          address,
+          isConnected: true
+        }));
+        
+        // Check NFT status for new account
+        checkFounderNFT(address).then(hasNFT => {
+          const newRole = hasNFT ? 'Founder' : 'Member';
+          setWalletState(prev => ({
+            ...prev,
+            role: newRole
+          }));
+        });
+      }
+    };
+
+    const handleChainChanged = () => {
+      // Reload page when chain changes
+      window.location.reload();
+    };
+
+    if (window.ethereum) {
+      window.ethereum.on?.('accountsChanged', handleAccountsChanged);
+      window.ethereum.on?.('chainChanged', handleChainChanged);
+
+      return () => {
+        window.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
+        window.ethereum?.removeListener?.('chainChanged', handleChainChanged);
+      };
+    }
+  }, [isMetaMaskInstalled, checkFounderNFT]);
 
   return {
     ...walletState,

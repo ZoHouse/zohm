@@ -140,12 +140,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     }
   };
 
-  const handleCompleteEarly = () => {
-    // Allow completing with just name (minimum required)
-    if (profileData.name.trim()) {
-      handleSubmit();
-    }
-  };
+
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -208,6 +203,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
       console.log('✅ Profile setup completed successfully');
       console.log('📊 Saved profile data:', data);
+      console.log('🔄 Calling onComplete callback...');
       onComplete();
       
       // Open dashboard after successful profile creation
@@ -398,12 +394,6 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
             <h2 className="text-lg sm:text-xl font-bold">Profile Setup</h2>
             <p className="text-sm">Step {currentStep} of 5</p>
           </div>
-          <button
-            onClick={onClose}
-            className="paper-button w-8 h-8 flex items-center justify-center text-sm"
-          >
-            ✕
-          </button>
         </div>
 
         {/* Progress Bar */}
@@ -447,17 +437,6 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
           </button>
           
           <div className="flex gap-2">
-            {/* Complete Later button - show after step 1 if name is filled */}
-            {currentStep > 1 && profileData.name.trim() && (
-              <button
-                onClick={handleCompleteEarly}
-                disabled={isLoading}
-                className="paper-card px-3 sm:px-4 py-2 text-sm sm:text-base hover:shadow-md"
-              >
-                Complete Later
-              </button>
-            )}
-            
             <button
               onClick={handleNext}
               disabled={isLoading}

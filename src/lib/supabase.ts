@@ -509,3 +509,142 @@ export async function updateCalendarStatus(id: string, isActive: boolean): Promi
     return false;
   }
 }
+
+// Completed Quests table schema and helpers
+export interface CompletedQuest {
+  id: string;
+  wallet_address: string;
+  quest_id: string;
+  completed_at: string;
+  transaction_hash?: string;
+  amount?: number;
+  metadata?: any;
+  created_at: string;
+}
+
+export const createCompletedQuestsTableSQL = `
+create table if not exists completed_quests (
+  id text primary key default gen_random_uuid()::text,
+  wallet_address text unique,
+  quest_id text not null,
+  completed_at timestamp with time zone default now(),
+  transaction_hash text,
+  amount numeric(20, 18),
+  metadata jsonb,
+  created_at timestamp with time zone default now()
+);
+
+-- Create indexes for efficient querying
+create index if not exists idx_completed_quests_wallet on completed_quests(wallet_address);
+create index if not exists idx_completed_quests_quest on completed_quests(quest_id);
+create index if not exists idx_completed_quests_completed_at on completed_quests(completed_at);
+
+-- Create unique constraint to prevent duplicate completions
+alter table completed_quests add constraint unique_wallet_quest unique (wallet_address, quest_id);
+`;
+
+export async function isQuestCompleted(wallet: string, questId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('completed_quests')
+      .select('id')
+      .eq('wallet_address', wallet.toLowerCase())
+      .eq('quest_id', questId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No record found, quest not completed
+        return false;
+      }
+      console.error('Error checking quest completion:', error);
+      return false;
+    }
+
+    return !!data; // Quest is completed if we found a record
+  } catch (error) {
+    console.error('Exception checking quest completion:', error);
+    return false;
+  }
+}
+
+export async function markQuestCompleted(
+  wallet: string, 
+  questId: string, 
+  transactionHash?: string, 
+  amount?: number,
+  metadata?: any
+): Promise<CompletedQuest | null> {
+  try {
+    const { data, error } = await supabase
+      .from('completed_quests')
+      .insert({
+        wallet_address: wallet.toLowerCase(),
+        quest_id: questId,
+        transaction_hash: transactionHash,
+        amount: amount,
+        metadata: metadata
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error marking quest as completed:', error);
+      return null;
+    }
+
+    console.log('✅ Quest marked as completed:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception marking quest as completed:', error);
+    return null;
+  }
+}
+
+export async function getCompletedQuestsByWallet(wallet: string): Promise<CompletedQuest[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('completed_quests')
+      .select('*')
+      .eq('wallet_address', wallet.toLowerCase())
+      .order('completed_at', { ascending: false });
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Table doesn't exist yet
+        return [];
+      }
+      console.error('Error fetching completed quests:', error);
+      return null;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception fetching completed quests:', error);
+    return null;
+  }
+}
+
+export async function getCompletedQuestsByQuest(questId: string): Promise<CompletedQuest[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('completed_quests')
+      .select('*')
+      .eq('quest_id', questId)
+      .order('completed_at', { ascending: false });
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Table doesn't exist yet
+        return [];
+      }
+      console.error('Error fetching quest completions:', error);
+      return null;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Exception fetching quest completions:', error);
+    return null;
+  }
+}

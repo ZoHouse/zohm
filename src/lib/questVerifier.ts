@@ -4,6 +4,13 @@ interface TransactionDetails {
   error?: string;
 }
 
+interface QuestVerificationResult {
+  success: boolean;
+  amount?: number;
+  error?: string;
+  isAlreadyCompleted?: boolean;
+}
+
 /**
  * Verifies if a transaction hash has more than 0.5 AVAX transferred
  * @param txHash - The transaction hash to verify
@@ -79,6 +86,64 @@ export async function verifyQuestRequirement(txHash: string): Promise<boolean> {
   }
   
   return result.amount > 0.5;
+}
+
+/**
+ * Verifies quest completion with duplicate prevention
+ * @param txHash - The transaction hash to verify
+ * @param wallet - The wallet address of the user
+ * @param questId - The ID of the quest being completed
+ * @returns Promise<QuestVerificationResult> - Detailed verification result
+ */
+export async function verifyQuestCompletion(
+  txHash: string, 
+  wallet: string, 
+  questId: string
+): Promise<QuestVerificationResult> {
+  try {
+    // Import Supabase functions dynamically to avoid SSR issues
+    const { isQuestCompleted } = await import('@/lib/supabase');
+    
+    // First check if quest is already completed by this wallet
+    const alreadyCompleted = await isQuestCompleted(wallet, questId);
+    
+    if (alreadyCompleted) {
+      return {
+        success: false,
+        error: 'Quest already completed by this wallet',
+        isAlreadyCompleted: true
+      };
+    }
+    
+    // Verify the transaction meets quest requirements
+    const result = await verifyAVAXTransaction(txHash);
+    
+    if (!result.success || result.amount === undefined) {
+      return {
+        success: false,
+        error: result.error || 'Transaction verification failed'
+      };
+    }
+    
+    // Check if transaction amount is greater than 0.5 AVAX
+    if (result.amount <= 0.5) {
+      return {
+        success: false,
+        error: `Transaction amount (${result.amount.toFixed(4)} AVAX) does not meet quest requirement (>0.5 AVAX)`
+      };
+    }
+    
+    return {
+      success: true,
+      amount: result.amount
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred during quest verification'
+    };
+  }
 }
 
 /**

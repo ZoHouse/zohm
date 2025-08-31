@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry } from '@/lib/supabase';
-import { verifyQuestRequirement } from '@/lib/questVerifier';
+import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
+import { verifyQuestCompletion } from '@/lib/questVerifier';
+import { useWallet } from '@/hooks/useWallet';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 
 interface QuestsOverlayProps {
@@ -10,36 +11,68 @@ interface QuestsOverlayProps {
 }
 
 const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
+  const { address: walletAddress, isConnected } = useWallet();
   const [quests, setQuests] = useState<QuestEntry[] | null>(null);
   const [leaders, setLeaders] = useState<LeaderboardEntry[] | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedQuest, setSelectedQuest] = useState<QuestEntry | null>(null);
-  const [joinMessage, setJoinMessage] = useState('');
+
   const [transactionHash, setTransactionHash] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string>('');
 
+  // Load quests and check completion status
   useEffect(() => {
-    if (!isVisible) return;
-    const load = async () => {
+    if (!isVisible || !walletAddress) return;
+    
+    const loadQuestsAndCheckCompletion = async () => {
       const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
-      setQuests(q);
+      
+      if (q) {
+        // Check completion status for each quest
+        const questsWithCompletion = await Promise.all(
+          q.map(async (quest) => {
+            const isCompleted = await isQuestCompleted(walletAddress, quest.id);
+            return {
+              ...quest,
+              status: isCompleted ? 'completed' : quest.status
+            };
+          })
+        );
+        setQuests(questsWithCompletion);
+      }
+      
       setLeaders(lb);
     };
-    load();
-  }, [isVisible]);
+    
+    loadQuestsAndCheckCompletion();
+  }, [isVisible, walletAddress]);
 
   const handleJoinQuest = (quest: QuestEntry) => {
+    if (!isConnected || !walletAddress) {
+      setVerificationResult('Please connect your wallet first');
+      return;
+    }
+    
     setSelectedQuest(quest);
     setShowJoinPopup(true);
-    setJoinMessage('');
   };
 
   const handleSubmitJoin = async () => {
+    if (!walletAddress) {
+      setVerificationResult('Please connect your wallet first');
+      return;
+    }
+    
     if (!transactionHash.trim()) {
       setVerificationResult('Please enter a transaction hash');
+      return;
+    }
+
+    if (!selectedQuest) {
+      setVerificationResult('No quest selected');
       return;
     }
 
@@ -47,20 +80,74 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
     setVerificationResult('');
 
     try {
-      const isValid = await verifyQuestRequirement(transactionHash);
+      // Use the new quest completion verification
+      const result = await verifyQuestCompletion(transactionHash, walletAddress, selectedQuest.id);
       
-      if (isValid) {
-        setVerificationResult('✅ Quest requirement verified! Transaction has more than 0.5 AVAX.');
-        // TODO: Implement actual join logic here
-        setTimeout(() => {
-          setShowJoinPopup(false);
-          setSelectedQuest(null);
-          setJoinMessage('');
-          setTransactionHash('');
-          setVerificationResult('');
-        }, 2000);
+      if (result.isAlreadyCompleted) {
+        setVerificationResult('❌ You have already completed this quest!');
+        return;
+      }
+      
+      if (result.success) {
+        // Mark the quest as completed with transaction details
+        const completedQuest = await markQuestCompleted(
+          walletAddress, 
+          selectedQuest.id, 
+          transactionHash, 
+          result.amount,
+          {
+            quest_title: selectedQuest.title,
+            quest_description: selectedQuest.description,
+            reward_xp: 10, // Fixed reward of 10 XP per submission
+            verification_timestamp: new Date().toISOString()
+          }
+        );
+        
+        if (completedQuest) {
+          // Send AVAX reward
+          try {
+            const rewardResponse = await fetch('/api/send-avax-reward', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                walletAddress: walletAddress,
+                questId: selectedQuest.id,
+                questTitle: selectedQuest.title
+              }),
+            });
+
+            const rewardResult = await rewardResponse.json();
+            
+            if (rewardResult.success) {
+              setVerificationResult(`✅ Quest completed successfully! You earned 10 XP + ${rewardResult.rewardAmount} AVAX reward! Transaction: ${rewardResult.transactionHash}`);
+            } else {
+              console.warn('Quest completed but reward failed:', rewardResult.error);
+              setVerificationResult(`✅ Quest completed successfully! You earned 10 XP. AVAX reward failed: ${rewardResult.error}`);
+            }
+          } catch (rewardError) {
+            console.warn('Quest completed but reward failed:', rewardError);
+            setVerificationResult(`✅ Quest completed successfully! You earned 10 XP. AVAX reward failed to send.`);
+          }
+          
+          // Update the quest status locally
+          setQuests(prev => prev ? prev.map(q => 
+            q.id === selectedQuest.id ? { ...q, status: 'completed' } : q
+          ) : null);
+          
+          // Close popup after delay
+          setTimeout(() => {
+            setShowJoinPopup(false);
+            setSelectedQuest(null);
+            setTransactionHash('');
+            setVerificationResult('');
+          }, 5000); // Increased delay to show reward info
+        } else {
+          setVerificationResult('❌ Failed to mark quest as completed. Please try again.');
+        }
       } else {
-        setVerificationResult('❌ Quest requirement not met. Transaction must have more than 0.5 AVAX.');
+        setVerificationResult(`❌ ${result.error}`);
       }
     } catch (error) {
       setVerificationResult(`❌ Error verifying transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -72,7 +159,6 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
   const handleClosePopup = () => {
     setShowJoinPopup(false);
     setSelectedQuest(null);
-    setJoinMessage('');
     setTransactionHash('');
     setVerificationResult('');
   };
@@ -85,6 +171,13 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
         <h2 className="text-2xl font-bold">Quests</h2>
         <button className="paper-button" onClick={() => setShowLeaderboard(true)}>View Leaderboard</button>
       </div>
+      
+      {!isConnected && (
+        <div className="mb-4 p-3 rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-300">
+          <p className="text-sm">Please connect your wallet to participate in quests</p>
+        </div>
+      )}
+      
       {!quests || quests.length === 0 ? (
         <div className="text-center text-gray-600">No quests available</div>
       ) : (
@@ -96,23 +189,23 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
                   <h3 className="font-semibold text-lg mb-1">{q.title}</h3>
                   <p className="text-sm text-gray-700 mb-2">{q.description}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>{q.reward} XP</span>
+                    <span>10 XP per submission</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       q.status === 'active' ? 'bg-green-100 text-green-800' :
                       q.status === 'completed' ? 'bg-gray-100 text-gray-600' :
                       q.status === 'developing' ? 'bg-blue-100 text-blue-800' :
                       'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {q.status}
+                      {q.status === 'completed' ? 'Completed' : q.status}
                     </span>
                   </div>
                 </div>
                 <button 
                   className={`paper-button whitespace-nowrap ${
-                    q.status === 'completed' ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
+                    q.status === 'completed' || !isConnected ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
                   }`}
-                  onClick={() => q.status !== 'completed' && handleJoinQuest(q)}
-                  disabled={q.status === 'completed'}
+                  onClick={() => q.status !== 'completed' && isConnected && handleJoinQuest(q)}
+                  disabled={q.status === 'completed' || !isConnected}
                 >
                   {q.status === 'completed' ? 'Completed' : 'Join Quest'}
                 </button>
@@ -161,21 +254,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             <div className="mb-4">
               <h4 className="font-semibold mb-2 text-white">{selectedQuest?.title}</h4>
               <p className="text-sm mb-3 text-white">{selectedQuest?.description}</p>
-              <p className="text-xs opacity-70 text-white">Reward: {selectedQuest?.reward} XP</p>
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="join-message" className="block text-sm font-medium mb-2 text-white">
-                Why do you want to join this quest?
-              </label>
-              <textarea
-                id="join-message"
-                value={joinMessage}
-                onChange={(e) => setJoinMessage(e.target.value)}
-                placeholder="Tell us why you're interested in this quest..."
-                className="paper-input w-full resize-none text-white placeholder-white placeholder-opacity-70"
-                rows={3}
-              />
+              <p className="text-xs opacity-70 text-white">Reward: 10 XP per submission</p>
             </div>
 
             <div className="mb-4">
@@ -196,7 +275,9 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             </div>
 
             {verificationResult && (
-              <div className="mb-4 p-3 rounded-lg bg-black bg-opacity-30 border border-white border-opacity-20">
+              <div className={`mb-4 p-3 rounded-lg border border-white border-opacity-20 ${
+                verificationResult.includes('✅') ? 'bg-green-900 bg-opacity-30' : 'bg-red-900 bg-opacity-30'
+              }`}>
                 <p className="text-sm text-white">{verificationResult}</p>
               </div>
             )}
@@ -210,7 +291,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
               </button>
               <button
                 onClick={handleSubmitJoin}
-                disabled={!joinMessage.trim() || !transactionHash.trim() || isVerifying}
+                disabled={!transactionHash.trim() || isVerifying}
                 className="flex-1 paper-button bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isVerifying ? 'Verifying...' : 'Submit'}

@@ -8,8 +8,42 @@ An interactive web application for Zo House community events, member management,
 - Real-time event calendar integration via iCal feeds
 - Member management with Supabase backend
 - Wallet integration for Web3 functionality
+- **Custom Token Reward System** - Send ERC-20 tokens as quest rewards
 - Responsive design for mobile and desktop
 - Progressive Web App (PWA) capabilities
+
+## Custom Token Reward System
+
+The application now supports sending custom ERC-20 tokens as rewards instead of AVAX. This allows you to:
+
+- Send your own branded tokens (e.g., ZOHM, GAME tokens) as quest completion rewards
+- Configure token amounts, symbols, and decimals
+- Maintain separate token and gas fee balances
+- Track all token reward transactions
+
+### Setup Instructions
+
+1. **Deploy Custom Token**: Deploy your ERC-20 token contract to Avalanche Fuji testnet
+2. **Configure Environment**: Update `.env.local` with your token contract details:
+   ```bash
+   CUSTOM_TOKEN_ADDRESS=0xYourTokenContractAddress
+   CUSTOM_TOKEN_SYMBOL=ZOHM
+   CUSTOM_TOKEN_DECIMALS=18
+   CUSTOM_TOKEN_REWARD_AMOUNT=100
+   REWARD_WALLET_PRIVATE_KEY=your_private_key_here
+   ```
+3. **Fund Reward Wallet**: Ensure your reward wallet has:
+   - Custom tokens for rewards
+   - AVAX for gas fees
+4. **Test System**: Use the test script to verify setup:
+   ```bash
+   node scripts/test-custom-token-reward.js
+   ```
+
+### API Endpoints
+
+- `GET /api/send-token-reward` - Check reward wallet status and token balance
+- `POST /api/send-token-reward` - Send custom token reward for quest completion
 
 ## Getting Started
 

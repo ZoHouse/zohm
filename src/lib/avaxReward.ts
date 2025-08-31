@@ -62,7 +62,7 @@ export function parseAVAX(avaxAmount: number): bigint {
  */
 export async function getCurrentGasPrice(provider: ethers.JsonRpcProvider): Promise<bigint> {
   try {
-    return await provider.getFeeData().then(feeData => feeData.gasPrice || 0n);
+    return await provider.getFeeData().then(feeData => feeData.gasPrice || BigInt(0));
   } catch (error) {
     console.warn('Failed to get current gas price, using default:', error);
     // Return a reasonable default gas price for Fuji testnet (20 Gwei)
@@ -130,7 +130,12 @@ export async function waitForConfirmation(
     setTimeout(() => reject(new Error('Transaction confirmation timeout')), timeoutMs);
   });
 
-  return Promise.race([tx.wait(), timeoutPromise]);
+  // tx.wait() returns Promise<TransactionReceipt | null>, but we want to ensure TransactionReceipt
+  const result = await Promise.race([tx.wait(), timeoutPromise]);
+  if (result === null) {
+    throw new Error('Transaction failed or was not mined');
+  }
+  return result;
 }
 
 /**

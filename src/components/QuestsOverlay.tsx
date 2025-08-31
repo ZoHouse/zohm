@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
-import { verifyQuestCompletion } from '@/lib/questVerifier';
+import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
 import { useWallet } from '@/hooks/useWallet';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 
@@ -19,7 +19,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedQuest, setSelectedQuest] = useState<QuestEntry | null>(null);
 
-  const [transactionHash, setTransactionHash] = useState('');
+  const [twitterUrl, setTwitterUrl] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string>('');
 
@@ -66,8 +66,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
       return;
     }
     
-    if (!transactionHash.trim()) {
-      setVerificationResult('Please enter a transaction hash');
+    if (!twitterUrl.trim()) {
+      setVerificationResult('Please enter a Twitter URL');
       return;
     }
 
@@ -80,8 +80,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
     setVerificationResult('');
 
     try {
-      // Use the new quest completion verification
-      const result = await verifyQuestCompletion(transactionHash, walletAddress, selectedQuest.id);
+      // Use the new Twitter quest completion verification
+      const result = await verifyTwitterQuestCompletion(twitterUrl, walletAddress, selectedQuest.id);
       
       if (result.isAlreadyCompleted) {
         setVerificationResult('❌ You have already completed this quest!');
@@ -89,16 +89,17 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
       }
       
       if (result.success) {
-        // Mark the quest as completed with transaction details
+        // Mark the quest as completed with Twitter URL
         const completedQuest = await markQuestCompleted(
           walletAddress, 
           selectedQuest.id, 
-          transactionHash, 
-          result.amount,
+          undefined, // No transaction hash
+          undefined, // No amount
           {
             quest_title: selectedQuest.title,
             quest_description: selectedQuest.description,
-            reward_xp: 10, // Fixed reward of 10 XP per submission
+            twitter_url: twitterUrl,
+            reward_zo: 420, // Fixed reward of 420 $ZO per submission
             verification_timestamp: new Date().toISOString()
           }
         );
@@ -121,14 +122,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             const rewardResult = await rewardResponse.json();
             
             if (rewardResult.success) {
-              setVerificationResult(`✅ Quest completed successfully! You earned 10 XP + ${rewardResult.rewardAmount} AVAX reward! Transaction: ${rewardResult.transactionHash}`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO + ${rewardResult.rewardAmount} AVAX reward! Twitter post verified.`);
             } else {
               console.warn('Quest completed but reward failed:', rewardResult.error);
-              setVerificationResult(`✅ Quest completed successfully! You earned 10 XP. AVAX reward failed: ${rewardResult.error}`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. AVAX reward failed: ${rewardResult.error}`);
             }
           } catch (rewardError) {
             console.warn('Quest completed but reward failed:', rewardError);
-            setVerificationResult(`✅ Quest completed successfully! You earned 10 XP. AVAX reward failed to send.`);
+                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. AVAX reward failed to send.`);
           }
           
           // Update the quest status locally
@@ -140,7 +141,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
           setTimeout(() => {
             setShowJoinPopup(false);
             setSelectedQuest(null);
-            setTransactionHash('');
+            setTwitterUrl('');
             setVerificationResult('');
           }, 5000); // Increased delay to show reward info
         } else {
@@ -150,7 +151,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
         setVerificationResult(`❌ ${result.error}`);
       }
     } catch (error) {
-      setVerificationResult(`❌ Error verifying transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setVerificationResult(`❌ Error verifying Twitter URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsVerifying(false);
     }
@@ -159,7 +160,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
   const handleClosePopup = () => {
     setShowJoinPopup(false);
     setSelectedQuest(null);
-    setTransactionHash('');
+    setTwitterUrl('');
     setVerificationResult('');
   };
 
@@ -189,7 +190,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
                   <h3 className="font-semibold text-lg mb-1">{q.title}</h3>
                   <p className="text-sm text-gray-700 mb-2">{q.description}</p>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>10 XP per submission</span>
+                    <span>420 $ZO per submission</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       q.status === 'active' ? 'bg-green-100 text-green-800' :
                       q.status === 'completed' ? 'bg-gray-100 text-gray-600' :
@@ -254,23 +255,23 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             <div className="mb-4">
               <h4 className="font-semibold mb-2 text-white">{selectedQuest?.title}</h4>
               <p className="text-sm mb-3 text-white">{selectedQuest?.description}</p>
-              <p className="text-xs opacity-70 text-white">Reward: 10 XP per submission</p>
+              <p className="text-xs opacity-70 text-white">Reward: 420 $ZO per submission</p>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="transaction-hash" className="block text-sm font-medium mb-2 text-white">
-                Transaction Hash (AVAX)
+              <label htmlFor="twitter-url" className="block text-sm font-medium mb-2 text-white">
+                Twitter/X Post URL
               </label>
               <input
-                id="transaction-hash"
+                id="twitter-url"
                 type="text"
-                value={transactionHash}
-                onChange={(e) => setTransactionHash(e.target.value)}
-                placeholder="Enter transaction hash to verify >0.5 AVAX..."
+                value={twitterUrl}
+                onChange={(e) => setTwitterUrl(e.target.value)}
+                placeholder="Enter Twitter/X post URL..."
                 className="paper-input w-full text-white placeholder-white placeholder-opacity-70"
               />
               <p className="text-xs opacity-70 text-white mt-1">
-                Must be a transaction with more than 0.5 AVAX
+                Share a valid Twitter/X post URL to complete the quest
               </p>
             </div>
 
@@ -291,7 +292,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
               </button>
               <button
                 onClick={handleSubmitJoin}
-                disabled={!transactionHash.trim() || isVerifying}
+                disabled={!twitterUrl.trim() || isVerifying}
                 className="flex-1 paper-button bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isVerifying ? 'Verifying...' : 'Submit'}

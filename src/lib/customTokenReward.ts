@@ -27,10 +27,10 @@ export const ERC20_ABI = [
 
 // Avalanche Fuji Testnet configuration
 export const FUJI_CONFIG = {
-  RPC_URL: 'https://api.avax-test.network/ext/bc/C/rpc',
-  CHAIN_ID: 43113,
-  EXPLORER_URL: 'https://testnet.snowtrace.io',
-  CURRENCY_SYMBOL: 'AVAX',
+  RPC_URL: 'https://mainnet.base.org',
+  CHAIN_ID: 8453,
+  EXPLORER_URL: 'https://base.blockscout.com/',
+  CURRENCY_SYMBOL: 'ETH',
   DECIMALS: 18
 };
 

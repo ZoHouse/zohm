@@ -99,7 +99,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             quest_title: selectedQuest.title,
             quest_description: selectedQuest.description,
             twitter_url: twitterUrl,
-            reward_zo: 420, // Fixed reward of 420 $ZO per submission
+            reward_zo: 420, // Fixed reward of 420 $ZO per 
             verification_timestamp: new Date().toISOString()
           }
         );
@@ -122,14 +122,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             const rewardResult = await rewardResponse.json();
             
             if (rewardResult.success) {
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO + ${rewardResult.rewardAmount} AVAX reward! Twitter post verified.`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO + ${rewardResult.rewardAmount} Dollar Zo reward! Twitter post verified.`);
             } else {
               console.warn('Quest completed but reward failed:', rewardResult.error);
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. AVAX reward failed: ${rewardResult.error}`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed: ${rewardResult.error}`);
             }
           } catch (rewardError) {
             console.warn('Quest completed but reward failed:', rewardError);
-                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. AVAX reward failed to send.`);
+                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed to send.`);
           }
           
           // Update the quest status locally

@@ -245,7 +245,7 @@ export async function verifyTwitterQuestCompletion(
     if (!isValid) {
       return {
         success: false,
-        error: 'Twitter URL validation failed. Please ensure you\'re sharing a valid Twitter/X post.'
+        error: 'Can\'t Enter the Zo World'
       };
     }
     

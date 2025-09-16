@@ -122,14 +122,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
             const rewardResult = await rewardResponse.json();
             
             if (rewardResult.success) {
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO + ${rewardResult.rewardAmount} Dollar Zo reward! Twitter post verified.`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO  reward! Welcome to the Zo World.`);
             } else {
               console.warn('Quest completed but reward failed:', rewardResult.error);
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed: ${rewardResult.error}`);
+              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed: ${rewardResult.error} Welcome to the Zo World.`);
             }
           } catch (rewardError) {
             console.warn('Quest completed but reward failed:', rewardError);
-                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed to send.`);
+                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed to send. Welcome to the Zo World.`);
           }
           
           // Update the quest status locally
@@ -260,18 +260,18 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
 
             <div className="mb-4">
               <label htmlFor="twitter-url" className="block text-sm font-medium mb-2 text-white">
-                Twitter/X Post URL
+                Enter the Zo World
               </label>
               <input
                 id="twitter-url"
                 type="text"
                 value={twitterUrl}
                 onChange={(e) => setTwitterUrl(e.target.value)}
-                placeholder="Enter Twitter/X post URL..."
+                placeholder="Enter the Zo World..."
                 className="paper-input w-full text-white placeholder-white placeholder-opacity-70"
               />
               <p className="text-xs opacity-70 text-white mt-1">
-                Share a valid Twitter/X post URL to complete the quest
+                Enter the Zo World to complete the quest
               </p>
             </div>
 

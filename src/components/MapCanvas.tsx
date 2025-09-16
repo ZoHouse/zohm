@@ -45,8 +45,6 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
   const [markersMap, setMarkersMap] = useState<Map<string, mapboxgl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(true); // Start as loading
-  const [locationError, setLocationError] = useState<string | null>(null);
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
@@ -299,11 +297,11 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const initialZoom = isMobile() ? 8 : 10; // Start with a wider view
+      const initialZoom = isMobile() ? 12.5 : 18.5;
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        center: DEFAULT_CENTER, // Will be updated by getUserLocation
+        center: DEFAULT_CENTER,
         zoom: initialZoom,
         pitch: 60,
         bearing: -30,
@@ -394,7 +392,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           onMapReady(map.current, closeAllPopups);
         }
 
-        // Get user location immediately on map load
+        // Get user location
         getUserLocation();
         
         // Add Zo House markers
@@ -407,84 +405,15 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     }
   };
 
-  // Fallback location detection using IP geolocation
-  const getLocationFromIP = async () => {
-    try {
-      console.log('🌐 Trying IP-based location detection...');
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
-      
-      if (data.latitude && data.longitude) {
-        const coords: [number, number] = [data.longitude, data.latitude];
-        console.log('✅ IP-based location obtained:', coords);
-        
-        if (map.current) {
-          map.current.flyTo({
-            center: coords,
-            zoom: 16,
-            speed: 1.2,
-            curve: 1.4,
-            easing: (t: number) => t
-          });
-          
-          // Show popup for IP-based location
-          const ipPopup = new mapboxgl.Popup({
-            className: 'paper-card',
-            closeButton: true,
-            offset: [0, -15],
-            maxWidth: '280px',
-            anchor: 'bottom'
-          }).setLngLat(coords).setHTML(`
-            <h3>📍 Approximate Location</h3>
-            <p>🌐 Detected via IP address</p>
-            <p>📍 ${data.city}, ${data.country}</p>
-            <p>⚠️ Less accurate than GPS</p>
-          `);
-          
-          setTimeout(() => {
-            if (map.current) {
-              ipPopup.addTo(map.current!);
-              setTimeout(() => ipPopup.remove(), 4000);
-            }
-          }, 1500);
-        }
-        
-        return true;
-      }
-    } catch (error) {
-      console.warn('IP geolocation failed:', error);
-    }
-    return false;
-  };
-
   // Get user location with proper error handling
   const getUserLocation = () => {
-    if (!navigator.geolocation || !map.current) {
-      console.warn('⚠️ Geolocation not available or map not ready');
-      setLocationError('Geolocation not supported');
-      // Try IP-based fallback
-      getLocationFromIP();
-      return;
-    }
+    if (!navigator.geolocation || !map.current) return;
 
-    console.log('📍 Requesting user location...');
-    setLocationLoading(true);
-    setLocationError(null);
-    
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (!map.current) return;
         
         const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
-        const accuracy = position.coords.accuracy;
-        
-        console.log('✅ User location obtained:', {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: `${accuracy}m`
-        });
-        
-        setLocationLoading(false);
         
         // Store coordinates in window for wallet sync
         if (typeof window !== 'undefined') {
@@ -496,21 +425,14 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         }
         
         try {
-          // Update map center to user location with smooth animation
-          map.current.flyTo({
-            center: coords,
-            zoom: 18,
-            speed: 1.2,
-            curve: 1.4,
-            easing: (t: number) => t
-          });
+          // Update map center to user location
+          map.current.setCenter(coords);
 
           // Create popup content matching the event popup style
           const userPopupContent = `
             <h3>📍 Your Location</h3>
             <p>🔵 Current position</p>
             <p>📱 Auto-detected via GPS</p>
-            <p>🎯 Accuracy: ${Math.round(accuracy)}m</p>
           `;
 
           const userPopup = new mapboxgl.Popup({
@@ -521,79 +443,26 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
             anchor: 'bottom'
           }).setHTML(userPopupContent);
           
-          // Show popup briefly after animation
+          // Show popup briefly
           setTimeout(() => {
             if (map.current) {
               userPopup.addTo(map.current!);
               setTimeout(() => {
                 userPopup.remove();
-              }, 4000);
+              }, 3000);
             }
-          }, 1500);
+          }, 1000);
         } catch (error) {
           console.warn('Error setting user location:', error);
-          setLocationError('Failed to update map location');
         }
       },
       (error) => {
-        console.error('❌ Geolocation error:', error);
-        setLocationLoading(false);
-        
-        // Provide specific error messages
-        let errorMessage = 'Unable to get your location';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied. Please enable location permissions and refresh.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable. Please check your GPS settings.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Location request timed out. Please try again.';
-            break;
-        }
-        
-        setLocationError(errorMessage);
-        console.warn('📍 Geolocation failed:', errorMessage);
-        
-        // Try IP-based fallback
-        getLocationFromIP().then((success) => {
-          if (!success) {
-            // Show error popup to user only if IP fallback also fails
-            if (map.current) {
-              const errorPopup = new mapboxgl.Popup({
-                className: 'paper-card',
-                closeButton: true,
-                offset: [0, -15],
-                maxWidth: '300px',
-                anchor: 'bottom'
-              }).setLngLat(DEFAULT_CENTER).setHTML(`
-                <h3>⚠️ Location Access</h3>
-                <p>${errorMessage}</p>
-                <p>📍 Showing default location (Bangalore)</p>
-                <div style="margin-top: 12px;">
-                  <button onclick="window.location.reload()" class="paper-button">
-                    Try Again
-                  </button>
-                </div>
-              `);
-              
-              setTimeout(() => {
-                if (map.current) {
-                  errorPopup.addTo(map.current!);
-                  setTimeout(() => {
-                    errorPopup.remove();
-                  }, 8000);
-                }
-              }, 1000);
-            }
-          }
-        });
+        console.log('Geolocation error:', error);
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000, // Increased timeout
-        maximumAge: 300000 // 5 minutes cache
+        timeout: 10000,
+        maximumAge: 60000
       }
     );
   };
@@ -885,42 +754,10 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   }, [flyToNode, mapLoaded, currentOpenPopup]);
 
   return (
-    <div className="relative w-full h-full">
-      <div 
-        ref={mapContainer} 
-        className={className || "w-full h-full"}
-        style={{ minHeight: '100vh' }}
-      />
-      
-      {/* Location Controls Overlay */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        {/* Manual Location Button */}
-        <button
-          onClick={getUserLocation}
-          disabled={locationLoading || !mapLoaded}
-          className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 hover:bg-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
-        >
-          {locationLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span>Getting Location...</span>
-            </>
-          ) : (
-            <>
-              <span>📍</span>
-              <span>My Location</span>
-            </>
-          )}
-        </button>
-        
-        {/* Location Status */}
-        {locationError && (
-          <div className="px-3 py-2 bg-red-100/90 backdrop-blur-sm rounded-lg shadow-lg border border-red-200 text-red-700 text-xs max-w-48">
-            <div className="font-medium">⚠️ Location Error</div>
-            <div className="mt-1">{locationError}</div>
-          </div>
-        )}
-      </div>
-    </div>
+    <div 
+      ref={mapContainer} 
+      className={className || "w-full h-full"}
+      style={{ minHeight: '100vh' }}
+    />
   );
 } 

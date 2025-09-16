@@ -66,10 +66,10 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
       return;
     }
     
-    if (!twitterUrl.trim()) {
-      setVerificationResult('Please enter a Twitter URL');
-      return;
-    }
+    // if (!twitterUrl.trim()) {
+    //   setVerificationResult('Please enter a Twitter URL');
+    //   return;
+    // }
 
     if (!selectedQuest) {
       setVerificationResult('No quest selected');

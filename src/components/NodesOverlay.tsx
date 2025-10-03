@@ -103,10 +103,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({ isVisible, onNodeClick, clo
 
   return (
     <>
-      {/* Desktop Layout */}
-      <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
-        {renderContent()}
-      </div>
+      {/* Desktop Layout removed per design */}
 
       {/* Mobile Layout */}
       <div 

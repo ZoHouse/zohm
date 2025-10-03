@@ -53,52 +53,12 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
   const renderContent = () => (
     <>
       <h2 className="text-2xl font-bold mb-4 text-center">Events</h2>
-      <input 
-        type="text"
-        placeholder="Search events..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="paper-input w-full mb-4"
-      />
-      <div className="flex-1 overflow-y-auto">
-        {filteredEvents.map((event, index) => {
-          const isZoEvent = isZoHouseEvent(event);
-          return (
-            <div 
-              key={index} 
-              onClick={() => { closeMapPopups?.(); onEventClick?.(event); }} 
-              className={`paper-card flex justify-between items-center gap-3 ${isZoEvent ? 'zo-house-event' : ''}`}
-            >
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg mb-1 line-clamp-2">
-                  {isZoEvent && <span className="zo-house-badge">🏠</span>}
-                  {event['Event Name']}
-                </h3>
-                <p className="text-sm">{formatDate(event['Date & Time'])}</p>
-                <p className="text-sm line-clamp-1">{event.Location}</p>
-              </div>
-              {event['Event URL'] && (
-                <div className="flex-shrink-0">
-                  <a 
-                    href={event['Event URL']} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    onClick={e => e.stopPropagation()} 
-                    className={`paper-button text-sm px-3 py-1 ${isZoEvent ? 'zo-house-button' : ''}`}
-                  >
-                    Register
-                  </a>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <p className="text-center mb-4">Browse events using the ticker below and the map.</p>
       <a 
         href="https://zostel.typeform.com/to/LgcBfa0M" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="paper-button mt-4 text-center"
+        className="paper-button mt-2 text-center w-full"
       >
         Host Your Event
       </a>
@@ -107,10 +67,7 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
 
   return (
     <>
-      {/* Desktop Layout */}
-      <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
-        {renderContent()}
-      </div>
+      {/* Desktop Layout removed per design */}
 
       {/* Mobile Layout */}
       <div 

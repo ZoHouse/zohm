@@ -56,11 +56,11 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose 
           </div>
 
           {/* Right: Cards */}
-          <div className="lg:col-span-2 h-full grid grid-rows-2 gap-4 overflow-hidden">
-            <div className="paper-card">
+          <div className="lg:col-span-2 h-full no-hover grid grid-rows-2 gap-4 overflow-hidden">
+            <div className="paper-card no-hover">
               <MainQuestCard />
             </div>
-            <div className="paper-card">
+            <div className="paper-card no-hover">
               <SideQuestCard />
             </div>
           </div>

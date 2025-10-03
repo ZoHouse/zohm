@@ -37,10 +37,10 @@ const MainQuestCard = () => {
     };
 
     return (
-        <div className="relative paper-card overflow-hidden h-full flex flex-col p-4">
+        <div className="relative paper-card no-hover overflow-hidden h-full flex flex-col p-4">
             <div className="flex justify-between items-center mb-2">
                 <h3 className="font-bold text-xl">Main Quest</h3>
-                <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className="paper-button px-2 py-1">
+                <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className="paper-button no-hover px-2 py-1">
                     {isEditing ? <Save size={16} /> : <Edit size={16} />}
                 </button>
             </div>
@@ -65,7 +65,7 @@ const MainQuestCard = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-disabled={!mainQuestUrl}
-                className={`paper-button w-full py-2.5 mt-auto flex items-center justify-center gap-2 ${!mainQuestUrl ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`paper-button no-hover w-full py-2.5 mt-auto flex items-center justify-center gap-2 ${!mainQuestUrl ? 'opacity-50 pointer-events-none' : ''}`}
             >
                 <BookOpen size={16} />
                 <span>Open Quest</span>

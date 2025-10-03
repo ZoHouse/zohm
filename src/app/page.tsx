@@ -8,6 +8,8 @@ import NodesOverlay from '@/components/NodesOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import ProfileSetup from '@/components/ProfileSetup';
 import DashboardOverlay from '@/components/DashboardOverlay';
+import EventTicker from '@/components/EventTicker';
+import NodeTicker from '@/components/NodeTicker';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord, supabase } from '@/lib/supabase';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { useWallet } from '@/hooks/useWallet';
@@ -33,6 +35,7 @@ export default function Home() {
   const [flyToEvent, setFlyToEvent] = useState<EventData | null>(null);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
+  const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
 
   const [showRitual, setShowRitual] = useState(false); // Simple ritual state
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null); // User profile status
@@ -124,6 +127,18 @@ export default function Home() {
 
     // Start loading events immediately
     loadLiveEvents();
+
+    // Load nodes
+    const loadNodes = async () => {
+      try {
+        const { getNodesFromDB } = await import('@/lib/supabase');
+        const data = await getNodesFromDB();
+        if (data) setNodes(data);
+      } catch (e) {
+        console.error('Error loading nodes', e);
+      }
+    };
+    loadNodes();
     
     // Temporary: Set a timeout to prevent infinite loading during development
     const timeoutId = setTimeout(() => {
@@ -171,6 +186,13 @@ export default function Home() {
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
+    if (section === 'events' && typeof window !== 'undefined') {
+      try {
+        (window as any).clearRoute?.();
+      } catch (e) {
+        console.warn('Could not clear route on section change:', e);
+      }
+    }
   };
 
   const handleEventClick = (event: EventData) => {
@@ -351,6 +373,22 @@ export default function Home() {
           isVisible={isDashboardOpen}
           onClose={() => setIsDashboardOpen(false)}
         />
+
+        {/* Tickers above navbar */}
+        {activeSection === 'events' && (
+          <EventTicker events={events} onEventClick={handleEventClick} />
+        )}
+        {activeSection === 'nodes' && (
+          <NodeTicker nodes={nodes} onNodeClick={handleNodeClick} />
+        )}
+
+      {/* Tickers above navbar */}
+      {activeSection === 'events' && (
+        <EventTicker events={events} onEventClick={handleEventClick} />
+      )}
+      {activeSection === 'nodes' && (
+        <NodeTicker nodes={nodes} onNodeClick={handleNodeClick} />
+      )}
 
         {/* Bottom Navigation */}
         <NavBar 

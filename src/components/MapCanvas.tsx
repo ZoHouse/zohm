@@ -49,6 +49,13 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
   const resizeHandlerRef = useRef<(() => void) | undefined>(undefined);
+  const currentRouteSourceId = useRef<string>('user-to-destination-route');
+  const currentRouteLayerId = useRef<string>('user-to-destination-route-layer');
+  const currentRouteMarkers = useRef<mapboxgl.Marker[]>([]);
+  const traversalMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const traversalFrameRef = useRef<number | null>(null);
+  const progressSourceIdRef = useRef<string>('user-to-destination-route-progress');
+  const progressLayerIdRef = useRef<string>('user-to-destination-route-progress-layer');
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -78,6 +85,256 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     } catch (error) {
       console.warn('Error closing popups:', error);
     }
+  };
+
+  // Draw route from user's location to destination coordinates
+  const drawRouteTo = async (destinationLng: number, destinationLat: number) => {
+    if (!map.current) return;
+
+    try {
+      // Determine origin from stored user location or map center as fallback
+      const originLat = (typeof window !== 'undefined' && (window as any).userLocationCoords?.lat) ?? map.current.getCenter().lat;
+      const originLng = (typeof window !== 'undefined' && (window as any).userLocationCoords?.lng) ?? map.current.getCenter().lng;
+
+      // Fetch route from Mapbox Directions API
+      const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${originLng},${originLat};${destinationLng},${destinationLat}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const route = data?.routes?.[0]?.geometry;
+      if (!route) {
+        console.warn('No route received from Directions API');
+        return;
+      }
+
+      const routeGeojson: GeoJSON.Feature<GeoJSON.LineString> = {
+        type: 'Feature',
+        properties: {},
+        geometry: route
+      };
+
+      // Remove existing route layer/source if present
+      try {
+        if (map.current.getLayer(currentRouteLayerId.current)) {
+          map.current.removeLayer(currentRouteLayerId.current);
+        }
+      } catch {}
+      try {
+        if (map.current.getSource(currentRouteSourceId.current)) {
+          map.current.removeSource(currentRouteSourceId.current);
+        }
+      } catch {}
+
+      // Clear existing origin/destination markers
+      currentRouteMarkers.current.forEach(m => {
+        try { m.remove(); } catch {}
+      });
+      currentRouteMarkers.current = [];
+
+      // Add new source and layer for the route
+      map.current.addSource(currentRouteSourceId.current, {
+        type: 'geojson',
+        data: routeGeojson
+      });
+
+      map.current.addLayer({
+        id: currentRouteLayerId.current,
+        type: 'line',
+        source: currentRouteSourceId.current,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#90EE90',
+          'line-width': 9,
+          'line-opacity': 1,
+          'line-blur': 0.15
+        }
+      });
+
+      // Add simple origin and destination markers
+      const originMarker = new mapboxgl.Marker({ color: '#3b82f6' })
+        .setLngLat([originLng, originLat])
+        .addTo(map.current);
+      const destinationMarker = new mapboxgl.Marker({ color: '#ef4444' })
+        .setLngLat([destinationLng, destinationLat])
+        .addTo(map.current);
+      currentRouteMarkers.current.push(originMarker, destinationMarker);
+
+      // Fit bounds to the route, preserving current camera angle
+      const bounds = new mapboxgl.LngLatBounds();
+      route.coordinates.forEach((c: [number, number]) => bounds.extend(c));
+      const currentPitch = map.current.getPitch();
+      const currentBearing = map.current.getBearing();
+      map.current.fitBounds(bounds, { padding: 60, duration: 800, pitch: currentPitch, bearing: currentBearing });
+
+      // Start traversal animation after bounds fit
+      startRouteTraversal(route.coordinates as [number, number][]);
+    } catch (error) {
+      console.warn('Error drawing route:', error);
+    }
+  };
+
+  // Haversine distance in meters
+  const haversineMeters = (lng1: number, lat1: number, lng2: number, lat2: number): number => {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const R = 6371000; // meters
+    const φ1 = toRad(lat1);
+    const φ2 = toRad(lat2);
+    const Δφ = toRad(lat2 - lat1);
+    const Δλ = toRad(lng2 - lng1);
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Animate a marker along the route and show progress line, following the camera
+  const startRouteTraversal = (coordinates: [number, number][]) => {
+    if (!map.current || !coordinates || coordinates.length < 2) return;
+
+    // Cancel any existing traversal
+    if (traversalFrameRef.current) {
+      try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
+      traversalFrameRef.current = null;
+    }
+    if (traversalMarkerRef.current) {
+      try { traversalMarkerRef.current.remove(); } catch {}
+      traversalMarkerRef.current = null;
+    }
+    try {
+      if (map.current.getLayer(progressLayerIdRef.current)) map.current.removeLayer(progressLayerIdRef.current);
+    } catch {}
+    try {
+      if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current);
+    } catch {}
+
+    // Add progress source/layer
+    const progressGeojson: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: [coordinates[0]] }
+    };
+    map.current.addSource(progressSourceIdRef.current, {
+      type: 'geojson',
+      data: progressGeojson
+    });
+    map.current.addLayer({
+      id: progressLayerIdRef.current,
+      type: 'line',
+      source: progressSourceIdRef.current,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#90EE90',
+        'line-width': 9,
+        'line-opacity': 0.9
+      }
+    });
+
+    // Moving marker
+    traversalMarkerRef.current = new mapboxgl.Marker({ color: '#22c55e' })
+      .setLngLat(coordinates[0])
+      .addTo(map.current);
+
+    // Precompute cumulative distances
+    const cum: number[] = [0];
+    for (let i = 1; i < coordinates.length; i++) {
+      const [lng1, lat1] = coordinates[i - 1];
+      const [lng2, lat2] = coordinates[i];
+      const d = haversineMeters(lng1, lat1, lng2, lat2);
+      cum.push(cum[i - 1] + d);
+    }
+    const total = cum[cum.length - 1] || 1;
+    const durationMs = Math.min(20000, Math.max(6000, total / 0.8)); // ~0.8 m/ms -> ~1.25 m/s, clamped 6s..20s
+    const start = performance.now();
+
+    const step = () => {
+      if (!map.current) return;
+      const now = performance.now();
+      const t = Math.min(1, (now - start) / durationMs);
+      const targetDist = t * total;
+
+      // Find segment index
+      let idx = 1;
+      while (idx < cum.length && cum[idx] < targetDist) idx++;
+      const i = Math.min(idx, coordinates.length - 1);
+      const prev = i - 1;
+      const segLen = Math.max(1e-6, cum[i] - cum[prev]);
+      const segT = Math.min(1, Math.max(0, (targetDist - cum[prev]) / segLen));
+      const [lng1, lat1] = coordinates[prev];
+      const [lng2, lat2] = coordinates[i];
+      const lng = lng1 + (lng2 - lng1) * segT;
+      const lat = lat1 + (lat2 - lat1) * segT;
+
+      // Update marker and progress line
+      try { traversalMarkerRef.current?.setLngLat([lng, lat]); } catch {}
+      try {
+        const progressed = coordinates.slice(0, i);
+        progressed.push([lng, lat]);
+        (map.current.getSource(progressSourceIdRef.current) as mapboxgl.GeoJSONSource)?.setData({
+          type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: progressed }
+        } as any);
+      } catch {}
+
+      // Keep camera centered without changing angle
+      try { map.current.setCenter([lng, lat]); } catch {}
+
+      if (t < 1) {
+        traversalFrameRef.current = requestAnimationFrame(step);
+      } else {
+        traversalFrameRef.current = null;
+      }
+    };
+
+    traversalFrameRef.current = requestAnimationFrame(step);
+  };
+
+  // Clear any drawn route and its markers
+  const clearRoute = () => {
+    if (!map.current) return;
+    try {
+      // Remove route layer/source
+      try {
+        if (map.current.getLayer(currentRouteLayerId.current)) {
+          map.current.removeLayer(currentRouteLayerId.current);
+        }
+      } catch {}
+      try {
+        if (map.current.getSource(currentRouteSourceId.current)) {
+          map.current.removeSource(currentRouteSourceId.current);
+        }
+      } catch {}
+
+      // Remove route markers
+      currentRouteMarkers.current.forEach(m => {
+        try { m.remove(); } catch {}
+      });
+      currentRouteMarkers.current = [];
+
+      // Cancel traversal and remove marker
+      if (traversalFrameRef.current) {
+        try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
+        traversalFrameRef.current = null;
+      }
+      if (traversalMarkerRef.current) {
+        try { traversalMarkerRef.current.remove(); } catch {}
+        traversalMarkerRef.current = null;
+      }
+
+      // Remove progress line
+      try { if (map.current.getLayer(progressLayerIdRef.current)) map.current.removeLayer(progressLayerIdRef.current); } catch {}
+      try { if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current); } catch {}
+    } catch (e) {
+      console.warn('Error clearing route:', e);
+    }
+  };
+
+  const clearAllPopupsAndRoute = () => {
+    try {
+      closeAllPopups();
+    } catch {}
+    try {
+      clearRoute();
+    } catch {}
   };
 
   // Add Zo House markers with custom animated icon
@@ -122,9 +379,12 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           <h3>🏠 ${house.name}</h3>
           <p>📍 ${house.address}</p>
           <p>✨ ${house.description}</p>
-          <div style="margin-top: 16px;">
+          <div style="margin-top: 16px; display: flex; gap: 8px;">
             <button onclick="window.open('https://zo.house', '_blank')" class="paper-button">
-              Visit Website
+              Visit
+            </button>
+            <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="paper-button">
+              Directions
             </button>
           </div>
         `;
@@ -398,6 +658,19 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         // Add Zo House markers
         addZoHouseMarkers();
         addPartnerNodeMarkers();
+
+        // Expose directions helper on window for popup buttons
+        try {
+          if (typeof window !== 'undefined') {
+            (window as any).showRouteTo = (lng: number, lat: number) => {
+              closeAllPopups();
+              drawRouteTo(lng, lat);
+            };
+            (window as any).clearRoute = () => {
+              clearAllPopupsAndRoute();
+            };
+          }
+        } catch {}
       });
 
     } catch (error) {
@@ -708,7 +981,10 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         <p>🏷️ ${flyToNode.type.replace('_', ' ')}</p>
         <p>📍 ${flyToNode.city}, ${flyToNode.country}</p>
         <p class="line-clamp-3">${flyToNode.description || ''}</p>
-        ${flyToNode.website ? `<div style="margin-top: 12px;"><a href="${flyToNode.website}" target="_blank" class="paper-button">Visit</a></div>` : ''}
+        <div style="margin-top: 12px; display: flex; gap: 8px;">
+          ${flyToNode.website ? `<a href="${flyToNode.website}" target="_blank" class="paper-button">Visit</a>` : ''}
+          <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button">Directions</button>
+        </div>
       `;
 
       const nodePopup = new mapboxgl.Popup({

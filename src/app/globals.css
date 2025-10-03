@@ -205,6 +205,66 @@ h1, h2, h3 {
   box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
 }
 
+/* Events ticker strip (fixed above navbar) */
+.event-ticker {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 108px; /* slightly above the navbar */
+  z-index: 50;
+  padding: 0;
+}
+
+.event-ticker-viewport {
+  width: 100%;
+  margin: 0;
+  border: 2px solid var(--paper-ink);
+  border-radius: 0;
+  background-color: var(--paper-bg);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.event-ticker-track {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker-scroll 90s linear infinite; /* even slower scroll */
+}
+
+/* Pause ticker on hover */
+.event-ticker-viewport:hover .event-ticker-track {
+  animation-play-state: paused;
+  cursor: pointer;
+}
+
+.event-ticker-item {
+  display: inline-block;
+  padding: 10px 24px;
+  font-family: var(--paper-font);
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Make nodes ticker faster than events */
+.node-ticker .event-ticker-track {
+  animation-duration: 10s; /* faster than events' 70s */
+}
+
+/* Use a separate keyframe for nodes to match 4x duplication (25%) */
+@keyframes ticker-scroll-nodes {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
+}
+
+.node-ticker .event-ticker-track {
+  animation-name: ticker-scroll-nodes;
+}
+
 .w-12 {
   width: 3rem;
 }
@@ -474,6 +534,12 @@ h1, h2, h3 {
 .paper-button:active {
   box-shadow: 0px 0px 0px rgba(0,0,0,0.2);
   transform: translate(4px, 4px);
+}
+
+/* Disable hover effects for buttons when needed */
+.paper-button.no-hover:hover {
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+  transform: none;
 }
 
 .paper-input {

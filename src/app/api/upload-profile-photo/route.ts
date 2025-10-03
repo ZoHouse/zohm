@@ -69,9 +69,13 @@ export async function POST(request: NextRequest) {
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/${encodedBucketName}/${encodedFileName}`;
 
     // Also get the signed URL for comparison/debugging
-    const { data: signedUrlData } = supabase.storage
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
       .from('Profile Photos')
       .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
+
+    if (signedUrlError) {
+      console.warn('⚠️ Signed URL generation failed, falling back to public URL:', signedUrlError);
+    }
 
     console.log('URL comparison:', {
       publicUrl,

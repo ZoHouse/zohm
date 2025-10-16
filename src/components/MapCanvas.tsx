@@ -435,8 +435,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     });
   };
 
-  // Add partner node markers with custom icons
-  const addPartnerNodeMarkers = () => {
+  // 🦄 Add partner node markers from database (Unicorn: all use Zo logo)
+  const addPartnerNodeMarkers = async () => {
     if (!map.current) return;
 
     // Clear any existing partner node markers
@@ -449,8 +449,102 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     });
     partnerNodeMarkers.current = [];
 
-    console.log('🌐 Adding partner node markers...');
-    return; // partner node markers handled elsewhere
+    console.log('🦄 Loading partner nodes from database...');
+    
+    try {
+      const { getNodesFromDB } = await import('@/lib/supabase');
+      const nodes = await getNodesFromDB();
+      
+      if (!nodes || nodes.length === 0) {
+        console.log('🦄 No partner nodes found in database');
+        return;
+      }
+      
+      console.log(`🦄 Adding ${nodes.length} partner node markers...`);
+      
+      nodes.forEach((node) => {
+        if (!node.latitude || !node.longitude) {
+          console.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
+          return;
+        }
+        
+        try {
+          // 🦄 UNICORN: All nodes use the Zo flexing white logo
+          const markerElement = document.createElement('img');
+          markerElement.src = '/Zo_flexing_white.png';
+          markerElement.style.width = '50px';
+          markerElement.style.height = '50px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.cursor = 'pointer';
+          markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+          markerElement.title = node.name;
+          
+          const nodeMarker = new mapboxgl.Marker(markerElement)
+            .setLngLat([node.longitude, node.latitude])
+            .addTo(map.current!);
+          
+          console.log(`🦄 Added marker for ${node.name}`);
+          
+          // Store marker reference
+          partnerNodeMarkers.current.push(nodeMarker);
+          
+          // Create popup for the node
+          const popupContent = `
+            <h3>${node.name}</h3>
+            <p>🏷️ ${node.type.replace('_', ' ')}</p>
+            <p>📍 ${node.city}, ${node.country}</p>
+            <p class="text-sm">${node.description || ''}</p>
+            ${node.features ? `<p class="text-xs mt-2">✨ ${Array.isArray(node.features) ? node.features.join(', ') : node.features}</p>` : ''}
+            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+              ${node.website ? `<a href="${node.website}" target="_blank" class="paper-button text-xs px-2 py-1">Visit</a>` : ''}
+              ${node.twitter ? `<a href="https://twitter.com/${node.twitter.replace('@', '')}" target="_blank" class="paper-button text-xs px-2 py-1">Twitter</a>` : ''}
+              <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="paper-button text-xs px-2 py-1">Directions</button>
+            </div>
+          `;
+          
+          const popup = new mapboxgl.Popup({
+            className: 'paper-card',
+            closeButton: true,
+            offset: [0, -15],
+            maxWidth: '300px',
+            anchor: 'bottom'
+          })
+          .setHTML(popupContent);
+          
+          // Attach popup to marker
+          nodeMarker.setPopup(popup);
+          
+          // Handle marker click to track popup state
+          markerElement.addEventListener('click', () => {
+            if (currentOpenPopup && currentOpenPopup !== popup) {
+              try {
+                currentOpenPopup.remove();
+                activePopups.current.delete(currentOpenPopup);
+              } catch (error) {
+                console.warn('Error closing previous popup:', error);
+              }
+            }
+            setCurrentOpenPopup(popup);
+            activePopups.current.add(popup);
+            
+            popup.once('close', () => {
+              if (currentOpenPopup === popup) {
+                setCurrentOpenPopup(null);
+              }
+              activePopups.current.delete(popup);
+            });
+          });
+          
+        } catch (error) {
+          console.error(`❌ Error creating marker for ${node.name}:`, error);
+        }
+      });
+      
+      console.log(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
+      
+    } catch (error) {
+      console.error('❌ Error loading partner nodes:', error);
+    }
     
     /* Legacy example code removed
       try {

@@ -557,7 +557,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const initialZoom = isMobile() ? 12.5 : 18.5;
+      const initialZoom = isMobile() ? 11 : 12.5; // SF city-level view (Unicorn)
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,

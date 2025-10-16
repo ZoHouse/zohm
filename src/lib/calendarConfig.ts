@@ -43,4 +43,4 @@ export const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_GL_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX ||
   '';
-export const DEFAULT_CENTER: [number, number] = [77.6413, 12.9141]; // Bangalore, Karnataka 
+export const DEFAULT_CENTER: [number, number] = [-122.4194, 37.7749]; // San Francisco, CA (Unicorn) 

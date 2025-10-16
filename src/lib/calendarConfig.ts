@@ -3,9 +3,9 @@ import { getActiveCalendars } from './supabase';
 
 // Minimal fallback for emergency cases only
 const EMERGENCY_FALLBACK_URLS = [
-  '/api/calendar?id=cal-ZVonmjVxLk7F2oM', // Zo House Bangalore
-  '/api/calendar?id=cal-3YNnBTToy9fnnjQ', // Zo House San Francisco
-  '/api/calendar?id=cal-4BIGfE8WhTFQj9H'  // ETHGlobal
+  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM', // Zo House Bangalore
+  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ', // Zo House San Francisco
+  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-4BIGfE8WhTFQj9H'  // ETHGlobal
 ];
 
 // Dynamic calendar URLs from database

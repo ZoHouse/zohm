@@ -399,43 +399,9 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
   );
   
   console.log(`✅ Finished processing events. Events with coordinates:`, processedEvents.filter(e => e.Latitude && e.Longitude).length);
+  console.log(`📋 Final events:`, processedEvents.map(e => ({ name: e['Event Name'], location: e.Location, coords: e.Latitude && e.Longitude ? `[${e.Latitude}, ${e.Longitude}]` : 'None' })));
   
-  // 🦄 UNICORN: Filter to SF Bay Area events only
-  // SF Bay Area approximate boundaries: 
-  // Latitude: 37.2-38.0, Longitude: -123.0 to -121.5
-  const sfFilteredEvents = processedEvents.filter(event => {
-    if (!event.Latitude || !event.Longitude) {
-      // Also check location text for SF references
-      const locationLower = event.Location?.toLowerCase() || '';
-      const isSFLocation = locationLower.includes('san francisco') || 
-                          locationLower.includes('sf') ||
-                          locationLower.includes('bay area') ||
-                          locationLower.includes('oakland') ||
-                          locationLower.includes('berkeley') ||
-                          locationLower.includes('palo alto') ||
-                          locationLower.includes('silicon valley');
-      if (isSFLocation) {
-        console.log(`🦄 Including SF event without coords based on location text: ${event['Event Name']}`);
-        return true;
-      }
-      return false;
-    }
-    
-    const lat = parseFloat(event.Latitude);
-    const lng = parseFloat(event.Longitude);
-    
-    // SF Bay Area boundaries
-    const isInSFBayArea = lat >= 37.2 && lat <= 38.0 && lng >= -123.0 && lng <= -121.5;
-    
-    if (!isInSFBayArea) {
-      console.log(`🦄 Filtering out non-SF event: ${event['Event Name']} at [${lat}, ${lng}]`);
-    }
-    
-    return isInSFBayArea;
-  });
-  
-  console.log(`🦄 UNICORN: Filtered to ${sfFilteredEvents.length} SF Bay Area events (from ${processedEvents.length} total)`);
-  console.log(`📋 Final SF events:`, sfFilteredEvents.map(e => ({ name: e['Event Name'], location: e.Location, coords: e.Latitude && e.Longitude ? `[${e.Latitude}, ${e.Longitude}]` : 'None' })));
-  
-  return sfFilteredEvents;
+  // 🦄 UNICORN: Temporarily disabled SF filtering for debugging
+  // TODO: Re-enable once we verify events are loading
+  return processedEvents;
 } 

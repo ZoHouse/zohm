@@ -29,7 +29,10 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose 
       <div className="relative paper-overlay w-[95vw] max-w-6xl h-[90vh] mx-auto flex flex-col overflow-hidden pointer-events-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-bold">Dashboard</h2>
+          <div className="flex items-center gap-3">
+            <img src="/dashboard.png" alt="Dashboard" className="w-8 h-8 object-contain" />
+            <h2 className="text-xl font-bold">Dashboard</h2>
+          </div>
           <button
             onClick={onClose}
             className="paper-button w-8 h-8 flex items-center justify-center"

@@ -215,12 +215,6 @@ export default function Home() {
     console.log('Map is ready!');
   };
 
-  // Wrapper function for mobile view that matches the expected signature
-  const handleMapReadyMobile = (map: mapboxgl.Map) => {
-    handleMapReady(map, () => {});
-  };
-
-
   // Handle red pill click - connect wallet
   const handleRedPillClick = async () => {
     console.log('🔴 Red pill clicked! Connecting wallet...');
@@ -336,31 +330,71 @@ export default function Home() {
   // If user is connected and already has a profile, skip ritual and go to main page
   if (wallet.isConnected && userProfileStatus === 'exists') {
     console.log('✅ User already has profile, going directly to main page');
-    
-    // Render mobile or desktop view based on screen size
-    if (isMobile) {
-      return (
-        <MobileView
-          events={events}
-          onMapReady={handleMapReadyMobile}
+    return (
+      <main className="relative w-full h-screen overflow-hidden bg-[#f4f1ea]">
+        {/* Map Canvas */}
+        <MapCanvas 
+          className="absolute inset-0" 
+          onMapReady={handleMapReady}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
-          onEventClick={handleEventClick}
-          onNodeClick={handleNodeClick}
+          events={events}
         />
-      );
-    }
 
-    return (
-      <DesktopView
-        events={events}
-        nodes={nodes}
-        onMapReady={handleMapReady}
-        flyToEvent={flyToEvent}
-        flyToNode={flyToNode}
-        onEventClick={handleEventClick}
-        onNodeClick={handleNodeClick}
+        {/* Logo/Header */}
+        <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-[500px] px-4">
+          <img 
+            src="/Z_to_House.gif" 
+            alt="Zo House Events Calendar" 
+            className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
+          />
+        </div>
+
+        {/* All Overlays */}
+        <EventsOverlay 
+          isVisible={activeSection === 'events'} 
+          events={events}
+          onEventClick={handleEventClick}
+          closeMapPopups={closePopupsFn}
+        />
+        <NodesOverlay 
+          isVisible={activeSection === 'nodes'}
+          onNodeClick={handleNodeClick}
+          closeMapPopups={closePopupsFn}
+        />
+        <QuestsOverlay isVisible={activeSection === 'quests'} />
+
+        {/* Global Overlays */}
+        <DashboardOverlay 
+          isVisible={isDashboardOpen}
+          onClose={() => setIsDashboardOpen(false)}
+        />
+
+      {/* Tickers above navbar - DESKTOP ONLY */}
+      <div className="hidden md:block">
+        {activeSection === 'events' && (
+          <EventTicker events={events} onEventClick={handleEventClick} />
+        )}
+        {activeSection === 'nodes' && (
+          <NodeTicker nodes={nodes} onNodeClick={handleNodeClick} />
+        )}
+      </div>
+
+      {/* Bottom Navigation - DESKTOP */}
+      <div className="hidden md:block">
+        <NavBar 
+          onSectionChange={handleSectionChange}
+          activeSection={activeSection}
+          onDashboardClick={() => setIsDashboardOpen(true)}
+        />
+      </div>
+
+      {/* Floating Navigation - MOBILE ONLY */}
+      <FloatingNav 
+        onSectionChange={handleSectionChange}
+        activeSection={activeSection}
       />
+    </main>
     );
   }
 
@@ -385,16 +419,88 @@ export default function Home() {
     );
   }
 
+  return (
+    <main className="relative w-full h-screen overflow-hidden bg-[#f4f1ea]">
+      {/* Map Canvas */}
+      <MapCanvas 
+        className="absolute inset-0" 
+        onMapReady={handleMapReady}
+        flyToEvent={flyToEvent}
+        flyToNode={flyToNode}
+        events={events}
+      />
+
+      {/* Logo/Header */}
+      <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-[500px] px-4">
+        <img 
+          src="/Z_to_House.gif" 
+          alt="Zo House Events Calendar" 
+          className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
+        />
+      </div>
+
+      {/* All Overlays */}
+      <EventsOverlay 
+        isVisible={activeSection === 'events'} 
+        events={events}
+        onEventClick={handleEventClick}
+        closeMapPopups={closePopupsFn}
+      />
+      {/* Members overlay removed */}
+      <NodesOverlay 
+        isVisible={activeSection === 'nodes'}
+        onNodeClick={handleNodeClick}
+        closeMapPopups={closePopupsFn}
+      />
+      <QuestsOverlay isVisible={activeSection === 'quests'} />
+
+      {/* Global Overlays */}
+      <DashboardOverlay 
+        isVisible={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+      />
+
+⁠       {/* Old wallet connect button removed - now using red pill flow */} ⁠
+
+
+
+      {/* Tickers above navbar - DESKTOP ONLY */}
+      <div className="hidden md:block">
+        {activeSection === 'events' && (
+          <EventTicker events={events} onEventClick={handleEventClick} />
+        )}
+        {activeSection === 'nodes' && (
+          <NodeTicker nodes={nodes} onNodeClick={handleNodeClick} />
+        )}
+      </div>
+
+      {/* Bottom Navigation - DESKTOP */}
+      <div className="hidden md:block">
+        <NavBar 
+          onSectionChange={handleSectionChange}
+          activeSection={activeSection}
+          onDashboardClick={() => setIsDashboardOpen(true)}
+        />
+      </div>
+
+      {/* Floating Navigation - MOBILE ONLY */}
+      <FloatingNav 
+        onSectionChange={handleSectionChange}
+        activeSection={activeSection}
+      />
+
+    </main>
+  );
+  
+  // Note: The above return statement is never reached. 
   // Render mobile or desktop view based on screen size
   if (isMobile) {
     return (
       <MobileView
         events={events}
-        onMapReady={handleMapReadyMobile}
+        onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}
-        onEventClick={handleEventClick}
-        onNodeClick={handleNodeClick}
       />
     );
   }

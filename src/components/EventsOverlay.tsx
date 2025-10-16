@@ -16,18 +16,26 @@ interface EventsOverlayProps {
   events: EventData[];
   onEventClick?: (event: EventData) => void;
   closeMapPopups?: (() => void) | null;
+  onClose?: () => void;
 }
 
-const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEventClick, closeMapPopups }) => {
+const EventsOverlay: React.FC<EventsOverlayProps> = ({ 
+  isVisible, 
+  events, 
+  onEventClick,
+  closeMapPopups 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEvents, setFilteredEvents] = useState<EventData[]>(events);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     let filtered = events;
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
-      filtered = filtered.filter(e => e['Event Name'].toLowerCase().includes(lower) || e.Location.toLowerCase().includes(lower));
+      filtered = filtered.filter(e => 
+        e['Event Name'].toLowerCase().includes(lower) || 
+        e.Location.toLowerCase().includes(lower)
+      );
     }
     setFilteredEvents(filtered);
   }, [events, searchTerm]);
@@ -37,51 +45,81 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({ isVisible, events, onEven
     return eventDate.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric',
+      year: 'numeric'
     });
   };
 
-  // Check if event is from Zo House (based on location containing "Zo House")
-  const isZoHouseEvent = (event: EventData) => {
-    return event.Location && (
-      event.Location.toLowerCase().includes('zo house') ||
-      event.Location.toLowerCase().includes('zohouse')
-    );
+  const handleEventClick = (event: EventData) => {
+    closeMapPopups?.();
+    onEventClick?.(event);
   };
 
   if (!isVisible) return null;
 
-  const renderContent = () => (
-    <>
-      <h2 className="text-2xl font-bold mb-4 text-center">Events</h2>
-      <p className="text-center mb-4">Browse events using the ticker below and the map.</p>
-      <a 
-        href="https://zostel.typeform.com/to/LgcBfa0M" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="paper-button mt-2 text-center w-full"
-      >
-        Host Your Event
-      </a>
-    </>
-  );
-
   return (
-    <>
-      {/* Desktop Layout removed per design */}
-
-      {/* Mobile Layout */}
-      <div 
-        className={`md:hidden paper-overlay fixed bottom-0 left-0 right-0 z-40 transform transition-transform duration-300 ease-in-out ${isExpanded ? 'translate-y-0' : 'translate-y-[calc(100%-12rem)]'}`}
-        style={{ height: 'calc(100vh - 4rem)' }}
-      >
-        <div className="flex-col h-full">
-          <div className="text-center py-2" onClick={() => setIsExpanded(!isExpanded)}>
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto"></div>
+    <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
+      {/* Header - compact with inline search */}
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <img src="/events.png" alt="Events" className="w-7 h-7 object-contain" />
+          <div className="flex-1">
+            <h2 className="text-xl font-bold">Events</h2>
+            <p className="text-xs text-gray-600">{events.length} upcoming</p>
           </div>
-          {renderContent()}
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="paper-input w-32 text-sm py-1 px-2"
+          />
         </div>
       </div>
-    </>
+
+      {/* Events List */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        {filteredEvents.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">No events found.</div>
+        ) : (
+          <div className="space-y-3">
+            {filteredEvents.map((event, index) => (
+              <div
+                key={index}
+                className="paper-card cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleEventClick(event)}
+              >
+                <h3 className="font-semibold text-base mb-1">{event['Event Name']}</h3>
+                <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
+                <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                {event['Event URL'] && (
+                  <a 
+                    href={event['Event URL']} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View Details →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 flex justify-center">
+        <a 
+          href="https://zostel.typeform.com/to/LgcBfa0M" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="paper-button text-center text-sm px-6"
+        >
+          Host Your Event
+        </a>
+      </div>
+    </div>
   );
 };
 

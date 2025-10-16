@@ -377,24 +377,22 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
 
         // Create popup content for Zo House
         const zoPopupContent = `
-          <h3>🏠 ${house.name}</h3>
-          <p>📍 ${house.address}</p>
-          <p>✨ ${house.description}</p>
-          <div style="margin-top: 16px; display: flex; gap: 8px;">
-            <button onclick="window.open('https://zo.house', '_blank')" class="paper-button">
-              Visit
-            </button>
-            <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="paper-button">
-              Directions
-            </button>
+          <div style="padding: 0;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">🏠 ${house.name}</h3>
+            <p style="margin: 4px 0; font-size: 13px;">📍 ${house.address}</p>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+              <button onclick="window.open('https://zo.house', '_blank')" class="paper-button" style="flex: 1; font-size: 13px;">Visit</button>
+              <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+            </div>
           </div>
         `;
 
         const zoPopup = new mapboxgl.Popup({
-          className: 'paper-card',
-          closeButton: true,
+          className: 'node-popup-clean',
+          closeButton: false,
+          closeOnClick: true,
           offset: [0, -45],
-          maxWidth: '320px',
+          maxWidth: '280px',
           anchor: 'bottom'
         }).setHTML(zoPopupContent);
 
@@ -491,23 +489,22 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           
           // Create popup for the node
           const popupContent = `
-            <h3>${node.name}</h3>
-            <p>🏷️ ${node.type.replace('_', ' ')}</p>
-            <p>📍 ${node.city}, ${node.country}</p>
-            <p class="text-sm">${node.description || ''}</p>
-            ${node.features ? `<p class="text-xs mt-2">✨ ${Array.isArray(node.features) ? node.features.join(', ') : node.features}</p>` : ''}
-            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-              ${node.website ? `<a href="${node.website}" target="_blank" class="paper-button text-xs px-2 py-1">Visit</a>` : ''}
-              ${node.twitter ? `<a href="https://twitter.com/${node.twitter.replace('@', '')}" target="_blank" class="paper-button text-xs px-2 py-1">Twitter</a>` : ''}
-              <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="paper-button text-xs px-2 py-1">Directions</button>
+            <div style="padding: 0;">
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${node.name}</h3>
+              <p style="margin: 4px 0; font-size: 13px;">📍 ${node.city}, ${node.country}</p>
+              <div style="margin-top: 12px; display: flex; gap: 8px;">
+                ${node.website ? `<a href="${node.website}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Visit</a>` : ''}
+                <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+              </div>
             </div>
           `;
           
           const popup = new mapboxgl.Popup({
-            className: 'paper-card',
-            closeButton: true,
+            className: 'node-popup-clean',
+            closeButton: false,
+            closeOnClick: true,
             offset: [0, -15],
-            maxWidth: '300px',
+            maxWidth: '280px',
             anchor: 'bottom'
           })
           .setHTML(popupContent);
@@ -652,13 +649,14 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const initialZoom = isMobile() ? 11 : 12.5; // SF city-level view (Unicorn)
+      const initialZoom = isMobile() ? 17.5 : 17; // 🦄 Zoomed in to see 3D buildings
+      const initialPitch = isMobile() ? 65 : 65; // 🦄 Tilted for dramatic 3D view
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         center: DEFAULT_CENTER,
         zoom: initialZoom,
-        pitch: 60,
+        pitch: initialPitch,
         bearing: -30,
         style: 'mapbox://styles/mapbox/standard'
       });
@@ -823,14 +821,17 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
 
           // Create popup content matching the event popup style
           const userPopupContent = `
-            <h3>🦄 Your Location</h3>
-            <p>📍 Current position</p>
-            <p>📱 Auto-detected via GPS</p>
+            <div style="padding: 0;">
+              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">🦄 Your Location</h3>
+              <p style="margin: 4px 0; font-size: 13px;">📍 Current position</p>
+              <p style="margin: 4px 0; font-size: 13px;">📱 Auto-detected via GPS</p>
+            </div>
           `;
 
           const userPopup = new mapboxgl.Popup({
-            className: 'paper-card',
-            closeButton: true,
+            className: 'node-popup-clean',
+            closeButton: false,
+            closeOnClick: true,
             offset: [0, -15],
             maxWidth: '280px',
             anchor: 'bottom'
@@ -965,21 +966,27 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         });
 
         // Create popup content
+        // Determine the event URL - check Event URL field first, then Location if it contains luma.com
+        const eventUrl = event['Event URL'] || (event.Location?.includes('luma.com') ? event.Location : null);
+        const displayLocation = event.Location?.includes('luma.com') ? '' : event.Location;
+        
         const popupContent = `
-          <h3>${event['Event Name'] || "N/A"}</h3>
-          <p>📅 ${formattedDate}</p>
-          <p>📍 ${event.Location || "N/A"}</p>
-          ${event['Event URL'] ? `
-            <div style="margin-top: 16px;">
-              <a href="${event['Event URL']}" target="_blank" class="paper-button">Register</a>
+          <div style="padding: 0;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${event['Event Name'] || "N/A"}</h3>
+            <p style="margin: 4px 0; font-size: 13px;">📅 ${formattedDate}</p>
+            ${displayLocation ? `<p style="margin: 4px 0; font-size: 13px;">📍 ${displayLocation}</p>` : ''}
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+              ${eventUrl ? `<a href="${eventUrl}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Register</a>` : `<button class="paper-button" style="flex: 1; text-align: center; font-size: 13px; opacity: 0.5; cursor: not-allowed;" disabled>Register</button>`}
+              <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
             </div>
-          ` : ''}
+          </div>
         `;
 
         // Create popup once and reuse it
         const popup = new mapboxgl.Popup({
-            className: 'paper-card',
-            closeButton: true,
+            className: 'node-popup-clean',
+            closeButton: false,
+            closeOnClick: true,
             offset: [0, -15],
             maxWidth: '280px',
             anchor: 'bottom'
@@ -1119,23 +1126,23 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       }
 
       // Prepare popup content for the node
-      const membersText = '';
       const popupContent = `
-        <h3>${flyToNode.name}</h3>
-        <p>🏷️ ${flyToNode.type.replace('_', ' ')}</p>
-        <p>📍 ${flyToNode.city}, ${flyToNode.country}</p>
-        <p class="line-clamp-3">${flyToNode.description || ''}</p>
-        <div style="margin-top: 12px; display: flex; gap: 8px;">
-          ${flyToNode.website ? `<a href="${flyToNode.website}" target="_blank" class="paper-button">Visit</a>` : ''}
-          <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button">Directions</button>
+        <div style="padding: 0;">
+          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${flyToNode.name}</h3>
+          <p style="margin: 4px 0; font-size: 13px;">📍 ${flyToNode.city}, ${flyToNode.country}</p>
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            ${flyToNode.website ? `<a href="${flyToNode.website}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Visit</a>` : ''}
+            <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+          </div>
         </div>
       `;
 
       const nodePopup = new mapboxgl.Popup({
-        className: 'paper-card',
-        closeButton: true,
+        className: 'node-popup-clean',
+        closeButton: false,
+        closeOnClick: true,
         offset: [0, -15],
-        maxWidth: '300px',
+        maxWidth: '280px',
         anchor: 'bottom'
       })
       .setLngLat([lng, lat])

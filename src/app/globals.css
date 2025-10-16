@@ -120,6 +120,21 @@ h1, h2, h3 {
   transform: none !important;
 }
 
+/* Clean node popup styling */
+.node-popup-clean .mapboxgl-popup-content {
+  padding: 16px !important;
+  border: 2px solid var(--paper-ink);
+  border-radius: 12px;
+  background: var(--paper-bg);
+  box-shadow: 4px 4px 0px var(--paper-ink);
+  animation: none !important;
+  transform: none !important;
+}
+
+.node-popup-clean .mapboxgl-popup-tip {
+  border-top-color: var(--paper-ink) !important;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 6px;
@@ -228,7 +243,7 @@ h1, h2, h3 {
 .event-ticker-track {
   display: inline-block;
   white-space: nowrap;
-  animation: ticker-scroll 90s linear infinite; /* even slower scroll */
+  animation: ticker-scroll 300s linear infinite; /* 🦄 very slow for maximum readability */
 }
 
 /* Pause ticker on hover */
@@ -250,9 +265,9 @@ h1, h2, h3 {
   100% { transform: translateX(-50%); }
 }
 
-/* Make nodes ticker faster than events */
+/* 🦄 UNICORN: Slow down nodes ticker for readability */
 .node-ticker .event-ticker-track {
-  animation-duration: 10s; /* faster than events' 70s */
+  animation-duration: 120s; /* slower, readable speed */
 }
 
 /* Use a separate keyframe for nodes to match 4x duplication (25%) */

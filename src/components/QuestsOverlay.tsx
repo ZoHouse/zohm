@@ -8,13 +8,13 @@ import LeaderboardsOverlay from './LeaderboardsOverlay';
 
 interface QuestsOverlayProps {
   isVisible: boolean;
+  onClose?: () => void;
 }
 
-const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
+const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => {
   const { address: walletAddress, isConnected } = useWallet();
   const [quests, setQuests] = useState<QuestEntry[] | null>(null);
   const [leaders, setLeaders] = useState<LeaderboardEntry[] | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedQuest, setSelectedQuest] = useState<QuestEntry | null>(null);
@@ -169,7 +169,10 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
   const content = (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Quests</h2>
+        <div className="flex items-center gap-3">
+          <img src="/Quests.png" alt="Quests" className="w-8 h-8 object-contain" />
+          <h2 className="text-2xl font-bold">Quests</h2>
+        </div>
         <button className="paper-button" onClick={() => setShowLeaderboard(true)}>View Leaderboard</button>
       </div>
       
@@ -220,22 +223,9 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible }) => {
 
   return (
     <>
-      {/* Desktop overlay */}
+      {/* Desktop only - no mobile overlay */}
       <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
         {content}
-      </div>
-
-      {/* Mobile sheet */}
-      <div
-        className={`md:hidden paper-overlay fixed bottom-0 left-0 right-0 z-40 transform transition-transform duration-300 ease-in-out ${isExpanded ? 'translate-y-0' : 'translate-y-[calc(100%-12rem)]'}`}
-        style={{ height: 'calc(100vh - 4rem)' }}
-      >
-        <div className="flex-col h-full">
-          <div className="text-center py-2" onClick={() => setIsExpanded(!isExpanded)}>
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto"></div>
-          </div>
-          {content}
-        </div>
       </div>
 
       {/* Join Quest Popup */}

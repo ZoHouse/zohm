@@ -48,6 +48,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
+  const userLocationMarker = useRef<mapboxgl.Marker | null>(null); // 🦄 User location unicorn marker
   const resizeHandlerRef = useRef<(() => void) | undefined>(undefined);
   const currentRouteSourceId = useRef<string>('user-to-destination-route');
   const currentRouteLayerId = useRef<string>('user-to-destination-route-layer');
@@ -795,10 +796,35 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           // Update map center to user location
           map.current.setCenter(coords);
 
+          // 🦄 Remove old user location marker if it exists
+          if (userLocationMarker.current) {
+            userLocationMarker.current.remove();
+          }
+
+          // 🦄 UNICORN: Create custom user location marker with unicorn GIF
+          const userMarkerElement = document.createElement('img');
+          userMarkerElement.src = '/Green+Day+Unicorn.gif';
+          userMarkerElement.style.width = '60px';
+          userMarkerElement.style.height = '60px';
+          userMarkerElement.style.borderRadius = '50%';
+          userMarkerElement.style.cursor = 'pointer';
+          userMarkerElement.style.boxShadow = '0 4px 16px rgba(255, 105, 180, 0.5)'; // Pink glow
+          userMarkerElement.style.border = '3px solid #ff69b4'; // Pink border
+          userMarkerElement.title = 'Your Location 🦄';
+
+          const userMarker = new mapboxgl.Marker(userMarkerElement)
+            .setLngLat(coords)
+            .addTo(map.current!);
+
+          // Store marker reference
+          userLocationMarker.current = userMarker;
+
+          console.log('🦄 Added unicorn marker for user location');
+
           // Create popup content matching the event popup style
           const userPopupContent = `
-            <h3>📍 Your Location</h3>
-            <p>🔵 Current position</p>
+            <h3>🦄 Your Location</h3>
+            <p>📍 Current position</p>
             <p>📱 Auto-detected via GPS</p>
           `;
 
@@ -809,6 +835,30 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
             maxWidth: '280px',
             anchor: 'bottom'
           }).setHTML(userPopupContent);
+
+          // Attach popup to marker
+          userMarker.setPopup(userPopup);
+          
+          // Handle marker click
+          userMarkerElement.addEventListener('click', () => {
+            if (currentOpenPopup && currentOpenPopup !== userPopup) {
+              try {
+                currentOpenPopup.remove();
+                activePopups.current.delete(currentOpenPopup);
+              } catch (error) {
+                console.warn('Error closing previous popup:', error);
+              }
+            }
+            setCurrentOpenPopup(userPopup);
+            activePopups.current.add(userPopup);
+            
+            userPopup.once('close', () => {
+              if (currentOpenPopup === userPopup) {
+                setCurrentOpenPopup(null);
+              }
+              activePopups.current.delete(userPopup);
+            });
+          });
           
           // Show popup briefly
           setTimeout(() => {

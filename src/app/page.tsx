@@ -67,17 +67,17 @@ export default function Home() {
                   .single();
                 
                 if (error && error.code !== 'PGRST116') {
-                  console.error('Error checking user profile:', error);
+                  console.warn('⚠️ Profile check returned error (this is okay for new users):', error.message || 'No details');
                   setUserProfileStatus('not_exists');
                 } else if (data && data.name) {
                   console.log('✅ User profile already exists:', data.name);
                   setUserProfileStatus('exists');
                 } else {
-                  console.log('❌ User profile not found');
+                  console.log('❌ User profile not found - profile setup will be shown');
                   setUserProfileStatus('not_exists');
                 }
               } catch (error) {
-                console.error('Exception checking user profile:', error);
+                console.warn('⚠️ Exception checking user profile (this is okay for new users):', error);
                 setUserProfileStatus('not_exists');
               }
             }

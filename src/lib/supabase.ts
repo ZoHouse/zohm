@@ -53,7 +53,7 @@ export async function verifyMembersTable() {
         console.log(createMembersTableSQL);
         return { exists: false, error: 'Table does not exist' };
       } else {
-        console.error('❌ Error accessing members table:', error);
+        console.warn('⚠️ Error accessing members table (this may be okay):', error.message || 'Unknown error');
         return { exists: false, error: error.message };
       }
     }
@@ -460,12 +460,12 @@ export async function getActiveCalendars(): Promise<CalendarSource[] | null> {
         console.log('ℹ️ calendars table not found. Database may need setup.');
         return [];
       }
-      console.error('Error fetching calendars:', error);
+      console.warn('⚠️ Error fetching calendars (this may be okay):', error.message || 'Unknown error');
       return null;
     }
     return (data as CalendarSource[]) || [];
   } catch (e) {
-    console.error('Exception fetching calendars:', e);
+    console.warn('⚠️ Exception fetching calendars (this may be okay):', e);
     return null;
   }
 }

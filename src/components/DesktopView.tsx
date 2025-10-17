@@ -7,6 +7,7 @@ import EventsOverlay from '@/components/EventsOverlay';
 import NodesOverlay from '@/components/NodesOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
+import WalletOverlay from '@/components/WalletOverlay';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -40,6 +41,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
@@ -97,6 +99,13 @@ const DesktopView: React.FC<DesktopViewProps> = ({
       <DashboardOverlay 
         isVisible={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
+        onOpenWallet={() => setIsWalletOpen(true)}
+      />
+
+      {/* Wallet Overlay - rendered at root level */}
+      <WalletOverlay 
+        isVisible={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
       />
 
       {/* Bottom Navigation - DESKTOP */}

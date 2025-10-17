@@ -65,7 +65,7 @@ export function useProfileGate() {
       });
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
+        console.warn('⚠️ Profile query returned error (this is okay for new users):', error.message || 'Unknown error');
         return null;
       }
 
@@ -76,7 +76,7 @@ export function useProfileGate() {
       return data;
       
     } catch (error) {
-      console.error('Exception loading profile:', error);
+      console.warn('⚠️ Exception loading profile (this is okay for new users):', error);
       return null;
     } finally {
       setIsLoadingProfile(false);

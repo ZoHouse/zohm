@@ -2,71 +2,84 @@
 
 import React from 'react';
 import ProfilePanel from './ProfilePanel';
-import MainQuestCard from './MainQuestCard';
-import SideQuestCard from './SideQuestCard';
 import { X } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 
 interface DashboardOverlayProps {
   isVisible: boolean;
   onClose: () => void;
+  onOpenWallet?: () => void;
 }
 
-const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose }) => {
+const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose, onOpenWallet }) => {
   const { isConnected, address } = useWallet();
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8">
-      {/* Backdrop - subtle, no blur for paper UI */}
+    <div className="fixed inset-0 z-[999]">
+      {/* Close backdrop - semi-transparent to show map */}
       <div 
-        className="absolute inset-0 bg-black/30"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Paper UI Modal Container */}
-      <div className="relative paper-overlay w-[95vw] max-w-6xl h-[90vh] mx-auto flex flex-col overflow-hidden pointer-events-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <img src="/dashboard.png" alt="Dashboard" className="w-8 h-8 object-contain" />
-            <h2 className="text-xl font-bold">Dashboard</h2>
+      {/* Modal Container with rainbow theme */}
+      <div className="relative w-[95vw] max-w-4xl h-[90vh] mx-auto my-[5vh] flex flex-col overflow-hidden pointer-events-auto">
+        {/* Glowing border effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-orange-400 to-pink-500 rounded-3xl blur-2xl opacity-70 animate-pulse"></div>
+        
+        {/* Main content card with vibrant pink-orange gradient */}
+        <div className="relative bg-gradient-to-br from-pink-100 via-orange-100 to-pink-200 backdrop-blur-xl rounded-3xl shadow-2xl border-4 border-white flex flex-col overflow-hidden h-full">
+          {/* Header with colorful elements */}
+          <div className="flex items-center justify-between p-6 border-b-2 border-white/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-lg">
+                <span className="text-xl">🦄</span>
+              </div>
+              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-orange-600">
+                Dashboard
+              </h2>
+            </div>
+            
+            {/* Colorful dots decoration */}
+            <div className="flex items-center gap-3">
+              <div className="flex space-x-1">
+                <div className="w-3 h-3 rounded-full bg-pink-500 animate-pulse"></div>
+                <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-3 h-3 rounded-full bg-pink-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+              </div>
+              
+              <button
+                onClick={onClose}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-all shadow-md"
+                aria-label="Close dashboard"
+              >
+                <X size={18} className="text-gray-700" />
+              </button>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="paper-button w-8 h-8 flex items-center justify-center"
-            aria-label="Close dashboard"
-          >
-            <X size={16} />
-          </button>
-        </div>
 
-        {/* Content Area */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-          {/* Left: Profile Panel */}
-          <div className="lg:col-span-1 h-full overflow-hidden">
-            <div className="h-full overflow-auto">
-              {isConnected && address ? (
-                <ProfilePanel />
-              ) : (
-                <div className="flex flex-col space-y-6 p-6 paper-card h-full items-center justify-center">
-                  <p className="text-lg text-center">Wallet not connected</p>
-                  <p className="text-sm text-center text-gray-500">Please connect your wallet to view the dashboard</p>
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto">
+          {isConnected && address ? (
+            <div className="max-w-2xl mx-auto pb-6 pt-6 px-4">
+              <ProfilePanel onOpenWallet={onOpenWallet} />
+            </div>
+            ) : (
+              <div className="flex flex-col space-y-6 p-8 h-full items-center justify-center max-w-md mx-auto">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-xl mb-4">
+                  <span className="text-4xl">🔒</span>
                 </div>
-              )}
-            </div>
+                <p className="text-2xl font-bold text-center text-gray-800">Wallet not connected</p>
+                <p className="text-base text-center text-gray-600">Please connect your wallet to view your magical dashboard</p>
+              </div>
+            )}
           </div>
-
-          {/* Right: Cards */}
-          <div className="lg:col-span-2 h-full no-hover grid grid-rows-2 gap-4 overflow-hidden">
-            <div className="paper-card no-hover">
-              <MainQuestCard />
-            </div>
-            <div className="paper-card no-hover">
-              <SideQuestCard />
-            </div>
-          </div>
+          
+          {/* Pink-Orange footer line */}
+          <div className="h-2 bg-gradient-to-r from-pink-500 via-orange-400 to-pink-500"></div>
         </div>
       </div>
     </div>

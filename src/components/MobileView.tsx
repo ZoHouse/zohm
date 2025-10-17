@@ -8,6 +8,7 @@ import MobileEventsListOverlay from '@/components/MobileEventsListOverlay';
 import MobileNodesListOverlay from '@/components/MobileNodesListOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
+import WalletOverlay from '@/components/WalletOverlay';
 import { PartnerNodeRecord } from '@/lib/supabase';
 
 interface EventData {
@@ -38,6 +39,7 @@ const MobileView: React.FC<MobileViewProps> = ({
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   const handleUnicornClick = () => {
     setShowTileModal(true);
@@ -52,6 +54,14 @@ const MobileView: React.FC<MobileViewProps> = ({
   const handleCloseAll = () => {
     setShowTileModal(false);
     setActiveList(null);
+  };
+
+  const handleOpenWallet = () => {
+    setIsWalletOpen(true);
+  };
+
+  const handleCloseWallet = () => {
+    setIsWalletOpen(false);
   };
 
   const isAnyModalOpen = showTileModal || activeList !== null;
@@ -123,7 +133,17 @@ const MobileView: React.FC<MobileViewProps> = ({
       <QuestsOverlay isVisible={activeList === 'quests'} onClose={handleCloseAll} />
 
       {/* Dashboard Overlay */}
-      <DashboardOverlay isVisible={activeList === 'dashboard'} onClose={handleCloseAll} />
+      <DashboardOverlay 
+        isVisible={activeList === 'dashboard'} 
+        onClose={handleCloseAll} 
+        onOpenWallet={handleOpenWallet}
+      />
+
+      {/* Wallet Overlay - rendered at root level */}
+      <WalletOverlay 
+        isVisible={isWalletOpen} 
+        onClose={handleCloseWallet} 
+      />
     </main>
   );
 };

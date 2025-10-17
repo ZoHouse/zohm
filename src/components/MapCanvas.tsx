@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
+import { getNodeTypeColor } from '@/lib/nodeTypes';
 
 // Zo House locations with precise coordinates
 const ZO_HOUSES = [
@@ -45,6 +46,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
   const [markersMap, setMarkersMap] = useState<Map<string, mapboxgl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
@@ -57,6 +59,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const traversalFrameRef = useRef<number | null>(null);
   const progressSourceIdRef = useRef<string>('user-to-destination-route-progress');
   const progressLayerIdRef = useRef<string>('user-to-destination-route-progress-layer');
+  const pulseIntervalsRef = useRef<NodeJS.Timeout[]>([]);
+  const fullRouteCoordinatesRef = useRef<[number, number][]>([]);
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -131,12 +135,23 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       });
       currentRouteMarkers.current = [];
 
-      // Add new source and layer for the route
+      // Add new source and layer for the route (with lineMetrics for rainbow gradient)
       map.current.addSource(currentRouteSourceId.current, {
         type: 'geojson',
-        data: routeGeojson
+        data: routeGeojson,
+        lineMetrics: true
       });
 
+      // Add faint route line (full path preview) - on top of buildings
+      const layers = map.current.getStyle().layers;
+      let firstSymbolId;
+      for (const lyr of layers || []) {
+        if (lyr.type === 'symbol') {
+          firstSymbolId = lyr.id;
+          break;
+        }
+      }
+      
       map.current.addLayer({
         id: currentRouteLayerId.current,
         type: 'line',
@@ -146,21 +161,22 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           'line-cap': 'round'
         },
         paint: {
-          'line-color': '#90EE90',
-          'line-width': 9,
-          'line-opacity': 1,
-          'line-blur': 0.15
+          'line-color': '#FFFFFF',  // White path preview
+          'line-width': 4,
+          'line-opacity': 0.2,  // Very faint (rainbow trail will be bright)
+          'line-blur': 1,
+          'line-dasharray': [2, 2]  // Dashed line
         }
-      });
+      }, firstSymbolId);
 
-      // Add simple origin and destination markers
-      const originMarker = new mapboxgl.Marker({ color: '#3b82f6' })
-        .setLngLat([originLng, originLat])
-        .addTo(map.current);
-      const destinationMarker = new mapboxgl.Marker({ color: '#ef4444' })
-        .setLngLat([destinationLng, destinationLat])
-        .addTo(map.current);
-      currentRouteMarkers.current.push(originMarker, destinationMarker);
+      // Hide origin and destination markers (unicorn will show the way!)
+      // const originMarker = new mapboxgl.Marker({ color: '#3b82f6' })
+      //   .setLngLat([originLng, originLat])
+      //   .addTo(map.current);
+      // const destinationMarker = new mapboxgl.Marker({ color: '#ef4444' })
+      //   .setLngLat([destinationLng, destinationLat])
+      //   .addTo(map.current);
+      // currentRouteMarkers.current.push(originMarker, destinationMarker);
 
       // Fit bounds to the route, preserving current camera angle
       const bounds = new mapboxgl.LngLatBounds();
@@ -193,6 +209,12 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   const startRouteTraversal = (coordinates: [number, number][]) => {
     if (!map.current || !coordinates || coordinates.length < 2) return;
 
+    // Store full route coordinates for skip functionality
+    fullRouteCoordinatesRef.current = coordinates;
+
+    // Set navigation state to show skip button
+    setIsNavigating(true);
+
     // Cancel any existing traversal
     if (traversalFrameRef.current) {
       try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
@@ -202,14 +224,26 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       try { traversalMarkerRef.current.remove(); } catch {}
       traversalMarkerRef.current = null;
     }
-    try {
-      if (map.current.getLayer(progressLayerIdRef.current)) map.current.removeLayer(progressLayerIdRef.current);
-    } catch {}
+    
+    // Clear all pulse animation intervals
+    pulseIntervalsRef.current.forEach(intervalId => {
+      clearInterval(intervalId);
+    });
+    pulseIntervalsRef.current = [];
+    
+    // Remove all rainbow layers (7 layers for rainbow gradient)
+    for (let i = 0; i < 7; i++) {
+      try {
+        if (map.current.getLayer(`${progressLayerIdRef.current}-rainbow-${i}`)) {
+          map.current.removeLayer(`${progressLayerIdRef.current}-rainbow-${i}`);
+        }
+      } catch {}
+    }
     try {
       if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current);
     } catch {}
 
-    // Add progress source/layer
+    // Add progress source/layer (rainbow trail that appears behind unicorn)
     const progressGeojson: GeoJSON.Feature<GeoJSON.LineString> = {
       type: 'Feature',
       properties: {},
@@ -217,24 +251,78 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     };
     map.current.addSource(progressSourceIdRef.current, {
       type: 'geojson',
-      data: progressGeojson
+      data: progressGeojson,
+      lineMetrics: true
     });
-    map.current.addLayer({
-      id: progressLayerIdRef.current,
-      type: 'line',
-      source: progressSourceIdRef.current,
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: {
-        'line-color': '#90EE90',
-        'line-width': 9,
-        'line-opacity': 0.9
+    // Rainbow gradient trail - ROYGBIV colors stacked for gradient effect
+    const rainbowLayers = [
+      { color: '#FF0000', width: 28, opacity: 0.9, blur: 2 },  // Red (outer)
+      { color: '#FF7F00', width: 24, opacity: 0.95, blur: 1.5 }, // Orange
+      { color: '#FFFF00', width: 20, opacity: 1.0, blur: 1 },  // Yellow
+      { color: '#00FF00', width: 16, opacity: 1.0, blur: 0.8 }, // Green
+      { color: '#00BFFF', width: 12, opacity: 1.0, blur: 0.5 }, // Sky Blue
+      { color: '#4B0082', width: 8, opacity: 0.95, blur: 0.3 }, // Indigo
+      { color: '#9400D3', width: 4, opacity: 0.9, blur: 0 }    // Violet (inner)
+    ];
+    
+    rainbowLayers.forEach((layer, i) => {
+      // Add layer absolutely on top of everything - no beforeId means it goes on top
+      const layerId = `${progressLayerIdRef.current}-rainbow-${i}`;
+      map.current!.addLayer({
+        id: layerId,
+        type: 'line',
+        source: progressSourceIdRef.current,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': layer.color,
+          'line-width': layer.width,
+          'line-opacity': layer.opacity,
+          'line-blur': layer.blur
+        }
+      }); // No beforeId - this puts it on top of EVERYTHING
+      
+      // Add pulsing animation to the outer layers
+      if (i === 0 || i === 1) {
+        let pulseDirection = 1;
+        let currentWidth = layer.width;
+        const intervalId = setInterval(() => {
+          try {
+            currentWidth += pulseDirection * 1;
+            if (currentWidth >= layer.width + 5 || currentWidth <= layer.width - 5) {
+              pulseDirection *= -1;
+            }
+            map.current?.setPaintProperty(layerId, 'line-width', currentWidth);
+          } catch {
+            // Layer might be removed - clear this interval
+            clearInterval(intervalId);
+          }
+        }, 50); // Pulse every 50ms
+        
+        // Store interval ID so we can clear it later
+        pulseIntervalsRef.current.push(intervalId);
       }
     });
 
-    // Moving marker
-    traversalMarkerRef.current = new mapboxgl.Marker({ color: '#22c55e' })
+    // Create unicorn emoji marker 🦄 with glow and high z-index to stay on top
+    const unicornEl = document.createElement('div');
+    unicornEl.textContent = '🦄';
+    unicornEl.style.fontSize = '50px';
+    unicornEl.style.lineHeight = '1';
+    unicornEl.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 15px rgba(255,200,0,0.6))';
+    
+    const unicornMarker = new mapboxgl.Marker(unicornEl)
       .setLngLat(coordinates[0])
       .addTo(map.current);
+    
+    // Force the marker container to be on top with high z-index
+    const markerElement = unicornMarker.getElement();
+    if (markerElement) {
+      markerElement.style.zIndex = '9999';
+    }
+    
+    traversalMarkerRef.current = unicornMarker;
+    
+    console.log('🦄 Unicorn marker created at:', coordinates[0]);
 
     // Precompute cumulative distances
     const cum: number[] = [0];
@@ -282,11 +370,142 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       if (t < 1) {
         traversalFrameRef.current = requestAnimationFrame(step);
       } else {
+        // Animation complete - make unicorn disappear! ✨
         traversalFrameRef.current = null;
+        setIsNavigating(false); // Hide skip button
+        
+        if (traversalMarkerRef.current) {
+          try {
+            traversalMarkerRef.current.remove();
+            traversalMarkerRef.current = null;
+          } catch (e) {
+            console.warn('Error removing unicorn marker:', e);
+          }
+        }
+        
+        // Remove the rainbow trail after 10 seconds
+        setTimeout(() => {
+          if (!map.current) return;
+          
+          console.log('✨ Removing rainbow trail after 10 seconds...');
+          
+          // Clear all pulse animation intervals
+          pulseIntervalsRef.current.forEach(intervalId => {
+            clearInterval(intervalId);
+          });
+          pulseIntervalsRef.current = [];
+          
+          // Remove all rainbow layers
+          for (let i = 0; i < 7; i++) {
+            try {
+              if (map.current.getLayer(`${progressLayerIdRef.current}-rainbow-${i}`)) {
+                map.current.removeLayer(`${progressLayerIdRef.current}-rainbow-${i}`);
+              }
+            } catch {}
+          }
+          
+          // Remove progress source
+          try {
+            if (map.current.getSource(progressSourceIdRef.current)) {
+              map.current.removeSource(progressSourceIdRef.current);
+            }
+          } catch {}
+          
+          console.log('🌈 Rainbow trail removed!');
+        }, 10000); // 10 seconds
       }
     };
 
     traversalFrameRef.current = requestAnimationFrame(step);
+  };
+
+  // Skip navigation - jump to destination instantly with full trail
+  const skipNavigation = () => {
+    console.log('⏭️ Skipping to destination...');
+    
+    // Cancel animation frame
+    if (traversalFrameRef.current) {
+      try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
+      traversalFrameRef.current = null;
+    }
+    
+    // Get the full route coordinates from the stored ref
+    const fullCoordinates = fullRouteCoordinatesRef.current;
+    
+    if (fullCoordinates && fullCoordinates.length > 0) {
+      try {
+        // Update progress source to show full trail immediately
+        const source = map.current?.getSource(progressSourceIdRef.current) as mapboxgl.GeoJSONSource;
+        if (source) {
+          source.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: fullCoordinates
+            }
+          });
+        }
+        
+        // Move camera to destination
+        const destination = fullCoordinates[fullCoordinates.length - 1];
+        if (destination && map.current) {
+          map.current.flyTo({
+            center: destination,
+            zoom: map.current.getZoom(),
+            pitch: map.current.getPitch(),
+            bearing: map.current.getBearing(),
+            duration: 800
+          });
+        }
+      } catch (e) {
+        console.warn('Error completing trail:', e);
+      }
+    }
+    
+    // Remove unicorn at destination
+    if (traversalMarkerRef.current) {
+      try {
+        traversalMarkerRef.current.remove();
+        traversalMarkerRef.current = null;
+      } catch (e) {
+        console.warn('Error removing unicorn marker:', e);
+      }
+    }
+    
+    // Hide skip button
+    setIsNavigating(false);
+    
+    // Keep the full trail visible for 10 seconds before cleanup
+    setTimeout(() => {
+      if (!map.current) return;
+      
+      console.log('✨ Removing rainbow trail after skip...');
+      
+      // Clear all pulse animation intervals
+      pulseIntervalsRef.current.forEach(intervalId => {
+        clearInterval(intervalId);
+      });
+      pulseIntervalsRef.current = [];
+      
+      // Remove all rainbow layers
+      for (let i = 0; i < 7; i++) {
+        try {
+          if (map.current.getLayer(`${progressLayerIdRef.current}-rainbow-${i}`)) {
+            map.current.removeLayer(`${progressLayerIdRef.current}-rainbow-${i}`);
+          }
+        } catch {}
+      }
+      
+      // Remove progress source
+      try {
+        if (map.current.getSource(progressSourceIdRef.current)) {
+          map.current.removeSource(progressSourceIdRef.current);
+        }
+      } catch {}
+      
+      console.log('🌈 Rainbow trail removed after skip!');
+    }, 10000); // 10 seconds
   };
 
   // Clear any drawn route and its markers
@@ -324,6 +543,10 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       // Remove progress line
       try { if (map.current.getLayer(progressLayerIdRef.current)) map.current.removeLayer(progressLayerIdRef.current); } catch {}
       try { if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current); } catch {}
+      
+      // Clear stored route coordinates
+      fullRouteCoordinatesRef.current = [];
+      setIsNavigating(false);
     } catch (e) {
       console.warn('Error clearing route:', e);
     }
@@ -355,6 +578,13 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     console.log('🏠 Adding Zo House markers with precise coordinates...');
     ZO_HOUSES.forEach((house) => {
       console.log(`📍 Adding marker for ${house.name} at [${house.lat}, ${house.lng}]`);
+      
+      // Safety check inside loop
+      if (!map.current) {
+        console.warn('⚠️ Map became null during marker creation');
+        return;
+      }
+      
       try {
         // Create custom PNG marker for Zo House (using proven approach)
         const markerElement = document.createElement('img');
@@ -368,7 +598,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
 
         const zoMarker = new mapboxgl.Marker(markerElement)
           .setLngLat([house.lng, house.lat])
-          .addTo(map.current!);
+          .addTo(map.current);
 
         console.log(`🏠 Added PNG marker for ${house.name}`);
 
@@ -459,11 +689,23 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         return;
       }
       
+      // Check again if map is still available after async operations
+      if (!map.current) {
+        console.warn('⚠️ Map was unmounted during partner node loading');
+        return;
+      }
+      
       console.log(`🦄 Adding ${nodes.length} partner node markers...`);
       
       nodes.forEach((node) => {
         if (!node.latitude || !node.longitude) {
           console.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
+          return;
+        }
+        
+        // Safety check inside loop
+        if (!map.current) {
+          console.warn('⚠️ Map became null during marker creation');
           return;
         }
         
@@ -480,7 +722,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           
           const nodeMarker = new mapboxgl.Marker(markerElement)
             .setLngLat([node.longitude, node.latitude])
-            .addTo(map.current!);
+            .addTo(map.current);
           
           console.log(`🦄 Added marker for ${node.name}`);
           
@@ -552,30 +794,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           className: 'glass-popup partner-node-popup'
         });
 
-        // Get type-specific icon and color
-        const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
-          switch (type) {
-            case 'house': return '🏠';
-            case 'collective': return '🌐';
-            case 'protocol': return '⚡';
-            case 'space': return '🏢';
-            case 'festival': return '🎪';
-            case 'dao': return '🏛️';
-            default: return '🔗';
-          }
-        };
-
-        const getTypeColor = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
-          switch (type) {
-            case 'house': return '#10b981'; // emerald
-            case 'collective': return '#3b82f6'; // blue
-            case 'protocol': return '#8b5cf6'; // violet
-            case 'space': return '#f59e0b'; // amber
-            case 'festival': return '#ec4899'; // pink
-            case 'dao': return '#06b6d4'; // cyan
-            default: return '#6b7280'; // gray
-          }
-        };
+        // Get type-specific color (using centralized function)
+        const nodeColor = getNodeTypeColor(node.type);
 
         // Create custom marker element
         const markerElement = document.createElement('div');
@@ -687,9 +907,9 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           console.warn('Post-load resize error:', error);
         }
         
-        // Set up night mode and hide labels
+        // Set up lighting - use DAY mode so colors stay bright!
         try {
-          map.current.setConfigProperty('basemap', 'lightPreset', 'night');
+          map.current.setConfigProperty('basemap', 'lightPreset', 'day');  // Changed from 'night' to 'day'
           map.current.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
           map.current.setConfigProperty('basemap', 'showPlaceLabels', false);
           map.current.setConfigProperty('basemap', 'showRoadLabels', false);
@@ -1181,10 +1401,25 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
   }, [flyToNode, mapLoaded, currentOpenPopup]);
 
   return (
-    <div 
-      ref={mapContainer} 
-      className={className || "w-full h-full"}
-      style={{ minHeight: '100vh' }}
-    />
+    <>
+      <div 
+        ref={mapContainer} 
+        className={className || "w-full h-full"}
+        style={{ minHeight: '100vh' }}
+      />
+      
+      {/* Skip Navigation Button */}
+      {isNavigating && (
+        <button
+          onClick={skipNavigation}
+          className="fixed top-24 left-6 z-[9999] px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105"
+          style={{
+            boxShadow: '0 10px 25px rgba(168, 85, 247, 0.4)',
+          }}
+        >
+          SKIP
+        </button>
+      )}
+    </>
   );
 } 

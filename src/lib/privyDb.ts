@@ -374,9 +374,9 @@ export async function syncUserWalletsFromPrivy(privyUser: PrivyUser): Promise<vo
           user_id: privyUser.id,
           address: account.address,
           chain_type: account.chainType || 'ethereum',
-          wallet_client: account.walletClient || null,
+          wallet_client: account.walletClientType || null, // Use walletClientType as wallet_client
           wallet_client_type: account.walletClientType || null,
-          is_embedded: account.walletClient === 'privy',
+          is_embedded: account.walletClientType === 'privy',
           is_primary: i === 0, // First wallet is primary
           is_verified: account.verified || true,
           verified_at: account.verifiedAt || new Date().toISOString(),

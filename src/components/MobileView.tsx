@@ -67,7 +67,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   const isAnyModalOpen = showTileModal || activeList !== null;
 
   return (
-    <main className="relative w-full h-screen overflow-hidden bg-[#f4f1ea]">
+    <main className={`relative w-full h-screen overflow-hidden ${isAnyModalOpen ? 'bg-black' : 'bg-[#f4f1ea]'}`}>
       {/* Map Canvas - shrinks to top half when modal is open */}
       <motion.div
         className="absolute inset-0"

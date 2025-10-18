@@ -1,9 +1,0 @@
-{
-    "react-native": {
-      "crashlytics_is_error_generation_on_js_crash_enabled": true,
-      "crashlytics_debug_enabled": true,
-      "crashlytics_auto_collection_enabled": true,
-      "messaging_ios_auto_register_for_remote_message": true
-    }
-  }
-  

@@ -366,15 +366,15 @@ export async function syncUserWalletsFromPrivy(privyUser: PrivyUser): Promise<vo
     ) || [];
 
     for (let i = 0; i < walletAccounts.length; i++) {
-      const account = walletAccounts[i];
+      const account = walletAccounts[i] as any; // Type assertion for wallet account
       
       await supabase
         .from('user_wallets')
         .upsert({
           user_id: privyUser.id,
-          address: account.address,
+          address: account.address || '',
           chain_type: account.chainType || 'ethereum',
-          wallet_client: account.walletClientType || null, // Use walletClientType as wallet_client
+          wallet_client: account.walletClientType || null,
           wallet_client_type: account.walletClientType || null,
           is_embedded: account.walletClientType === 'privy',
           is_primary: i === 0, // First wallet is primary
@@ -494,15 +494,18 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: PrivyUser): Promis
       let oauthSubject = null;
       let oauthUsername = null;
 
+      // Type guard and extract properties based on account type
       if (account.type === 'email') {
-        identifier = account.address;
+        identifier = (account as any).address || '';
       } else if (account.type === 'wallet') {
-        identifier = account.address;
+        identifier = (account as any).address || '';
       } else if (account.type.includes('oauth')) {
-        identifier = account.subject || '';
-        oauthSubject = account.subject;
-        oauthUsername = account.username || null;
-        displayName = account.name || account.username || null;
+        // OAuth accounts (twitter, google, etc.)
+        const oauthAccount = account as any;
+        identifier = oauthAccount.subject || oauthAccount.email || '';
+        oauthSubject = oauthAccount.subject || null;
+        oauthUsername = oauthAccount.username || null;
+        displayName = oauthAccount.name || oauthAccount.username || null;
       }
 
       await supabase
@@ -514,8 +517,8 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: PrivyUser): Promis
           display_name: displayName,
           oauth_subject: oauthSubject,
           oauth_username: oauthUsername,
-          is_verified: account.verified || true,
-          verified_at: account.verifiedAt || new Date().toISOString(),
+          is_verified: true, // Privy accounts are always verified
+          verified_at: new Date().toISOString(),
           last_used_at: new Date().toISOString(),
         }, { 
           onConflict: 'user_id,auth_type,identifier',

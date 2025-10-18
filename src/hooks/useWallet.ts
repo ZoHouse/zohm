@@ -31,7 +31,7 @@ interface EthereumProvider {
 // Global types for window object
 declare global {
   interface Window {
-    ethereum?: EthereumProvider;
+    ethereum?: any; // Changed from EthereumProvider to any to avoid type conflicts
     userLocationCoords?: LocationData;
     userState?: {
       wallet?: string;

@@ -210,33 +210,33 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
     switch (step) {
       case 1:
         return (
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
-              <img 
-                src={unicornImage} 
-                alt="Unicorn" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div className="flex-1 space-y-1 sm:space-y-1.5">
-              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold text-center sm:text-left">
-                What should this unicorn be called?
-              </label>
-              <MacInput
-                value={profileData.name}
-                onChange={(value) => updateProfileData('name', value)}
-                placeholder="Sparkles"
-                maxLength={12}
-                error={errors.name}
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row gap-3 px-2">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto sm:mx-0 flex-shrink-0">
+            <img 
+              src={unicornImage} 
+              alt="Unicorn" 
+              className="w-full h-full object-contain"
+            />
           </div>
+          <div className="flex-1 space-y-2">
+            <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold text-center sm:text-left">
+              What should this unicorn be called?
+            </label>
+            <MacInput
+              value={profileData.name}
+              onChange={(value) => updateProfileData('name', value)}
+              placeholder="Sparkles"
+              maxLength={12}
+              error={errors.name}
+            />
+          </div>
+        </div>
         );
       
       case 2:
         return (
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+          <div className="flex flex-col sm:flex-row gap-3 px-2">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto sm:mx-0 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
@@ -262,8 +262,8 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 3:
         return (
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+          <div className="flex flex-col sm:flex-row gap-3 px-2">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto sm:mx-0 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
@@ -296,8 +296,8 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 4:
         return (
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+          <div className="flex flex-col sm:flex-row gap-3 px-2">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto sm:mx-0 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
@@ -346,19 +346,19 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 5:
         return (
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
+          <div className="flex flex-col sm:flex-row gap-4 px-3">
+            <div className="w-20 h-20 sm:w-28 sm:h-28 mx-auto sm:mx-0 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1 sm:space-y-1.5">
-              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold text-center sm:text-left">
+            <div className="flex-1 space-y-3">
+              <label className="block font-mono text-[12px] sm:text-sm text-[#222] font-semibold text-center sm:text-left">
                 🦄 Summon your Unicorn on X
               </label>
-              <div className="bg-black text-white p-1.5 sm:p-2 rounded font-mono text-[9px] sm:text-[11px]">
+              <div className="bg-black text-white p-3 rounded font-mono text-[11px] sm:text-[13px]">
                 <p>&ldquo;Unicorns are real @sfoxzo&rdquo;</p>
               </div>
               <button
@@ -368,16 +368,16 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                   window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
                   setHasPostedOnX(true);
                 }}
-                className="w-full px-1.5 sm:px-2 py-1.5 font-mono text-[9px] sm:text-[11px] bg-[#4a8cff] text-white border border-[#2b62d6] rounded hover:bg-[#5a9cff]"
+                className="w-full px-3 py-2.5 font-mono text-[11px] sm:text-[13px] bg-[#4a8cff] text-white border border-[#2b62d6] rounded hover:bg-[#5a9cff]"
               >
                 𝕏 Post &ldquo;Unicorns are real&rdquo;
               </button>
               {hasPostedOnX && (
-                <div className="text-center text-[8px] sm:text-[10px] text-green-600 font-mono font-semibold">
+                <div className="text-center text-[10px] sm:text-[12px] text-green-600 font-mono font-semibold">
                   ✅ Thank you for sharing!
                 </div>
               )}
-              <p className="text-[8px] sm:text-[10px] text-center text-[#666] font-mono">
+              <p className="text-[10px] sm:text-[12px] text-center text-[#666] font-mono">
                 Optional but helps spread the magic! 🪄
               </p>
             </div>
@@ -392,10 +392,10 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
   return (
     <MacBezel>
       <MacScreen title="Unicorn Onboarding">
-        <div className="relative h-full p-1 sm:p-4">
+        <div className="relative h-full p-0 sm:p-4">
           {/* Stacked dialogs for visual depth - centered and mobile-optimized */}
-          <div className="absolute inset-x-0 top-8 sm:top-24 flex justify-center items-start sm:items-center">
-            <div className="relative w-full max-w-[99%] sm:max-w-none">
+          <div className="absolute inset-x-0 top-1/3 flex justify-center items-center">
+            <div className="relative w-full max-w-[100%] sm:max-w-none">
               {/* Background dialog (step - 2) - hidden on mobile to save space */}
               {currentStep > 2 && (
                 <MacDialog
@@ -424,13 +424,13 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                 </MacDialog>
               )}
               
-              {/* Front dialog (current step) - full width on mobile */}
+              {/* Front dialog (current step) - responsive width */}
               <MacDialog
                 title={`Step ${currentStep} of 5`}
                 offset={0}
                 opacity={1}
                 active={true}
-                width="500px"
+                width="420px"
                 height="auto"
               >
                 {renderStepContent(currentStep)}

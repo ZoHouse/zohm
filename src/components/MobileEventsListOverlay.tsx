@@ -34,6 +34,13 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
     });
   };
 
+  // Sort events chronologically by date (closest upcoming events first)
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a['Date & Time']);
+    const dateB = new Date(b['Date & Time']);
+    return dateA.getTime() - dateB.getTime();
+  });
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -63,13 +70,13 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
 
           {/* Events List */}
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {events.length === 0 ? (
+            {sortedEvents.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <p>No events found</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {events.map((event, index) => (
+                {sortedEvents.map((event, index) => (
                   <motion.button
                     key={index}
                     onClick={() => {

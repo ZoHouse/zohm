@@ -37,6 +37,14 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
         e.Location.toLowerCase().includes(lower)
       );
     }
+    
+    // Sort events chronologically by date (closest upcoming events first)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a['Date & Time']);
+      const dateB = new Date(b['Date & Time']);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
     setFilteredEvents(filtered);
   }, [events, searchTerm]);
 

@@ -28,21 +28,22 @@ const MacDialog: React.FC<MacDialogProps> = ({
 }) => {
   return (
     <div
-      className={`absolute left-1/2 bg-white border border-[#8a8a8a] rounded shadow-[0_6px_18px_rgba(0,0,0,0.2)] transition-all duration-500 ease-out ${
+      className={`absolute bg-white border border-[#8a8a8a] rounded shadow-[0_6px_18px_rgba(0,0,0,0.2)] transition-all duration-500 ease-out ${
         !active ? 'pointer-events-none' : ''
       }`}
         style={{
-          width: width === '420px' ? 'calc(100vw - 1rem)' : width, // Even more width on mobile
-          maxWidth: width === '420px' ? 'calc(100vw - 1rem)' : width, // Remove maxWidth constraint on mobile
-          minHeight: height === 'auto' ? '120px' : height,
+          width: width === '420px' ? '90vw' : width, // Mobile: 90vw, Desktop: use provided width
+          maxWidth: width === '420px' ? '90vw' : width, // Mobile: 90vw, Desktop: use provided width
+          minHeight: height === 'auto' ? '200px' : height, // Taller minimum height on mobile
           maxHeight: '85vh', // Allow more height on mobile
-          transform: `translate(calc(-50% + ${offset}px), ${offset}px)`,
+          left: '50%', // Always center
+          transform: `translate(calc(-50% + ${offset}px), ${offset}px)`, // Always center
           opacity,
           filter: blur ? 'blur(1px)' : 'none',
           zIndex: 100 - offset,
           animation: 'slideIn 0.4s ease-out',
           overflow: 'auto', // Allow scrolling if content is too tall
-          margin: '0 0.5rem', // Minimal margin on mobile
+          margin: '0', // No margin on mobile
         }}
     >
       {/* Dialog title bar - responsive height */}
@@ -53,7 +54,7 @@ const MacDialog: React.FC<MacDialogProps> = ({
       </div>
       
         {/* Dialog content - responsive padding */}
-        <div className="p-1 sm:p-2">
+        <div className="p-2 sm:p-2">
           {children}
         </div>
     </div>

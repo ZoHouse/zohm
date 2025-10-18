@@ -64,7 +64,7 @@ const MobileView: React.FC<MobileViewProps> = ({
     setIsWalletOpen(false);
   };
 
-  const isAnyModalOpen = showTileModal || activeList !== null;
+  const isAnyModalOpen = showTileModal || activeList !== null || isWalletOpen;
 
   return (
     <main className={`relative w-full h-screen overflow-hidden ${isAnyModalOpen ? 'bg-black' : 'bg-[#f4f1ea]'}`}>

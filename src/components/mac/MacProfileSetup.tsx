@@ -393,10 +393,10 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
     <MacBezel>
       <MacScreen title="Unicorn Onboarding">
         <div className="relative h-full p-2 sm:p-4">
-          {/* Stacked dialogs for visual depth - centered */}
-          <div className="absolute inset-x-0 top-16 sm:top-24 flex justify-center">
-            <div className="relative">
-              {/* Background dialog (step - 2) */}
+          {/* Stacked dialogs for visual depth - centered and mobile-optimized */}
+          <div className="absolute inset-x-0 top-12 sm:top-24 flex justify-center items-start sm:items-center">
+            <div className="relative w-full max-w-[95%] sm:max-w-none">
+              {/* Background dialog (step - 2) - hidden on mobile to save space */}
               {currentStep > 2 && (
                 <MacDialog
                   title={`Step ${currentStep - 2} of 5`}
@@ -410,7 +410,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                 </MacDialog>
               )}
               
-              {/* Mid dialog (step - 1) */}
+              {/* Mid dialog (step - 1) - hidden on mobile to save space */}
               {currentStep > 1 && (
                 <MacDialog
                   title={`Step ${currentStep - 1} of 5`}
@@ -424,7 +424,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                 </MacDialog>
               )}
               
-              {/* Front dialog (current step) */}
+              {/* Front dialog (current step) - full width on mobile */}
               <MacDialog
                 title={`Step ${currentStep} of 5`}
                 offset={0}
@@ -458,8 +458,8 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
             </div>
           </div>
 
-          {/* Footer buttons - responsive */}
-          <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 flex justify-center gap-1 sm:gap-2">
+          {/* Footer buttons - responsive and mobile-optimized */}
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-0 right-2 sm:right-0 flex justify-center gap-1 sm:gap-2">
             <MacButton onClick={handleBack} disabled={currentStep === 1 || isLoading}>
               ← Back
             </MacButton>

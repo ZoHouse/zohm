@@ -35,11 +35,13 @@ const MacDialog: React.FC<MacDialogProps> = ({
         width: width === '420px' ? '95%' : width, // Responsive width for default
         maxWidth: width === '420px' ? '420px' : width,
         minHeight: height === 'auto' ? '120px' : height,
+        maxHeight: '80vh', // Prevent dialog from being too tall on mobile
         transform: `translate(calc(-50% + ${offset}px), ${offset}px)`,
         opacity,
         filter: blur ? 'blur(1px)' : 'none',
         zIndex: 100 - offset,
         animation: 'slideIn 0.4s ease-out',
+        overflow: 'auto', // Allow scrolling if content is too tall
       }}
     >
       {/* Dialog title bar - responsive height */}

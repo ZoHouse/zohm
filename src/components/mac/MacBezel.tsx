@@ -23,7 +23,8 @@ const MacBezel: React.FC<MacBezelProps> = ({ children }) => {
           maxWidth: '820px',
           width: '100%',
           height: '100%',
-          maxHeight: '90vh',
+          maxHeight: '95vh', // Allow more height on mobile
+          minHeight: '500px', // Ensure minimum usable height
           animation: 'slideIn 0.6s ease-out',
         }}
       >

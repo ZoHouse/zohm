@@ -3,7 +3,7 @@
 import React from 'react';
 import ProfilePanel from './ProfilePanel';
 import { X } from 'lucide-react';
-import { useWallet } from '@/hooks/useWallet';
+import { usePrivyUser } from '@/hooks/usePrivyUser';
 
 interface DashboardOverlayProps {
   isVisible: boolean;
@@ -12,7 +12,7 @@ interface DashboardOverlayProps {
 }
 
 const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose, onOpenWallet }) => {
-  const { isConnected, address } = useWallet();
+  const { authenticated, primaryWalletAddress } = usePrivyUser();
 
   if (!isVisible) return null;
 
@@ -63,7 +63,7 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose,
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
-          {isConnected && address ? (
+          {authenticated ? (
             <div className="max-w-2xl mx-auto pb-6 pt-6 px-4">
               <ProfilePanel onOpenWallet={onOpenWallet} />
             </div>
@@ -72,8 +72,8 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose,
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-xl mb-4">
                   <span className="text-4xl">🔒</span>
                 </div>
-                <p className="text-2xl font-bold text-center text-gray-800">Wallet not connected</p>
-                <p className="text-base text-center text-gray-600">Please connect your wallet to view your magical dashboard</p>
+                <p className="text-2xl font-bold text-center text-gray-800">Not authenticated</p>
+                <p className="text-base text-center text-gray-600">Please log in to view your magical dashboard</p>
               </div>
             )}
           </div>

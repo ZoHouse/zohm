@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import ProfileSetup from '@/components/ProfileSetup';
+import MacProfileSetup from '@/components/mac/MacProfileSetup';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import { pingSupabase, verifyMembersTable, PartnerNodeRecord, supabase } from '@/lib/supabase';
-import { useProfileGate } from '@/hooks/useProfileGate';
-import { useWallet } from '@/hooks/useWallet';
+import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
+import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { getCalendarUrls } from '@/lib/calendarConfig';
@@ -32,16 +32,25 @@ export default function Home() {
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
 
-  const [showRitual, setShowRitual] = useState(false); // Simple ritual state
-  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null); // User profile status
+  const [showRitual, setShowRitual] = useState(false);
+  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
-  // Add profile gate and wallet hooks
-  const wallet = useWallet();
-  const profileGate = useProfileGate();
-  const isMobile = useIsMobile();
+  // Hooks
+  const { isMobile, isReady: isMobileReady } = useIsMobile();
+  
+  // Privy authentication
+  const { 
+    authenticated: privyAuthenticated,
+    userProfile: privyUserProfile,
+    hasCompletedOnboarding: privyOnboardingComplete,
+    isLoading: privyLoading,
+    privyUser,
+    login: privyLogin,
+    privyReady
+  } = usePrivyUser();
 
   useEffect(() => {
-    // Initialize Supabase connection and check user profile status
+    // Initialize Supabase and check Privy user profile
     const initApp = async () => {
       try {
         const basicConnection = await pingSupabase();
@@ -51,38 +60,25 @@ export default function Home() {
           // Verify table setup
           const tableVerification = await verifyMembersTable();
           if (tableVerification.exists) {
-            console.log('✅ Members table verification complete');
-            console.log('📊 Table status:', tableVerification);
+            console.log('✅ Database tables verified');
             
-            // Check if user is already connected and has a profile
-            if (wallet.isConnected && wallet.address) {
-              console.log('🔍 Checking if user profile exists...');
-              setUserProfileStatus('loading');
+            // Check Privy user profile status - ONLY when Privy is fully ready and loaded
+            // privyLoading false means wallet creation and profile sync are complete
+            if (privyReady && privyAuthenticated && !privyLoading && privyUserProfile) {
+              console.log('🦄 Privy user authenticated, ready, and profile loaded!');
               
-              try {
-                const { data, error } = await supabase
-                  .from('members')
-                  .select('name')
-                  .eq('wallet', wallet.address.toLowerCase())
-                  .single();
-                
-                if (error && error.code !== 'PGRST116') {
-                  console.warn('⚠️ Profile check returned error (this is okay for new users):', error.message || 'No details');
-                  setUserProfileStatus('not_exists');
-                } else if (data && data.name) {
-                  console.log('✅ User profile already exists:', data.name);
-                  setUserProfileStatus('exists');
-                } else {
-                  console.log('❌ User profile not found - profile setup will be shown');
-                  setUserProfileStatus('not_exists');
-                }
-              } catch (error) {
-                console.warn('⚠️ Exception checking user profile (this is okay for new users):', error);
+              if (privyOnboardingComplete) {
+                console.log('✅ Profile complete:', privyUserProfile.name);
+                setUserProfileStatus('exists');
+              } else {
+                console.log('📝 Onboarding required');
                 setUserProfileStatus('not_exists');
+                // Skip map loading for onboarding users
+                setIsLoading(false);
               }
             }
           } else {
-            console.warn('⚠️ Members table needs setup:', tableVerification.error);
+            console.warn('⚠️ Database setup needed:', tableVerification.error);
           }
         }
       } catch (error) {
@@ -91,6 +87,25 @@ export default function Home() {
     };
 
     initApp();
+  }, [privyReady, privyAuthenticated, privyOnboardingComplete, privyLoading, privyUserProfile]);
+
+  // Skip loading screen when Privy is ready for returning users
+  useEffect(() => {
+    if (privyReady && privyAuthenticated && userProfileStatus === 'exists' && isLoading) {
+      console.log('⚡ Privy ready with existing profile, skipping loading screen');
+      setIsLoading(false);
+    }
+  }, [privyReady, privyAuthenticated, userProfileStatus, isLoading]);
+
+  // Load map data (events and nodes) only after onboarding is complete
+  useEffect(() => {
+    // Only load map data if user has completed onboarding
+    if (userProfileStatus !== 'exists') {
+      console.log('⏸️ Skipping map data load - onboarding not complete');
+      return;
+    }
+
+    console.log('🗺️ Loading map data after onboarding complete...');
 
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
@@ -121,7 +136,7 @@ export default function Home() {
       }
     };
 
-    // Start loading events immediately
+    // Start loading events
     loadLiveEvents();
 
     // Load nodes
@@ -144,41 +159,27 @@ export default function Home() {
     
     // Cleanup timeout if component unmounts
     return () => clearTimeout(timeoutId);
-  }, [wallet.isConnected, wallet.address]);
+  }, [userProfileStatus]);
 
-  // Effect to check user profile when wallet connects
+  // Effect to check user profile when Privy authenticates
   useEffect(() => {
-    if (wallet.isConnected && wallet.address && userProfileStatus === null) {
-      console.log('🔍 Wallet connected, checking user profile...');
+    if (privyAuthenticated && !privyLoading && userProfileStatus === null) {
+      console.log('🔍 Privy authenticated, checking profile...');
       setUserProfileStatus('loading');
       
       const checkUserProfile = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('members')
-            .select('name')
-            .eq('wallet', wallet.address!.toLowerCase())
-            .single();
-          
-          if (error && error.code !== 'PGRST116') {
-            console.error('Error checking user profile:', error);
-            setUserProfileStatus('not_exists');
-          } else if (data && data.name) {
-            console.log('✅ User profile already exists:', data.name);
-            setUserProfileStatus('exists');
-          } else {
-            console.log('❌ User profile not found');
-            setUserProfileStatus('not_exists');
-          }
-        } catch (error) {
-          console.error('Exception checking user profile:', error);
+        if (privyOnboardingComplete && privyUserProfile) {
+          console.log('✅ Profile complete:', privyUserProfile.name);
+          setUserProfileStatus('exists');
+        } else {
+          console.log('📝 Onboarding required');
           setUserProfileStatus('not_exists');
         }
       };
-      
+
       checkUserProfile();
     }
-  }, [wallet.isConnected, wallet.address, userProfileStatus]);
+  }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -221,89 +222,48 @@ export default function Home() {
   };
 
 
-  // Handle red pill click - connect wallet
+  // Handle red pill click - now uses Privy login
   const handleRedPillClick = async () => {
-    console.log('🔴 Red pill clicked! Connecting wallet...');
-    console.log('🔍 Current wallet state:', {
-      isConnected: wallet.isConnected,
-      address: wallet.address,
-      isMetaMaskInstalled: wallet.isMetaMaskInstalled
-    });
-    
-    // Check if MetaMask is available
-    if (!wallet.isMetaMaskInstalled) {
-      alert('MetaMask is not installed. Please install MetaMask to continue.');
-      return;
-    }
-    
-    // Connect wallet if not already connected
-    if (!wallet.isConnected) {
-      try {
-        console.log('📱 Requesting wallet connection...');
-        const walletAddress = await wallet.connectWallet();
-        console.log('📱 Wallet connection result:', walletAddress);
-        
-        if (!walletAddress) {
-          console.log('❌ Wallet connection returned null');
-          alert('Wallet connection failed. Please try again.');
-          return;
-        }
-      } catch (error) {
-        console.error('❌ Error connecting wallet:', error);
-        alert('Error connecting wallet: ' + (error as Error).message);
-        return;
-      }
-    }
-    
-    console.log('💰 Wallet connected, profile check will happen automatically during loading');
-    // The profile check will happen automatically in the useEffect when wallet connects
+    console.log('🔴 Red pill clicked! Opening Privy login...');
+    privyLogin();
   };
 
-  // Debug wallet state when dashboard is opened
+  // Debug Privy state when dashboard is opened
   useEffect(() => {
     if (isDashboardOpen) {
-      console.log('🔍 Dashboard opened - Wallet state:', {
-        isConnected: wallet.isConnected,
-        address: wallet.address,
-        role: wallet.role,
-        isMetaMaskInstalled: wallet.isMetaMaskInstalled
+      console.log('🔍 Dashboard opened - Privy state:', {
+        authenticated: privyAuthenticated,
+        hasProfile: !!privyUserProfile,
+        onboardingComplete: privyOnboardingComplete
       });
     }
-  }, [isDashboardOpen, wallet.isConnected, wallet.address, wallet.role, wallet.isMetaMaskInstalled]);
+  }, [isDashboardOpen, privyAuthenticated, privyUserProfile, privyOnboardingComplete]);
 
 
   // Handle ritual completion
   const handleRitualComplete = () => {
     console.log('✅ Ritual completed! Welcome to Zo World...');
     setShowRitual(false);
-    console.log('🔄 Calling profileGate.completeProfileSetup()...');
-    profileGate.completeProfileSetup();
-    console.log('✅ Profile setup completion called');
+    console.log('✅ Profile setup completed');
     
     // Update the profile status to indicate user now has a profile
     setUserProfileStatus('exists');
   };
 
-  if (isLoading) {
+  // Show loading screen while Privy initializes
+  if (!privyReady || privyLoading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
-        <div className="text-center text-white">
-          <img 
-            src="/spinner_Z_4.gif" 
-            alt="Loading" 
-            className="w-16 h-16 mx-auto mb-4"
-          />
-          <p className="text-lg">Tuning into Zo World</p>
-          {userProfileStatus === 'loading' && (
-            <p className="text-sm mt-2">Checking your profile...</p>
-          )}
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading Zo World...</p>
         </div>
       </div>
     );
   }
 
-  // New flow: Show red pill screen if not connected
-  if (!wallet.isConnected) {
+  // Show RED PILL screen if not authenticated
+  if (!privyAuthenticated) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
         <div className="text-center text-white max-w-lg mx-auto px-4">
@@ -314,32 +274,103 @@ export default function Home() {
             </h1>
           </div>
           
-          {/* Red Pill Button */}
+          {/* Red Pill Button - Triggers Privy Login */}
           <button 
-            onClick={handleRedPillClick}
+            onClick={privyLogin}
             className="red-pill-button"
           >
             Take the Red Pill
           </button>
           
-          {/* Show error if wallet connection fails */}
-          {wallet.error && (
-            <div className="mt-4 text-red-400 text-sm">
-              {wallet.error}
-            </div>
-          )}
+          <p className="text-gray-400 text-sm mt-6">
+            Sign in with Twitter or connect wallet
+          </p>
         </div>
       </div>
     );
   }
 
-  // If user is connected and already has a profile, skip ritual and go to main page
-  if (wallet.isConnected && userProfileStatus === 'exists') {
-    console.log('✅ User already has profile, going directly to main page');
+  // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
+  // Must wait for privyLoading to be false (wallet creation complete)
+  const shouldShowOnboarding = privyReady && !privyLoading && (showRitual || (privyAuthenticated && userProfileStatus === 'not_exists'));
     
-    // Render mobile or desktop view based on screen size
+  if (shouldShowOnboarding) {
+    console.log('🎭 Showing onboarding screen', {
+      privyReady,
+      privyLoading,
+      privyAuthenticated,
+      userProfileStatus,
+      hasProfile: !!privyUserProfile
+    });
+    
+    // Wait for isMobile to be ready before deciding which onboarding to show
+    if (!isMobileReady) {
+      return (
+        <div className="fixed inset-0 bg-black flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+            <p className="text-white text-lg">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Use Mac-style onboarding on desktop, simple onboarding on mobile
     if (isMobile) {
       return (
+        <div className="fixed inset-0 bg-black z-[9999]">
+          <ProfileSetup
+            isVisible={true}
+            onComplete={handleRitualComplete}
+            onClose={() => setShowRitual(false)}
+            onOpenDashboard={undefined}
+          />
+        </div>
+      );
+    }
+    
+    // Desktop: Mac-style onboarding
+    return (
+      <div className="fixed inset-0 bg-black z-[9999]">
+        <MacProfileSetup
+          isVisible={true}
+          onComplete={handleRitualComplete}
+          onClose={() => setShowRitual(false)}
+          onOpenDashboard={() => setIsDashboardOpen(true)}
+        />
+      </div>
+    );
+  }
+
+  // Only render main app if user has completed onboarding
+  if (userProfileStatus !== 'exists') {
+    // Still loading profile status, show loading screen
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Wait for mobile detection to be ready before rendering main app
+  if (!isMobileReady) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render mobile or desktop view based on screen size
+  if (isMobile) {
+    return (
+      <>
         <MobileView
           events={events}
           onMapReady={handleMapReadyMobile}
@@ -348,10 +379,12 @@ export default function Home() {
           onEventClick={handleEventClick}
           onNodeClick={handleNodeClick}
         />
-      );
-    }
+      </>
+    );
+  }
 
-    return (
+  return (
+    <>
       <DesktopView
         events={events}
         nodes={nodes}
@@ -361,53 +394,6 @@ export default function Home() {
         onEventClick={handleEventClick}
         onNodeClick={handleNodeClick}
       />
-    );
-  }
-
-
-
-  // Show ritual when user doesn't have a profile
-  if (showRitual || (wallet.isConnected && userProfileStatus === 'not_exists')) {
-    console.log('🎭 Showing ritual screen');
-    return (
-      <div className="fixed inset-0 bg-black">
-        {/* The Ritual - ProfileSetup Modal */}
-        <ProfileSetup
-          isVisible={true}
-          walletAddress={wallet.address || ''}
-          onComplete={handleRitualComplete}
-          onClose={() => {
-            setShowRitual(false);
-          }}
-          onOpenDashboard={undefined}
-        />
-      </div>
-    );
-  }
-
-  // Render mobile or desktop view based on screen size
-  if (isMobile) {
-    return (
-      <MobileView
-        events={events}
-        onMapReady={handleMapReadyMobile}
-        flyToEvent={flyToEvent}
-        flyToNode={flyToNode}
-        onEventClick={handleEventClick}
-        onNodeClick={handleNodeClick}
-      />
-    );
-  }
-
-  return (
-    <DesktopView
-      events={events}
-      nodes={nodes}
-      onMapReady={handleMapReady}
-      flyToEvent={flyToEvent}
-      flyToNode={flyToNode}
-      onEventClick={handleEventClick}
-      onNodeClick={handleNodeClick}
-    />
+    </>
   );
 }

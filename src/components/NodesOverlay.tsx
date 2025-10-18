@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
-import { getNodeTypeIcon, isImageIcon } from '@/lib/nodeTypes';
 
 interface NodesOverlayProps {
   isVisible: boolean;
@@ -19,7 +18,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone'>('all');
 
   useEffect(() => {
     const loadNodes = async () => {
@@ -43,6 +42,22 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
       n.country.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
+    switch (type) {
+      case 'hacker_space': return '⚡';
+      case 'culture_house': return '🏠';
+      case 'schelling_point': return '🎯';
+      case 'flo_zone': return '🧭';
+      case 'house': return '🏠';
+      case 'collective': return '🌐';
+      case 'protocol': return '⚡';
+      case 'space': return '🏢';
+      case 'festival': return '🎪';
+      case 'dao': return '🏛️';
+      default: return '🔗';
+    }
+  };
 
   const handleNodeClick = (node: PartnerNodeRecord) => {
     closeMapPopups?.();
@@ -76,57 +91,20 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
           >
             All
           </button>
-          {([
-            'schelling_point',
-            'degen_lounge',
-            'zo_studio',
-            'flo_zone',
-            'bored_room',
-            'liquidity_pool',
-            'multiverse',
-            'battlefield',
-            'bio_hack',
-            'cafe',
-            '420',
-            'showcase',
-            'culture_house',
-            'hacker_house',
-            'founder_house'
-          ] as const).map(type => {
-            const icon = getNodeTypeIcon(type);
-            const isImage = isImageIcon(type);
-            
-            return (
-              <button
-                key={type}
-                onClick={() => setActiveFilter(type)}
-                className={`paper-button text-xs px-2 py-1 whitespace-nowrap flex items-center gap-1 ${activeFilter === type ? 'active' : ''}`}
-              >
-                {isImage ? (
-                  <img src={icon} alt={type} className="w-4 h-4 object-contain" />
-                ) : (
-                  <span>{icon}</span>
-                )}
-                {(
-                  type === 'schelling_point' ? 'Schelling' :
-                  type === 'degen_lounge' ? 'Degen' :
-                  type === 'zo_studio' ? 'Studio' :
-                  type === 'flo_zone' ? 'Flo' :
-                  type === 'bored_room' ? 'Bored' :
-                  type === 'liquidity_pool' ? 'Liquidity' :
-                  type === 'multiverse' ? 'Multiverse' :
-                  type === 'battlefield' ? 'Battlefield' :
-                  type === 'bio_hack' ? 'Bio Hack' :
-                  type === 'cafe' ? 'Cafe' :
-                  type === '420' ? '420' :
-                  type === 'showcase' ? 'Showcase' :
-                  type === 'culture_house' ? 'Culture' :
-                  type === 'hacker_house' ? 'Hacker' :
-                  type === 'founder_house' ? 'Founder' : type
-                )}
-              </button>
-            );
-          })}
+          {(['hacker_space','culture_house','schelling_point','flo_zone'] as const).map(type => (
+            <button
+              key={type}
+              onClick={() => setActiveFilter(type)}
+              className={`paper-button text-xs px-2 py-1 whitespace-nowrap ${activeFilter === type ? 'active' : ''}`}
+            >
+              {getTypeIcon(type)} {(
+                type === 'hacker_space' ? 'Hacker' :
+                type === 'culture_house' ? 'Culture' :
+                type === 'schelling_point' ? 'Schelling' :
+                type === 'flo_zone' ? 'Flo' : type
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -138,42 +116,33 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
           <div className="text-center text-gray-500 py-8">No nodes found.</div>
         ) : (
           <div className="space-y-3">
-            {filteredNodes.map(node => {
-              const icon = getNodeTypeIcon(node.type);
-              const isImage = isImageIcon(node.type);
-              
-              return (
-                <div 
-                  key={node.id} 
-                  className="paper-card cursor-pointer hover:shadow-lg transition-shadow" 
-                  onClick={() => handleNodeClick(node)}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      {isImage ? (
-                        <img src={icon} alt={node.type} className="w-6 h-6 object-contain" />
-                      ) : (
-                        <span className="text-lg">{icon}</span>
-                      )}
-                      <h3 className="font-semibold text-base">{node.name}</h3>
-                    </div>
+            {filteredNodes.map(node => (
+              <div 
+                key={node.id} 
+                className="paper-card cursor-pointer hover:shadow-lg transition-shadow" 
+                onClick={() => handleNodeClick(node)}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{getTypeIcon(node.type)}</span>
+                    <h3 className="font-semibold text-base">{node.name}</h3>
                   </div>
-                  <p className="text-sm text-gray-700 mb-1 line-clamp-2">{node.description}</p>
-                  <div className="text-xs text-gray-600">📍 {node.city}, {node.country}</div>
-                  {node.website && (
-                    <a 
-                      href={node.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline mt-2 inline-block"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Visit Website →
-                    </a>
-                  )}
                 </div>
-              );
-            })}
+                <p className="text-sm text-gray-700 mb-1 line-clamp-2">{node.description}</p>
+                <div className="text-xs text-gray-600">📍 {node.city}, {node.country}</div>
+                {node.website && (
+                  <a 
+                    href={node.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Visit Website →
+                  </a>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

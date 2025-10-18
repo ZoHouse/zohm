@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Comic_Neue } from "next/font/google";
 import "./globals.css";
+import { PrivyProvider } from "@/providers/PrivyProvider";
 
 const comicNeue = Comic_Neue({
   subsets: ["latin"],
@@ -44,8 +45,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${comicNeue.className} paper-ui antialiased bg-black text-white`}>
-        {children}
+      <body 
+        className={`${comicNeue.className} paper-ui antialiased bg-black text-white`}
+        suppressHydrationWarning
+      >
+        <PrivyProvider>
+          {children}
+        </PrivyProvider>
       </body>
     </html>
   );

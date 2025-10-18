@@ -1,0 +1,200 @@
+{
+  "expo": {
+    "name": "Zostel",
+    "slug": "zo",
+    "version": "3.1.3",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "owner": "zo-tech",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "jsEngine": "hermes",
+    "ios": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAq3m9SOwFypMpXQejdx8O2v7r61NboFs8"
+        }
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "buildNumber": "171",
+      "icon": {
+        "dark": "./assets/images/icon-dark.png",
+        "light": "./assets/images/icon-light.png"
+      },
+      "bundleIdentifier": "com.zostel.app.ios",
+      "associatedDomains": [
+        "applinks:zostel.com",
+        "applinks:www.zostel.com"
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "zostel"
+            ]
+          }
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Get personalised feed based on your location.",
+        "NSLocationWhenInUseUsageDescription": "Get personalised feed based on your location.",
+        "NSPhotoLibraryUsageDescription": "The app accesses your photos to let you upload them as your IDs.",
+        "NSCameraUsageDescription": "The app accesses your camera to let you upload your ID photos.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "LSApplicationQueriesSchemes": [
+          "phonepe",
+          "paytmmp",
+          "tez",
+          "bhim",
+          "credpay",
+          "mobikwik",
+          "freecharge",
+          "in.fampay.app",
+          "amazonpay",
+          "navi",
+          "kiwi",
+          "payzapp",
+          "jupiter",
+          "omnicard",
+          "icici",
+          "popclubapp",
+          "sbiyono",
+          "myjio",
+          "slice-upi",
+          "bobupi",
+          "shriramone",
+          "indusmobile",
+          "whatsapp"
+        ]
+      },
+      "appleTeamId": "DXP54D3W9A",
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon-zo.png",
+        "backgroundColor": "#F1563F"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAq3m9SOwFypMpXQejdx8O2v7r61NboFs8"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.zostel.app.android",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "zostel"
+            },
+            {
+              "scheme": "https",
+              "host": "zostel.com"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "versionCode": 103,
+      "permissions": [
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "googleServicesFile": "./google-services.json"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d334c4b3-c12f-4af7-a3fc-445eebd16034",
+      "enabled": true,
+      "checkAutomatically": "NEVER"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d334c4b3-c12f-4af7-a3fc-445eebd16034"
+      }
+    },
+    "web": {},
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      "@react-native-firebase/crashlytics",
+      "@giphy/react-native-sdk",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "./withNotifeeAndroidFix",
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash.png",
+          "imageWidth": 72,
+          "resizeMode": "contain",
+          "backgroundColor": "#F1563F"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Rubik-Regular.ttf",
+            "./assets/fonts/Rubik-Italic.ttf",
+            "./assets/fonts/Rubik-Medium.ttf",
+            "./assets/fonts/Rubik-MediumItalic.ttf",
+            "./assets/fonts/Kalam-Bold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Zostel to access your contacts. This is used to fetch your contacts to add them as guests to your trip."
+        }
+      ],
+      "expo-notifications",
+      "expo-video",
+      "expo-audio",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Get personalised feed based on your location.",
+          "locationWhenInUsePermission": "Get personalised feed based on your location."
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload them as your IDs."
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "zostel-app",
+          "organization": "zo-world"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "scheme": "zostel"
+  }
+}

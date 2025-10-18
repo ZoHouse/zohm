@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { usePrivy } from '@privy-io/react-auth';
+import { upsertUserFromPrivy } from '@/lib/privyDb';
 
 interface ProfileSetupProps {
   isVisible: boolean;
-  walletAddress: string;
   onComplete: () => void;
   onClose: () => void;
   onOpenDashboard?: () => void;
@@ -15,21 +15,8 @@ interface ProfileData {
   name: string;
   bio: string;
   culture: string;
-  calendar_url: string;
   lat: number | null;
   lng: number | null;
-}
-
-interface ProfileUpdate {
-  wallet: string;
-  name: string;
-  last_seen: string;
-  role: string;
-  bio?: string;
-  culture?: string;
-  lat?: number;
-  lng?: number;
-  calendar_url?: string;
 }
 
 const CULTURE_OPTIONS = [
@@ -63,24 +50,40 @@ const CULTURE_OPTIONS = [
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ 
   isVisible, 
-  walletAddress, 
   onComplete, 
   onClose,
   onOpenDashboard
 }) => {
+  const { user: privyUser, authenticated: privyAuthenticated } = usePrivy();
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     bio: '',
     culture: '',
-    calendar_url: '',
     lat: null,
     lng: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasPostedOnX, setHasPostedOnX] = useState(false);
 
   if (!isVisible) return null;
+
+  // Privy authentication required
+  if (!privyAuthenticated || !privyUser) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="paper-overlay p-6 max-w-md">
+          <h3 className="text-lg font-bold mb-4">🦄 Authentication Required</h3>
+          <p className="mb-4">Please sign in with Privy to continue creating your profile.</p>
+          <button onClick={onClose} className="paper-button w-full">
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -88,32 +91,32 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
     switch (step) {
       case 1:
         if (!profileData.name.trim()) {
-          newErrors.name = 'Name is required';
+          newErrors.name = 'Your unicorn must have a name with at least 2 characters and not more than 12.';
         } else if (profileData.name.length < 2) {
-          newErrors.name = 'Name must be at least 2 characters';
+          newErrors.name = 'Your unicorn must have a name with at least 2 characters and not more than 12.';
+        } else if (profileData.name.length > 12) {
+          newErrors.name = 'Your unicorn must have a name with at least 2 characters and not more than 12.';
         }
         break;
       case 2:
         if (!profileData.bio.trim()) {
-          newErrors.bio = 'Bio is required';
+          newErrors.bio = 'Please tell us why you deserve to exist as a unicorn.';
         } else if (profileData.bio.length < 10) {
-          newErrors.bio = 'Bio must be at least 10 characters';
+          newErrors.bio = 'Please tell us why you deserve to exist as a unicorn.';
         }
         break;
       case 3:
         if (!profileData.culture) {
-          newErrors.culture = 'Please select a culture';
+          newErrors.culture = 'Please choose a culture for your unicorn';
         }
         break;
       case 4:
         if (!profileData.lat || !profileData.lng) {
-          newErrors.location = 'Please select your location';
+          newErrors.location = 'Please tell us where your unicorn is based';
         }
         break;
       case 5:
-        if (profileData.calendar_url && !isValidUrl(profileData.calendar_url)) {
-          newErrors.calendar_url = 'Please enter a valid URL';
-        }
+        // X connection step - optional but recommended
         break;
     }
 
@@ -150,59 +153,37 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
   const handleSubmit = async () => {
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
+    
     try {
-      console.log('💾 Attempting to save profile:', {
-        walletAddress,
+      console.log('💾 Saving Privy user profile:', {
+        privyUserId: privyUser.id,
+        email: privyUser.email?.address,
         profileData: {
           name: profileData.name.trim(),
           bio: profileData.bio.trim(),
           culture: profileData.culture,
           lat: profileData.lat,
           lng: profileData.lng,
-          calendar_url: profileData.calendar_url.trim() || null
         }
       });
 
-      // Try upsert instead of update in case user doesn't exist
-      // Only save fields that have been filled
-      const profileUpdate: ProfileUpdate = {
-        wallet: walletAddress.toLowerCase(),
+      // Save to users table via Privy helper
+      const result = await upsertUserFromPrivy(privyUser, {
         name: profileData.name.trim(),
-        last_seen: new Date().toISOString(),
-        role: 'Member' // Default role
-      };
-
-      // Only add optional fields if they have values
-      if (profileData.bio.trim()) {
-        profileUpdate.bio = profileData.bio.trim();
+        bio: profileData.bio.trim() || null,
+        culture: profileData.culture || null,
+        lat: profileData.lat,
+        lng: profileData.lng,
+        onboarding_completed: true,
+        role: 'Member',
+      });
+      
+      if (!result) {
+        throw new Error('Failed to save profile - no data returned');
       }
-      if (profileData.culture) {
-        profileUpdate.culture = profileData.culture;
-      }
-      if (profileData.lat && profileData.lng) {
-        profileUpdate.lat = profileData.lat;
-        profileUpdate.lng = profileData.lng;
-      }
-      if (profileData.calendar_url.trim()) {
-        profileUpdate.calendar_url = profileData.calendar_url.trim();
-      }
-
-      const { data, error } = await supabase
-        .from('members')
-        .upsert(profileUpdate, {
-          onConflict: 'wallet'
-        })
-        .select();
-
-      console.log('💾 Supabase upsert result:', { data, error });
-
-      if (error) {
-        console.error('❌ Supabase error details:', error);
-        throw error;
-      }
-
-      console.log('✅ Profile setup completed successfully');
-      console.log('📊 Saved profile data:', data);
+      
+      console.log('✅ Profile saved successfully:', result);
       console.log('🔄 Calling onComplete callback...');
       onComplete();
       
@@ -210,12 +191,18 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       if (onOpenDashboard) {
         setTimeout(() => {
           onOpenDashboard();
-        }, 500); // Small delay for smooth transition
+        }, 500);
       }
     } catch (error) {
       console.error('❌ Profile setup failed:', error);
-      console.error('❌ Full error details:', error);
-      setErrors({ submit: 'Failed to save profile. Please try again.' });
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to save profile. Please try again.';
+      
+      setErrors({ 
+        submit: errorMessage + ' Check the console for details.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -251,15 +238,15 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 1:
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-bold">What&apos;s your name?</h3>
-            <p className="text-sm">This is how other members will see you</p>
+            <h3 className="text-base sm:text-lg font-bold">What should this unicorn be called?</h3>
+            <p className="text-sm">Choose a name for your unicorn — this is how others will see and remember you.</p>
             <input
               type="text"
               value={profileData.name}
               onChange={(e) => updateProfileData('name', e.target.value)}
-              placeholder="Enter your name"
+              placeholder="Sparkles"
               className="paper-input w-full text-sm sm:text-base"
-              maxLength={50}
+              maxLength={12}
             />
             {errors.name && <p className="text-red-600 text-xs sm:text-sm">{errors.name}</p>}
           </div>
@@ -268,18 +255,18 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 2:
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-bold">Tell us about yourself</h3>
-            <p className="text-sm">Share your interests, background, or what you&apos;re working on</p>
+            <h3 className="text-base sm:text-lg font-bold">Why will you become a unicorn?</h3>
+            <p className="text-sm">Share your mission, dreams, or what makes you a unique unicorn.</p>
             <textarea
               value={profileData.bio}
               onChange={(e) => updateProfileData('bio', e.target.value)}
-              placeholder="I'm passionate about..."
+              placeholder="Because I believe in magic, innovation, and absurd dreams..."
               className="paper-input w-full h-20 sm:h-24 resize-none text-sm sm:text-base"
-              maxLength={300}
+              maxLength={111}
             />
             <div className="flex justify-between text-xs sm:text-sm">
               <span>{errors.bio && <span className="text-red-600">{errors.bio}</span>}</span>
-              <span>{profileData.bio.length}/300</span>
+              <span>{profileData.bio.length}/111</span>
             </div>
           </div>
         );
@@ -287,8 +274,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 3:
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-bold">What&apos;s your primary culture?</h3>
-            <p className="text-sm">Choose the community that best represents your interests</p>
+            <h3 className="text-base sm:text-lg font-bold">Choose the culture for your unicorn</h3>
+            <p className="text-sm">Choose the culture that best represents your unicorn&apos;s interests or vibe.</p>
             <div className="grid grid-cols-2 gap-2 max-h-40 sm:max-h-48 overflow-y-auto">
               {CULTURE_OPTIONS.map((culture) => (
                 <button
@@ -311,8 +298,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 4:
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-bold">Where are you located?</h3>
-            <p className="text-sm">This helps connect you with nearby members</p>
+            <h3 className="text-base sm:text-lg font-bold">Where is your unicorn based?</h3>
+            <p className="text-sm">This helps connect your unicorn with nearby members and events.</p>
             <div className="space-y-3">
               <button
                 type="button"
@@ -360,18 +347,38 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
       case 5:
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-bold">Calendar Integration (Optional)</h3>
-            <p className="text-sm">Share your calendar so others can see when you&apos;re available</p>
-            <input
-              type="url"
-              value={profileData.calendar_url}
-              onChange={(e) => updateProfileData('calendar_url', e.target.value)}
-              placeholder="https://calendar.google.com/calendar/..."
-              className="paper-input w-full text-sm sm:text-base"
-            />
-            {errors.calendar_url && <p className="text-red-600 text-xs sm:text-sm">{errors.calendar_url}</p>}
-            <p className="text-xs">
-              You can add your Google Calendar, Calendly, or any public calendar URL
+            <h3 className="text-base sm:text-lg font-bold">🦄 Summon your Unicorn on X</h3>
+            <p className="text-sm">Share your unicorn transformation with the world!</p>
+            
+            <div className="paper-card p-4 bg-black text-white space-y-3">
+              <p className="text-sm font-mono">
+                "I will become a unicorn 🦄"
+              </p>
+              <p className="text-xs opacity-70">
+                Connect your X account and share this post to complete your transformation.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const tweetText = encodeURIComponent("I will become a unicorn 🦄 @zohouse");
+                window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+                setHasPostedOnX(true);
+              }}
+              className="paper-button w-full p-3 text-sm sm:text-base"
+            >
+              𝕏 Post "I will become a unicorn"
+            </button>
+
+            {hasPostedOnX && (
+              <div className="text-center text-sm text-green-600 font-semibold">
+                ✅ Thank you for sharing! Your unicorn journey begins now.
+              </div>
+            )}
+
+            <p className="text-xs text-center opacity-70">
+              This step is optional but helps spread the magic! 🪄
             </p>
           </div>
         );
@@ -442,7 +449,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
               disabled={isLoading}
               className="paper-button px-4 sm:px-6 py-2 text-sm sm:text-base"
             >
-              {isLoading ? 'Saving...' : currentStep === 5 ? 'Complete Setup' : 'Next'}
+              {isLoading ? 'Summoning...' : currentStep === 5 ? '🦄 Summon Unicorn' : 'Next'}
             </button>
           </div>
         </div>

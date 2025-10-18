@@ -250,6 +250,8 @@ export function useWallet() {
   // Check for existing wallet connection on mount
   useEffect(() => {
     const checkExistingConnection = async () => {
+      // Only run on client side
+      if (typeof window === 'undefined') return;
       if (!isMetaMaskInstalled()) return;
 
       try {
@@ -279,7 +281,10 @@ export function useWallet() {
           }));
         }
       } catch (error) {
-        console.error('Error checking existing wallet connection:', error);
+        // Improved error logging
+        console.warn('⚠️ Could not check existing wallet connection (this is okay):', 
+          error instanceof Error ? error.message : String(error)
+        );
       }
     };
 
@@ -288,6 +293,8 @@ export function useWallet() {
 
   // Listen for wallet connection changes
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
     if (!isMetaMaskInstalled()) return;
 
     const handleAccountsChanged = (...args: unknown[]) => {

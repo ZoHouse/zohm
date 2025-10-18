@@ -1,0 +1,46 @@
+{
+  "cli": {
+    "version": ">= 15.0.9"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "channel": "development"
+    },
+    "development-production": {
+      "extends": "development",
+      "environment": "production",
+      "channel": "development-production"
+    },
+    "simulator-ios-preview": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      },
+      "channel": "simulator-ios-preview"
+    },
+    "simulator-ios-production": {
+      "extends": "development-production",
+      "ios": {
+        "simulator": true
+      },
+      "channel": "simulator-ios-production"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
+    },
+    "staging": {
+      "channel": "production",
+      "environment": "development"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

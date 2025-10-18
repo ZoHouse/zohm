@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
-import { useWallet } from '@/hooks/useWallet';
+import { usePrivyUser } from '@/hooks/usePrivyUser';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 
 interface QuestsOverlayProps {
@@ -12,7 +12,7 @@ interface QuestsOverlayProps {
 }
 
 const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => {
-  const { address: walletAddress, isConnected } = useWallet();
+  const { primaryWalletAddress, authenticated } = usePrivyUser();
   const [quests, setQuests] = useState<QuestEntry[] | null>(null);
   const [leaders, setLeaders] = useState<LeaderboardEntry[] | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -25,7 +25,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
 
   // Load quests and check completion status
   useEffect(() => {
-    if (!isVisible || !walletAddress) return;
+    if (!isVisible || !primaryWalletAddress) return;
     
     const loadQuestsAndCheckCompletion = async () => {
       const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
@@ -34,7 +34,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
         // Check completion status for each quest
         const questsWithCompletion = await Promise.all(
           q.map(async (quest) => {
-            const isCompleted = await isQuestCompleted(walletAddress, quest.id);
+            const isCompleted = await isQuestCompleted(primaryWalletAddress, quest.id);
             return {
               ...quest,
               status: isCompleted ? 'completed' : quest.status
@@ -48,11 +48,11 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
     };
     
     loadQuestsAndCheckCompletion();
-  }, [isVisible, walletAddress]);
+  }, [isVisible, primaryWalletAddress]);
 
   const handleJoinQuest = (quest: QuestEntry) => {
-    if (!isConnected || !walletAddress) {
-      setVerificationResult('Please connect your wallet first');
+    if (!authenticated || !primaryWalletAddress) {
+      setVerificationResult('Please log in first');
       return;
     }
     
@@ -61,8 +61,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
   };
 
   const handleSubmitJoin = async () => {
-    if (!walletAddress) {
-      setVerificationResult('Please connect your wallet first');
+    if (!primaryWalletAddress) {
+      setVerificationResult('Please log in first');
       return;
     }
     
@@ -81,7 +81,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
 
     try {
       // Use the new Twitter quest completion verification
-      const result = await verifyTwitterQuestCompletion(twitterUrl, walletAddress, selectedQuest.id);
+      const result = await verifyTwitterQuestCompletion(twitterUrl, primaryWalletAddress, selectedQuest.id);
       
       if (result.isAlreadyCompleted) {
         setVerificationResult('❌ You have already completed this quest!');
@@ -91,7 +91,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       if (result.success) {
         // Mark the quest as completed with Twitter URL
         const completedQuest = await markQuestCompleted(
-          walletAddress, 
+          primaryWalletAddress, 
           selectedQuest.id, 
           undefined, // No transaction hash
           undefined, // No amount
@@ -113,7 +113,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                walletAddress: walletAddress,
+                walletAddress: primaryWalletAddress,
                 questId: selectedQuest.id,
                 questTitle: selectedQuest.title
               }),
@@ -176,9 +176,9 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
         <button className="paper-button" onClick={() => setShowLeaderboard(true)}>View Leaderboard</button>
       </div>
       
-      {!isConnected && (
+      {!authenticated && (
         <div className="mb-4 p-3 rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-300">
-          <p className="text-sm">Please connect your wallet to participate in quests</p>
+          <p className="text-sm">Please log in to participate in quests</p>
         </div>
       )}
       
@@ -206,10 +206,10 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 </div>
                 <button 
                   className={`paper-button whitespace-nowrap ${
-                    q.status === 'completed' || !isConnected ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
+                    q.status === 'completed' || !authenticated ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
                   }`}
-                  onClick={() => q.status !== 'completed' && isConnected && handleJoinQuest(q)}
-                  disabled={q.status === 'completed' || !isConnected}
+                  onClick={() => q.status !== 'completed' && authenticated && handleJoinQuest(q)}
+                  disabled={q.status === 'completed' || !authenticated}
                 >
                   {q.status === 'completed' ? 'Completed' : 'Join Quest'}
                 </button>

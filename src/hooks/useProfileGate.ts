@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useWallet } from './useWallet';
+import { usePrivyUser } from './usePrivyUser';
 import { supabase } from '@/lib/supabase';
 
 interface MemberProfile {
@@ -19,7 +19,7 @@ interface MemberProfile {
 }
 
 export function useProfileGate() {
-  const { isConnected, address } = useWallet();
+  const { authenticated, primaryWalletAddress } = usePrivyUser();
   const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
@@ -46,20 +46,20 @@ export function useProfileGate() {
 
   // Load member profile
   const loadMemberProfile = useCallback(async () => {
-    if (!address) return;
+    if (!primaryWalletAddress) return;
     
-    console.log('🔄 Loading profile for address:', address);
+    console.log('🔄 Loading profile for address:', primaryWalletAddress);
     setIsLoadingProfile(true);
     
     try {
       const { data, error } = await supabase
         .from('members')
         .select('name, bio, culture, pfp, founder_nfts_count, calendar_url, created_at, lat, lng, main_quest_url, side_quest_url')
-        .eq('wallet', address.toLowerCase())
+        .eq('wallet', primaryWalletAddress.toLowerCase())
         .single();
         
       console.log('🔍 Database query details:', {
-        queryAddress: address.toLowerCase(),
+        queryAddress: primaryWalletAddress.toLowerCase(),
         resultData: data,
         error: error
       });
@@ -81,21 +81,21 @@ export function useProfileGate() {
     } finally {
       setIsLoadingProfile(false);
     }
-  }, [address]);
+  }, [primaryWalletAddress]);
 
-  // Load profile when connected
+  // Load profile when authenticated
   useEffect(() => {
-    if (isConnected && address) {
+    if (authenticated && primaryWalletAddress) {
       loadMemberProfile();
     } else {
       setMemberProfile(null);
     }
-  }, [isConnected, address, loadMemberProfile]);
+  }, [authenticated, primaryWalletAddress, loadMemberProfile]);
 
   // Function to check access and trigger setup if needed
   const checkProfileAccess = (): boolean => {
-    if (!isConnected) {
-      return false; // Need to connect wallet first
+    if (!authenticated) {
+      return false; // Need to authenticate first
     }
     
     // If we have profile data but it's incomplete, show setup
@@ -131,7 +131,7 @@ export function useProfileGate() {
   };
 
   return {
-    isConnected,
+    authenticated,
     memberProfile,
     isProfileComplete,
     isLoadingProfile,

@@ -29,16 +29,19 @@ export const getRandomUnicorn = (): string => {
 };
 
 /**
- * Get a deterministic unicorn based on wallet address
- * This ensures the same address always gets the same unicorn (until they upload their own)
+ * Get a deterministic unicorn based on wallet address or user ID
+ * This ensures the same user always gets the same unicorn (until they upload their own)
  */
-export const getUnicornForAddress = (address: string): string => {
-  if (!address) return getRandomUnicorn();
+export const getUnicornForAddress = (addressOrId: string): string => {
+  if (!addressOrId || addressOrId === '') {
+    // Fallback to first unicorn if no identifier
+    return unicornImages[0];
+  }
   
-  // Simple hash function to convert address to index
+  // Simple hash function to convert address/ID to index
   let hash = 0;
-  for (let i = 0; i < address.length; i++) {
-    hash = ((hash << 5) - hash) + address.charCodeAt(i);
+  for (let i = 0; i < addressOrId.length; i++) {
+    hash = ((hash << 5) - hash) + addressOrId.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   

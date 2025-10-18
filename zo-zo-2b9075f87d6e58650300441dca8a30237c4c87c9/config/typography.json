@@ -1,0 +1,63 @@
+{
+  "Title": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 24,
+    "lineHeight": 32
+  },
+  "SectionTitle": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 20,
+    "lineHeight": 30
+  },
+  "Paragraph": {
+    "fontFamily": "Rubik-Regular",
+    "fontSize": 16,
+    "lineHeight": 24
+  },
+  "TextHighlight": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 16,
+    "lineHeight": 24
+  },
+  "Subtitle": {
+    "fontFamily": "Rubik-Regular",
+    "fontSize": 14,
+    "lineHeight": 21
+  },
+  "SubtitleHighlight": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 14,
+    "lineHeight": 21
+  },
+  "Tertiary": {
+    "fontFamily": "Rubik-Regular",
+    "fontSize": 12,
+    "lineHeight": 18
+  },
+  "TertiaryHighlight": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 12,
+    "lineHeight": 18
+  },
+  "BigButton": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 16,
+    "lineHeight": 16
+  },
+  "SmallButton": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 12,
+    "lineHeight": 12
+  },
+  "Small": {
+    "fontFamily": "Rubik-Regular",
+    "fontSize": 10,
+    "lineHeight": 14
+  },
+  "MiniFocus": {
+    "fontFamily": "Rubik-Medium",
+    "fontSize": 10,
+    "lineHeight": 12,
+    "letterSpacing": 0.5
+  }
+}

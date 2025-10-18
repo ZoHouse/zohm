@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "704141099142",
+    "project_id": "zostel-app",
+    "storage_bucket": "zostel-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704141099142:android:fbdacb118076729bcc5107",
+        "android_client_info": {
+          "package_name": "com.zostel.app.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "704141099142-ur2j4jhb2li3m0ji7cntp0p6qeskkmgn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvr-LZkpbF1PS8VIOT5jFHbOk5D-AQJAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "704141099142-ur2j4jhb2li3m0ji7cntp0p6qeskkmgn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

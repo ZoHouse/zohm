@@ -1,0 +1,55 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+build/
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+zostel.keystore
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# we will use prebuild to generate the ios and android folders, expo cng
+ios/
+android/
+
+
+.cursor/
+
+.DS_Store
+.expo/devices.json
+.expo/types/router.d.ts
+ios/Podfile.lock
+ios/Zostel.xcodeproj/project.pbxproj
+ios/Zostel/Info.plist

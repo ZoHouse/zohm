@@ -26,7 +26,7 @@ const MacInput: React.FC<MacInputProps> = ({
 }) => {
   const baseClasses = `
     w-full 
-    px-1.5 sm:px-2 py-1.5
+    px-1 sm:px-2 py-1.5
     font-mono text-[10px] sm:text-xs
     bg-[#fbfbfb] 
     border border-[#b0b0b0] 

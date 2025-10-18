@@ -210,7 +210,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
     switch (step) {
       case 1:
         return (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
             <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
               <img 
                 src={unicornImage} 
@@ -235,7 +235,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 2:
         return (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
             <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
               <img 
                 src={unicornImage} 
@@ -262,7 +262,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 3:
         return (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
             <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
               <img 
                 src={unicornImage} 
@@ -296,7 +296,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 4:
         return (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
             <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
               <img 
                 src={unicornImage} 
@@ -346,7 +346,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 5:
         return (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-3">
             <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
               <img 
                 src={unicornImage} 
@@ -392,10 +392,10 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
   return (
     <MacBezel>
       <MacScreen title="Unicorn Onboarding">
-        <div className="relative h-full p-2 sm:p-4">
+        <div className="relative h-full p-1 sm:p-4">
           {/* Stacked dialogs for visual depth - centered and mobile-optimized */}
           <div className="absolute inset-x-0 top-8 sm:top-24 flex justify-center items-start sm:items-center">
-            <div className="relative w-full max-w-[98%] sm:max-w-none">
+            <div className="relative w-full max-w-[99%] sm:max-w-none">
               {/* Background dialog (step - 2) - hidden on mobile to save space */}
               {currentStep > 2 && (
                 <MacDialog

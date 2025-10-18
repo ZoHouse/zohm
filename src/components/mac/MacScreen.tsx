@@ -13,23 +13,23 @@ interface MacScreenProps {
 const MacScreen: React.FC<MacScreenProps> = ({ title = 'Unicorn', children }) => {
   return (
     <div className="relative h-full bg-[#f6f6f6] border border-[#bfbfbf] rounded-sm overflow-hidden shadow-[inset_-6px_-6px_0_rgba(0,0,0,0.12)]">
-      {/* Classic Mac title bar */}
-      <div className="h-7 flex items-center px-2 bg-gradient-to-b from-[#efefef] to-[#dcdcdc] border-b border-[#bdbdbd]">
-        {/* Traffic lights */}
-        <div className="flex gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] shadow-sm" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] shadow-sm" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#28c840] shadow-sm" />
+      {/* Classic Mac title bar - responsive height */}
+      <div className="h-6 sm:h-7 flex items-center px-1 sm:px-2 bg-gradient-to-b from-[#efefef] to-[#dcdcdc] border-b border-[#bdbdbd]">
+        {/* Traffic lights - responsive size */}
+        <div className="flex gap-1 sm:gap-2">
+          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#ff5f57] shadow-sm" />
+          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#ffbd2e] shadow-sm" />
+          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#28c840] shadow-sm" />
         </div>
         
-        {/* Title */}
-        <div className="ml-3 font-mono text-xs text-[#333] font-semibold">
+        {/* Title - responsive text size */}
+        <div className="ml-2 sm:ml-3 font-mono text-[10px] sm:text-xs text-[#333] font-semibold">
           {title}
         </div>
       </div>
 
-      {/* Screen content */}
-      <div className="relative h-[calc(100%-28px)] overflow-hidden">
+      {/* Screen content - responsive height calculation */}
+      <div className="relative h-[calc(100%-24px)] sm:h-[calc(100%-28px)] overflow-hidden">
         {children}
         
         {/* Scanline overlay for retro CRT effect */}

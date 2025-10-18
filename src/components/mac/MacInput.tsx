@@ -26,8 +26,8 @@ const MacInput: React.FC<MacInputProps> = ({
 }) => {
   const baseClasses = `
     w-full 
-    px-2 py-1.5
-    font-mono text-xs
+    px-1.5 sm:px-2 py-1.5
+    font-mono text-[10px] sm:text-xs
     bg-[#fbfbfb] 
     border border-[#b0b0b0] 
     rounded
@@ -63,11 +63,11 @@ const MacInput: React.FC<MacInputProps> = ({
       )}
       
       {error && (
-        <p className="text-[10px] text-red-600 font-mono">{error}</p>
+        <p className="text-[9px] sm:text-[10px] text-red-600 font-mono">{error}</p>
       )}
       
       {maxLength && (
-        <div className="text-right text-[10px] text-[#666] font-mono">
+        <div className="text-right text-[9px] sm:text-[10px] text-[#666] font-mono">
           {value.length}/{maxLength}
         </div>
       )}

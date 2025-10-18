@@ -32,8 +32,9 @@ const MacDialog: React.FC<MacDialogProps> = ({
         !active ? 'pointer-events-none' : ''
       }`}
       style={{
-        width,
-        minHeight: height === 'auto' ? '140px' : height,
+        width: width === '420px' ? '95%' : width, // Responsive width for default
+        maxWidth: width === '420px' ? '420px' : width,
+        minHeight: height === 'auto' ? '120px' : height,
         transform: `translate(calc(-50% + ${offset}px), ${offset}px)`,
         opacity,
         filter: blur ? 'blur(1px)' : 'none',
@@ -41,15 +42,15 @@ const MacDialog: React.FC<MacDialogProps> = ({
         animation: 'slideIn 0.4s ease-out',
       }}
     >
-      {/* Dialog title bar */}
-      <div className="h-5 bg-gradient-to-b from-[#efefef] to-[#dcdcdc] border-b border-[#bdbdbd] px-2 flex items-center">
-        <span className="font-mono text-[10px] font-semibold text-[#333]">
+      {/* Dialog title bar - responsive height */}
+      <div className="h-4 sm:h-5 bg-gradient-to-b from-[#efefef] to-[#dcdcdc] border-b border-[#bdbdbd] px-1 sm:px-2 flex items-center">
+        <span className="font-mono text-[9px] sm:text-[10px] font-semibold text-[#333]">
           {title}
         </span>
       </div>
       
-      {/* Dialog content */}
-      <div className="p-2">
+      {/* Dialog content - responsive padding */}
+      <div className="p-1.5 sm:p-2">
         {children}
       </div>
     </div>

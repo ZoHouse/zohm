@@ -20,11 +20,11 @@ const MacButton: React.FC<MacButtonProps> = ({
   primary = false,
   type = 'button'
 }) => {
-  const baseClasses = "font-mono text-[11px] font-semibold rounded-sm transition-all duration-150 active:translate-y-[1px]";
+  const baseClasses = "font-mono text-[10px] sm:text-[11px] font-semibold rounded-sm transition-all duration-150 active:translate-y-[1px]";
   
   const primaryClasses = `
     ${baseClasses}
-    px-4 py-1.5
+    px-3 sm:px-4 py-1.5 sm:py-1.5
     bg-[#4a8cff] 
     border border-[#2b62d6] 
     text-white 
@@ -37,7 +37,7 @@ const MacButton: React.FC<MacButtonProps> = ({
   
   const secondaryClasses = `
     ${baseClasses}
-    px-4 py-1.5
+    px-3 sm:px-4 py-1.5 sm:py-1.5
     bg-[#e6e6e6] 
     border border-[#7a7a7a] 
     text-[#111] 

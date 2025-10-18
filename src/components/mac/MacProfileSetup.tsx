@@ -210,16 +210,16 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
     switch (step) {
       case 1:
         return (
-          <div className="flex gap-3">
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="block font-mono text-xs text-[#222] font-semibold">
+            <div className="flex-1 space-y-1 sm:space-y-1.5">
+              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold">
                 What should this unicorn be called?
               </label>
               <MacInput
@@ -235,16 +235,16 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 2:
         return (
-          <div className="flex gap-3">
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="block font-mono text-xs text-[#222] font-semibold">
+            <div className="flex-1 space-y-1 sm:space-y-1.5">
+              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold">
                 Why will you become a unicorn?
               </label>
               <MacInput
@@ -262,24 +262,24 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       
       case 3:
         return (
-          <div className="flex gap-3">
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="block font-mono text-xs text-[#222] font-semibold">
+            <div className="flex-1 space-y-1 sm:space-y-1.5">
+              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold">
                 Choose the culture for your unicorn:
               </label>
-              <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-1.5 max-h-[120px] sm:max-h-[160px] overflow-y-auto pr-1">
                 {CULTURE_OPTIONS.map((culture) => (
                   <button
                     key={culture}
                     onClick={() => updateProfileData('culture', culture)}
-                    className={`p-1.5 text-[11px] font-mono text-left rounded border transition-all ${
+                    className={`p-1 sm:p-1.5 text-[9px] sm:text-[11px] font-mono text-left rounded border transition-all ${
                       profileData.culture === culture
                         ? 'bg-[#4a8cff] text-white border-[#2b62d6]'
                         : 'bg-white border-[#b0b0b0] hover:border-[#8a8a8a]'
@@ -289,34 +289,34 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                   </button>
                 ))}
               </div>
-              {errors.culture && <p className="text-xs text-red-600 font-mono">{errors.culture}</p>}
+              {errors.culture && <p className="text-[9px] sm:text-xs text-red-600 font-mono">{errors.culture}</p>}
             </div>
           </div>
         );
       
       case 4:
         return (
-          <div className="flex gap-3">
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="block font-mono text-xs text-[#222] font-semibold">
+            <div className="flex-1 space-y-1 sm:space-y-1.5">
+              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold">
                 Where is your unicorn based?
               </label>
               <button
                 type="button"
                 onClick={getUserLocation}
-                className="w-full px-2 py-1.5 font-mono text-[11px] bg-[#e6e6e6] border border-[#7a7a7a] rounded hover:bg-[#ececec]"
+                className="w-full px-1.5 sm:px-2 py-1.5 font-mono text-[9px] sm:text-[11px] bg-[#e6e6e6] border border-[#7a7a7a] rounded hover:bg-[#ececec]"
               >
                 📍 Use My Current Location
               </button>
-              <div className="text-center text-[10px] font-mono text-[#666]">or</div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="text-center text-[9px] sm:text-[10px] font-mono text-[#666]">or</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-1.5">
                 {CITIES.map((city) => (
                   <button
                     key={city.name}
@@ -324,7 +324,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                       updateProfileData('lat', city.lat);
                       updateProfileData('lng', city.lng);
                     }}
-                    className={`p-1.5 text-[10px] font-mono rounded border transition-all ${
+                    className={`p-1 sm:p-1.5 text-[8px] sm:text-[10px] font-mono rounded border transition-all ${
                       profileData.lat === city.lat && profileData.lng === city.lng
                         ? 'bg-[#4a8cff] text-white border-[#2b62d6]'
                         : 'bg-white border-[#b0b0b0] hover:border-[#8a8a8a]'
@@ -335,31 +335,31 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                 ))}
               </div>
               {profileData.lat && profileData.lng && (
-                <div className="text-center text-[10px] font-mono text-green-600">
+                <div className="text-center text-[8px] sm:text-[10px] font-mono text-green-600">
                   ✅ Location set: {profileData.lat.toFixed(2)}, {profileData.lng.toFixed(2)}
                 </div>
               )}
-              {errors.location && <p className="text-xs text-red-600 font-mono">{errors.location}</p>}
+              {errors.location && <p className="text-[9px] sm:text-xs text-red-600 font-mono">{errors.location}</p>}
             </div>
           </div>
         );
       
       case 5:
         return (
-          <div className="flex gap-3">
-            <div className="w-24 h-24 flex-shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0">
               <img 
                 src={unicornImage} 
                 alt="Unicorn" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="block font-mono text-xs text-[#222] font-semibold">
+            <div className="flex-1 space-y-1 sm:space-y-1.5">
+              <label className="block font-mono text-[10px] sm:text-xs text-[#222] font-semibold">
                 🦄 Summon your Unicorn on X
               </label>
-              <div className="bg-black text-white p-2 rounded font-mono text-[11px]">
-                <p>"Unicorns are real @sfoxzo"</p>
+              <div className="bg-black text-white p-1.5 sm:p-2 rounded font-mono text-[9px] sm:text-[11px]">
+                <p>&ldquo;Unicorns are real @sfoxzo&rdquo;</p>
               </div>
               <button
                 type="button"
@@ -368,16 +368,16 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
                   window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
                   setHasPostedOnX(true);
                 }}
-                className="w-full px-2 py-1.5 font-mono text-[11px] bg-[#4a8cff] text-white border border-[#2b62d6] rounded hover:bg-[#5a9cff]"
+                className="w-full px-1.5 sm:px-2 py-1.5 font-mono text-[9px] sm:text-[11px] bg-[#4a8cff] text-white border border-[#2b62d6] rounded hover:bg-[#5a9cff]"
               >
-                𝕏 Post "Unicorns are real"
+                𝕏 Post &ldquo;Unicorns are real&rdquo;
               </button>
               {hasPostedOnX && (
-                <div className="text-center text-[10px] text-green-600 font-mono font-semibold">
+                <div className="text-center text-[8px] sm:text-[10px] text-green-600 font-mono font-semibold">
                   ✅ Thank you for sharing!
                 </div>
               )}
-              <p className="text-[10px] text-center text-[#666] font-mono">
+              <p className="text-[8px] sm:text-[10px] text-center text-[#666] font-mono">
                 Optional but helps spread the magic! 🪄
               </p>
             </div>
@@ -392,21 +392,21 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
   return (
     <MacBezel>
       <MacScreen title="Unicorn Onboarding">
-        <div className="relative h-full p-4">
+        <div className="relative h-full p-2 sm:p-4">
           {/* Stacked dialogs for visual depth - centered */}
-          <div className="absolute inset-x-0 top-24 flex justify-center">
+          <div className="absolute inset-x-0 top-16 sm:top-24 flex justify-center">
             <div className="relative">
               {/* Background dialog (step - 2) */}
               {currentStep > 2 && (
                 <MacDialog
                   title={`Step ${currentStep - 2} of 5`}
-                  offset={12}
+                  offset={8}
                   opacity={0.3}
                   blur
                   active={false}
                   width="500px"
                 >
-                  <div className="h-24" />
+                  <div className="h-16 sm:h-24" />
                 </MacDialog>
               )}
               
@@ -414,13 +414,13 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
               {currentStep > 1 && (
                 <MacDialog
                   title={`Step ${currentStep - 1} of 5`}
-                  offset={6}
+                  offset={4}
                   opacity={0.6}
                   blur
                   active={false}
                   width="500px"
                 >
-                  <div className="h-24" />
+                  <div className="h-16 sm:h-24" />
                 </MacDialog>
               )}
               
@@ -438,28 +438,28 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
             </div>
           </div>
           
-          {/* Progress indicator (top right corner) */}
-          <div className="absolute right-4 top-4 w-[100px]">
-            <div className="bg-white border border-[#8a8a8a] rounded shadow-md p-1.5">
-              <div className="font-mono text-[10px] font-semibold text-[#333] mb-1">Progress</div>
+          {/* Progress indicator (top right corner) - responsive */}
+          <div className="absolute right-2 sm:right-4 top-2 sm:top-4 w-[80px] sm:w-[100px]">
+            <div className="bg-white border border-[#8a8a8a] rounded shadow-md p-1 sm:p-1.5">
+              <div className="font-mono text-[8px] sm:text-[10px] font-semibold text-[#333] mb-0.5 sm:mb-1">Progress</div>
               <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map((step) => (
                   <div
                     key={step}
-                    className={`flex-1 h-1.5 border border-black ${
+                    className={`flex-1 h-1 sm:h-1.5 border border-black ${
                       step <= currentStep ? 'bg-black' : 'bg-white'
                     }`}
                   />
                 ))}
               </div>
-              <div className="mt-1 text-[9px] font-mono text-[#666] text-center">
+              <div className="mt-0.5 sm:mt-1 text-[7px] sm:text-[9px] font-mono text-[#666] text-center">
                 Step {currentStep} of 5
               </div>
             </div>
           </div>
 
-          {/* Footer buttons */}
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+          {/* Footer buttons - responsive */}
+          <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 flex justify-center gap-1 sm:gap-2">
             <MacButton onClick={handleBack} disabled={currentStep === 1 || isLoading}>
               ← Back
             </MacButton>
@@ -468,10 +468,10 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
             </MacButton>
           </div>
 
-          {/* Error display */}
+          {/* Error display - responsive */}
           {errors.submit && (
-            <div className="absolute left-4 right-4 bottom-12 bg-red-100 border border-red-600 rounded p-2">
-              <p className="text-xs text-red-600 font-mono text-center">{errors.submit}</p>
+            <div className="absolute left-2 sm:left-4 right-2 sm:right-4 bottom-10 sm:bottom-12 bg-red-100 border border-red-600 rounded p-1.5 sm:p-2">
+              <p className="text-[9px] sm:text-xs text-red-600 font-mono text-center">{errors.submit}</p>
             </div>
           )}
         </div>

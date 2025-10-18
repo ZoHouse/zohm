@@ -315,21 +315,7 @@ export default function Home() {
       );
     }
     
-    // Use Mac-style onboarding on desktop, simple onboarding on mobile
-    if (isMobile) {
-      return (
-        <div className="fixed inset-0 bg-black z-[9999]">
-          <ProfileSetup
-            isVisible={true}
-            onComplete={handleRitualComplete}
-            onClose={() => setShowRitual(false)}
-            onOpenDashboard={undefined}
-          />
-        </div>
-      );
-    }
-    
-    // Desktop: Mac-style onboarding
+    // Use Mac-style onboarding for both mobile and desktop (now responsive)
     return (
       <div className="fixed inset-0 bg-black z-[9999]">
         <MacProfileSetup

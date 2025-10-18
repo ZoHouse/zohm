@@ -11,14 +11,14 @@ const comicNeue = Comic_Neue({
 });
 
 export const metadata: Metadata = {
-  title: 'Zo World - Unicorn Onboarding',
+  title: 'Zo Zo Zo',
   description: 'Enter the magical world of Zo with unicorn-themed onboarding and community events',
   manifest: '/manifest.json',
   formatDetection: {
     telephone: false,
   },
   appleWebApp: {
-    title: 'Zo World',
+    title: 'Zo Zo Zo',
     statusBarStyle: 'black-translucent',
     capable: true,
   },
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'apple-mobile-web-app-title': 'Zo World',
-    'application-name': 'Zo World',
+    'apple-mobile-web-app-title': 'Zo Zo Zo',
+    'application-name': 'Zo Zo Zo',
     'msapplication-TileColor': '#000000',
     'msapplication-config': '/browserconfig.xml',
   },

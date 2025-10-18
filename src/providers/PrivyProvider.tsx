@@ -22,10 +22,11 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#a855f7',
           },
           embeddedWallets: {
-            createOnLogin: 'users-without-wallets',
+            solana: {
+              createOnLogin: 'users-without-wallets',
+            },
           },
-          // Note: Solana wallet creation is configured in Privy Dashboard
-          // Under: Wallet Infrastructure -> Smart wallets -> Solana wallets
+          // Solana wallets will be created automatically for users without wallets
         }}
       >
         {children}

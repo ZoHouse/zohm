@@ -32,7 +32,7 @@ const MacDialog: React.FC<MacDialogProps> = ({
         !active ? 'pointer-events-none' : ''
       }`}
       style={{
-        width: width === '420px' ? '95%' : width, // Responsive width for default
+        width: width === '420px' ? 'calc(100vw - 2rem)' : width, // Full width minus padding on mobile
         maxWidth: width === '420px' ? '420px' : width,
         minHeight: height === 'auto' ? '120px' : height,
         maxHeight: '80vh', // Prevent dialog from being too tall on mobile
@@ -42,6 +42,7 @@ const MacDialog: React.FC<MacDialogProps> = ({
         zIndex: 100 - offset,
         animation: 'slideIn 0.4s ease-out',
         overflow: 'auto', // Allow scrolling if content is too tall
+        margin: '0 1rem', // Add margin to prevent edge cutoff
       }}
     >
       {/* Dialog title bar - responsive height */}

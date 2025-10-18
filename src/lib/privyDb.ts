@@ -378,8 +378,8 @@ export async function syncUserWalletsFromPrivy(privyUser: PrivyUser): Promise<vo
           wallet_client_type: account.walletClientType || null,
           is_embedded: account.walletClientType === 'privy',
           is_primary: i === 0, // First wallet is primary
-          is_verified: account.verified || true,
-          verified_at: account.verifiedAt || new Date().toISOString(),
+          is_verified: true, // Privy wallets are always verified
+          verified_at: new Date().toISOString(),
           last_used_at: new Date().toISOString(),
         }, { 
           onConflict: 'address',

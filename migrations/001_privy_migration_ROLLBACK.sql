@@ -42,3 +42,4 @@ SELECT 'Rollback complete! Old members table restored.' as status;
 SELECT COUNT(*) as members_count FROM members;
 
 
+

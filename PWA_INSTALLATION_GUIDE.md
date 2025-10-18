@@ -182,3 +182,4 @@ Once installed, Zo World will work just like any other app on your device. You c
 
 *Last updated: [Current Date]*
 *PWA Version: 1.0*
+

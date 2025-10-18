@@ -104,3 +104,4 @@ A **sleeker, more balanced, visually engaging** Mac-style onboarding that:
 
 **Check it out at `localhost:3000`!** 🖥️✨
 
+

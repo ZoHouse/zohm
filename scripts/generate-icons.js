@@ -27,3 +27,4 @@ sizes.forEach(size => {
 
 console.log('✅ All icon SVGs generated!');
 console.log('📝 Note: For production, replace these with proper PNG icons');
+

@@ -13,7 +13,7 @@ const comicNeue = Comic_Neue({
 export const metadata: Metadata = {
   title: 'Zo Zo Zo',
   description: 'Enter the magical world of Zo with unicorn-themed onboarding and community events',
-  manifest: '/manifest.json',
+  manifest: '/manifest.json?v=2',
   formatDetection: {
     telephone: false,
   },

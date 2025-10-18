@@ -26,3 +26,4 @@
 - 🎯 **App shortcuts** to Events & Dashboard
 
 **That's it! Enjoy your new Zo World app!** 🦄✨
+

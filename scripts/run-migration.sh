@@ -67,3 +67,4 @@ echo "💡 Tip: Use Cmd+A to select all, then Cmd+C to copy the migration file"
 echo ""
 
 
+

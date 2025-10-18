@@ -5,6 +5,7 @@ import ProfileSetup from '@/components/ProfileSetup';
 import MacProfileSetup from '@/components/mac/MacProfileSetup';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
+import PWAInstaller from '@/components/PWAInstaller';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -380,6 +381,7 @@ export default function Home() {
         onEventClick={handleEventClick}
         onNodeClick={handleNodeClick}
       />
+      <PWAInstaller />
     </>
   );
 }

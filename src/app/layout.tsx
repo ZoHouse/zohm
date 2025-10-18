@@ -11,21 +11,33 @@ const comicNeue = Comic_Neue({
 });
 
 export const metadata: Metadata = {
-  title: 'zohm',
-  description: 'Interactive map of Zo House events and community members',
+  title: 'Zo World - Unicorn Onboarding',
+  description: 'Enter the magical world of Zo with unicorn-themed onboarding and community events',
   manifest: '/manifest.json',
   formatDetection: {
     telephone: false,
   },
   appleWebApp: {
-    title: 'Zo House',
+    title: 'Zo World',
     statusBarStyle: 'black-translucent',
     capable: true,
   },
   icons: {
-    icon: '/spinner_Z_4.gif',
-    shortcut: '/icons/icon-192x192.png',
-    apple: '/icons/icon-192x192.png',
+    icon: [
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' }
+    ],
+    shortcut: '/icons/icon-192x192.svg',
+    apple: '/icons/icon-192x192.svg',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': 'Zo World',
+    'application-name': 'Zo World',
+    'msapplication-TileColor': '#000000',
+    'msapplication-config': '/browserconfig.xml',
   },
 };
 

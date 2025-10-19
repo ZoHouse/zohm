@@ -95,7 +95,7 @@ const MobileView: React.FC<MobileViewProps> = ({
       </div>
 
       {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 left-4 z-20">
         <a
           href="https://unicornsf.com"
           target="_blank"

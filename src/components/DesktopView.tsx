@@ -82,7 +82,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
       </div>
 
       {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 sm:top-10 right-4 z-20">
+      <div className="absolute top-4 sm:top-10 left-4 z-20">
         <a
           href="https://unicornsf.com"
           target="_blank"

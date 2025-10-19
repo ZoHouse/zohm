@@ -94,6 +94,19 @@ const MobileView: React.FC<MobileViewProps> = ({
         />
       </div>
 
+      {/* $Unicorn Launch Button */}
+      <div className="absolute top-4 right-4 z-20">
+        <a
+          href="https://unicornsf.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-white"
+        >
+          <span className="text-base mr-1">🦄</span>
+          <span className="text-xs">$Unicorn</span>
+        </a>
+      </div>
+
       {/* Unicorn Button */}
       <motion.button
         onClick={handleUnicornClick}

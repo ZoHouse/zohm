@@ -394,7 +394,7 @@ const MacProfileSetup: React.FC<MacProfileSetupProps> = ({
       <MacScreen title="Unicorn Onboarding">
         <div className="relative h-full p-0 sm:p-4">
           {/* Stacked dialogs for visual depth - centered and mobile-optimized */}
-          <div className="absolute inset-x-0 top-1/3 flex justify-center items-center">
+          <div className="absolute inset-0 flex justify-center items-center">
             <div className="relative w-full max-w-[100%] sm:max-w-none">
               {/* Background dialog (step - 2) - hidden on mobile to save space */}
               {currentStep > 2 && (

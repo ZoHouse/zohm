@@ -1,5 +1,7 @@
 'use client';
 
+import { usePrivy } from '@privy-io/react-auth';
+
 interface NavBarProps {
   onSectionChange: (section: 'events' | 'nodes' | 'quests') => void;
   activeSection: 'events' | 'nodes' | 'quests';
@@ -7,6 +9,8 @@ interface NavBarProps {
 }
 
 const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashboardClick }) => {
+  const { ready, authenticated, logout } = usePrivy();
+
   const navItems = [
     { id: 'events' as const, label: 'Events' },
     { id: 'nodes' as const, label: 'Nodes' },
@@ -34,6 +38,16 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashb
           >
             Dashboard
           </button>
+
+          {/* Logout (only when authenticated) */}
+          {ready && authenticated && (
+            <button
+              onClick={logout}
+              className="paper-nav-item text-red-600"
+            >
+              Logout
+            </button>
+          )}
         </nav>
       </div>
     </div>

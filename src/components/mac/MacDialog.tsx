@@ -32,12 +32,13 @@ const MacDialog: React.FC<MacDialogProps> = ({
         !active ? 'pointer-events-none' : ''
       }`}
         style={{
-          width: width === '420px' ? '90vw' : width, // Mobile: 90vw, Desktop: use provided width
-          maxWidth: width === '420px' ? '90vw' : width, // Mobile: 90vw, Desktop: use provided width
+          width: width, // Use provided width (e.g., 420px)
+          maxWidth: '90vw', // Constrain on small screens without stretching on desktop
           minHeight: height === 'auto' ? '200px' : height, // Taller minimum height on mobile
           maxHeight: '85vh', // Allow more height on mobile
-          left: '50%', // Always center
-          transform: `translate(calc(-50% + ${offset}px), ${offset}px)`, // Always center
+          left: '50%', // Horizontal center
+          top: '50%', // Vertical center
+          transform: `translate(calc(-50% + ${offset}px), calc(-50% + ${offset}px))`, // Center with stacking offset
           opacity,
           filter: blur ? 'blur(1px)' : 'none',
           zIndex: 100 - offset,

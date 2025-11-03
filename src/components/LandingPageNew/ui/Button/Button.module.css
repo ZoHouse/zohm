@@ -1,5 +1,5 @@
 .button {
-  @apply text-center px-8 py-3 text-lg top-0 text-white rounded-2xl relative flex items-center;
+  @apply text-center px-8 py-3 text-lg text-white rounded-2xl relative flex items-center;
   background: #ea5f52;
   box-shadow: -4px 4px #be392c;
 }
@@ -8,6 +8,7 @@
 }
 .button:active {
   top: 4px;
+  left: -4px;
   box-shadow: none;
 }
 .button:disabled {

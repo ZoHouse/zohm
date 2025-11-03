@@ -38,9 +38,7 @@ const Introduction: React.FC<IntroductionProps> = () => {
           <br />
           And Web3 enables us to have thousands of founders for our vision.
         </p>
-        <div className="w-full flex justify-center md:justify-center mt-12 z-10">
-          <Button className="">Become a Member</Button>
-        </div>
+        <Button className="mt-12 z-10">Become a Member</Button>
       </Flex>
     </section>
   );

@@ -96,14 +96,42 @@ const TravelLocalFriends: React.FC<TravelLocalFriendsProps> = () => {
           }}
         />
       </div>
-      <h2
+      <div
         ref={text}
-        className="text-white text-xl md:text-2xl md:ml-12 tracking-wide text-center flex flex-col"
+        className="text-white md:ml-12 text-center md:text-left max-w-2xl px-4"
         style={{ marginBottom: isMobile ? "30vh" : "0" }}
       >
-        <span className="mb-2">Navigate experience layers through</span>
-        <span className="font-semibold">people, places, and parties across realities.</span>
-      </h2>
+        <h2 className="text-2xl md:text-4xl font-bold mb-4">Zo Zo Zo</h2>
+        <p className="text-lg md:text-xl mb-4 font-semibold">
+          Bridging digital communities to physical actions.
+        </p>
+        <p className="text-sm md:text-base mb-6 opacity-90">
+          12 years of research, 100+ nodes, and over 1 million citizens later, we've cracked the code to your best life.
+        </p>
+        
+        <div className="space-y-4 text-left">
+          <div>
+            <span className="font-bold text-base md:text-lg">People:</span>
+            <span className="text-sm md:text-base ml-2">
+              The heartbeat of Zo, founders, creators, dreamers, and citizens turning intention into action.
+            </span>
+          </div>
+          
+          <div>
+            <span className="font-bold text-base md:text-lg">Places:</span>
+            <span className="text-sm md:text-base ml-2">
+              Nodes of possibility culture houses, hacker spaces, and co-living hubs where the digital meets the physical.
+            </span>
+          </div>
+          
+          <div>
+            <span className="font-bold text-base md:text-lg">Parties:</span>
+            <span className="text-sm md:text-base ml-2">
+              Celebrations of coherence where communities sync, stories merge, and the network comes alive.
+            </span>
+          </div>
+        </div>
+      </div>
       <FemaleLeftFull1
         ref={female1}
         className="absolute left-0 z-1 md:hidden block"

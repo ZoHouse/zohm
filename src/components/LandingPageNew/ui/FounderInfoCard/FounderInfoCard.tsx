@@ -4,7 +4,7 @@ import {
   LinkedIn,
   TwitterCircle,
   TwitterFilled,
-} from "../../../assets/icons";
+} from "../../assets/icons";
 import { Flex } from "../../structure";
 import Avatar from "../Avatar";
 

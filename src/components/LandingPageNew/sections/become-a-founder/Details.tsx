@@ -6,7 +6,7 @@ import { Container } from "../../ui";
 interface StoryProps {}
 
 interface ListItemProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const ListItem: React.FC<ListItemProps> = ({ children }) => {

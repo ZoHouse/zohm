@@ -2,6 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
+interface BlogPost {
+  slug: string;
+  excerpt: string;
+  meta: {
+    title: string;
+    date: string;
+    cover_image?: string;
+  };
+}
+
 interface BlogCardProps {
   post: BlogPost;
 }

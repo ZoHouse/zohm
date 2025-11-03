@@ -117,7 +117,7 @@ It operates as a **modular, vibe‑aware, open‑source culture OS**.
 
 * Embrace **modularity, clarity, emergent UX** (MCP over maximalism).
 * Use metaphors: **MCP, vibe, flow, node, portal** for labels where helpful.
-* Align copy with `lore.md` → features should feel like tuning deeper layers of reality.
+* Align copy with `ZO_WORLD_LORE.md` → features should feel like tuning deeper layers of reality.
 * Replace "Quantum Sync" with **"Zo Zo Zo"** (primary entry button).
 * Poetic but functional tone in visible text and helper logic.
 

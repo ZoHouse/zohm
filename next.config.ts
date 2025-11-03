@@ -37,6 +37,15 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js', 'mapbox-gl'],
   },
+
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.watchOptions = {
+        ignored: ['**/node_modules/**', '**/public/zo.xyz-master/**'],
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

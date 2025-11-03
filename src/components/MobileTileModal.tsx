@@ -59,12 +59,16 @@ const MobileTileModal: React.FC<MobileTileModalProps> = ({ isVisible, onClose, o
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-4 border-white shadow-2xl flex items-center justify-center text-3xl"
+              className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden"
               style={{
                 boxShadow: '0 8px 32px rgba(255, 105, 180, 0.4)',
               }}
             >
-              🦄
+              <img 
+                src="/Cultural Stickers/FollowYourHeart.png" 
+                alt="Follow Your Heart" 
+                className="w-full h-full object-contain p-2"
+              />
             </motion.button>
           </div>
         </motion.div>

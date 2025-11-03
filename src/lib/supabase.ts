@@ -47,6 +47,12 @@ export async function verifyMembersTable() {
       .limit(1);
 
     if (error) {
+      // Handle 500 errors (likely RLS/permission issues)
+      if (error.message?.includes('500') || error.code === 'PGRST301' || error.status === 500) {
+        console.warn('⚠️ Members table access denied (likely RLS/permission issue - this is okay):', error.message || 'Unknown error');
+        return { exists: true, error: 'Access denied - RLS may be enabled', canAccess: false };
+      }
+      
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
         console.log('❌ Members table does not exist');
         console.log('📝 Please create the members table using this SQL:');
@@ -330,17 +336,24 @@ export async function getNodesFromDB(): Promise<PartnerNodeRecord[] | null> {
       .select('*')
       .order('name');
     if (error) {
-      if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+      if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
         console.log('ℹ️ nodes table not found. Use createNodesTableSQL to set it up.');
         return [];
       }
-      console.error('Error fetching nodes:', error);
-      return null;
+      // Handle RLS/permission errors gracefully (likely 500 or permission denied)
+      if (error.code === '42501' || error.status === 500 || error.message?.includes('policy')) {
+        console.warn('⚠️ Nodes table access restricted (RLS/permission issue - this is okay)');
+        return [];
+      }
+      // Only log unexpected errors
+      console.warn('⚠️ Error fetching nodes (non-critical):', error.message || error);
+      return [];
     }
     return (data as PartnerNodeRecord[]) || [];
   } catch (e) {
-    console.error('Exception fetching nodes:', e);
-    return null;
+    // Handle exceptions gracefully - return empty array instead of null
+    console.warn('⚠️ Exception fetching nodes (non-critical):', e instanceof Error ? e.message : 'Unknown error');
+    return [];
   }
 }
 
@@ -390,17 +403,24 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
       .order('reward', { ascending: false });
 
     if (error) {
-      if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+      if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
         console.log('ℹ️ quests table not found. Using empty mock.');
         return [];
       }
-      console.error('Error fetching quests:', error);
-      return null;
+      // Handle RLS/permission errors gracefully (likely 500 or permission denied)
+      if (error.code === '42501' || error.status === 500 || error.message?.includes('policy')) {
+        console.warn('⚠️ Quests table access restricted (RLS/permission issue - this is okay)');
+        return [];
+      }
+      // Only log unexpected errors
+      console.warn('⚠️ Error fetching quests (non-critical):', error.message || error);
+      return [];
     }
     return (data as QuestEntry[]) || [];
   } catch (e) {
-    console.error('Exception fetching quests:', e);
-    return null;
+    // Handle exceptions gracefully - return empty array instead of null
+    console.warn('⚠️ Exception fetching quests (non-critical):', e instanceof Error ? e.message : 'Unknown error');
+    return [];
   }
 }
 

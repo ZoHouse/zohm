@@ -27,6 +27,7 @@ interface MobileViewProps {
   flyToNode: PartnerNodeRecord | null;
   onEventClick?: (event: EventData) => void;
   onNodeClick?: (node: PartnerNodeRecord) => void;
+  onGoHome?: () => void;
 }
 
 const MobileView: React.FC<MobileViewProps> = ({
@@ -36,6 +37,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   flyToNode,
   onEventClick,
   onNodeClick,
+  onGoHome,
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
@@ -94,30 +96,34 @@ const MobileView: React.FC<MobileViewProps> = ({
         />
       </div>
 
-      {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 left-4 z-20">
-        <a
-          href="https://unicornsf.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-white"
+      {/* Home Button - Floating Left Corner */}
+      {onGoHome && (
+        <motion.button
+          onClick={onGoHome}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="fixed top-4 left-4 w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-2 border-white shadow-lg flex items-center justify-center text-xl z-40"
+          aria-label="Go to home"
         >
-          <span className="text-base mr-1">🦄</span>
-          <span className="text-xs">$Unicorn</span>
-        </a>
-      </div>
+          🏠
+        </motion.button>
+      )}
 
       {/* Unicorn Button */}
       <motion.button
         onClick={handleUnicornClick}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-4 border-white shadow-2xl flex items-center justify-center text-4xl z-40"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-4 border-white shadow-2xl flex items-center justify-center z-40 overflow-hidden"
         style={{
           boxShadow: '0 8px 32px rgba(255, 105, 180, 0.4)',
         }}
       >
-        🦄
+        <img 
+          src="/Cultural Stickers/FollowYourHeart.png" 
+          alt="Follow Your Heart" 
+          className="w-full h-full object-contain p-2"
+        />
       </motion.button>
 
       {/* 4-Tile Modal */}

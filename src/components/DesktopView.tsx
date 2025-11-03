@@ -28,6 +28,7 @@ interface DesktopViewProps {
   flyToNode: PartnerNodeRecord | null;
   onEventClick?: (event: EventData) => void;
   onNodeClick?: (node: PartnerNodeRecord) => void;
+  onGoHome?: () => void;
 }
 
 const DesktopView: React.FC<DesktopViewProps> = ({
@@ -38,6 +39,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   flyToNode,
   onEventClick,
   onNodeClick,
+  onGoHome,
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -81,18 +83,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         />
       </div>
 
-      {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 sm:top-10 left-4 z-20">
-        <a
-          href="https://unicornsf.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-white"
+      {/* Home Button - Floating Left Corner */}
+      {onGoHome && (
+        <button
+          onClick={onGoHome}
+          className="fixed top-4 left-4 w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-2 border-white shadow-lg flex items-center justify-center text-xl z-40 hover:scale-110 transition-transform"
+          aria-label="Go to home"
         >
-          <span className="text-lg mr-2">🦄</span>
-          <span className="text-sm sm:text-base">$Unicorn</span>
-        </a>
-      </div>
+          🏠
+        </button>
+      )}
 
       {/* Right-side Overlays */}
       <EventsOverlay 

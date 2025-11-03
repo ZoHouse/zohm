@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProfileSetup from '@/components/ProfileSetup';
-import MacProfileSetup from '@/components/mac/MacProfileSetup';
+import SimpleOnboarding from '@/components/SimpleOnboarding';
+import LandingPageNew from '@/components/LandingPageNew';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import PWAInstaller from '@/components/PWAInstaller';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -35,6 +34,8 @@ export default function Home() {
 
   const [showRitual, setShowRitual] = useState(false);
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
+  const [showLandingPage, setShowLandingPage] = useState<boolean | null>(null); // null = checking, true = show, false = hide
+  const [hasDismissedLandingPage, setHasDismissedLandingPage] = useState(false);
   
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
@@ -98,15 +99,47 @@ export default function Home() {
     }
   }, [privyReady, privyAuthenticated, userProfileStatus, isLoading]);
 
-  // Load map data (events and nodes) only after onboarding is complete
+  // Show landing page for returning users (when profile exists but landing page not triggered by onboarding)
   useEffect(() => {
-    // Only load map data if user has completed onboarding
-    if (userProfileStatus !== 'exists') {
-      console.log('⏸️ Skipping map data load - onboarding not complete');
+    if (
+      privyReady && 
+      privyAuthenticated && 
+      userProfileStatus === 'exists' && 
+      showLandingPage === null && // Only check if we haven't determined yet
+      !showRitual &&
+      !hasDismissedLandingPage
+    ) {
+      console.log('🔄 Returning user detected - showing landing page');
+      setShowLandingPage(true);
+    } else if (
+      privyReady && 
+      privyAuthenticated && 
+      userProfileStatus === 'exists' && 
+      showLandingPage === null &&
+      hasDismissedLandingPage
+    ) {
+      // User has dismissed landing page, skip it
+      console.log('🚫 Landing page was dismissed, skipping');
+      setShowLandingPage(false);
+    }
+  }, [privyReady, privyAuthenticated, userProfileStatus, showLandingPage, showRitual, hasDismissedLandingPage]);
+
+  // Load map data (events and nodes) only after onboarding is complete AND landing page decision is made
+  useEffect(() => {
+    // Only load map data if:
+    // 1. User has completed onboarding
+    // 2. Landing page decision has been made (not null)
+    // 3. Landing page is not being shown
+    if (userProfileStatus !== 'exists' || showLandingPage === null || showLandingPage === true) {
+      if (userProfileStatus === 'exists' && showLandingPage === null) {
+        console.log('⏸️ Waiting for landing page decision before loading map data');
+      } else {
+        console.log('⏸️ Skipping map data load - onboarding not complete or landing page showing');
+      }
       return;
     }
 
-    console.log('🗺️ Loading map data after onboarding complete...');
+    console.log('🗺️ Loading map data after onboarding complete and landing page dismissed...');
 
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
@@ -160,7 +193,7 @@ export default function Home() {
     
     // Cleanup timeout if component unmounts
     return () => clearTimeout(timeoutId);
-  }, [userProfileStatus]);
+  }, [userProfileStatus, showLandingPage]);
 
   // Effect to check user profile when Privy authenticates
   useEffect(() => {
@@ -249,15 +282,75 @@ export default function Home() {
     
     // Update the profile status to indicate user now has a profile
     setUserProfileStatus('exists');
+    
+    // Show landing page after onboarding
+    setShowLandingPage(true);
+  };
+
+  // Handle entering the game (from landing page)
+  const handleEnterGame = () => {
+    console.log('🎮 Entering Game of Life...');
+    try {
+      setHasDismissedLandingPage(true);
+      setShowLandingPage(false);
+      // Ensure map data is loaded
+      if (events.length === 0 && nodes.length === 0) {
+        console.log('🔄 Ensuring map data is loaded...');
+      }
+    } catch (error) {
+      console.error('❌ Error entering game:', error);
+    }
+  };
+
+  // Handle going back to landing page
+  const handleGoHome = () => {
+    console.log('🏠 Going back to landing page...');
+    setShowLandingPage(true);
+    setHasDismissedLandingPage(false);
   };
 
   // Show loading screen while Privy initializes
+  // Add timeout to prevent infinite loading
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    console.log('🔍 Privy state:', {
+      privyReady,
+      privyLoading,
+      privyAuthenticated,
+      hasUser: !!privyUser
+    });
+    
+    const timeout = setTimeout(() => {
+      if (!privyReady) {
+        console.error('⚠️ Privy initialization timeout - checking configuration...');
+        console.error('⚠️ This might be caused by browser extension conflicts');
+        setLoadingTimeout(true);
+      }
+    }, 10000); // 10 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [privyReady, privyLoading, privyAuthenticated, privyUser]);
+  
   if (!privyReady || privyLoading) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
           <p className="text-white text-lg">Loading Zo World...</p>
+          {loadingTimeout && (
+            <div className="mt-4 text-red-400 text-sm max-w-md mx-auto px-4">
+              <p className="font-bold mb-2">⚠️ Loading timeout detected</p>
+              <p className="text-xs mb-2">Privy is taking longer than expected to initialize.</p>
+              <p className="text-xs mb-2">Common causes:</p>
+              <ul className="text-xs text-left list-disc list-inside mb-2">
+                <li>Browser extension conflicts (Pocket Universe, MetaMask)</li>
+                <li>Network connectivity issues</li>
+                <li>Privy service issues</li>
+              </ul>
+              <p className="text-xs">Try refreshing the page or disabling wallet extensions temporarily.</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -316,16 +409,12 @@ export default function Home() {
       );
     }
     
-    // Use Mac-style onboarding for both mobile and desktop (now responsive)
+    // Simple onboarding - single screen with 3 questions
     return (
-      <div className="fixed inset-0 bg-black z-[9999]">
-        <MacProfileSetup
-          isVisible={true}
-          onComplete={handleRitualComplete}
-          onClose={() => setShowRitual(false)}
-          onOpenDashboard={() => setIsDashboardOpen(true)}
-        />
-      </div>
+      <SimpleOnboarding
+        isVisible={true}
+        onComplete={handleRitualComplete}
+      />
     );
   }
 
@@ -342,8 +431,40 @@ export default function Home() {
     );
   }
 
+  // Show landing page after onboarding completes
+  if (showLandingPage === true) {
+    return (
+      <LandingPageNew onEnterGame={handleEnterGame} />
+    );
+  }
+
+  // Show loading screen while determining if we should show landing page
+  if (showLandingPage === null && userProfileStatus === 'exists') {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Wait for mobile detection to be ready before rendering main app
   if (!isMobileReady) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only render map if landing page decision has been made and it's false
+  if (showLandingPage !== false) {
+    // Still determining landing page state or showing landing page
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -365,6 +486,7 @@ export default function Home() {
           flyToNode={flyToNode}
           onEventClick={handleEventClick}
           onNodeClick={handleNodeClick}
+          onGoHome={handleGoHome}
         />
       </>
     );
@@ -380,8 +502,8 @@ export default function Home() {
         flyToNode={flyToNode}
         onEventClick={handleEventClick}
         onNodeClick={handleNodeClick}
+        onGoHome={handleGoHome}
       />
-      <PWAInstaller />
     </>
   );
 }

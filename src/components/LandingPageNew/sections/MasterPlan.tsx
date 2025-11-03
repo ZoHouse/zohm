@@ -1,0 +1,117 @@
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
+import Link from "next/link";
+import React, { useEffect, useRef } from "react";
+import {
+  ConfusedMale1,
+  FemaleFull2,
+  GeekyMale1,
+  MaleFullThumbs1,
+} from "../assets/avatars";
+import { Fields1, Fields1Desktop } from "../assets/backgrounds";
+import { FourZobusWithDesk, HelpDesk } from "../assets/props";
+import { useWindowSize } from "../hooks";
+import { Flex } from "../structure";
+import { Button } from "../ui";
+
+interface MasterPlanProps {}
+
+const MasterPlan: React.FC<MasterPlanProps> = () => {
+  const { width } = useWindowSize();
+
+  const female1 = useRef<SVGSVGElement>(null);
+  const male1 = useRef<SVGSVGElement>(null);
+  const male2 = useRef<SVGSVGElement>(null);
+  const male3 = useRef<SVGSVGElement>(null);
+  const desk = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.to(male1.current, {
+      scrollTrigger: {
+        scrub: true,
+        trigger: male1.current,
+      },
+      y: "10vh",
+    });
+    gsap.to(female1.current, {
+      scrollTrigger: {
+        scrub: true,
+        trigger: female1.current,
+      },
+      y: "10vh",
+    });
+    gsap.to(male2.current, {
+      scrollTrigger: {
+        scrub: true,
+        trigger: male2.current,
+      },
+      y: "10vh",
+    });
+    gsap.to(male3.current, {
+      scrollTrigger: {
+        scrub: true,
+        trigger: male3.current,
+      },
+      y: "10vh",
+    });
+    gsap.to(desk.current, {
+      scrollTrigger: {
+        scrub: true,
+        trigger: desk.current,
+      },
+      y: "10vh",
+    });
+  });
+
+  // Ensure ScrollTrigger recalculates on viewport changes (mobile rotations/resizes)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Give layout a moment to settle then refresh
+    const id = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 50);
+    return () => clearTimeout(id);
+  }, [width]);
+  return (
+    <section
+      className="md:h-screen min-h-[160vh] relative px-4 flex flex-col items-center text-white justify-center overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(0.43deg, #C3FCF1 -29.45%, #C2FBF4 -14.79%, #BFF6E9 -3%, #BBEFD7 6.56%, #B5E5BC 19.63%, #ADD79B 29.83%, #A3C771 42.89%, #97B441 51.82%, #8BA00D 99.63%)",
+      }}
+    >
+      {width <= 768 ? (
+        <Fields1 className="absolute bottom-0 z-1 w-full" />
+      ) : (
+        <Fields1Desktop className="absolute inset-0 w-full z-1 h-screen" />
+      )}
+      <Flex
+        items="center"
+        className="absolute bottom-0 h-screen md:h-auto md:relative w-full max-w-5xl mx-auto"
+      >
+        <Flex col className="relative items-center md:items-start z-2 px-4">
+          <h2 className="text-xl font-semibold text-center md:text-3xl">
+            Masterplan
+          </h2>
+          <span className="mt-6 text-center md:text-left max-w-lg md:text-lg">
+            Design your evolution. Zohm turns actions into patterns—quests, rewards, and coherence.
+          </span>
+          <Link href="/masterplan" passHref>
+            <Button className="mt-8 mb-40 relative z-3">
+              Read the Masterplan
+            </Button>
+          </Link>
+        </Flex>
+        <Flex className="absolute md:relative pointer-events-none bottom-0 z-2 pt-32 md:items-end items-center">
+          <FourZobusWithDesk className="md:h-96 md:w-auto w-screen mx-auto pointer-events-none" />
+        </Flex>
+      </Flex>
+    </section>
+  );
+};
+
+export default MasterPlan;

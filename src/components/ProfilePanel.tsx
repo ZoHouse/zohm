@@ -34,7 +34,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
         primaryWalletAddress, 
         isFounder,
         isLoading: isLoadingProfile,
-        reloadProfile 
+        reloadProfile,
+        logout
     } = usePrivyUser();
     
     const { linkEmail, linkTwitter, unlinkEmail, unlinkTwitter } = usePrivy();
@@ -703,6 +704,25 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                             </div>
                         );
                     })()}
+                </div>
+            </div>
+
+            {/* Logout Section */}
+            <div className="mt-6">
+                <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                    <div 
+                        onClick={logout}
+                        className="flex items-center px-4 py-4 transition-colors hover:bg-red-50 cursor-pointer"
+                    >
+                        <span className="text-2xl mr-3">🚪</span>
+                        <div className="flex-1">
+                            <span className="text-sm text-gray-600">Logout: </span>
+                            <span className="text-base font-semibold text-red-600">
+                                Sign out of your account
+                            </span>
+                        </div>
+                        <ChevronRight size={20} className="text-gray-400" />
+                    </div>
                 </div>
             </div>
             

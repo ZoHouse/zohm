@@ -145,9 +145,9 @@ export async function GET() {
     const tokenBalance = await getTokenBalance(tokenContract, rewardWallet.address);
     const balanceInTokens = formatTokenAmount(tokenBalance, tokenInfo.decimals);
 
-    // Check AVAX balance for gas fees
-    const avaxBalance = await provider.getBalance(rewardWallet.address);
-    const avaxBalanceFormatted = ethers.formatEther(avaxBalance);
+    // Check native balance for gas fees
+    const nativeBalance = await provider.getBalance(rewardWallet.address);
+    const nativeBalanceFormatted = ethers.formatEther(nativeBalance);
 
     return NextResponse.json({
       success: true,
@@ -157,8 +157,8 @@ export async function GET() {
       tokenName: tokenInfo.name,
       tokenDecimals: tokenInfo.decimals,
       rewardAmount: TOKEN_CONFIG.REWARD_AMOUNT,
-      avaxBalance: avaxBalanceFormatted, // For gas fees
-      network: 'Avalanche Fuji Testnet',
+      nativeBalance: nativeBalanceFormatted, // For gas fees
+      network: FUJI_CONFIG.CURRENCY_SYMBOL === 'ETH' ? 'Base Mainnet' : 'Avalanche Fuji Testnet',
       chainId: FUJI_CONFIG.CHAIN_ID,
       tokenContractAddress: TOKEN_CONFIG.TOKEN_ADDRESS
     });
@@ -172,3 +172,5 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+
+

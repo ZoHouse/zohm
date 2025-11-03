@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
-import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
+import { verifyTwitterQuestCompletion } from '@/lib/questVerifier';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 
@@ -105,9 +105,9 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
         );
         
         if (completedQuest) {
-          // Send AVAX reward
+          // Send token reward ($ZO)
           try {
-            const rewardResponse = await fetch('/api/send-avax-reward', {
+            const rewardResponse = await fetch('/api/send-token-reward', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -122,14 +122,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
             const rewardResult = await rewardResponse.json();
             
             if (rewardResult.success) {
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO  reward! Welcome to the Zo World.`);
+              setVerificationResult(`✅ Quest completed successfully! You earned ${rewardResult.rewardAmount} ${rewardResult.rewardSymbol} reward! Welcome to the Zo World.`);
             } else {
               console.warn('Quest completed but reward failed:', rewardResult.error);
-              setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed: ${rewardResult.error} Welcome to the Zo World.`);
+              setVerificationResult(`✅ Quest completed successfully! Token reward failed: ${rewardResult.error} Welcome to the Zo World.`);
             }
           } catch (rewardError) {
             console.warn('Quest completed but reward failed:', rewardError);
-                          setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed to send. Welcome to the Zo World.`);
+            setVerificationResult(`✅ Quest completed successfully! Token reward failed to send. Welcome to the Zo World.`);
           }
           
           // Update the quest status locally

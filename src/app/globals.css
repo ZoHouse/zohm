@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import "mapbox-gl/dist/mapbox-gl.css";
+@source "./**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
 
 :root {
   --background-dark: #0A0A0A;
@@ -347,21 +348,19 @@ next-route-announcer,
   }
 
   /* Mobile viewport fixes */
-  body, html {
-    height: 100vh;
-    height: calc(var(--available-height, 100vh));
-    height: 100dvh;
-    height: -webkit-fill-available;
-    overflow: hidden;
-    position: relative;
+  html, body {
+    min-height: 100dvh;
+    height: auto;
+    overflow-x: hidden;
   }
 
-  /* Prevent scrolling and bounce on mobile */
+  /* Allow scrolling with momentum on mobile */
   body {
-    position: fixed;
+    position: static;
     width: 100%;
-    overscroll-behavior: none;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
   /* Mobile button active states */

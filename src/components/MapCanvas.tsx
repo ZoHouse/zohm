@@ -415,6 +415,22 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     } catch {}
   };
 
+  // Preload images to avoid race condition where markers are added but images haven't loaded
+  const preloadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        console.log(`✅ Preloaded image: ${src}`);
+        resolve(img);
+      };
+      img.onerror = () => {
+        console.error(`❌ Failed to preload image: ${src}`);
+        reject(new Error(`Failed to load ${src}`));
+      };
+      img.src = src;
+    });
+  };
+
   // Add Zo House markers with custom animated icon
   const addZoHouseMarkers = () => {
     if (!map.current) return;
@@ -435,6 +451,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       try {
         // Create custom PNG marker for Zo House (using proven approach)
         const markerElement = document.createElement('img');
+        markerElement.className = 'zo-house-marker';
         markerElement.src = '/Zo_flexing_white.png';
         markerElement.style.width = '50px';
         markerElement.style.height = '50px';
@@ -547,6 +564,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         try {
           // 🦄 UNICORN: All nodes use the Zo flexing white logo
           const markerElement = document.createElement('img');
+          markerElement.className = 'zo-house-marker';
           markerElement.src = '/Zo_flexing_white.png';
           markerElement.style.width = '50px';
           markerElement.style.height = '50px';
@@ -728,7 +746,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       window.addEventListener('resize', handleResize);
 
       // Wait for map to load before setting up features
-      map.current.on('load', () => {
+      map.current.on('load', async () => {
         if (!map.current) return;
         
         setMapLoaded(true);
@@ -800,12 +818,31 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           onMapReady(map.current, closeAllPopups);
         }
 
+        // Preload all marker images before creating markers
+        console.log('🖼️ Preloading marker images...');
+        try {
+          await Promise.all([
+            preloadImage('/Zo_flexing_white.png'),
+            preloadImage('/event-marker.jpg'),
+            preloadImage('/Green+Day+Unicorn.gif')
+          ]);
+          console.log('✅ All marker images preloaded successfully');
+        } catch (error) {
+          console.warn('⚠️ Some images failed to preload, continuing anyway:', error);
+        }
+
         // Get user location
         getUserLocation();
         
         // Add Zo House markers
         addZoHouseMarkers();
-        addPartnerNodeMarkers();
+        
+        // Add Partner Node markers (await to catch any errors)
+        try {
+          await addPartnerNodeMarkers();
+        } catch (error) {
+          console.error('❌ Failed to add partner node markers:', error);
+        }
 
         // Expose directions helper on window for popup buttons
         try {
@@ -1001,6 +1038,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       try {
         // Create custom image marker element
         const markerElement = document.createElement('img');
+        markerElement.className = 'zo-house-event-marker';
         markerElement.src = '/event-marker.jpg';
         markerElement.alt = 'Event location';
         markerElement.style.width = '36px';

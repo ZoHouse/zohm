@@ -47,7 +47,8 @@ export default function Home() {
     isLoading: privyLoading,
     privyUser,
     login: privyLogin,
-    privyReady
+    privyReady,
+    reloadProfile
   } = usePrivyUser();
 
   useEffect(() => {
@@ -240,10 +241,13 @@ export default function Home() {
 
 
   // Handle ritual completion
-  const handleRitualComplete = () => {
+  const handleRitualComplete = async () => {
     console.log('✅ Ritual completed! Welcome to Zo World...');
     setShowRitual(false);
     console.log('✅ Profile setup completed');
+    
+    // Reload profile to sync onboarding_completed status
+    await reloadProfile();
     
     // Show landing page after onboarding
     setShowLandingPage(true);
@@ -327,9 +331,9 @@ export default function Home() {
     );
   }
 
-  // Show RED PILL screen if not authenticated OR still loading (wallet creation)
-  // Keep the same background during Privy's wallet creation modal to prevent flash
-  if (!privyAuthenticated || privyLoading) {
+  // Show RED PILL screen only for unauthenticated users (not returning users)
+  // If user is authenticated but still loading (wallet creation), keep Red Pill background
+  if (!privyAuthenticated) {
     return (
       <div 
         className="fixed inset-0 bg-black flex flex-col z-[1000]"
@@ -364,9 +368,32 @@ export default function Home() {
     );
   }
 
+  // Show loading screen during wallet creation for authenticated users
+  if (privyLoading) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black flex flex-col z-[1000]"
+        style={{
+          backgroundImage: "url('/assets/loading background.gif')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+            <p className="text-white text-lg">Preparing your profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
   // Must wait for privyLoading to be false (wallet creation complete)
-  const shouldShowOnboarding = privyReady && !privyLoading && (showRitual || (privyAuthenticated && !privyOnboardingComplete));
+  // Don't show onboarding if landing page is already set to display
+  const shouldShowOnboarding = privyReady && !privyLoading && showLandingPage !== true && (showRitual || (privyAuthenticated && !privyOnboardingComplete));
     
   if (shouldShowOnboarding) {
     console.log('🎭 Showing onboarding screen', {

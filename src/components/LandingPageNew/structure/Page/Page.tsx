@@ -1,9 +1,9 @@
 import React from "react";
-import { generateHeadDataFromObject } from "../../../utils/generator";
 
 interface PageProps {
-  headData?: HeadObject;
+  headData?: any;
   className?: string;
+  children?: React.ReactNode;
 }
 
 const Page: React.FC<PageProps> = ({
@@ -11,11 +11,8 @@ const Page: React.FC<PageProps> = ({
   headData,
   className = "bg-white max-w-full overflow-hidden",
 }) => {
-  const headComponent = headData ? generateHeadDataFromObject(headData) : null;
-
   return (
     <section className={className}>
-      {headComponent}
       {children}
     </section>
   );

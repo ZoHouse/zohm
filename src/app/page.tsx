@@ -33,7 +33,6 @@ export default function Home() {
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
 
   const [showRitual, setShowRitual] = useState(false);
-  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   const [showLandingPage, setShowLandingPage] = useState<boolean | null>(null); // null = checking, true = show, false = hide
   const [hasDismissedLandingPage, setHasDismissedLandingPage] = useState(false);
   
@@ -52,7 +51,7 @@ export default function Home() {
   } = usePrivyUser();
 
   useEffect(() => {
-    // Initialize Supabase and check Privy user profile
+    // Initialize Supabase
     const initApp = async () => {
       try {
         const basicConnection = await pingSupabase();
@@ -63,22 +62,6 @@ export default function Home() {
           const tableVerification = await verifyMembersTable();
           if (tableVerification.exists) {
             console.log('✅ Database tables verified');
-            
-            // Check Privy user profile status - ONLY when Privy is fully ready and loaded
-            // privyLoading false means wallet creation and profile sync are complete
-            if (privyReady && privyAuthenticated && !privyLoading && privyUserProfile) {
-              console.log('🦄 Privy user authenticated, ready, and profile loaded!');
-              
-              if (privyOnboardingComplete) {
-                console.log('✅ Profile complete:', privyUserProfile.name);
-                setUserProfileStatus('exists');
-              } else {
-                console.log('📝 Onboarding required');
-                setUserProfileStatus('not_exists');
-                // Skip map loading for onboarding users
-                setIsLoading(false);
-              }
-            }
           } else {
             console.warn('⚠️ Database setup needed:', tableVerification.error);
           }
@@ -89,22 +72,23 @@ export default function Home() {
     };
 
     initApp();
-  }, [privyReady, privyAuthenticated, privyOnboardingComplete, privyLoading, privyUserProfile]);
+  }, []);
 
   // Skip loading screen when Privy is ready for returning users
   useEffect(() => {
-    if (privyReady && privyAuthenticated && userProfileStatus === 'exists' && isLoading) {
+    if (privyReady && privyAuthenticated && !privyLoading && privyOnboardingComplete && isLoading) {
       console.log('⚡ Privy ready with existing profile, skipping loading screen');
       setIsLoading(false);
     }
-  }, [privyReady, privyAuthenticated, userProfileStatus, isLoading]);
+  }, [privyReady, privyAuthenticated, privyLoading, privyOnboardingComplete, isLoading]);
 
   // Show landing page for returning users (when profile exists but landing page not triggered by onboarding)
   useEffect(() => {
     if (
       privyReady && 
       privyAuthenticated && 
-      userProfileStatus === 'exists' && 
+      !privyLoading &&
+      privyOnboardingComplete && 
       showLandingPage === null && // Only check if we haven't determined yet
       !showRitual &&
       !hasDismissedLandingPage
@@ -114,7 +98,8 @@ export default function Home() {
     } else if (
       privyReady && 
       privyAuthenticated && 
-      userProfileStatus === 'exists' && 
+      !privyLoading &&
+      privyOnboardingComplete && 
       showLandingPage === null &&
       hasDismissedLandingPage
     ) {
@@ -122,7 +107,7 @@ export default function Home() {
       console.log('🚫 Landing page was dismissed, skipping');
       setShowLandingPage(false);
     }
-  }, [privyReady, privyAuthenticated, userProfileStatus, showLandingPage, showRitual, hasDismissedLandingPage]);
+  }, [privyReady, privyAuthenticated, privyLoading, privyOnboardingComplete, showLandingPage, showRitual, hasDismissedLandingPage]);
 
   // Load map data (events and nodes) only after onboarding is complete AND landing page decision is made
   useEffect(() => {
@@ -130,8 +115,8 @@ export default function Home() {
     // 1. User has completed onboarding
     // 2. Landing page decision has been made (not null)
     // 3. Landing page is not being shown
-    if (userProfileStatus !== 'exists' || showLandingPage === null || showLandingPage === true) {
-      if (userProfileStatus === 'exists' && showLandingPage === null) {
+    if (!privyOnboardingComplete || showLandingPage === null || showLandingPage === true) {
+      if (privyOnboardingComplete && showLandingPage === null) {
         console.log('⏸️ Waiting for landing page decision before loading map data');
       } else {
         console.log('⏸️ Skipping map data load - onboarding not complete or landing page showing');
@@ -193,27 +178,7 @@ export default function Home() {
     
     // Cleanup timeout if component unmounts
     return () => clearTimeout(timeoutId);
-  }, [userProfileStatus, showLandingPage]);
-
-  // Effect to check user profile when Privy authenticates
-  useEffect(() => {
-    if (privyAuthenticated && !privyLoading && userProfileStatus === null) {
-      console.log('🔍 Privy authenticated, checking profile...');
-      setUserProfileStatus('loading');
-      
-      const checkUserProfile = async () => {
-        if (privyOnboardingComplete && privyUserProfile) {
-          console.log('✅ Profile complete:', privyUserProfile.name);
-          setUserProfileStatus('exists');
-        } else {
-          console.log('📝 Onboarding required');
-          setUserProfileStatus('not_exists');
-        }
-      };
-
-      checkUserProfile();
-    }
-  }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
+  }, [privyOnboardingComplete, showLandingPage]);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -280,9 +245,6 @@ export default function Home() {
     setShowRitual(false);
     console.log('✅ Profile setup completed');
     
-    // Update the profile status to indicate user now has a profile
-    setUserProfileStatus('exists');
-    
     // Show landing page after onboarding
     setShowLandingPage(true);
   };
@@ -332,7 +294,8 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [privyReady, privyLoading, privyAuthenticated, privyUser]);
   
-  if (!privyReady || privyLoading) {
+  // Show loading only during initial Privy SDK initialization
+  if (!privyReady) {
     return (
       <div 
         className="fixed inset-0 bg-black flex items-center justify-center loading-bg-desktop"
@@ -364,29 +327,38 @@ export default function Home() {
     );
   }
 
-  // Show RED PILL screen if not authenticated
-  if (!privyAuthenticated) {
+  // Show RED PILL screen if not authenticated OR still loading (wallet creation)
+  // Keep the same background during Privy's wallet creation modal to prevent flash
+  if (!privyAuthenticated || privyLoading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
-        <div className="text-center text-white max-w-lg mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4">
-              You are about to enter<br />
-              a new world order.
-            </h1>
+      <div 
+        className="fixed inset-0 bg-black flex flex-col z-[1000]"
+        style={{
+          backgroundImage: "url('/assets/loading background.gif')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Text at top center */}
+        <div className="text-center text-white max-w-lg mx-auto px-4 pt-20 sm:pt-24">
+          <h1 className="text-2xl sm:text-3xl font-bold drop-shadow-lg">
+            You are about to enter<br />
+            a new world order.
+          </h1>
+        </div>
+        
+        {/* Button centered in remaining space */}
+        <div className="flex-1 flex items-center justify-center -mt-24">
+          <div className="text-center text-white max-w-lg mx-auto px-4">
+            {/* Red Pill Button - Triggers Privy Login */}
+            <button 
+              onClick={privyLogin}
+              className="red-pill-button"
+            >
+              Take the Red Pill
+            </button>
           </div>
-          
-          {/* Red Pill Button - Triggers Privy Login */}
-          <button 
-            onClick={privyLogin}
-            className="red-pill-button"
-          >
-            Take the Red Pill
-          </button>
-          
-          <p className="text-gray-400 text-sm mt-6">
-            Sign in with Twitter or connect wallet
-          </p>
         </div>
       </div>
     );
@@ -394,14 +366,14 @@ export default function Home() {
 
   // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
   // Must wait for privyLoading to be false (wallet creation complete)
-  const shouldShowOnboarding = privyReady && !privyLoading && (showRitual || (privyAuthenticated && userProfileStatus === 'not_exists'));
+  const shouldShowOnboarding = privyReady && !privyLoading && (showRitual || (privyAuthenticated && !privyOnboardingComplete));
     
   if (shouldShowOnboarding) {
     console.log('🎭 Showing onboarding screen', {
       privyReady,
       privyLoading,
       privyAuthenticated,
-      userProfileStatus,
+      privyOnboardingComplete,
       hasProfile: !!privyUserProfile
     });
     
@@ -426,19 +398,6 @@ export default function Home() {
     );
   }
 
-  // Only render main app if user has completed onboarding
-  if (userProfileStatus !== 'exists') {
-    // Still loading profile status, show loading screen
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-          <p className="text-white text-lg">Loading your profile...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show landing page after onboarding completes
   if (showLandingPage === true) {
     return (
@@ -447,7 +406,7 @@ export default function Home() {
   }
 
   // Show loading screen while determining if we should show landing page
-  if (showLandingPage === null && userProfileStatus === 'exists') {
+  if (showLandingPage === null && privyOnboardingComplete) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">

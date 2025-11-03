@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 
 interface FlexProps {
+  children?: React.ReactNode;
   col?: boolean;
   items?: "center" | "start" | "end" | "baseline" | "stretch";
   justify?: "center" | "start" | "end" | "between" | "around" | "evenly";

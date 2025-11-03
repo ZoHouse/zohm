@@ -62,28 +62,34 @@ const TravelWithZo: React.FC<TravelWithZoProps> = () => {
 
   return (
     <section
-      className="h-screen relative px-4 flex md:flex-row text-white flex-col items-center justify-center overflow-hidden"
+      className="min-h-screen relative flex flex-col text-black overflow-hidden py-12 md:py-16 px-4"
       style={{
         background:
           "linear-gradient(360deg, #FCC521 -63.02%, #F6C526 -37.85%, #E6C433 -16.32%, #CAC34A 17.64%, #A4C269 50.75%, #88C180 66.22%, #0A7F3F 91.76%, #0A7F3F 100%)",
       }}
     >
-      {width <= 768 ? (
-        <Fields2 className="absolute inset-0 z-1 h-screen w-full" />
-      ) : (
-        <Fields2Desktop className="absolute bottom-0 z-1 w-full" />
-      )}
-      <Flex
-        className="w-full max-w-5xl mx-auto"
-        style={{ marginTop: width <= 768 ? "" : "40vh" }}
-      >
-        <div className="absolute bottom-0 w-full md:flex-grow flex justify-center md:-left-12 md:relative">
+      {/* Main Content Container */}
+      <div className="w-full max-w-7xl mx-auto relative z-10">
+        
+        {/* Header Section */}
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-6xl font-bold mb-3 md:mb-4 text-black">Parties</h1>
+          <p className="text-lg md:text-2xl font-semibold text-black mb-4 md:mb-6">
+            Celebrations of coherence
+          </p>
+          <p className="text-sm md:text-base text-black/80 max-w-3xl mx-auto">
+            Where communities sync, stories merge, and the network comes alive. Through quests and events, shared context is created—moments where intention becomes action, digital becomes physical, and individuals become community.
+          </p>
+        </div>
+        
+        {/* Animation Section */}
+        <div className="relative flex justify-center items-end mb-8 md:mb-12" style={{ minHeight: "40vh" }}>
           <Bonfire1
             ref={fire}
             className="absolute bottom-0 z-3"
             style={{ height: width <= 768 ? "16vh" : "24vh" }}
           />
-          <Flex items="end" className="absolute bottom-0 z-2">
+          <Flex items="end" className="relative z-2">
             <FemaleSittingLog
               ref={female1}
               style={{ height: width <= 768 ? "30vh" : "40vh" }}
@@ -99,18 +105,7 @@ const TravelWithZo: React.FC<TravelWithZoProps> = () => {
             />
           </Flex>
         </div>
-        <Flex col className="items-center md:items-start max-w-lg">
-          <h2 className="text-xl md:text-3xl font-semibold text-center relative z-1">
-            Actions
-          </h2>
-          <span className="mt-6 text-center md:text-left md:text-lg relative z-1">
-            Every action shapes the reality we inhabit. Through coordinated events, collaborative quests, and collective intention, citizens co-create the world they want to live in.
-          </span>
-          <Link href="/travel-with-zo" passHref>
-            <Button className="mt-8 mb-40 relative z-4">Start Your Journey</Button>
-          </Link>
-        </Flex>
-      </Flex>
+      </div>
     </section>
   );
 };

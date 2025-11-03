@@ -25,6 +25,7 @@ interface WelcomeProps {
 
 const Welcome: React.FC<WelcomeProps> = ({ onEnterGame, stats }) => {
   const { width } = useWindowSize();
+  const [showArrow, setShowArrow] = useState(true);
 
   const female1 = useRef<SVGSVGElement>(null);
   const female2 = useRef<SVGSVGElement>(null);
@@ -104,6 +105,20 @@ const Welcome: React.FC<WelcomeProps> = ({ onEnterGame, stats }) => {
     });
   }, []);
 
+  // Hide arrow when scrolling down
+  useEffect(() => {
+    if (width > 768) return; // Desktop doesn't need this
+    
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      // Hide arrow if scrolled more than 100px
+      setShowArrow(scrollY < 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [width]);
+
 
   return (
     <section
@@ -148,7 +163,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onEnterGame, stats }) => {
           Zo World
         </h1>
         <p className="mt-8 px-4 md:text-xl text-white font-semibold text-center">
-          A protocol to live your best life.
+          A decentralized protocol for shifting realities
         </p>
         
         {/* Live Stats Badge */}
@@ -198,6 +213,24 @@ const Welcome: React.FC<WelcomeProps> = ({ onEnterGame, stats }) => {
         className="absolute bottom-0 z-3"
         style={{ height: "8vh" }}
       />
+      {/* Scroll Down Arrow - Mobile Only */}
+      {width <= 768 && showArrow && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center transition-opacity duration-300">
+          <svg 
+            className="w-8 h-8 animate-bounce text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2.5} 
+              d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+            />
+          </svg>
+        </div>
+      )}
     </section>
   );
 };

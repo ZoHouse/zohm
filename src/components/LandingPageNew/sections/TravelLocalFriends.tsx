@@ -74,7 +74,7 @@ const TravelLocalFriends: React.FC<TravelLocalFriendsProps> = () => {
 
   return (
     <section
-      className="h-screen relative px-4 flex flex-col md:flex-row items-center justify-center md:justify-start w-full overflow-hidden"
+      className="h-screen relative px-4 flex flex-col md:flex-row items-center justify-start md:justify-start w-full overflow-hidden"
       style={{
         background: "#28735D",
       }}
@@ -98,8 +98,11 @@ const TravelLocalFriends: React.FC<TravelLocalFriendsProps> = () => {
       </div>
       <div
         ref={text}
-        className="text-white md:ml-12 text-center md:text-left max-w-2xl px-4"
-        style={{ marginBottom: isMobile ? "30vh" : "0" }}
+        className="text-white text-center max-w-2xl px-4 w-full"
+        style={{ 
+          marginBottom: isMobile ? "0" : "0",
+          marginTop: isMobile ? "0" : "0"
+        }}
       >
         <h2 className="text-2xl md:text-4xl font-bold mb-4">Zo Zo Zo</h2>
         <p className="text-lg md:text-xl mb-4 font-semibold">
@@ -109,26 +112,20 @@ const TravelLocalFriends: React.FC<TravelLocalFriendsProps> = () => {
           12 years of research, 100+ nodes, and over 1 million citizens later, we've cracked the code to your best life.
         </p>
         
-        <div className="space-y-4 text-left">
-          <div>
+        <div className="space-y-4">
+          <div className="text-center">
             <span className="font-bold text-base md:text-lg">People:</span>
-            <span className="text-sm md:text-base ml-2">
-              The heartbeat of Zo, founders, creators, dreamers, and citizens turning intention into action.
-            </span>
+            <span className="text-sm md:text-base"> The heartbeat of Zo, founders, creators, dreamers, and citizens turning intention into action.</span>
           </div>
           
-          <div>
+          <div className="text-center">
             <span className="font-bold text-base md:text-lg">Places:</span>
-            <span className="text-sm md:text-base ml-2">
-              Nodes of possibility culture houses, hacker spaces, and co-living hubs where the digital meets the physical.
-            </span>
+            <span className="text-sm md:text-base"> Nodes of possibility culture houses, hacker spaces, and co-living hubs where the digital meets the physical.</span>
           </div>
           
-          <div>
+          <div className="text-center">
             <span className="font-bold text-base md:text-lg">Parties:</span>
-            <span className="text-sm md:text-base ml-2">
-              Celebrations of coherence where communities sync, stories merge, and the network comes alive.
-            </span>
+            <span className="text-sm md:text-base"> Celebrations of coherence where communities sync, stories merge, and the network comes alive.</span>
           </div>
         </div>
       </div>

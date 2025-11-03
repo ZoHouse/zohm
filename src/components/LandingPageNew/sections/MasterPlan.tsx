@@ -78,38 +78,43 @@ const MasterPlan: React.FC<MasterPlanProps> = () => {
   }, [width]);
   return (
     <section
-      className="md:h-screen min-h-[160vh] relative px-4 flex flex-col items-center text-white justify-center overflow-hidden"
+      className="min-h-screen relative flex flex-col text-black overflow-hidden py-12 md:py-16 px-4"
       style={{
         background:
           "linear-gradient(0.43deg, #C3FCF1 -29.45%, #C2FBF4 -14.79%, #BFF6E9 -3%, #BBEFD7 6.56%, #B5E5BC 19.63%, #ADD79B 29.83%, #A3C771 42.89%, #97B441 51.82%, #8BA00D 99.63%)",
       }}
     >
-      {width <= 768 ? (
-        <Fields1 className="absolute bottom-0 z-1 w-full" />
-      ) : (
-        <Fields1Desktop className="absolute inset-0 w-full z-1 h-screen" />
-      )}
-      <Flex
-        items="center"
-        className="absolute bottom-0 h-screen md:h-auto md:relative w-full max-w-5xl mx-auto"
-      >
-        <Flex col className="relative items-center md:items-start z-2 px-4">
-          <h2 className="text-xl font-semibold text-center md:text-3xl">
-            Masterplan
-          </h2>
-          <span className="mt-6 text-center md:text-left max-w-lg md:text-lg">
-            Design your evolution. Zohm turns actions into patterns—quests, rewards, and coherence.
-          </span>
+      {/* Main Content Container */}
+      <div className="w-full max-w-7xl mx-auto relative z-10">
+        
+        {/* Header Section */}
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-6xl font-bold mb-3 md:mb-4 text-black">Masterplan</h1>
+          <p className="text-lg md:text-2xl font-semibold text-black mb-4 md:mb-6">
+            Live to Earn
+          </p>
+          <p className="text-sm md:text-base text-black/80 max-w-3xl mx-auto">
+            A master plan to tune into Zo World, a world where everyone follows their heart. Zo is your signal in the noise, a beacon that connects us to something greater. Through this framework, we coordinate around shared values, align incentives with intention, guiding us toward collective consciousness.
+          </p>
+        </div>
+        
+        {/* Animation Section */}
+        <div className="relative flex justify-center items-end mb-8 md:mb-12" style={{ minHeight: "40vh" }}>
+          <FourZobusWithDesk 
+            className="w-full max-w-4xl h-auto pointer-events-none" 
+            style={{ height: width <= 768 ? "30vh" : "50vh" }}
+          />
+        </div>
+        
+        {/* CTA Section */}
+        <div className="text-center">
           <Link href="/masterplan" passHref>
-            <Button className="mt-8 mb-40 relative z-3">
+            <Button className="px-8 py-3 text-base md:text-lg">
               Read the Masterplan
             </Button>
           </Link>
-        </Flex>
-        <Flex className="absolute md:relative pointer-events-none bottom-0 z-2 pt-32 md:items-end items-center">
-          <FourZobusWithDesk className="md:h-96 md:w-auto w-screen mx-auto pointer-events-none" />
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </section>
   );
 };

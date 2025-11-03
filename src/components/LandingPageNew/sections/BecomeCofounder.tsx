@@ -1,20 +1,14 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef } from "react";
-import CountryCardElSalvador from "../../../../public/assets/Country-Cards_El-Salvador.gif";
-import CountryCardFrance from "../../../../public/assets/Country-Cards_France.gif";
-import CountryCardJapan from "../../../../public/assets/Country-Cards_Japan.gif";
-import CountryCardRussia from "../../../../public/assets/Country-Cards_Russia.gif";
-import CountryCardSpain from "../../../../public/assets/Country-Cards_Spain.gif";
-import CountryCardIndia from "../../../../public/assets/Country-card_India.gif";
 import { MaleSittingWithCards } from "../assets/avatars";
 import { CardBack } from "../assets/props";
 import { useWindowSize } from "../hooks";
 import { Flex } from "../structure";
 import { Button } from "../ui";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface BecomeCofounderProps {}
 
 const BecomeCofounder: React.FC<BecomeCofounderProps> = () => {
@@ -114,132 +108,148 @@ const BecomeCofounder: React.FC<BecomeCofounderProps> = () => {
 
   return (
     <section
-      className="h-screen relative px-4 flex flex-col md:flex-row items-center text-black justify-center overflow-hidden md:-mt-0 -mt-20"
+      className="min-h-screen relative flex flex-col text-black overflow-hidden py-12 md:py-16"
       style={{
-        background:
-          "linear-gradient(359.84deg, #FFFFFF -66.78%, #F6FCFC -56.46%, #DFF2F5 -39.9%, #B9E2E8 -19.17%, #84CDD7 4.88%, #CEEBEF 57.8%, #FFFFFF 96.43%)",
+        background: "linear-gradient(135deg, #ffb3ba 0%, #ffcccc 50%, #ffd9d9 100%)",
       }}
     >
-      <Flex
-        items="center"
-        className="max-w-5xl md:flex-row flex-col w-full mx-auto"
-      >
-        <Flex col className="items-center md:items-start max-w-lg">
-          <h2 className="text-xl md:text-3xl font-semibold text-center">
-            Become a Cofounder
-          </h2>
-          <span className="mt-6 md:text-lg text-center md:text-left relative z-2">
-            Join the genesis cofounders shaping the reality protocol. Choose your culture, earn rewards, and govern the network.
-          </span>
-          <Link href="/become-a-founder" passHref>
-            <Button className="mt-8 mb-16">Claim Your Spot</Button>
-          </Link>
-        </Flex>
+      {/* Main Content Container */}
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
+        
+        {/* Header Section */}
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-6xl font-bold mb-3 md:mb-4 text-black">People</h1>
+          <p className="text-lg md:text-2xl font-semibold text-black">
+            Build by the Community and for Community
+          </p>
+        </div>
+        
+        {/* Cards Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto pb-[35vh] md:pb-[50vh]">
+          
+          {/* Founders Card */}
+          <div className="border-2 border-white bg-black/50 backdrop-blur-sm p-6 md:p-8 rounded-xl text-center">
+            <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-3 text-white">
+              FOUNDERS OF ZO WORLD
+            </h3>
+            <p className="text-sm md:text-base font-semibold text-white mb-1 md:mb-2">
+              TOP TIER MEMBERSHIP
+            </p>
+            <p className="text-sm md:text-base mb-2 md:mb-3 text-white">
+              LIMITED TO 1,111
+            </p>
+            <p className="text-xs md:text-sm text-white/80 mb-3 md:mb-4">
+              are top tier members who get exclusive access, perks and contribute to Zo World
+            </p>
+            <p className="text-xs md:text-sm text-white/80 mb-4 md:mb-6">
+              EXCLUSIVE COMMUNITY OF FOUNDERS, VC, DEGENS, DEVS
+            </p>
+            <div className="flex justify-center">
+              <Link href="/become-a-founder" passHref>
+                <Button className="w-full md:w-auto">Claim Founder Spot</Button>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Citizens Card */}
+          <div style={{ background: "#F07850" }} className="p-6 md:p-8 rounded-xl text-center">
+            <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-3 text-black">
+              CITIZENS OF ZO WORLD
+            </h3>
+            <p className="text-sm md:text-base font-semibold text-black mb-1 md:mb-2">
+              COMMUNITY MEMBERSHIP
+            </p>
+            <p className="text-sm md:text-base mb-2 md:mb-3 text-black font-bold">
+              FREE TO GET
+            </p>
+            <p className="text-xs md:text-sm text-black/80 mb-3 md:mb-4">
+              are participants in game of life, attending virtual, IRL events doing quests & more
+            </p>
+            <p className="text-xs md:text-sm text-black/80 mb-4 md:mb-6">
+              ATTEND EVENTS, PARTICIPATE IN ZO WORLD
+            </p>
+            <div className="flex justify-center">
+              <Link href="/" passHref>
+                <Button className="w-full md:w-auto bg-black text-white hover:bg-gray-800">
+                  Join as Citizen
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ANIMATED CHARACTER - Centered at Bottom */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-5">
         <Flex
           col
           items="center"
-          className="absolute bottom-0 w-full md:w-auto md:-right-12 md:relative"
+          className="relative"
         >
           <MaleSittingWithCards
             ref={male2}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "30vh" : "50vh",
-              bottom: width <= 768 ? "-6vh" : "",
-              right: width <= 768 ? "" : "-24vw",
+              height: width <= 768 ? "30vh" : "45vh",
+              bottom: "0",
             }}
           />
           <CardBack
             ref={cardLeft1}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-45deg)",
-              bottom: width <= 768 ? "10vh" : "-25vh",
-              left: width <= 768 ? "20vw" : "10vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "8vh" : "-20vh",
+              left: width <= 768 ? "-15vw" : "-10vw",
             }}
           />
-          {/* <Image
-            ref={cardLeft1}
-            className="absolute z-1"
-            style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-45deg)",
-              bottom: width <= 768 ? "10vh" : "-25vh",
-              left: width <= 768 ? "20vw" : "10vw",
-            }}
-            src={CountryCardIndia}
-            alt=""
-            className="absolute z-1"
-          /> */}
           <CardBack
             ref={cardLeft2}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-45deg)",
-              bottom: width <= 768 ? "20vh" : "-10vh",
-              left: width <= 768 ? "18vw" : "8vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "18vh" : "-5vh",
+              left: width <= 768 ? "-18vw" : "-12vw",
             }}
           />
           <CardBack
             ref={cardLeft3}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-35deg)",
-              bottom: width <= 768 ? "30vh" : "5vh",
-              left: width <= 768 ? "24vw" : "8vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "28vh" : "10vh",
+              left: width <= 768 ? "-12vw" : "-8vw",
             }}
           />
           <CardBack
             ref={cardRight1}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-45deg)",
-              bottom: width <= 768 ? "10vh" : "-25vh",
-              right: width <= 768 ? "24vw" : "-26vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "8vh" : "-20vh",
+              right: width <= 768 ? "-15vw" : "-10vw",
             }}
           />
           <CardBack
             ref={cardRight2}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-45deg)",
-              bottom: width <= 768 ? "20vh" : "-10vh",
-              right: width <= 768 ? "22vw" : "-28vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "18vh" : "-5vh",
+              right: width <= 768 ? "-18vw" : "-12vw",
             }}
           />
           <CardBack
             ref={cardRight3}
             className="absolute z-1"
             style={{
-              height: width <= 768 ? "5vh" : "10vh",
-              // transform: "rotate(-35deg)",
-              bottom: width <= 768 ? "30vh" : "5vh",
-              right: width <= 768 ? "28vw" : "-28vw",
+              height: width <= 768 ? "6vh" : "10vh",
+              bottom: width <= 768 ? "28vh" : "10vh",
+              right: width <= 768 ? "-12vw" : "-8vw",
             }}
           />
         </Flex>
-      </Flex>
-      {/* <FemaleLeftFull1
-        ref={female1}
-        className="absolute left-0 z-1"
-        style={{
-          width: width < 768 ? "25vw" : "10vw",
-          top: width < 768 ? "16vh" : "24vh",
-        }}
-      />
-      <MaleRightFull1
-        ref={male1}
-        className="absolute right-0 z-1"
-        style={{
-          width: width < 768 ? "35vw" : "10vw",
-          top: width < 768 ? "8vh" : "20vh",
-        }}
-      /> */}
+      </div>
     </section>
   );
 };

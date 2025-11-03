@@ -334,7 +334,15 @@ export default function Home() {
   
   if (!privyReady || privyLoading) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-black flex items-center justify-center loading-bg-desktop"
+        style={{
+          backgroundImage: "url('/assets/loading background.gif')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
         <div className="text-center space-y-4">
           <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
           <p className="text-white text-lg">Loading Zo World...</p>

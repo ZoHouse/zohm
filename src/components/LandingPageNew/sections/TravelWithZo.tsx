@@ -13,9 +13,7 @@ import { useWindowSize } from "../hooks";
 import { Flex } from "../structure";
 import { Button } from "../ui";
 
-interface TravelWithZoProps {}
-
-const TravelWithZo: React.FC<TravelWithZoProps> = () => {
+const TravelWithZo: React.FC = () => {
   const { width } = useWindowSize();
 
   const male1 = useRef<SVGSVGElement>(null);
@@ -78,7 +76,7 @@ const TravelWithZo: React.FC<TravelWithZoProps> = () => {
             Celebrations of coherence
           </p>
           <p className="text-sm md:text-base text-black/80 max-w-3xl mx-auto">
-            Where communities sync, stories merge, and the network comes alive. Through quests and events, shared context is created—moments where intention becomes action, digital becomes physical, and individuals become community.
+            Parties are where coherence emerges. Through quests, events, and shared experiences, frequencies synchronize, creating moments where digital communities activate in physical space. These celebrations are the rituals that bind the network, transforming individual intention into collective consciousness and making the protocol pulse with life.
           </p>
         </div>
         

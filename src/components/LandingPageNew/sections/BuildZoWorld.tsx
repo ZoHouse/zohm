@@ -89,10 +89,10 @@ const BuildZoWorld: React.FC<BuildZoWorldProps> = () => {
             Nodes of possibility
           </p>
           <p className="text-sm md:text-base text-black/80 max-w-3xl mx-auto">
-            Cities & nodes. Cities are a framework of collective nodes, each city a network of culture houses, 
-            hacker spaces, cafes and co-living hubs where the digital meets the physical. From San Francisco to Bangalore, 
-            nodes form hubs where communities sync, stories merge, and the network 
-            comes alive. These are the physical anchors of our distributed protocol, places where intention becomes action.
+            To awaken the cities' consciousness, we need physical nodes. Culture houses, hacker spaces, cafes, and co-living hubs 
+            where the digital meets the physical. These nodes are the awakening points, 
+            Each node is a heartbeat in the city's body, transforming intention into action 
+            and connecting the distributed protocol to physical reality.
           </p>
         </div>
         

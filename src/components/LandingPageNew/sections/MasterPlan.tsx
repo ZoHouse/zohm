@@ -14,9 +14,7 @@ import { useWindowSize } from "../hooks";
 import { Flex } from "../structure";
 import { Button } from "../ui";
 
-interface MasterPlanProps {}
-
-const MasterPlan: React.FC<MasterPlanProps> = () => {
+const MasterPlan: React.FC = () => {
   const { width } = useWindowSize();
 
   const female1 = useRef<SVGSVGElement>(null);
@@ -94,7 +92,7 @@ const MasterPlan: React.FC<MasterPlanProps> = () => {
             Live to Earn
           </p>
           <p className="text-sm md:text-base text-black/80 max-w-3xl mx-auto">
-            A master plan to tune into Zo World, a world where everyone follows their heart. Zo is your signal in the noise, a beacon that connects us to something greater. Through this framework, we coordinate around shared values, align incentives with intention, guiding us toward collective consciousness.
+            A framework to align individual purpose with collective emergence. The Masterplan is our operating system, a protocol that turns following your heart into a coordinated dance. Through decentralized operations, gamified participation, and aligned incentives, we transform personal ripples into city-scale patterns. This is how we evolve from intention to action, from individual signal to synchronized network consciousness.
           </p>
         </div>
         
@@ -107,7 +105,7 @@ const MasterPlan: React.FC<MasterPlanProps> = () => {
         </div>
         
         {/* CTA Section */}
-        <div className="text-center">
+        <div className="flex justify-center items-center w-full">
           <Link href="/masterplan" passHref>
             <Button className="px-8 py-3 text-base md:text-lg">
               Read the Masterplan

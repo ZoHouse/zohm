@@ -163,7 +163,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onEnterGame, stats }) => {
           Zo World
         </h1>
         <p className="mt-8 px-4 md:text-xl text-white font-semibold text-center">
-          A decentralized protocol for shifting realities
+          A decentralized protocol for living your best life
         </p>
         
         {/* Live Stats Badge */}

@@ -138,15 +138,12 @@ const BecomeCofounder: React.FC<BecomeCofounderProps> = () => {
             <p className="text-sm md:text-base mb-2 md:mb-3 text-white">
               LIMITED TO 1,111
             </p>
-            <p className="text-xs md:text-sm text-white/80 mb-3 md:mb-4">
-              are top tier members who get exclusive access, perks and contribute to Zo World
-            </p>
             <p className="text-xs md:text-sm text-white/80 mb-4 md:mb-6">
-              EXCLUSIVE COMMUNITY OF FOUNDERS, VC, DEGENS, DEVS
+              Founders are top tier members who get exclusive access, perks and contribute to Zo World
             </p>
             <div className="flex justify-center">
-              <Link href="/become-a-founder" passHref>
-                <Button className="w-full md:w-auto">Claim Founder Spot</Button>
+              <Link href="/become-a-founder#founder-benefits" passHref>
+                <Button className="w-full md:w-auto">Join as Founder</Button>
               </Link>
             </div>
           </div>
@@ -162,11 +159,8 @@ const BecomeCofounder: React.FC<BecomeCofounderProps> = () => {
             <p className="text-sm md:text-base mb-2 md:mb-3 text-black font-bold">
               FREE TO GET
             </p>
-            <p className="text-xs md:text-sm text-black/80 mb-3 md:mb-4">
-              are participants in game of life, attending virtual, IRL events doing quests & more
-            </p>
             <p className="text-xs md:text-sm text-black/80 mb-4 md:mb-6">
-              ATTEND EVENTS, PARTICIPATE IN ZO WORLD
+              are participants in game of life, attending virtual, IRL events doing quests & more
             </p>
             <div className="flex justify-center">
               <Link href="/" passHref>

@@ -115,12 +115,12 @@ const TravelLocalFriends: React.FC<TravelLocalFriendsProps> = () => {
         <div className="space-y-4">
           <div className="text-center">
             <span className="font-bold text-base md:text-lg">People:</span>
-            <span className="text-sm md:text-base"> The heartbeat of Zo, founders, creators, dreamers, and citizens turning intention into action.</span>
+            <span className="text-sm md:text-base"> Founders, creators, dreamers, and citizens turning intention into action.</span>
           </div>
           
           <div className="text-center">
             <span className="font-bold text-base md:text-lg">Places:</span>
-            <span className="text-sm md:text-base"> Nodes of possibility culture houses, hacker spaces, and co-living hubs where the digital meets the physical.</span>
+            <span className="text-sm md:text-base"> Nodes of possibilities such as culture houses, hacker spaces, and co-living hubs where the digital meets the physical.</span>
           </div>
           
           <div className="text-center">

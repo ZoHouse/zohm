@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { addCalendar } from '@/lib/supabase';
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

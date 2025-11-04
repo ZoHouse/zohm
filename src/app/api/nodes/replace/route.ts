@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hasServiceRole, supabaseAdmin } from '@/lib/supabaseAdmin';
 import { PartnerNodeRecord } from '@/lib/supabase';
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function POST(_req: NextRequest) {
   try {
     if (!hasServiceRole || !supabaseAdmin) {

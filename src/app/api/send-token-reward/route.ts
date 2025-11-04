@@ -17,6 +17,9 @@ import {
 } from '@/lib/customTokenReward';
 import { ethers } from 'ethers';
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 // Private key for the reward wallet (should be stored in environment variables)
 // This wallet needs to have custom tokens on testnet to send rewards
 const REWARD_WALLET_PRIVATE_KEY = process.env.REWARD_WALLET_PRIVATE_KEY;

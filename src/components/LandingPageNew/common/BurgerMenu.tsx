@@ -62,13 +62,6 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ closeMenu }) => {
           Masterplan
         </h1>
       </Link>
-      <Link href="/zomad/generate" onClick={closeMenu}>
-        <h1
-          className="mx-auto my-5 text-xl font-bold no-underline cursor-pointer md:text-2xl hover:underline"
-        >
-          Get your Zomad
-        </h1>
-      </Link>
       <Flex items="center" justify="center" className="mt-12">
         <a
           href="https://twitter.zo.xyz/"

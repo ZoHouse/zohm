@@ -48,7 +48,7 @@ export async function verifyMembersTable() {
 
     if (error) {
       // Handle 500 errors (likely RLS/permission issues)
-      if (error.message?.includes('500') || error.code === 'PGRST301' || error.status === 500) {
+      if (error.message?.includes('500') || error.code === 'PGRST301') {
         console.warn('⚠️ Members table access denied (likely RLS/permission issue - this is okay):', error.message || 'Unknown error');
         return { exists: true, error: 'Access denied - RLS may be enabled', canAccess: false };
       }
@@ -341,7 +341,7 @@ export async function getNodesFromDB(): Promise<PartnerNodeRecord[] | null> {
         return [];
       }
       // Handle RLS/permission errors gracefully (likely 500 or permission denied)
-      if (error.code === '42501' || error.status === 500 || error.message?.includes('policy')) {
+      if (error.code === '42501' || error.message?.includes('policy') || error.message?.includes('500')) {
         console.warn('⚠️ Nodes table access restricted (RLS/permission issue - this is okay)');
         return [];
       }
@@ -408,7 +408,7 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
         return [];
       }
       // Handle RLS/permission errors gracefully (likely 500 or permission denied)
-      if (error.code === '42501' || error.status === 500 || error.message?.includes('policy')) {
+      if (error.code === '42501' || error.message?.includes('policy') || error.message?.includes('500')) {
         console.warn('⚠️ Quests table access restricted (RLS/permission issue - this is okay)');
         return [];
       }

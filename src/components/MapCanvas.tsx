@@ -875,11 +875,11 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         
         // Store coordinates in window for wallet sync
         if (typeof window !== 'undefined') {
-          window.userLocationCoords = {
+          (window as any).userLocationCoords = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
-          console.log('📍 User location stored for wallet sync:', window.userLocationCoords);
+          console.log('📍 User location stored for wallet sync:', (window as any).userLocationCoords);
         }
         
         try {

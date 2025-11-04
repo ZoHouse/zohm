@@ -368,7 +368,7 @@ export default function Home() {
   if (!privyAuthenticated) {
     return (
       <div 
-        className="fixed inset-0 bg-black flex items-center justify-center z-[1000]"
+        className="fixed inset-0 bg-black flex flex-col z-[1000]"
         style={{
           backgroundImage: "url('/assets/loading background.gif')",
           backgroundSize: 'cover',
@@ -376,25 +376,25 @@ export default function Home() {
           backgroundRepeat: 'no-repeat'
         }}
       >
-        <div className="text-center text-white max-w-lg mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4 drop-shadow-lg">
-              You are about to enter<br />
-              a new world order.
-            </h1>
+        {/* Text at top center */}
+        <div className="text-center text-white max-w-lg mx-auto px-4 pt-20 sm:pt-24">
+          <h1 className="text-2xl sm:text-3xl font-bold drop-shadow-lg">
+            You are about to enter<br />
+            a new world order.
+          </h1>
+        </div>
+        
+        {/* Button centered in remaining space, moved up slightly */}
+        <div className="flex-1 flex items-center justify-center -mt-24">
+          <div className="text-center text-white max-w-lg mx-auto px-4">
+            {/* Red Pill Button - Triggers Privy Login */}
+            <button 
+              onClick={privyLogin}
+              className="red-pill-button"
+            >
+              Tune into Zo World
+            </button>
           </div>
-          
-          {/* Red Pill Button - Triggers Privy Login */}
-          <button 
-            onClick={privyLogin}
-            className="red-pill-button"
-          >
-            Take the Red Pill
-          </button>
-          
-          <p className="text-gray-400 text-sm mt-6 drop-shadow">
-            Sign in with Twitter or connect wallet
-          </p>
         </div>
       </div>
     );

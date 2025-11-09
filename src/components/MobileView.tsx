@@ -90,13 +90,13 @@ const MobileView: React.FC<MobileViewProps> = ({
       </motion.div>
 
       {/* Logo/Header */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-[500px] px-4">
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 text-center w-full px-4">
         <img 
           src="/Z_to_House.gif" 
           alt="Zo House Events Calendar" 
           className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
         />
-        <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow">
+        <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
           <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
           <span>{events.length} Events</span>
           <span className="opacity-70">•</span>

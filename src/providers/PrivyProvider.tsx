@@ -22,11 +22,9 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#a855f7',
           },
           embeddedWallets: {
-            solana: {
-              createOnLogin: 'users-without-wallets',
-            },
+            createOnLogin: 'users-without-wallets',
           },
-          // Solana wallets will be created automatically for users without wallets
+          // Embedded Solana wallets will be created automatically
         }}
       >
         {children}

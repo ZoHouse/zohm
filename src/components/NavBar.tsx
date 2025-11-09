@@ -1,6 +1,5 @@
 'use client';
 
-import { usePrivy } from '@privy-io/react-auth';
 import { GlowButton } from '@/components/ui';
 
 interface NavBarProps {
@@ -10,8 +9,6 @@ interface NavBarProps {
 }
 
 const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashboardClick }) => {
-  const { ready, authenticated, logout } = usePrivy();
-
   const navItems = [
     { id: 'events' as const, label: 'Events' },
     { id: 'nodes' as const, label: 'Nodes' },
@@ -33,8 +30,7 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashb
               {item.label}
             </GlowButton>
           ))}
-          
-          {/* Dashboard Button */}
+
           <GlowButton
             onClick={onDashboardClick}
             variant="secondary"
@@ -42,17 +38,6 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashb
           >
             Dashboard
           </GlowButton>
-
-          {/* Logout (only when authenticated) */}
-          {ready && authenticated && (
-            <GlowButton
-              onClick={logout}
-              variant="secondary"
-              className="flex-1 text-sm"
-            >
-              Logout
-            </GlowButton>
-          )}
         </nav>
       </div>
     </div>

@@ -164,45 +164,46 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
       {/* Modal Container matching dashboard */}
       <div className="relative w-[95vw] max-w-4xl h-[90vh] mx-auto my-[5vh] flex flex-col overflow-hidden pointer-events-auto">
         {/* Glowing border effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-orange-400 to-pink-500 rounded-3xl blur-2xl opacity-70 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#ff4d6d]/40 via-[#ff8fa3]/30 to-[#ff4d6d]/40 rounded-3xl blur-3xl opacity-70"></div>
         
-        {/* Main content card with pink-orange gradient */}
-        <div className="relative bg-gradient-to-br from-pink-100 via-orange-100 to-pink-200 backdrop-blur-xl rounded-3xl shadow-2xl border-4 border-white flex flex-col overflow-hidden h-full">
-          {/* Header - matching dashboard structure */}
-          <div className="flex items-center justify-between p-6 border-b-2 border-white/50">
+        {/* Main content card */}
+        <GlowCard className="relative flex flex-col overflow-hidden h-full !p-0">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-6 border-b border-white/30 bg-white/10 backdrop-blur-xl">
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors shadow-md flex-shrink-0"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 border border-white/40 text-black hover:bg-white/30 transition-all"
+              aria-label="Close wallet"
             >
-              <ArrowLeft size={18} className="text-black" />
+              <ArrowLeft size={18} />
             </button>
             
             {/* Profile Picture with Name - centered */}
-            <div className="flex items-center gap-2 flex-1 justify-center">
-              <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg overflow-hidden flex-shrink-0">
+            <div className="flex-1 flex items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full border border-white/50 overflow-hidden shadow-lg">
                 <img
                   src={userProfile?.pfp || getUnicornForAddress(primaryWalletAddress || userProfile?.id || '')}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-orange-600 whitespace-nowrap">
-                {userProfile?.name || 'User'}&apos;s wallet
-              </span>
+              <div className="flex flex-col items-start sm:items-center">
+                <span className="text-xs uppercase tracking-[0.25em] text-gray-600">Wallet</span>
+                <span className="text-xl font-black text-black whitespace-nowrap">{userProfile?.name || 'User'}&apos;s wallet</span>
+              </div>
             </div>
             
-            {/* Colorful dots decoration */}
-            <div className="flex space-x-1 flex-shrink-0">
-              <div className="w-3 h-3 rounded-full bg-pink-500 animate-pulse"></div>
-              <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-3 h-3 rounded-full bg-pink-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-              <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+            {/* Dots decoration */}
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff4d6d] shadow-[0_0_10px_rgba(255,77,109,0.6)] animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-white/70 shadow-[0_0_10px_rgba(255,255,255,0.4)] animate-pulse" style={{ animationDelay: '0.25s' }}></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff8fa3] shadow-[0_0_10px_rgba(255,143,163,0.6)] animate-pulse" style={{ animationDelay: '0.5s' }}></span>
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto pb-6 pt-6 px-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-8">
+            <div className="max-w-2xl mx-auto space-y-6">
               
               {/* Balance Card */}
               <div className="relative">
@@ -218,11 +219,13 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                       ) : (
                         <div className="flex items-center gap-3">
                           <span className="text-black text-4xl font-black">{balance}</span>
-                          <img 
-                            src="/Coin 2Sec 1.gif" 
-                            alt={tokenSymbol} 
-                            className="w-12 h-12 object-contain"
-                          />
+                          <div className="w-14 h-14 rounded-full bg-white/20 border border-white/40 flex items-center justify-center shadow-inner overflow-hidden">
+                            <img 
+                              src="/zotoken.png" 
+                              alt={tokenSymbol} 
+                              className="w-10 h-10 object-contain rounded-full"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -232,98 +235,98 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
 
               {/* Embedded Wallets Section */}
               {embeddedWallets.length > 0 && (
-                <div className="relative">
-                  <GlowCard className="p-6">
-                    <h3 className="text-lg font-black text-black mb-4 flex items-center">
-                      <span className="mr-2">✨</span> Embedded Wallets (Created by Privy)
-                    </h3>
-                    <div className="space-y-3">
-                      {embeddedWallets.map((wallet) => (
-                        <div key={wallet.id} className="flex items-center justify-between p-3 bg-green-50 rounded-xl border-2 border-green-200">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs font-bold uppercase">
-                                {wallet.chain_type}
+                <GlowCard>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <span className="text-lg font-black text-black flex items-center">
+                      <span className="mr-2">✨</span> Embedded Wallets
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {embeddedWallets.map((wallet) => (
+                      <div key={wallet.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/10 border border-white/25 px-4 py-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="px-3 py-1 bg-white/30 backdrop-blur-sm border border-white/40 text-black rounded-full text-xs font-bold uppercase shadow-sm">
+                              {wallet.chain_type}
+                            </span>
+                            {wallet.is_primary && (
+                              <span className="px-3 py-1 bg-[#ff4d6d] border border-[#ff4d6d] text-white rounded-full text-xs font-bold shadow-sm">
+                                Primary
                               </span>
-                              {wallet.is_primary && (
-                                <span className="px-2 py-0.5 bg-purple-500 text-white rounded-full text-xs font-bold">
-                                  PRIMARY
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs font-mono text-gray-700">
-                              {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {!wallet.is_primary && (
-                              <button
-                                onClick={() => handleSetPrimary(wallet.address)}
-                                disabled={settingPrimaryFor === wallet.address}
-                                className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold rounded-full transition-colors disabled:opacity-50"
-                              >
-                                {settingPrimaryFor === wallet.address ? (
-                                  <Loader2 size={12} className="animate-spin" />
-                                ) : (
-                                  'Set Primary'
-                                )}
-                              </button>
                             )}
-                            <button
-                              onClick={() => handleCopyAddress(wallet.address)}
-                              className="p-2 hover:bg-green-100 rounded-lg transition-colors"
-                            >
-                              {copiedAddress === wallet.address ? (
-                                <Check size={18} className="text-green-600" />
-                              ) : (
-                                <Copy size={18} className="text-gray-600" />
-                              )}
-                            </button>
+                          </div>
+                          <div className="text-xs font-mono text-gray-700">
+                            {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </GlowCard>
-                </div>
+                        <div className="flex items-center gap-2">
+                          {!wallet.is_primary && (
+                            <button
+                              onClick={() => handleSetPrimary(wallet.address)}
+                              disabled={settingPrimaryFor === wallet.address}
+                              className="px-4 py-2 bg-[#ff4d6d] hover:bg-[#ff3355] text-white text-xs font-semibold rounded-full transition-all disabled:opacity-50 shadow-md"
+                            >
+                              {settingPrimaryFor === wallet.address ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                'Set Primary'
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleCopyAddress(wallet.address)}
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 border border-white/40 text-gray-700 hover:bg-white/30 transition-all"
+                            aria-label="Copy wallet address"
+                          >
+                            {copiedAddress === wallet.address ? (
+                              <Check size={16} className="text-[#ff4d6d]" />
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </GlowCard>
               )}
 
               {/* External Wallets Section */}
-              <div className="relative">
-                <GlowCard className="p-6">
-                  <h3 className="text-lg font-black text-black mb-4 flex items-center justify-between">
-                    <span className="flex items-center">
-                      <span className="mr-2">👛</span> External Wallets
-                    </span>
-                    <button
-                      onClick={handleLinkWallet}
-                      disabled={isLinkingWallet}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-bold hover:shadow-lg transition-all disabled:opacity-50"
-                    >
-                      {isLinkingWallet ? (
-                        <><Loader2 size={16} className="animate-spin" /> Linking...</>
-                      ) : (
-                        <><LinkIcon size={16} /> Connect Wallet</>
-                      )}
-                    </button>
-                  </h3>
+              <GlowCard>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <span className="text-lg font-black text-black flex items-center">
+                    <span className="mr-2">👛</span> External Wallets
+                  </span>
+                  <button
+                    onClick={handleLinkWallet}
+                    disabled={isLinkingWallet}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#ff4d6d] hover:bg-[#ff3355] text-white rounded-full text-sm font-semibold shadow-lg transition-all disabled:opacity-50"
+                  >
+                    {isLinkingWallet ? (
+                      <><Loader2 size={16} className="animate-spin" /> Linking...</>
+                    ) : (
+                      <><LinkIcon size={16} /> Connect Wallet</>
+                    )}
+                  </button>
+                </div>
                   
                   {externalWallets.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <p className="text-sm">No external wallets connected</p>
-                      <p className="text-xs mt-1">Click &quot;Connect Wallet&quot; to link Phantom, Solflare, MetaMask, etc.</p>
+                    <div className="text-center py-10 text-gray-600">
+                      <p className="text-sm">No external wallets connected yet.</p>
+                      <p className="text-xs mt-1">Connect Phantom, Solflare, MetaMask, and more in a tap.</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {externalWallets.map((wallet) => (
-                        <div key={wallet.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border-2 border-purple-200">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 bg-purple-500 text-white rounded-full text-xs font-bold uppercase">
+                        <div key={wallet.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/10 border border-white/25 px-4 py-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="px-3 py-1 bg-white/30 backdrop-blur-sm border border-white/40 text-black rounded-full text-xs font-bold uppercase shadow-sm">
                                 {wallet.chain_type}
                               </span>
                               {wallet.is_primary && (
-                                <span className="px-2 py-0.5 bg-pink-500 text-white rounded-full text-xs font-bold">
-                                  PRIMARY
+                                <span className="px-3 py-1 bg-[#ff4d6d] border border-[#ff4d6d] text-white rounded-full text-xs font-bold shadow-sm">
+                                  Primary
                                 </span>
                               )}
                               {wallet.wallet_client_type && (
@@ -341,7 +344,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                               <button
                                 onClick={() => handleSetPrimary(wallet.address)}
                                 disabled={settingPrimaryFor === wallet.address}
-                                className="px-3 py-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold rounded-full transition-colors disabled:opacity-50"
+                                className="px-4 py-2 bg-[#ff4d6d] hover:bg-[#ff3355] text-white text-xs font-semibold rounded-full transition-all disabled:opacity-50 shadow-md"
                               >
                                 {settingPrimaryFor === wallet.address ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -352,12 +355,13 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                             )}
                             <button
                               onClick={() => handleCopyAddress(wallet.address)}
-                              className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/20 border border-white/40 text-gray-700 hover:bg-white/30 transition-all"
+                              aria-label="Copy wallet address"
                             >
                               {copiedAddress === wallet.address ? (
-                                <Check size={18} className="text-purple-600" />
+                                <Check size={16} className="text-[#ff4d6d]" />
                               ) : (
-                                <Copy size={18} className="text-gray-600" />
+                                <Copy size={16} />
                               )}
                             </button>
                           </div>
@@ -365,8 +369,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                       ))}
                     </div>
                   )}
-                </GlowCard>
-              </div>
+              </GlowCard>
 
               {/* Chain Summary */}
               <div className="grid grid-cols-2 gap-4">
@@ -389,10 +392,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
 
             </div>
           </div>
-          
-          {/* Pink-Orange footer line */}
-          <div className="h-2 bg-gradient-to-r from-pink-500 via-orange-400 to-pink-500"></div>
-        </div>
+        </GlowCard>
       </div>
     </div>
   );

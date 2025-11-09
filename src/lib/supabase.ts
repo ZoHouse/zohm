@@ -350,6 +350,10 @@ export interface LeaderboardEntry {
   wallet: string;
   username: string;
   zo_points: number;
+  total_quests_completed?: number;
+  last_quest_completed_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface QuestEntry {
@@ -556,6 +560,11 @@ export async function isQuestCompleted(wallet: string, questId: string): Promise
     if (error) {
       if (error.code === 'PGRST116') {
         // No record found, quest not completed
+        return false;
+      }
+      if (error.code === '42P01' || error.message.includes('does not exist')) {
+        // Table doesn't exist yet
+        console.log('ℹ️ completed_quests table not found. Quest marked as not completed.');
         return false;
       }
       console.error('Error checking quest completion:', error);

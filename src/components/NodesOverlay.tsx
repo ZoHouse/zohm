@@ -149,6 +149,16 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <div className="mt-4 flex justify-center">
+        <GlowButton
+          variant="primary"
+          onClick={() => window.open('https://form.typeform.com/to/voEnDiSl', '_blank')}
+        >
+          Host Your Node
+        </GlowButton>
+      </div>
     </GlowCard>
   );
 };

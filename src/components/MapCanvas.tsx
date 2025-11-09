@@ -455,11 +455,11 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         // Create popup content for Zo House
         const zoPopupContent = `
           <div style="padding: 0;">
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">🏠 ${house.name}</h3>
-            <p style="margin: 4px 0; font-size: 13px;">📍 ${house.address}</p>
-            <div style="margin-top: 12px; display: flex; gap: 8px;">
-              <button onclick="window.open('https://zo.house', '_blank')" class="paper-button" style="flex: 1; font-size: 13px;">Visit</button>
-              <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${house.name}</h3>
+            <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${house.address}</p>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="window.open('https://zo.house', '_blank')" class="glow-popup-button secondary" style="flex: 1;">Visit</button>
+              <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="glow-popup-button" style="flex: 1;">Directions</button>
             </div>
           </div>
         `;
@@ -567,11 +567,11 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           // Create popup for the node
           const popupContent = `
             <div style="padding: 0;">
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${node.name}</h3>
-              <p style="margin: 4px 0; font-size: 13px;">📍 ${node.city}, ${node.country}</p>
-              <div style="margin-top: 12px; display: flex; gap: 8px;">
-                ${node.website ? `<a href="${node.website}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Visit</a>` : ''}
-                <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+              <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${node.name}</h3>
+              <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${node.city}, ${node.country}</p>
+              <div style="display: flex; gap: 8px;">
+                ${node.website ? `<a href="${node.website}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Visit</a>` : ''}
+                <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="glow-popup-button" style="flex: 1;">Directions</button>
               </div>
             </div>
           `;
@@ -877,9 +877,9 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
           // Create popup content matching the event popup style
           const userPopupContent = `
             <div style="padding: 0;">
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">🦄 Your Location</h3>
-              <p style="margin: 4px 0; font-size: 13px;">📍 Current position</p>
-              <p style="margin: 4px 0; font-size: 13px;">📱 Auto-detected via GPS</p>
+              <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">🦄 Your Location</h3>
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 Current position</p>
+              <p style="margin: 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📱 Auto-detected via GPS</p>
             </div>
           `;
 
@@ -1027,12 +1027,12 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         
         const popupContent = `
           <div style="padding: 0;">
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${event['Event Name'] || "N/A"}</h3>
-            <p style="margin: 4px 0; font-size: 13px;">📅 ${formattedDate}</p>
-            ${displayLocation ? `<p style="margin: 4px 0; font-size: 13px;">📍 ${displayLocation}</p>` : ''}
-            <div style="margin-top: 12px; display: flex; gap: 8px;">
-              ${eventUrl ? `<a href="${eventUrl}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Register</a>` : `<button class="paper-button" style="flex: 1; text-align: center; font-size: 13px; opacity: 0.5; cursor: not-allowed;" disabled>Register</button>`}
-              <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${event['Event Name'] || "N/A"}</h3>
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📅 ${formattedDate}</p>
+            ${displayLocation ? `<p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${displayLocation}</p>` : '<div style="margin-bottom: 16px;"></div>'}
+            <div style="display: flex; gap: 8px;">
+              ${eventUrl ? `<a href="${eventUrl}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Register</a>` : `<button class="glow-popup-button secondary" style="flex: 1; opacity: 0.5; cursor: not-allowed;" disabled>Register</button>`}
+              <button onclick="window.showRouteTo(${lng}, ${lat})" class="glow-popup-button" style="flex: 1;">Directions</button>
             </div>
           </div>
         `;

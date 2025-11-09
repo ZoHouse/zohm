@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
-import { GlowChip, GlowCard } from '@/components/ui';
+import { GlowChip, GlowCard, GlowButton } from '@/components/ui';
 
 interface MobileNodesListOverlayProps {
   isVisible: boolean;
@@ -127,6 +127,17 @@ const MobileNodesListOverlay: React.FC<MobileNodesListOverlayProps> = ({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Host Node Button */}
+          <div className="px-6 py-4 border-t border-white/20">
+            <GlowButton
+              variant="primary"
+              onClick={() => window.open('https://form.typeform.com/to/voEnDiSl', '_blank')}
+              className="w-full"
+            >
+              Host Your Node
+            </GlowButton>
           </div>
         </motion.div>
       )}

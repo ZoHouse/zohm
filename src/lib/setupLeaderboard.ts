@@ -107,7 +107,7 @@ export async function checkLeaderboardSetup(): Promise<{
     const tableExists = !tableError || tableError.code !== 'PGRST116';
 
     // Check if there's any data
-    const hasData = tableExists && tableData && tableData.length > 0;
+    const hasData = !!(tableExists && tableData && tableData.length > 0);
 
     // Note: Can't easily check trigger existence from client
     // This would need to be done via SQL query with service_role

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 
 interface EventData {
   'Event Name': string;
@@ -65,69 +66,67 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
+    <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
       {/* Header - compact with inline search */}
-      <div className="p-4">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="mb-4">
+        <div className="flex items-center gap-3 mb-4">
           <img src="/events.png" alt="Events" className="w-7 h-7 object-contain" />
-          <div className="flex-1">
-            <h2 className="text-xl font-bold">Events</h2>
-            <p className="text-xs text-gray-600">{events.length} upcoming</p>
-          </div>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="paper-input w-32 text-sm py-1 px-2"
-          />
+          <h2 className="text-xl font-bold text-black">Events</h2>
         </div>
+        <input
+          type="text"
+          placeholder="Search events..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 rounded-full bg-white/10 border border-white/30 text-black placeholder-gray-500 focus:outline-none focus:border-[#ff4d6d] focus:ring-2 focus:ring-[#ff4d6d]/50 transition-all text-sm"
+        />
       </div>
 
       {/* Events List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto">
         {filteredEvents.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">No events found.</div>
+          <div className="text-center text-gray-600 py-8">No events found.</div>
         ) : (
           <div className="space-y-3">
             {filteredEvents.map((event, index) => (
-              <div
+              <GlowCard
                 key={index}
-                className="paper-card cursor-pointer hover:shadow-lg transition-shadow"
+                hoverable
                 onClick={() => handleEventClick(event)}
+                className="cursor-pointer"
               >
-                <h3 className="font-semibold text-base mb-1">{event['Event Name']}</h3>
-                <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
-                <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                <h3 className="font-semibold text-base mb-2 text-black">{event['Event Name']}</h3>
+                <div className="space-y-1 mb-3">
+                  <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
+                  <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                </div>
                 {event['Event URL'] && (
                   <a 
                     href={event['Event URL']} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                    className="text-sm text-[#ff4d6d] hover:underline inline-flex items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View Details →
                   </a>
                 )}
-              </div>
+              </GlowCard>
             ))}
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="p-4 flex justify-center">
-        <a 
-          href="https://zostel.typeform.com/to/LgcBfa0M" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="paper-button text-center text-sm px-6"
+      <div className="mt-4 flex justify-center">
+        <GlowButton
+          variant="primary"
+          onClick={() => window.open('https://zostel.typeform.com/to/LgcBfa0M', '_blank')}
         >
           Host Your Event
-        </a>
+        </GlowButton>
       </div>
-    </div>
+    </GlowCard>
   );
 };
 

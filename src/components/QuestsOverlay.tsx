@@ -5,6 +5,7 @@ import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestComple
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
+import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 
 interface QuestsOverlayProps {
   isVisible: boolean;
@@ -168,18 +169,20 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
 
   const content = (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <img src="/Quests.png" alt="Quests" className="w-8 h-8 object-contain" />
-          <h2 className="text-2xl font-bold">Quests</h2>
+          <h2 className="text-2xl font-bold text-black">Quests</h2>
         </div>
-        <button className="paper-button" onClick={() => setShowLeaderboard(true)}>View Leaderboard</button>
+        <GlowButton variant="secondary" onClick={() => setShowLeaderboard(true)}>
+          View Leaderboard
+        </GlowButton>
       </div>
       
       {!authenticated && (
-        <div className="mb-4 p-3 rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-300">
-          <p className="text-sm">Please log in to participate in quests</p>
-        </div>
+        <GlowCard className="mb-4 bg-yellow-500/20 border-yellow-500/40">
+          <p className="text-sm text-yellow-900">Please log in to participate in quests</p>
+        </GlowCard>
       )}
       
       {!quests || quests.length === 0 ? (
@@ -187,34 +190,32 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       ) : (
         <div className="space-y-3 overflow-y-auto">
           {quests.map((q) => (
-            <div key={q.id} className="paper-card">
+            <GlowCard key={q.id} hoverable>
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">{q.title}</h3>
-                  <p className="text-sm text-gray-700 mb-2">{q.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>420 $ZO per submission</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      q.status === 'active' ? 'bg-green-100 text-green-800' :
-                      q.status === 'completed' ? 'bg-gray-100 text-gray-600' :
-                      q.status === 'developing' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {q.status === 'completed' ? 'Completed' : q.status}
-                    </span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-lg text-black">{q.title}</h3>
+                    {q.status === 'active' && <GlowChip showDot>Active</GlowChip>}
+                    {q.status === 'completed' && <GlowChip>Completed</GlowChip>}
+                    {q.status === 'developing' && <GlowChip>Developing</GlowChip>}
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3">{q.description}</p>
+                  <div className="flex items-center gap-2">
+                    <GlowChip>420 $ZO</GlowChip>
                   </div>
                 </div>
-                <button 
-                  className={`paper-button whitespace-nowrap ${
-                    q.status === 'completed' || !authenticated ? 'opacity-50 cursor-not-allowed bg-gray-300 text-gray-500' : ''
-                  }`}
+              </div>
+              <div className="mt-4">
+                <GlowButton 
+                  variant="primary"
+                  className="w-full"
                   onClick={() => q.status !== 'completed' && authenticated && handleJoinQuest(q)}
                   disabled={q.status === 'completed' || !authenticated}
                 >
                   {q.status === 'completed' ? 'Completed' : 'Join Quest'}
-                </button>
+                </GlowButton>
               </div>
-            </div>
+            </GlowCard>
           ))}
         </div>
       )}
@@ -224,32 +225,32 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
   return (
     <>
       {/* Desktop only - no mobile overlay */}
-      <div className="hidden md:flex paper-overlay fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
+      <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
         {content}
-      </div>
+      </GlowCard>
 
       {/* Join Quest Popup */}
       {showJoinPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="paper-card max-w-md w-full mx-4 text-white">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <GlowCard className="max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Join Quest</h3>
+              <h3 className="text-xl font-bold text-black">Join Quest</h3>
               <button 
                 onClick={handleClosePopup}
-                className="text-white hover:opacity-70 text-2xl leading-none font-bold"
+                className="text-black hover:opacity-70 text-2xl leading-none font-bold"
               >
                 ×
               </button>
             </div>
             
             <div className="mb-4">
-              <h4 className="font-semibold mb-2 text-white">{selectedQuest?.title}</h4>
-              <p className="text-sm mb-3 text-white">{selectedQuest?.description}</p>
-              <p className="text-xs opacity-70 text-white">Reward: 420 $ZO per submission</p>
+              <h4 className="font-semibold mb-2 text-black">{selectedQuest?.title}</h4>
+              <p className="text-sm mb-3 text-gray-700">{selectedQuest?.description}</p>
+              <GlowChip>420 $ZO</GlowChip>
             </div>
 
             <div className="mb-4">
-              <label htmlFor="twitter-url" className="block text-sm font-medium mb-2 text-white">
+              <label htmlFor="twitter-url" className="block text-sm font-medium mb-2 text-black">
                 Enter the Zo World
               </label>
               <input
@@ -258,37 +259,41 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 value={twitterUrl}
                 onChange={(e) => setTwitterUrl(e.target.value)}
                 placeholder="Enter the Zo World..."
-                className="paper-input w-full text-white placeholder-white placeholder-opacity-70"
+                className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/30 text-black placeholder-gray-500 focus:outline-none focus:border-[#ff4d6d] focus:ring-2 focus:ring-[#ff4d6d]/50 transition-all"
               />
-              <p className="text-xs opacity-70 text-white mt-1">
+              <p className="text-xs text-gray-600 mt-2">
                 Enter the Zo World to complete the quest
               </p>
             </div>
 
             {verificationResult && (
-              <div className={`mb-4 p-3 rounded-lg border border-white border-opacity-20 ${
-                verificationResult.includes('✅') ? 'bg-green-900 bg-opacity-30' : 'bg-red-900 bg-opacity-30'
+              <GlowCard className={`mb-4 ${
+                verificationResult.includes('✅') 
+                  ? 'bg-green-500/20 border-green-500/40' 
+                  : 'bg-red-500/20 border-red-500/40'
               }`}>
-                <p className="text-sm text-white">{verificationResult}</p>
-              </div>
+                <p className="text-sm text-black">{verificationResult}</p>
+              </GlowCard>
             )}
 
             <div className="flex gap-3">
-              <button
+              <GlowButton
+                variant="secondary"
                 onClick={handleClosePopup}
-                className="flex-1 paper-button bg-transparent text-white border-2 border-white hover:bg-white hover:text-black"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </GlowButton>
+              <GlowButton
+                variant="primary"
                 onClick={handleSubmitJoin}
                 disabled={!twitterUrl.trim() || isVerifying}
-                className="flex-1 paper-button bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1"
               >
                 {isVerifying ? 'Verifying...' : 'Submit'}
-              </button>
+              </GlowButton>
             </div>
-          </div>
+          </GlowCard>
         </div>
       )}
 

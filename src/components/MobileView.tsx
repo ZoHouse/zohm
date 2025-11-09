@@ -22,6 +22,8 @@ interface EventData {
 
 interface MobileViewProps {
   events: EventData[];
+  nodes: PartnerNodeRecord[];
+  questCount: number;
   onMapReady: (map: mapboxgl.Map) => void;
   flyToEvent: EventData | null;
   flyToNode: PartnerNodeRecord | null;
@@ -31,6 +33,8 @@ interface MobileViewProps {
 
 const MobileView: React.FC<MobileViewProps> = ({
   events,
+  nodes,
+  questCount,
   onMapReady,
   flyToEvent,
   flyToNode,
@@ -92,19 +96,14 @@ const MobileView: React.FC<MobileViewProps> = ({
           alt="Zo House Events Calendar" 
           className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
         />
-      </div>
-
-      {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 left-4 z-20">
-        <a
-          href="https://unicornsf.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-white"
-        >
-          <span className="text-base mr-1">🦄</span>
-          <span className="text-xs">$Unicorn</span>
-        </a>
+        <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow">
+          <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
+          <span>{events.length} Events</span>
+          <span className="opacity-70">•</span>
+          <span>{nodes.length} Nodes</span>
+          <span className="opacity-70">•</span>
+          <span>{questCount} Quests</span>
+        </div>
       </div>
 
       {/* Unicorn Button */}
@@ -112,12 +111,16 @@ const MobileView: React.FC<MobileViewProps> = ({
         onClick={handleUnicornClick}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 border-4 border-white shadow-2xl flex items-center justify-center text-4xl z-40"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-[#ff4d6d] to-[#ff3355] border-4 border-white shadow-2xl flex items-center justify-center z-40 p-2"
         style={{
-          boxShadow: '0 8px 32px rgba(255, 105, 180, 0.4)',
+          boxShadow: '0 8px 32px rgba(255, 77, 109, 0.4)',
         }}
       >
-        🦄
+        <img 
+          src="/Cultural Stickers/FollowYourHeart.png" 
+          alt="Follow Your Heart" 
+          className="w-full h-full object-contain"
+        />
       </motion.button>
 
       {/* 4-Tile Modal */}

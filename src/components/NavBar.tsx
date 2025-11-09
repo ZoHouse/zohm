@@ -1,6 +1,7 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
+import { GlowButton } from '@/components/ui';
 
 interface NavBarProps {
   onSectionChange: (section: 'events' | 'nodes' | 'quests') => void;
@@ -19,34 +20,38 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashb
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-      <div className="paper-nav max-w-lg mx-auto">
-        <nav className="flex items-center justify-around">
+      <div className="max-w-lg mx-auto bg-white/20 backdrop-blur-md border border-white/40 rounded-full shadow-lg p-2">
+        <nav className="flex items-center justify-around gap-2">
           {navItems.map(item => (
-            <button
+            <GlowButton
               key={item.id}
               onClick={() => onSectionChange(item.id)}
-              className={`paper-nav-item ${activeSection === item.id ? 'active' : ''}`}
+              variant={activeSection === item.id ? 'primary' : 'secondary'}
+              showDot={activeSection === item.id}
+              className="flex-1 text-sm"
             >
               {item.label}
-            </button>
+            </GlowButton>
           ))}
           
           {/* Dashboard Button */}
-          <button
+          <GlowButton
             onClick={onDashboardClick}
-            className="paper-nav-item"
+            variant="secondary"
+            className="flex-1 text-sm"
           >
             Dashboard
-          </button>
+          </GlowButton>
 
           {/* Logout (only when authenticated) */}
           {ready && authenticated && (
-            <button
+            <GlowButton
               onClick={logout}
-              className="paper-nav-item text-red-600"
+              variant="secondary"
+              className="flex-1 text-sm"
             >
               Logout
-            </button>
+            </GlowButton>
           )}
         </nav>
       </div>

@@ -8,6 +8,7 @@ import { updateUserProfile } from '@/lib/privyDb';
 // WalletOverlay moved to parent component level
 import { getAllCultures, getCultureDisplayName, getCultureIcon } from '@/lib/cultures';
 import { getUnicornForAddress } from '@/lib/unicornAvatars';
+import { GlowCard } from '@/components/ui';
 import {
     Copy,
     Check,
@@ -280,9 +281,9 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
     // Show loading state while profile is loading
     if (isLoadingProfile) {
         return (
-            <div className="flex flex-col space-y-6 p-6 paper-card h-full items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
-                <p className="text-lg text-center">Loading your profile...</p>
+            <div className="flex flex-col space-y-6 p-6 bg-white/20 backdrop-blur-md border border-white/40 rounded-3xl h-full items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff4d6d]"></div>
+                <p className="text-lg text-center text-black">Loading your profile...</p>
             </div>
         );
     }
@@ -293,159 +294,16 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
     return (
         <div className="flex flex-col space-y-6">
             {notification && (
-                <div className={`fixed top-5 right-5 p-3 paper-card z-[9999] ${notification.type === 'success' ? '' : ''}`}>
-                    <div className="flex items-center space-x-2">
+                <div className={`fixed top-5 right-5 p-4 bg-white/20 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg z-[9999] ${notification.type === 'success' ? 'border-green-500/40' : 'border-red-500/40'}`}>
+                    <div className="flex items-center space-x-2 text-black">
                         {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
                         <span>{notification.message}</span>
                     </div>
                 </div>
             )}
             
-            {/* White Leather Passport Card */}
-            <div className="relative bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl shadow-2xl overflow-hidden border-4 border-gray-400">
-                {/* Deep leather grain base - very visible crosshatch */}
-                <div className="absolute inset-0 opacity-90" style={{
-                    backgroundImage: `
-                        repeating-linear-gradient(
-                            0deg,
-                            transparent,
-                            transparent 1.5px,
-                            rgba(0,0,0,.08) 1.5px,
-                            rgba(0,0,0,.08) 3px
-                        ),
-                        repeating-linear-gradient(
-                            90deg,
-                            transparent,
-                            transparent 1.5px,
-                            rgba(0,0,0,.08) 1.5px,
-                            rgba(0,0,0,.08) 3px
-                        ),
-                        repeating-linear-gradient(
-                            45deg,
-                            transparent,
-                            transparent 6px,
-                            rgba(0,0,0,.05) 6px,
-                            rgba(0,0,0,.05) 12px
-                        ),
-                        repeating-linear-gradient(
-                            -45deg,
-                            transparent,
-                            transparent 6px,
-                            rgba(0,0,0,.05) 6px,
-                            rgba(0,0,0,.05) 12px
-                        )
-                    `,
-                    backgroundSize: '100% 100%, 100% 100%, 100% 100%, 100% 100%'
-                }}></div>
-                
-                {/* Prominent leather pores and wrinkles */}
-                <div className="absolute inset-0 opacity-85" style={{
-                    backgroundImage: `
-                        radial-gradient(
-                            circle at 15% 25%,
-                            rgba(0,0,0,.12) 0%,
-                            transparent 25%
-                        ),
-                        radial-gradient(
-                            circle at 85% 20%,
-                            rgba(0,0,0,.10) 0%,
-                            transparent 28%
-                        ),
-                        radial-gradient(
-                            circle at 25% 75%,
-                            rgba(0,0,0,.14) 0%,
-                            transparent 22%
-                        ),
-                        radial-gradient(
-                            circle at 75% 80%,
-                            rgba(0,0,0,.11) 0%,
-                            transparent 26%
-                        ),
-                        radial-gradient(
-                            circle at 50% 50%,
-                            rgba(0,0,0,.09) 0%,
-                            transparent 35%
-                        ),
-                        radial-gradient(
-                            circle at 40% 40%,
-                            rgba(0,0,0,.08) 0%,
-                            transparent 30%
-                        ),
-                        radial-gradient(
-                            circle at 60% 65%,
-                            rgba(0,0,0,.10) 0%,
-                            transparent 27%
-                        )
-                    `,
-                    backgroundSize: '180% 180%, 180% 180%, 180% 180%, 180% 180%, 250% 250%, 220% 220%, 200% 200%'
-                }}></div>
-                
-                {/* Heavy grain texture for deep leather feel */}
-                <div className="absolute inset-0 opacity-60" style={{
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'1.8\' numOctaves=\'6\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-                    backgroundSize: '120px 120px'
-                }}></div>
-                
-                {/* Stronger leather shine highlights */}
-                <div className="absolute inset-0 opacity-40" style={{
-                    backgroundImage: `
-                        radial-gradient(
-                            ellipse at 30% 20%,
-                            rgba(255,255,255,.9) 0%,
-                            transparent 45%
-                        ),
-                        radial-gradient(
-                            ellipse at 70% 60%,
-                            rgba(255,255,255,.7) 0%,
-                            transparent 40%
-                        ),
-                        radial-gradient(
-                            ellipse at 50% 85%,
-                            rgba(255,255,255,.5) 0%,
-                            transparent 35%
-                        )
-                    `,
-                    backgroundSize: '100% 100%'
-                }}></div>
-                
-                {/* Additional leather creases */}
-                <div className="absolute inset-0 opacity-70" style={{
-                    backgroundImage: `
-                        linear-gradient(
-                            95deg,
-                            transparent 0%,
-                            transparent 48%,
-                            rgba(0,0,0,.06) 49%,
-                            rgba(0,0,0,.06) 51%,
-                            transparent 52%,
-                            transparent 100%
-                        ),
-                        linear-gradient(
-                            175deg,
-                            transparent 0%,
-                            transparent 30%,
-                            rgba(0,0,0,.04) 31%,
-                            rgba(0,0,0,.04) 33%,
-                            transparent 34%,
-                            transparent 100%
-                        )
-                    `,
-                    backgroundSize: '100% 100%'
-                }}></div>
-                
-                {/* Engraved SF Bridge silhouette */}
-                <div 
-                    className="absolute inset-0 opacity-15" 
-                    style={{
-                        backgroundImage: 'url(/sfbridge.png)',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat',
-                        mixBlendMode: 'multiply',
-                        filter: 'grayscale(100%) contrast(1.5)'
-                    }}
-                ></div>
-                
+            {/* Passport Card */}
+            <GlowCard className="relative overflow-hidden">
                 <div className="relative p-8 flex flex-col items-center">
                     {/* Avatar with Rainbow Gradient Rings */}
                     <div className="relative mb-6 group mt-6">
@@ -501,17 +359,17 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                     {/* Name */}
                     <h2 className="text-3xl font-bold text-gray-900">{displayName || 'Unnamed User'}</h2>
                 </div>
-            </div>
+            </GlowCard>
 
             {/* Personal Info Section - List Style matching Zo-Zo app */}
             <div>
-                <h3 className="text-2xl font-bold mb-4">Personal Info</h3>
+                <h3 className="text-2xl font-bold mb-4 text-black">Personal Info</h3>
                 
-                <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                <GlowCard className="overflow-hidden">
                     {/* Full Name */}
                     <div 
                         onClick={() => setIsEditingName(true)}
-                        className="flex items-center px-4 py-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100"
+                        className="flex items-center px-4 py-4 hover:bg-white/10 cursor-pointer transition-colors border-b border-white/10"
                     >
                         <span className="text-2xl mr-3">🖋️</span>
                 <div className="flex-1">
@@ -521,7 +379,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                                 type="text"
                                 value={displayName}
                                 onChange={handleNameChange}
-                                        className="flex-1 paper-input"
+                                        className="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-gray-400 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-[#ff4d6d] focus:ring-2 focus:ring-[#ff4d6d]/50 transition-all"
                                         placeholder="Enter your name"
                                 autoFocus
                             />
@@ -531,8 +389,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                     </div>
                             ) : (
                                 <>
-                                    <span className="text-sm text-gray-600">Full name: </span>
-                                    <span className="text-base font-semibold">{displayName || ''}</span>
+                                    <span className="text-sm text-gray-700">Full name: </span>
+                                    <span className="text-base font-semibold text-black">{displayName || ''}</span>
                                 </>
                         )}
                      </div>
@@ -542,7 +400,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
             {/* Cultures */}
                     <div 
                         onClick={() => !isEditingCultures && setIsEditingCultures(true)}
-                        className="flex items-center px-4 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center px-4 py-4 hover:bg-white/10 cursor-pointer transition-colors"
                     >
                         <span className="text-2xl mr-3">🎨</span>
                         <div className="flex-1">
@@ -585,7 +443,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                                 </div>
                             ) : (
                                 <>
-                                    <span className="text-sm text-gray-600">Cultures: </span>
+                                    <span className="text-sm text-gray-700">Cultures: </span>
                                     <span className="text-base font-semibold">
                                         {cultures.length > 0 ? cultures.map(c => getCultureDisplayName(c)).join(', ') : ''}
                                     </span>
@@ -594,14 +452,14 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                         </div>
                         {!isEditingCultures && <ChevronRight size={20} className="text-gray-400" />}
                     </div>
-                </div>
+                </GlowCard>
             </div>
             
             {/* Connected Accounts Section */}
             <div className="mt-6">
-                <h3 className="text-2xl font-bold mb-4">Connected Accounts</h3>
+                <h3 className="text-2xl font-bold mb-4 text-black">Connected Accounts</h3>
                 
-                <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                <GlowCard className="overflow-hidden">
                     {/* Email */}
                     {(() => {
                         const emailAccount = userProfile?.auth_methods?.find(m => m.auth_type === 'email');
@@ -610,14 +468,14 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                         return (
                             <div 
                                 onClick={!hasEmail ? handleLinkEmail : undefined}
-                                className={`flex items-center px-4 py-4 transition-colors border-b border-gray-100 ${
-                                    !hasEmail ? 'hover:bg-purple-50 cursor-pointer' : 'hover:bg-gray-50'
+                                className={`flex items-center px-4 py-4 transition-colors border-b border-white/10 ${
+                                    !hasEmail ? 'hover:bg-white/10 cursor-pointer' : 'hover:bg-white/5'
                                 }`}
                             >
                                 <span className="text-2xl mr-3">✉️</span>
                                 <div className="flex-1">
-                                    <span className="text-sm text-gray-600">Email: </span>
-                                    <span className={`text-base font-semibold ${!hasEmail ? 'text-purple-600' : ''}`}>
+                                    <span className="text-sm text-gray-700">Email: </span>
+                                    <span className={`text-base font-semibold ${!hasEmail ? 'text-purple-600' : 'text-black'}`}>
                                         {emailAccount?.identifier || userProfile?.email || 'Not connected'}
                                     </span>
                                 </div>
@@ -645,14 +503,14 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                         return (
                             <div 
                                 onClick={!hasTwitter ? handleLinkTwitter : undefined}
-                                className={`flex items-center px-4 py-4 transition-colors border-b border-gray-100 ${
-                                    !hasTwitter ? 'hover:bg-purple-50 cursor-pointer' : 'hover:bg-gray-50'
+                                className={`flex items-center px-4 py-4 transition-colors border-b border-white/10 ${
+                                    !hasTwitter ? 'hover:bg-white/10 cursor-pointer' : 'hover:bg-white/5'
                                 }`}
                             >
                                 <span className="text-2xl mr-3">𝕏</span>
                                 <div className="flex-1">
-                                    <span className="text-sm text-gray-600">Twitter: </span>
-                                    <span className={`text-base font-semibold ${!hasTwitter ? 'text-purple-600' : ''}`}>
+                                    <span className="text-sm text-gray-700">Twitter: </span>
+                                    <span className={`text-base font-semibold ${!hasTwitter ? 'text-purple-600' : 'text-black'}`}>
                                         {twitterAuth 
                                             ? `@${twitterAuth.oauth_username || twitterAuth.identifier}` 
                                             : userProfile?.x_handle 
@@ -685,12 +543,12 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                         return (
                             <div 
                                 onClick={() => onOpenWallet?.()}
-                                className="flex items-center px-4 py-4 transition-colors hover:bg-gray-50 cursor-pointer"
+                                className="flex items-center px-4 py-4 transition-colors hover:bg-white/10 cursor-pointer"
                             >
                                 <span className="text-2xl mr-3">👛</span>
                                 <div className="flex-1">
-                                    <span className="text-sm text-gray-600">Wallets: </span>
-                                    <span className="text-base font-semibold">
+                                    <span className="text-sm text-gray-700">Wallets: </span>
+                                    <span className="text-base font-semibold text-black">
                                         {totalWallets} wallet{totalWallets !== 1 ? 's' : ''}
                                     </span>
                                     {externalWallets.length > 0 && (
@@ -703,7 +561,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                             </div>
                         );
                     })()}
-                </div>
+                </GlowCard>
             </div>
             
         </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import SimpleOnboarding from '@/components/SimpleOnboarding';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
+import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
@@ -30,6 +30,7 @@ export default function Home() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
+  const [questCount, setQuestCount] = useState(0);
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
@@ -148,6 +149,17 @@ export default function Home() {
       }
     };
     loadNodes();
+
+    const loadQuestsCount = async () => {
+      try {
+        const quests = await getQuests();
+        setQuestCount(Array.isArray(quests) ? quests.length : 0);
+      } catch (e) {
+        console.error('Error loading quests', e);
+        setQuestCount(0);
+      }
+    };
+    loadQuestsCount();
     
     // Temporary: Set a timeout to prevent infinite loading during development
     const timeoutId = setTimeout(() => {
@@ -351,6 +363,8 @@ export default function Home() {
       <>
         <MobileView
           events={events}
+          nodes={nodes}
+          questCount={questCount}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -366,6 +380,7 @@ export default function Home() {
       <DesktopView
         events={events}
         nodes={nodes}
+        questCount={questCount}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}

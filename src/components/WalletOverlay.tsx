@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Copy, Check, LinkIcon, Loader2, X } from 'lucide-react';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { usePrivy } from '@privy-io/react-auth';
 import { getUnicornForAddress } from '@/lib/unicornAvatars';
+import { GlowCard } from '@/components/ui';
+import { ethers } from 'ethers';
 
 interface WalletOverlayProps {
   isVisible: boolean;
@@ -18,7 +20,9 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [settingPrimaryFor, setSettingPrimaryFor] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const balance = 0; // Placeholder - will be connected to actual balance later
+  const [balance, setBalance] = useState<string>('0');
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [tokenSymbol, setTokenSymbol] = useState('$ZO');
 
   const allWallets = userProfile?.wallets || [];
   const embeddedWallets = allWallets.filter(w => w.is_embedded);
@@ -28,6 +32,59 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
     w.chain_type === 'ethereum' || w.chain_type === 'avalanche' || w.chain_type === 'polygon' || w.chain_type === 'base'
   );
   const solanaWallets = allWallets.filter(w => w.chain_type === 'solana');
+
+  // Fetch token balance when wallet overlay is visible and user has a wallet
+  useEffect(() => {
+    const fetchTokenBalance = async () => {
+      if (!isVisible || !primaryWalletAddress) {
+        return;
+      }
+
+      setIsLoadingBalance(true);
+      try {
+        // Token configuration
+        const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_CUSTOM_TOKEN_ADDRESS || '0x111142C7eCAF39797b7865b82034269962142069';
+        const RPC_URL = 'https://mainnet.base.org';
+        
+        // ERC-20 ABI for balanceOf, decimals, and symbol
+        const ERC20_ABI = [
+          'function balanceOf(address owner) view returns (uint256)',
+          'function decimals() view returns (uint8)',
+          'function symbol() view returns (string)'
+        ];
+
+        // Create provider and contract
+        const provider = new ethers.JsonRpcProvider(RPC_URL);
+        const tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, provider);
+
+        // Fetch balance, decimals, and symbol
+        const [balanceRaw, decimals, symbol] = await Promise.all([
+          tokenContract.balanceOf(primaryWalletAddress),
+          tokenContract.decimals(),
+          tokenContract.symbol()
+        ]);
+
+        // Format balance
+        const formattedBalance = ethers.formatUnits(balanceRaw, decimals);
+        const balanceNumber = parseFloat(formattedBalance);
+        
+        // Format to 2 decimal places if it's a large number, otherwise show more precision
+        const displayBalance = balanceNumber >= 1 
+          ? balanceNumber.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+          : balanceNumber.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 6 });
+
+        setBalance(displayBalance);
+        setTokenSymbol(symbol);
+      } catch (error) {
+        console.error('Error fetching token balance:', error);
+        setBalance('0');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    fetchTokenBalance();
+  }, [isVisible, primaryWalletAddress]);
 
   const handleLinkWallet = async () => {
     if (isLinkingWallet) return;
@@ -117,7 +174,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
               onClick={onClose}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors shadow-md flex-shrink-0"
             >
-              <ArrowLeft size={18} className="text-gray-900" />
+              <ArrowLeft size={18} className="text-black" />
             </button>
             
             {/* Profile Picture with Name - centered */}
@@ -130,7 +187,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                 />
               </div>
               <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-orange-600 whitespace-nowrap">
-                {userProfile?.name || 'User'}'s wallet
+                {userProfile?.name || 'User'}&apos;s wallet
               </span>
             </div>
             
@@ -149,23 +206,35 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
               
               {/* Balance Card */}
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-orange-400 rounded-3xl blur-xl opacity-50"></div>
-                <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border-4 border-white">
+                <GlowCard className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-gray-500 text-sm font-medium mb-1">Your Balance</div>
-                      <div className="text-gray-900 text-4xl font-black">{balance.toLocaleString()} 🦄</div>
+                    <div className="flex-1">
+                      <div className="text-gray-700 text-sm font-medium mb-1">Your Balance</div>
+                      {isLoadingBalance ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 size={32} className="animate-spin text-[#ff4d6d]" />
+                          <span className="text-gray-500 text-xl">Loading...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-black text-4xl font-black">{balance}</span>
+                          <img 
+                            src="/Coin 2Sec 1.gif" 
+                            alt={tokenSymbol} 
+                            className="w-12 h-12 object-contain"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                </GlowCard>
               </div>
 
               {/* Embedded Wallets Section */}
               {embeddedWallets.length > 0 && (
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-3xl blur-xl opacity-30"></div>
-                  <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-4 border-white">
-                    <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center">
+                  <GlowCard className="p-6">
+                    <h3 className="text-lg font-black text-black mb-4 flex items-center">
                       <span className="mr-2">✨</span> Embedded Wallets (Created by Privy)
                     </h3>
                     <div className="space-y-3">
@@ -214,15 +283,14 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </GlowCard>
                 </div>
               )}
 
               {/* External Wallets Section */}
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-3xl blur-xl opacity-30"></div>
-                <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-4 border-white">
-                  <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center justify-between">
+                <GlowCard className="p-6">
+                  <h3 className="text-lg font-black text-black mb-4 flex items-center justify-between">
                     <span className="flex items-center">
                       <span className="mr-2">👛</span> External Wallets
                     </span>
@@ -242,7 +310,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                   {externalWallets.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <p className="text-sm">No external wallets connected</p>
-                      <p className="text-xs mt-1">Click "Connect Wallet" to link Phantom, Solflare, MetaMask, etc.</p>
+                      <p className="text-xs mt-1">Click &quot;Connect Wallet&quot; to link Phantom, Solflare, MetaMask, etc.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -297,27 +365,25 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
                       ))}
                     </div>
                   )}
-                </div>
+                </GlowCard>
               </div>
 
               {/* Chain Summary */}
               <div className="grid grid-cols-2 gap-4">
                 {/* EVM Wallets */}
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-400 rounded-2xl blur-lg opacity-30"></div>
-                  <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-lg border-2 border-white text-center">
-                    <div className="text-2xl font-black text-gray-900">{evmWallets.length}</div>
+                  <GlowCard className="p-4 text-center">
+                    <div className="text-2xl font-black text-black">{evmWallets.length}</div>
                     <div className="text-xs text-gray-600 font-semibold">EVM Wallets</div>
-                  </div>
+                  </GlowCard>
                 </div>
                 
                 {/* Solana Wallets */}
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-2xl blur-lg opacity-30"></div>
-                  <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-lg border-2 border-white text-center">
-                    <div className="text-2xl font-black text-gray-900">{solanaWallets.length}</div>
+                  <GlowCard className="p-4 text-center">
+                    <div className="text-2xl font-black text-black">{solanaWallets.length}</div>
                     <div className="text-xs text-gray-600 font-semibold">Solana Wallets</div>
-                  </div>
+                  </GlowCard>
                 </div>
               </div>
 

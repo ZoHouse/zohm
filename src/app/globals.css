@@ -17,6 +17,16 @@
   --paper-ink: #1a1a1a;
   --paper-stroke: #333;
   --paper-font: 'Comic Neue', 'Comic Sans MS', cursive;
+
+  /* Glow UI Design System - Capsule Language */
+  --glow-chip-bg: rgba(255, 255, 255, 0.20);
+  --glow-chip-border: rgba(255, 255, 255, 0.40);
+  --glow-chip-text: #ff4d6d;
+  --glow-chip-dot: #ff4d6d;
+  --glow-chip-dot-shadow: 0 0 10px rgba(255, 77, 109, 0.6);
+  --glow-chip-radius: 9999px; /* full rounded */
+  --glow-chip-font-weight: 600;
+  --glow-chip-letter-spacing: 0.02em;
 }
 
 

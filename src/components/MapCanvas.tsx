@@ -869,6 +869,12 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
             .setLngLat(coords)
             .addTo(map.current!);
 
+          // Set high z-index to ensure user marker is always on top
+          const userMarkerEl = userMarker.getElement();
+          if (userMarkerEl) {
+            userMarkerEl.style.zIndex = '10000'; // Higher than all other markers
+          }
+
           // Store marker reference
           userLocationMarker.current = userMarker;
 

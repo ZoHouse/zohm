@@ -18,7 +18,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode'>('all');
 
   useEffect(() => {
     const loadNodes = async () => {
@@ -43,12 +43,13 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
     )
   );
 
-  const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
+  const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
     switch (type) {
       case 'hacker_space': return '⚡';
       case 'culture_house': return '🏠';
       case 'schelling_point': return '🎯';
       case 'flo_zone': return '🧭';
+      case 'staynode': return '🛏️';
       case 'house': return '🏠';
       case 'collective': return '🌐';
       case 'protocol': return '⚡';
@@ -91,7 +92,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
           >
             All
           </button>
-          {(['hacker_space','culture_house','schelling_point','flo_zone'] as const).map(type => (
+          {(['hacker_space','culture_house','schelling_point','flo_zone','staynode'] as const).map(type => (
             <button
               key={type}
               onClick={() => setActiveFilter(type)}
@@ -101,7 +102,8 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
                 type === 'hacker_space' ? 'Hacker' :
                 type === 'culture_house' ? 'Culture' :
                 type === 'schelling_point' ? 'Schelling' :
-                type === 'flo_zone' ? 'Flo' : type
+                type === 'flo_zone' ? 'Flo' :
+                type === 'staynode' ? 'Stay' : type
               )}
             </button>
           ))}

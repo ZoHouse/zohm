@@ -81,19 +81,6 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         />
       </div>
 
-      {/* $Unicorn Launch Button */}
-      <div className="absolute top-4 sm:top-10 left-4 z-20">
-        <a
-          href="https://unicornsf.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-2 border-white"
-        >
-          <span className="text-lg mr-2">🦄</span>
-          <span className="text-sm sm:text-base">$Unicorn</span>
-        </a>
-      </div>
-
       {/* Right-side Overlays */}
       <EventsOverlay 
         isVisible={activeSection === 'events'} 

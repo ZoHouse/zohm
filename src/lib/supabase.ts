@@ -279,7 +279,7 @@ CREATE INDEX IF NOT EXISTS idx_members_location ON members(lat, lng);
 `; 
 
 // Nodes schema and helpers
-export type NodeType = 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone';
+export type NodeType = 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode';
 export type NodeStatus = 'active' | 'developing' | 'planning';
 
 export interface PartnerNodeRecord {
@@ -303,7 +303,7 @@ export const createNodesTableSQL = `
 create table if not exists nodes (
   id text primary key,
   name text not null,
-  type text not null check (type in ('hacker_space','culture_house','schelling_point','flo_zone')),
+  type text not null check (type in ('hacker_space','culture_house','schelling_point','flo_zone','staynode')),
   description text not null,
   city text not null,
   country text not null,

@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProfileSetup from '@/components/ProfileSetup';
-import MacProfileSetup from '@/components/mac/MacProfileSetup';
+import SimpleOnboarding from '@/components/SimpleOnboarding';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import PWAInstaller from '@/components/PWAInstaller';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord } from '@/lib/supabase';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -33,7 +31,6 @@ export default function Home() {
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
 
-  const [showRitual, setShowRitual] = useState(false);
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
   // Hooks
@@ -244,7 +241,6 @@ export default function Home() {
   // Handle ritual completion
   const handleRitualComplete = () => {
     console.log('✅ Ritual completed! Welcome to Zo World...');
-    setShowRitual(false);
     console.log('✅ Profile setup completed');
     
     // Update the profile status to indicate user now has a profile
@@ -293,7 +289,7 @@ export default function Home() {
 
   // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
   // Must wait for privyLoading to be false (wallet creation complete)
-  const shouldShowOnboarding = privyReady && !privyLoading && (showRitual || (privyAuthenticated && userProfileStatus === 'not_exists'));
+  const shouldShowOnboarding = privyReady && !privyLoading && (privyAuthenticated && userProfileStatus === 'not_exists');
     
   if (shouldShowOnboarding) {
     console.log('🎭 Showing onboarding screen', {
@@ -303,7 +299,7 @@ export default function Home() {
       userProfileStatus,
       hasProfile: !!privyUserProfile
     });
-    
+
     // Wait for isMobile to be ready before deciding which onboarding to show
     if (!isMobileReady) {
       return (
@@ -315,17 +311,12 @@ export default function Home() {
         </div>
       );
     }
-    
-    // Use Mac-style onboarding for both mobile and desktop (now responsive)
+
     return (
-      <div className="fixed inset-0 bg-black z-[9999]">
-        <MacProfileSetup
-          isVisible={true}
-          onComplete={handleRitualComplete}
-          onClose={() => setShowRitual(false)}
-          onOpenDashboard={() => setIsDashboardOpen(true)}
-        />
-      </div>
+      <SimpleOnboarding
+        isVisible={true}
+        onComplete={handleRitualComplete}
+      />
     );
   }
 
@@ -381,7 +372,6 @@ export default function Home() {
         onEventClick={handleEventClick}
         onNodeClick={handleNodeClick}
       />
-      <PWAInstaller />
     </>
   );
 }

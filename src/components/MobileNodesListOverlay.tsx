@@ -36,6 +36,7 @@ const MobileNodesListOverlay: React.FC<MobileNodesListOverlayProps> = ({
       case 'culture_house': return '🏠';
       case 'schelling_point': return '🎯';
       case 'flo_zone': return '🧭';
+      case 'staynode': return '🛏️';
       default: return '🔗';
     }
   };

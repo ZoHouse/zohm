@@ -17,6 +17,7 @@ export type NodeType =
   | '420'
   | 'showcase'
   | 'culture_house'
+  | 'staynode'
   | 'hacker_house'
   | 'founder_house'
   // Legacy types (for backward compatibility)
@@ -47,6 +48,7 @@ export const getNodeTypeIcon = (type: string): string => {
     '420': '🌿',
     'showcase': '✨',
     'culture_house': '🏛️',
+    'staynode': '🛏️',
     'hacker_house': '⚡',
     'founder_house': '🏰',
     
@@ -81,6 +83,7 @@ export const getNodeTypeDisplayName = (type: string): string => {
     '420': '420',
     'showcase': 'Showcase',
     'culture_house': 'Culture House',
+    'staynode': 'Stay Node',
     'hacker_house': 'Hacker House',
     'founder_house': 'Founder House',
     
@@ -101,7 +104,7 @@ export const getNodeTypeDisplayName = (type: string): string => {
  * Check if a node type uses an image icon (vs emoji)
  * Currently all node types use emoji, but keeping this for future extensibility
  */
-export const isImageIcon = (type: string): boolean => {
+export const isImageIcon = (): boolean => {
   return false; // All nodes use emoji icons for now
 };
 
@@ -123,6 +126,7 @@ export const getNodeTypeColor = (type: string): string => {
     '420': '#84cc16', // lime
     'showcase': '#f97316', // orange
     'culture_house': '#8b5cf6', // violet
+    'staynode': '#fbbf24', // amber
     'hacker_house': '#3b82f6', // blue
     'founder_house': '#ec4899', // pink
     
@@ -157,6 +161,7 @@ export const getAllNodeTypes = (): NodeType[] => {
     '420',
     'showcase',
     'culture_house',
+    'staynode',
     'hacker_house',
     'founder_house',
   ];

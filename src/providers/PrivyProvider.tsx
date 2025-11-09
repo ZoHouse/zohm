@@ -22,9 +22,9 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#a855f7',
           },
           embeddedWallets: {
-            createOnLogin: 'users-without-wallets' as const,
+            createOnLogin: 'users-without-wallets',
           },
-        }}
+        } as any}
       >
         {children}
       </BasePrivyProvider>

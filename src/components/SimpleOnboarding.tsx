@@ -60,6 +60,19 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showCultureDropdown, setShowCultureDropdown] = useState(false);
 
+  // useEffect MUST be called before any early returns (Rules of Hooks)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowCityDropdown(false);
+        setShowCultureDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   if (!isVisible || !privyAuthenticated || !privyUser) return null;
 
   const filteredCities = citySearch
@@ -146,18 +159,6 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
       );
     }
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container')) {
-        setShowCityDropdown(false);
-        setShowCultureDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <div

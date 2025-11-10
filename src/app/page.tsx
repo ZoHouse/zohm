@@ -393,7 +393,7 @@ export default function Home() {
     
     console.log('🎉 Onboarding complete!', { name, culture, city, location });
     
-    // 🎯 Store ALL data in state IMMEDIATELY in ONE batch update
+    // 🎯 Store location data in state
     setOnboardingLocation(location && location.lat && location.lng ? location : null);
     setIsTransitioningFromOnboarding(true);
     
@@ -407,9 +407,6 @@ export default function Home() {
           lng: location.lng
         };
       }
-      
-      // Enable animation flag
-      setShouldAnimateFromSpace(true);
     }
     
     // 💾 Save profile to database in background (non-blocking)
@@ -439,17 +436,35 @@ export default function Home() {
       }
     }, 100);
     
-    // ⏱️ Wait 3 seconds on onboarding screen (astronaut visible)
-    console.log('⏱️ Waiting 3 seconds...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // ⏱️ Wait 1.5 seconds on onboarding screen (astronaut flies up)
+    console.log('⏱️ Waiting 1.5 seconds for astronaut animation...');
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // 🚀 Single atomic state update - no flashes
-    console.log('🎬 Transitioning to map NOW');
+    // 🚀 Set animation flag FIRST, in isolation
+    if (location?.lat && location?.lng) {
+      console.log('🚀 Step 1: Setting shouldAnimateFromSpace = true');
+      setShouldAnimateFromSpace(true);
+      
+      // Wait for state to propagate
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    // ❗ Set loading false
+    console.log('🎯 Step 2: Setting isLoading = false');
+    setIsLoading(false);
+    
+    // Wait again
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 🗺️ Show map LAST (after animation flag is definitely set)
+    console.log('🗺️ Step 3: Setting userProfileStatus = exists (map will render)');
     setUserProfileStatus('exists');
+    
+    console.log('✅ All steps complete - shouldAnimateFromSpace should be true when map renders');
   };
 
-  // Show loading screen while Privy initializes
-  if (!privyReady || privyLoading) {
+  // Show loading screen while Privy initializes - SKIP during onboarding transition
+  if ((!privyReady || privyLoading) && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -487,7 +502,7 @@ export default function Home() {
   }
 
   // Only render main app if user has completed onboarding
-  if (userProfileStatus !== 'exists') {
+  if (userProfileStatus !== 'exists' && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -499,7 +514,6 @@ export default function Home() {
   }
 
   // Wait for mobile detection ONLY if not transitioning from onboarding
-  // (When transitioning from onboarding, isMobileReady is already true - skip this check to prevent flash)
   if (!isMobileReady && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">

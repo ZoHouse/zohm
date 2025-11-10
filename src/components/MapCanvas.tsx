@@ -712,24 +712,55 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      // 🚀 Start from outer space if animation is requested
-      const initialZoom = shouldAnimateFromSpace ? 0 : (isMobile() ? 17.5 : 17); // 🦄 Zoomed in to see 3D buildings
-      const initialPitch = shouldAnimateFromSpace ? 0 : (isMobile() ? 65 : 65); // 🦄 Tilted for dramatic 3D view
+      // 🎯 SIMPLE LOGIC:
+      // - shouldAnimateFromSpace = true → Start at zoom 0 (will animate)
+      // - Has location + NO animation → Start at zoom 17 (returning user)
+      // - No location → Start at zoom 0 (space view, no specific location)
       
-      // Use user location as center if available
-      // If shouldAnimateFromSpace is true, we MUST have a location - don't fall back to San Francisco
-      const initialCenter: [number, number] = userLocation?.lat && userLocation?.lng 
-        ? [userLocation.lng, userLocation.lat]
-        : (shouldAnimateFromSpace ? [0, 0] : DEFAULT_CENTER); // Use [0,0] if animating without location (will be replaced)
+      const hasUserLocation = userLocation?.lat && userLocation?.lng;
       
-      console.log('🗺️ Map initializing with center:', initialCenter, 'userLocation:', userLocation, 'shouldAnimateFromSpace:', shouldAnimateFromSpace);
+      let initialZoom: number;
+      let initialPitch: number;
+      let initialBearing: number;
+      let initialCenter: [number, number];
+      
+      if (shouldAnimateFromSpace) {
+        // Animation requested: Start from space at user location
+        initialZoom = 0;
+        initialPitch = 0;
+        initialBearing = 0;
+        initialCenter = hasUserLocation ? [userLocation.lng, userLocation.lat] : [0, 0];
+        console.log('🚀 Starting from space (will animate to:', initialCenter, ')');
+      } else if (hasUserLocation) {
+        // Returning user with location: Start at street level
+        initialZoom = isMobile() ? 17.5 : 17;
+        initialPitch = isMobile() ? 65 : 65;
+        initialBearing = -30;
+        initialCenter = [userLocation.lng, userLocation.lat];
+        console.log('🏠 Returning user: Starting at street level:', initialCenter);
+      } else {
+        // No location: Show space view at neutral position (zoom 0)
+        initialZoom = 0;
+        initialPitch = 0;
+        initialBearing = 0;
+        initialCenter = [0, 0]; // Neutral center, zoom 0 shows whole world
+        console.log('🌌 No location: Starting at space view (0, 0)');
+      }
+      
+      console.log('🗺️ Map initializing:', {
+        center: initialCenter,
+        zoom: initialZoom,
+        pitch: initialPitch,
+        hasUserLocation,
+        shouldAnimateFromSpace
+      });
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         center: initialCenter,
         zoom: initialZoom,
         pitch: initialPitch,
-        bearing: shouldAnimateFromSpace ? 0 : -30,
+        bearing: initialBearing,
         style: 'mapbox://styles/mapbox/standard'
       });
 
@@ -875,13 +906,19 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       });
       
       if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
-        console.log('🚀 Flying from outer space to user location NOW');
+        console.log('🚀🚀🚀 STARTING SPACE-TO-LOCATION ANIMATION 🚀🚀🚀');
+        console.log('📍 Target:', coords);
+        console.log('🎯 Duration: 8 seconds');
         hasAnimatedFromSpace.current = true;
         
         // Start animation on next frame to ensure map is fully initialized
         requestAnimationFrame(() => {
-          if (!map.current) return;
+          if (!map.current) {
+            console.error('❌ Map not available for animation!');
+            return;
+          }
           
+          console.log('✈️ Executing flyTo animation...');
           map.current.flyTo({
             center: coords,
             zoom: isMobile() ? 17.5 : 17,
@@ -894,10 +931,18 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
             }
           });
+          console.log('🎬 Animation started successfully!');
         });
       } else {
-        // Normal update without animation
-        map.current.setCenter(coords);
+        console.log('⏭️ Skipping animation:', {
+          shouldAnimateFromSpace,
+          hasAnimatedFromSpace: hasAnimatedFromSpace.current,
+          reason: !shouldAnimateFromSpace ? 'Flag not set' : 'Already animated'
+        });
+        // Normal update without animation - do nothing if animating
+        if (!shouldAnimateFromSpace) {
+          map.current.setCenter(coords);
+        }
       }
 
       // 🦄 Remove old user location marker if it exists
@@ -1009,6 +1054,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Initialize map on component mount
   useEffect(() => {
+    console.log('🎬 MapCanvas component mounting/updating with props:', {
+      shouldAnimateFromSpace,
+      hasUserLocation: !!(userLocation?.lat && userLocation?.lng),
+      userLocation
+    });
+    
     initializeMap();
 
     return () => {

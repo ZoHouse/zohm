@@ -112,14 +112,6 @@ const DesktopView: React.FC<DesktopViewProps> = ({
             alt="Zo House Events Calendar" 
             className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
           />
-          <div className="mt-3 inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-[#ff4d6d] text-sm font-semibold shadow-lg">
-            <span className="inline-flex items-center justify-center w-2.5 h-2.5 rounded-full bg-[#ff4d6d] shadow-[0_0_10px_rgba(255,77,109,0.6)]"></span>
-            <span>{events.length} Events</span>
-            <span className="opacity-70">•</span>
-            <span>{nodes.length} Nodes</span>
-            <span className="opacity-70">•</span>
-            <span>{questCount} Quests</span>
-          </div>
         </div>
       )}
 

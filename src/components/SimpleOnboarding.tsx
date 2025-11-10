@@ -164,7 +164,7 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
     <div
       className="fixed inset-0 bg-black flex items-center justify-center z-[9999] p-4"
       style={{
-        backgroundImage: "url('/assets/loading background.gif')",
+        backgroundImage: "url('/loading%20background.gif')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

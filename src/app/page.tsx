@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import SimpleOnboarding from '@/components/SimpleOnboarding';
+import LandingPage from '@/components/LandingPage';
+import OnboardingPage from '@/components/OnboardingPage';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
@@ -259,6 +261,33 @@ export default function Home() {
     setUserProfileStatus('exists');
   };
 
+  // Handle onboarding complete from new OnboardingPage
+  const handleOnboardingComplete = async (
+    answers: string[], 
+    location?: { lat: number; lng: number }
+  ) => {
+    const [name, culture, city] = answers;
+    
+    console.log('🎉 Onboarding complete!', { name, culture, city, location });
+    
+    try {
+      // Use existing upsertUserFromPrivy with new data
+      const { upsertUserFromPrivy } = await import('@/lib/privyDb');
+      
+      await upsertUserFromPrivy(privyUser!, {
+        name: name.trim(),
+        culture,
+        lat: location?.lat || 0,
+        lng: location?.lng || 0,
+      });
+      
+      console.log('✅ Profile saved successfully!');
+      setUserProfileStatus('exists');
+    } catch (error) {
+      console.error('❌ Error saving profile:', error);
+    }
+  };
+
   // Show loading screen while Privy initializes
   if (!privyReady || privyLoading) {
     return (
@@ -271,32 +300,9 @@ export default function Home() {
     );
   }
 
-  // Show RED PILL screen if not authenticated
+  // Show LandingPage if not authenticated
   if (!privyAuthenticated) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[1000]">
-        <div className="text-center text-white max-w-lg mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4">
-              You are about to enter<br />
-              a new world order.
-            </h1>
-          </div>
-          
-          {/* Red Pill Button - Triggers Privy Login */}
-          <button 
-            onClick={privyLogin}
-            className="red-pill-button"
-          >
-            Take the Red Pill
-          </button>
-          
-          <p className="text-gray-400 text-sm mt-6">
-            Sign in with Twitter or connect wallet
-          </p>
-        </div>
-      </div>
-    );
+    return <LandingPage onConnect={privyLogin} />;
   }
 
   // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
@@ -325,9 +331,19 @@ export default function Home() {
     }
 
     return (
-      <SimpleOnboarding
-        isVisible={true}
-        onComplete={handleRitualComplete}
+      <OnboardingPage
+        onComplete={handleOnboardingComplete}
+        onNavigateToHome={() => setUserProfileStatus('exists')}
+        getAccessToken={async () => {
+          try {
+            const { usePrivy } = await import('@privy-io/react-auth');
+            // Note: This is a workaround - in practice, getAccessToken will be available from the hook
+            // For now, we return null and the OnboardingPage will handle it
+            return null;
+          } catch {
+            return null;
+          }
+        }}
       />
     );
   }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import LandingPage from '@/components/LandingPage';
-import OnboardingPage from '@/components/OnboardingPage';
+import SimpleOnboarding from '@/components/SimpleOnboarding';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
@@ -384,83 +384,36 @@ export default function Home() {
     setUserProfileStatus('exists');
   };
 
-  // Handle onboarding complete from new OnboardingPage
-  const handleOnboardingComplete = async (
-    answers: string[], 
-    location?: { lat: number; lng: number }
-  ) => {
-    const [name, culture, city] = answers;
+  // Handle onboarding complete from SimpleOnboarding
+  const handleOnboardingComplete = async () => {
+    console.log('🎉 Simple onboarding complete!');
     
-    console.log('🎉 Onboarding complete!', { name, culture, city, location });
-    
-    // 🎯 Store location data in state
-    setOnboardingLocation(location && location.lat && location.lng ? location : null);
+    // SimpleOnboarding already saved to DB with location
     setIsTransitioningFromOnboarding(true);
     
-    if (location?.lat && location?.lng) {
-      console.log('📍 Location stored:', location);
-      
-      // Store in window for MapCanvas
-      if (typeof window !== 'undefined') {
-        (window as any).userLocationCoords = {
-          lat: location.lat,
-          lng: location.lng
-        };
-      }
-    }
-    
-    // 💾 Save profile to database in background (non-blocking)
-    setTimeout(async () => {
-      try {
-        const { upsertUserFromPrivy } = await import('@/lib/privyDb');
-        
-        const profileUpdate: any = {
-          name: name.trim(),
-          culture,
-          city: city || 'Unknown',
-          onboarding_completed: true,
-        };
-        
-        if (location?.lat && location?.lng) {
-          profileUpdate.lat = location.lat;
-          profileUpdate.lng = location.lng;
-        }
-        
-        await upsertUserFromPrivy(privyUser!, profileUpdate);
-        console.log('✅ Profile saved (background)');
-        
-        await reloadProfile();
-        console.log('🔄 Profile reloaded (background)');
-      } catch (error) {
-        console.error('❌ Error saving profile:', error);
-      }
-    }, 100);
-    
-    // ⏱️ Wait 1.5 seconds on onboarding screen (astronaut flies up)
-    console.log('⏱️ Waiting 1.5 seconds for astronaut animation...');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 🚀 Set animation flag FIRST, in isolation
-    if (location?.lat && location?.lng) {
-      console.log('🚀 Step 1: Setting shouldAnimateFromSpace = true');
-      setShouldAnimateFromSpace(true);
-      
-      // Wait for state to propagate
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-    
-    // ❗ Set loading false
-    console.log('🎯 Step 2: Setting isLoading = false');
+    // ❗ Set isLoading to false immediately
+    console.log('🎯 Setting isLoading = false');
     setIsLoading(false);
     
-    // Wait again
+    // Wait a bit for DB save to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Reload profile to get the saved location
+    console.log('🔄 Reloading profile...');
+    await reloadProfile();
+    
+    // Wait for state to update
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // 🚀 Enable animation flag
+    console.log('🚀 Enabling space-to-location animation');
+    setShouldAnimateFromSpace(true);
+    
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // 🗺️ Show map LAST (after animation flag is definitely set)
-    console.log('🗺️ Step 3: Setting userProfileStatus = exists (map will render)');
+    // 🗺️ Show map
+    console.log('🗺️ Showing map at zoom 0');
     setUserProfileStatus('exists');
-    
-    console.log('✅ All steps complete - shouldAnimateFromSpace should be true when map renders');
   };
 
   // Show loading screen while Privy initializes - SKIP during onboarding transition
@@ -484,19 +437,11 @@ export default function Home() {
   const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
     
   if (shouldShowOnboarding) {
-    // Return onboarding immediately - no loading screens
+    // Return simple onboarding immediately - no loading screens, no animations
     return (
-      <OnboardingPage
+      <SimpleOnboarding
+        isVisible={true}
         onComplete={handleOnboardingComplete}
-        onNavigateToHome={() => setUserProfileStatus('exists')}
-        getAccessToken={async () => {
-          try {
-            const { usePrivy } = await import('@privy-io/react-auth');
-            return null;
-          } catch {
-            return null;
-          }
-        }}
       />
     );
   }

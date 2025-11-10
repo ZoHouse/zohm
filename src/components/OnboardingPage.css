@@ -101,8 +101,8 @@
 @media (max-width: 480px) {
   .landing-bro-svg {
     bottom: 10%;
-    width: clamp(60px, 25vw, 140px);
-    height: clamp(54px, 22vw, 125px);
+    width: clamp(50px, 18vw, 100px);
+    height: clamp(45px, 16vw, 89px);
   }
 }
 
@@ -413,8 +413,8 @@
 
 @media (max-width: 480px) {
   .astronaut-with-question .landing-bro-svg {
-    width: clamp(60px, 25vw, 140px) !important;
-    height: clamp(54px, 22vw, 125px) !important;
+    width: clamp(50px, 18vw, 100px) !important;
+    height: clamp(45px, 16vw, 89px) !important;
   }
 }
 
@@ -909,8 +909,8 @@
   }
   
   .astronaut-with-question .landing-bro-svg {
-    width: clamp(60px, 15vw, 120px) !important;
-    height: clamp(54px, 13vw, 107px) !important;
+    width: clamp(50px, 12vw, 90px) !important;
+    height: clamp(45px, 11vw, 80px) !important;
   }
   
   .question-bubble::before {

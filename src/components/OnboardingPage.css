@@ -84,8 +84,8 @@
   left: 50%;
   transform: translateX(-50%);
   display: block;
-  width: clamp(150px, 31.25vw, 450px);
-  height: clamp(134px, 27.78vw, 400px);
+  width: clamp(100px, 20vw, 250px);
+  height: clamp(89px, 18vw, 223px);
   object-fit: contain;
   z-index: 10;
 }
@@ -93,16 +93,16 @@
 @media (max-width: 768px) {
   .landing-bro-svg {
     bottom: 15%;
-    width: clamp(120px, 40vw, 300px);
-    height: clamp(107px, 36vw, 267px);
+    width: clamp(80px, 20vw, 180px);
+    height: clamp(71px, 18vw, 160px);
   }
 }
 
 @media (max-width: 480px) {
   .landing-bro-svg {
     bottom: 10%;
-    width: clamp(100px, 50vw, 250px);
-    height: clamp(89px, 45vw, 223px);
+    width: clamp(60px, 25vw, 140px);
+    height: clamp(54px, 22vw, 125px);
   }
 }
 
@@ -399,22 +399,22 @@
   left: auto !important;
   transform: none !important;
   animation: none !important;
-  width: clamp(120px, 20vw, 300px) !important;
-  height: clamp(107px, 18vw, 270px) !important;
+  width: clamp(100px, 20vw, 250px) !important;
+  height: clamp(89px, 18vw, 223px) !important;
   flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .astronaut-with-question .landing-bro-svg {
-    width: clamp(100px, 25vw, 200px) !important;
-    height: clamp(89px, 22vw, 178px) !important;
+    width: clamp(80px, 20vw, 180px) !important;
+    height: clamp(71px, 18vw, 160px) !important;
   }
 }
 
 @media (max-width: 480px) {
   .astronaut-with-question .landing-bro-svg {
-    width: clamp(80px, 30vw, 150px) !important;
-    height: clamp(71px, 27vw, 134px) !important;
+    width: clamp(60px, 25vw, 140px) !important;
+    height: clamp(54px, 22vw, 125px) !important;
   }
 }
 
@@ -909,8 +909,8 @@
   }
   
   .astronaut-with-question .landing-bro-svg {
-    width: clamp(80px, 15vw, 150px) !important;
-    height: clamp(71px, 13vw, 134px) !important;
+    width: clamp(60px, 15vw, 120px) !important;
+    height: clamp(54px, 13vw, 107px) !important;
   }
   
   .question-bubble::before {

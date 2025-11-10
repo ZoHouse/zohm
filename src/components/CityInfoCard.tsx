@@ -99,19 +99,19 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
       <div className="bg-white/20 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg px-4 py-3 sm:px-6 sm:py-4">
         {/* City Name & Time */}
         <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-          <h1 className="text-xl sm:text-3xl font-bold text-white">{city}</h1>
-          <div className="flex items-center gap-1 text-xs sm:text-sm text-white/90">
+          <h1 className="text-xl sm:text-3xl font-bold text-black">{city}</h1>
+          <div className="flex items-center gap-1 text-xs sm:text-sm text-black/90">
             <span>☀️</span>
             <span className="font-mono">{cityTime} GMT{cityGmtOffset}</span>
           </div>
         </div>
 
         {/* City Description */}
-        <p className="text-xs sm:text-base text-white/90 mb-1">{cityDescription}</p>
+        <p className="text-xs sm:text-base text-black/90 mb-1">{cityDescription}</p>
 
         {/* Local Time */}
         {cityTimezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && (
-          <p className="text-[10px] sm:text-xs text-white/70">
+          <p className="text-[10px] sm:text-xs text-black/70">
             Local Time: {localTime} GMT{localGmtOffset}
           </p>
         )}

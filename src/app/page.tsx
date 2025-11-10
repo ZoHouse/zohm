@@ -50,7 +50,8 @@ export default function Home() {
     isLoading: privyLoading,
     privyUser,
     login: privyLogin,
-    privyReady
+    privyReady,
+    reloadProfile
   } = usePrivyUser();
 
   // Get user's home location for distance calculations (before any conditional returns)
@@ -261,6 +262,12 @@ export default function Home() {
 
   // Enable space animation when user completes onboarding or returns
   useEffect(() => {
+    console.log('🎬 Animation check:', {
+      privyOnboardingComplete,
+      userProfileStatus,
+      shouldTrigger: privyOnboardingComplete && userProfileStatus === 'exists'
+    });
+    
     if (privyOnboardingComplete && userProfileStatus === 'exists') {
       console.log('🚀 Enabling space-to-location animation');
       setShouldAnimateFromSpace(true);
@@ -410,11 +417,19 @@ export default function Home() {
       await upsertUserFromPrivy(privyUser!, profileUpdate);
       
       console.log('✅ Profile saved successfully!');
+      
+      // Reload profile to update hasCompletedOnboarding flag
+      await reloadProfile();
+      console.log('🔄 Profile reloaded');
+      
       setUserProfileStatus('exists');
       
       // Enable space animation if we have location
       if (location?.lat && location?.lng) {
+        console.log('🚀 Enabling space animation (location from onboarding)');
         setShouldAnimateFromSpace(true);
+      } else {
+        console.log('⏳ Will enable space animation when MapCanvas obtains location');
       }
     } catch (error) {
       console.error('❌ Error saving profile:', error);

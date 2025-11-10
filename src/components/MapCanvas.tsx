@@ -1003,10 +1003,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Handle animation when shouldAnimateFromSpace prop changes (race condition fix)
   useEffect(() => {
+    console.log('🎬 Animation prop effect:', {
+      shouldAnimateFromSpace,
+      hasAnimatedFromSpace: hasAnimatedFromSpace.current,
+      hasMap: !!map.current,
+      hasUserMarker: !!userLocationMarker.current
+    });
+    
     if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current && map.current && userLocationMarker.current) {
       // If location was already obtained before animation flag was set, animate now
       const userCoords = userLocationMarker.current.getLngLat();
-      console.log('🚀 Animation flag changed - flying from space to existing location');
+      console.log('🚀 Animation flag changed - flying from space to existing location:', userCoords);
       hasAnimatedFromSpace.current = true;
       
       map.current.flyTo({
@@ -1020,6 +1027,10 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         }
       });
+    } else if (shouldAnimateFromSpace && hasAnimatedFromSpace.current) {
+      console.log('⏭️ Animation already played this session');
+    } else if (shouldAnimateFromSpace && !userLocationMarker.current) {
+      console.log('⏳ Animation flag set but waiting for user location marker...');
     }
   }, [shouldAnimateFromSpace]);
 

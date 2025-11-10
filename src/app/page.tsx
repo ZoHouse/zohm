@@ -39,6 +39,9 @@ export default function Home() {
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
+  // Temporary location state for immediate onboarding transition
+  const [onboardingLocation, setOnboardingLocation] = useState<{ lat: number; lng: number } | null>(null);
+  
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
   
@@ -55,8 +58,9 @@ export default function Home() {
   } = usePrivyUser();
 
   // Get user's home location for distance calculations (before any conditional returns)
-  const userHomeLat = privyUserProfile?.lat || null;
-  const userHomeLng = privyUserProfile?.lng || null;
+  // Priority: onboarding location (immediate) > profile location (persisted)
+  const userHomeLat = onboardingLocation?.lat || privyUserProfile?.lat || null;
+  const userHomeLng = onboardingLocation?.lng || privyUserProfile?.lng || null;
 
   // Local radius in kilometers
   const LOCAL_RADIUS_KM = 100;
@@ -274,44 +278,37 @@ export default function Home() {
     }
   }, [privyOnboardingComplete, userProfileStatus]);
 
-  // Auto-save location from MapCanvas to user profile
+  // Auto-save location from MapCanvas to user profile (for returning users without location)
   useEffect(() => {
     if (userProfileStatus !== 'exists' || !privyUser?.id || !privyUserProfile) return;
     
-    // Check if MapCanvas has obtained location (stored in window)
+    // Only do this for returning users who don't have location yet
+    if (privyUserProfile.lat && privyUserProfile.lng) return;
+    
     const checkAndSaveLocation = async () => {
       if (typeof window === 'undefined') return;
       
       const windowCoords = (window as any).userLocationCoords;
       if (!windowCoords?.lat || !windowCoords?.lng) return;
       
-      // If user profile doesn't have location yet, save it
-      if (!privyUserProfile.lat || !privyUserProfile.lng) {
-        console.log('💾 Saving MapCanvas location to user profile...');
-        try {
-          const { updateUserProfile } = await import('@/lib/privyDb');
-          await updateUserProfile(privyUser.id, {
-            lat: windowCoords.lat,
-            lng: windowCoords.lng,
-          });
-          console.log('✅ Location saved to profile');
-          
-          // Enable space animation immediately
-          setShouldAnimateFromSpace(true);
-          console.log('🚀 Space animation enabled after location obtained');
-          
-          // Reload after animation completes (10 seconds) to update local mode
-          setTimeout(() => {
-            console.log('🔄 Reloading to update map with saved location');
-            window.location.reload();
-          }, 10000);
-        } catch (error) {
-          console.error('❌ Failed to save location:', error);
-        }
+      console.log('💾 Saving MapCanvas location for returning user...');
+      try {
+        const { updateUserProfile } = await import('@/lib/privyDb');
+        await updateUserProfile(privyUser.id, {
+          lat: windowCoords.lat,
+          lng: windowCoords.lng,
+        });
+        
+        console.log('✅ Location saved to database');
+        
+        // Reload profile to update derived values
+        await reloadProfile();
+        console.log('🔄 Profile reloaded with new location');
+      } catch (error) {
+        console.error('❌ Failed to save location:', error);
       }
     };
     
-    // Check after a delay to allow MapCanvas to obtain location
     const timeoutId = setTimeout(checkAndSaveLocation, 3000);
     return () => clearTimeout(timeoutId);
   }, [userProfileStatus, privyUser, privyUserProfile]);
@@ -392,12 +389,26 @@ export default function Home() {
     const [name, culture, city] = answers;
     
     console.log('🎉 Onboarding complete!', { name, culture, city, location });
+    console.log('⏳ Staying on onboarding screen for 3 seconds while we prepare everything...');
     
+    // 🎯 Store location in state IMMEDIATELY for instant access
+    if (location?.lat && location?.lng) {
+      setOnboardingLocation(location);
+      console.log('📍 Location stored in onboarding state:', location);
+      
+      // Also store in window for MapCanvas
+      if (typeof window !== 'undefined') {
+        (window as any).userLocationCoords = {
+          lat: location.lat,
+          lng: location.lng
+        };
+      }
+    }
+    
+    // 💾 Save profile to database (wait for it to complete)
     try {
-      // Use existing upsertUserFromPrivy with new data
       const { upsertUserFromPrivy } = await import('@/lib/privyDb');
       
-      // Build profile update object
       const profileUpdate: any = {
         name: name.trim(),
         culture,
@@ -405,34 +416,30 @@ export default function Home() {
         onboarding_completed: true,
       };
       
-      // Only include location if it's actually available (not null/undefined)
       if (location?.lat && location?.lng) {
         profileUpdate.lat = location.lat;
         profileUpdate.lng = location.lng;
-        console.log('📍 Saving onboarding location:', location);
-      } else {
-        console.log('⏭️ No location obtained during onboarding, MapCanvas will get it later');
       }
       
       await upsertUserFromPrivy(privyUser!, profileUpdate);
+      console.log('✅ Profile saved to database');
       
-      console.log('✅ Profile saved successfully!');
-      
-      // Reload profile to update hasCompletedOnboarding flag
       await reloadProfile();
-      console.log('🔄 Profile reloaded');
-      
-      setUserProfileStatus('exists');
-      
-      // Enable space animation if we have location
-      if (location?.lat && location?.lng) {
-        console.log('🚀 Enabling space animation (location from onboarding)');
-        setShouldAnimateFromSpace(true);
-      } else {
-        console.log('⏳ Will enable space animation when MapCanvas obtains location');
-      }
+      console.log('🔄 Profile reloaded with all data');
     } catch (error) {
       console.error('❌ Error saving profile:', error);
+    }
+    
+    // ⏱️ Wait 3 seconds on onboarding screen, then transition
+    console.log('⏱️ Waiting 3 seconds before transition...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // 🚀 Now transition to map with everything ready
+    console.log('🎬 Transitioning to map with space animation');
+    setUserProfileStatus('exists');
+    
+    if (location?.lat && location?.lng) {
+      setShouldAnimateFromSpace(true);
     }
   };
 

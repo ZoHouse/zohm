@@ -101,8 +101,8 @@
 @media (max-width: 480px) {
   .landing-bro-svg {
     bottom: 10%;
-    width: clamp(50px, 18vw, 100px);
-    height: clamp(45px, 16vw, 89px);
+    width: clamp(40px, 12vw, 70px);
+    height: clamp(36px, 11vw, 63px);
   }
 }
 

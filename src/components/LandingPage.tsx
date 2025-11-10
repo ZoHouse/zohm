@@ -71,13 +71,11 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
           <img 
             src="/Bro.svg" 
             alt="Bro" 
-            className="absolute"
+            className="absolute landing-character"
             style={{ 
               bottom: '0',
               left: '50%', 
               transform: 'translateX(-50%)',
-              width: '450px', 
-              height: '400px',
               display: 'block'
             }}
           />

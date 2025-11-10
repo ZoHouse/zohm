@@ -716,12 +716,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const initialZoom = shouldAnimateFromSpace ? 0 : (isMobile() ? 17.5 : 17); // 🦄 Zoomed in to see 3D buildings
       const initialPitch = shouldAnimateFromSpace ? 0 : (isMobile() ? 65 : 65); // 🦄 Tilted for dramatic 3D view
       
-      // Use user location as center if available, otherwise use San Francisco
+      // Use user location as center if available
+      // If shouldAnimateFromSpace is true, we MUST have a location - don't fall back to San Francisco
       const initialCenter: [number, number] = userLocation?.lat && userLocation?.lng 
         ? [userLocation.lng, userLocation.lat]
-        : DEFAULT_CENTER;
+        : (shouldAnimateFromSpace ? [0, 0] : DEFAULT_CENTER); // Use [0,0] if animating without location (will be replaced)
       
-      console.log('🗺️ Map initializing with center:', initialCenter, 'shouldAnimateFromSpace:', shouldAnimateFromSpace);
+      console.log('🗺️ Map initializing with center:', initialCenter, 'userLocation:', userLocation, 'shouldAnimateFromSpace:', shouldAnimateFromSpace);
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,

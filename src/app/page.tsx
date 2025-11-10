@@ -42,6 +42,9 @@ export default function Home() {
   // Temporary location state for immediate onboarding transition
   const [onboardingLocation, setOnboardingLocation] = useState<{ lat: number; lng: number } | null>(null);
   
+  // Flag to ensure smooth transition from onboarding (prevents loading screen flash)
+  const [isTransitioningFromOnboarding, setIsTransitioningFromOnboarding] = useState(false);
+  
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
   
@@ -389,58 +392,60 @@ export default function Home() {
     const [name, culture, city] = answers;
     
     console.log('🎉 Onboarding complete!', { name, culture, city, location });
-    console.log('⏳ Staying on onboarding screen for 3 seconds while we prepare everything...');
     
-    // 🎯 Store location in state IMMEDIATELY for instant access
+    // 🎯 Store ALL data in state IMMEDIATELY in ONE batch update
+    setOnboardingLocation(location && location.lat && location.lng ? location : null);
+    setIsTransitioningFromOnboarding(true);
+    
     if (location?.lat && location?.lng) {
-      setOnboardingLocation(location);
-      console.log('📍 Location stored in onboarding state:', location);
+      console.log('📍 Location stored:', location);
       
-      // Also store in window for MapCanvas
+      // Store in window for MapCanvas
       if (typeof window !== 'undefined') {
         (window as any).userLocationCoords = {
           lat: location.lat,
           lng: location.lng
         };
       }
-    }
-    
-    // 💾 Save profile to database (wait for it to complete)
-    try {
-      const { upsertUserFromPrivy } = await import('@/lib/privyDb');
       
-      const profileUpdate: any = {
-        name: name.trim(),
-        culture,
-        city: city || 'Unknown',
-        onboarding_completed: true,
-      };
-      
-      if (location?.lat && location?.lng) {
-        profileUpdate.lat = location.lat;
-        profileUpdate.lng = location.lng;
-      }
-      
-      await upsertUserFromPrivy(privyUser!, profileUpdate);
-      console.log('✅ Profile saved to database');
-      
-      await reloadProfile();
-      console.log('🔄 Profile reloaded with all data');
-    } catch (error) {
-      console.error('❌ Error saving profile:', error);
-    }
-    
-    // ⏱️ Wait 3 seconds on onboarding screen, then transition
-    console.log('⏱️ Waiting 3 seconds before transition...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // 🚀 Now transition to map with everything ready
-    console.log('🎬 Transitioning to map with space animation');
-    setUserProfileStatus('exists');
-    
-    if (location?.lat && location?.lng) {
+      // Enable animation flag
       setShouldAnimateFromSpace(true);
     }
+    
+    // 💾 Save profile to database in background (non-blocking)
+    setTimeout(async () => {
+      try {
+        const { upsertUserFromPrivy } = await import('@/lib/privyDb');
+        
+        const profileUpdate: any = {
+          name: name.trim(),
+          culture,
+          city: city || 'Unknown',
+          onboarding_completed: true,
+        };
+        
+        if (location?.lat && location?.lng) {
+          profileUpdate.lat = location.lat;
+          profileUpdate.lng = location.lng;
+        }
+        
+        await upsertUserFromPrivy(privyUser!, profileUpdate);
+        console.log('✅ Profile saved (background)');
+        
+        await reloadProfile();
+        console.log('🔄 Profile reloaded (background)');
+      } catch (error) {
+        console.error('❌ Error saving profile:', error);
+      }
+    }, 100);
+    
+    // ⏱️ Wait 3 seconds on onboarding screen (astronaut visible)
+    console.log('⏱️ Waiting 3 seconds...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // 🚀 Single atomic state update - no flashes
+    console.log('🎬 Transitioning to map NOW');
+    setUserProfileStatus('exists');
   };
 
   // Show loading screen while Privy initializes
@@ -455,49 +460,16 @@ export default function Home() {
     );
   }
 
-  // Wait for Privy to fully load before showing landing page
-  // This prevents flickering for returning users
-  if (!privyReady) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-          <p className="text-white text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show LandingPage only if not authenticated AND Privy is ready
-  if (!privyAuthenticated && privyReady) {
+  // Show LandingPage only if not authenticated
+  if (!privyAuthenticated) {
     return <LandingPage onConnect={privyLogin} />;
   }
 
-  // Show onboarding when Privy user hasn't completed profile (but only when fully loaded)
-  // Must wait for privyLoading to be false (wallet creation complete)
-  const shouldShowOnboarding = privyReady && !privyLoading && (privyAuthenticated && userProfileStatus === 'not_exists');
+  // Show onboarding when user hasn't completed profile
+  const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
     
   if (shouldShowOnboarding) {
-    console.log('🎭 Showing onboarding screen', {
-      privyReady,
-      privyLoading,
-      privyAuthenticated,
-      userProfileStatus,
-      hasProfile: !!privyUserProfile
-    });
-
-    // Wait for isMobile to be ready before deciding which onboarding to show
-    if (!isMobileReady) {
-      return (
-        <div className="fixed inset-0 bg-black flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-            <p className="text-white text-lg">Loading...</p>
-          </div>
-        </div>
-      );
-    }
-
+    // Return onboarding immediately - no loading screens
     return (
       <OnboardingPage
         onComplete={handleOnboardingComplete}
@@ -505,8 +477,6 @@ export default function Home() {
         getAccessToken={async () => {
           try {
             const { usePrivy } = await import('@privy-io/react-auth');
-            // Note: This is a workaround - in practice, getAccessToken will be available from the hook
-            // For now, we return null and the OnboardingPage will handle it
             return null;
           } catch {
             return null;
@@ -518,7 +488,6 @@ export default function Home() {
 
   // Only render main app if user has completed onboarding
   if (userProfileStatus !== 'exists') {
-    // Still loading profile status, show loading screen
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -529,8 +498,9 @@ export default function Home() {
     );
   }
 
-  // Wait for mobile detection to be ready before rendering main app
-  if (!isMobileReady) {
+  // Wait for mobile detection ONLY if not transitioning from onboarding
+  // (When transitioning from onboarding, isMobileReady is already true - skip this check to prevent flash)
+  if (!isMobileReady && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">

@@ -12,9 +12,10 @@ interface EventData {
 interface EventTickerProps {
   events: EventData[];
   onEventClick?: (event: EventData) => void;
+  className?: string;
 }
 
-const EventTicker: React.FC<EventTickerProps> = ({ events, onEventClick }) => {
+const EventTicker: React.FC<EventTickerProps> = ({ events, onEventClick, className }) => {
   if (!events || events.length === 0) return null;
 
   const formatted = events.map((e) => {
@@ -30,7 +31,7 @@ const EventTicker: React.FC<EventTickerProps> = ({ events, onEventClick }) => {
   const loopItems = [...formatted, ...formatted];
 
   return (
-    <div className="event-ticker">
+    <div className={`event-ticker ${className ?? ''}`.trim()}>
       <div className="event-ticker-viewport">
         <div className="event-ticker-track">
           {loopItems.map((item, idx) => (

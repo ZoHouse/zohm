@@ -5,9 +5,10 @@ import { PartnerNodeRecord } from '@/lib/supabase';
 interface NodeTickerProps {
   nodes: PartnerNodeRecord[];
   onNodeClick?: (node: PartnerNodeRecord) => void;
+  className?: string;
 }
 
-const NodeTicker: React.FC<NodeTickerProps> = ({ nodes, onNodeClick }) => {
+const NodeTicker: React.FC<NodeTickerProps> = ({ nodes, onNodeClick, className }) => {
   if (!nodes || nodes.length === 0) return null;
 
   const items = nodes.map((n) => {
@@ -20,7 +21,7 @@ const NodeTicker: React.FC<NodeTickerProps> = ({ nodes, onNodeClick }) => {
   const loopItems = [...items, ...items, ...items, ...items];
 
   return (
-    <div className="event-ticker">
+    <div className={`event-ticker ${className ?? ''}`.trim()}>
       <div className="event-ticker-viewport node-ticker">
         <div className="event-ticker-track">
           {loopItems.map((item, idx) => (

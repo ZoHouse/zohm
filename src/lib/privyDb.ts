@@ -19,6 +19,7 @@ export interface UserRecord {
   bio: string | null;
   pfp: string | null;
   culture: string | null;
+  city: string | null;
   email: string | null;
   x_handle: string | null;
   x_connected: boolean;

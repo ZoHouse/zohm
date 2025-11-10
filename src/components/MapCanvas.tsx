@@ -34,13 +34,14 @@ const ZO_HOUSES = [
 
 interface MapCanvasProps {
   events: ParsedEvent[];
+  nodes?: PartnerNodeRecord[];
   onMapReady?: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
   flyToEvent?: ParsedEvent | null;
   flyToNode?: PartnerNodeRecord | null;
   className?: string;
 }
 
-export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, className }: MapCanvasProps) {
+export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -511,7 +512,7 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     });
   };
 
-  // 🦄 Add partner node markers from database (Unicorn: all use Zo logo)
+  // 🦄 Add partner node markers (Unicorn: all use Zo logo)
   const addPartnerNodeMarkers = async () => {
     if (!map.current) return;
 
@@ -525,101 +526,104 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
     });
     partnerNodeMarkers.current = [];
 
-    console.log('🦄 Loading partner nodes from database...');
+    // Use passed nodes prop, or fetch from database if not provided
+    let nodesToDisplay = nodes;
+    if (!nodesToDisplay) {
+      console.log('🦄 Loading partner nodes from database...');
+      try {
+        const { getNodesFromDB } = await import('@/lib/supabase');
+        nodesToDisplay = await getNodesFromDB();
+      } catch (error) {
+        console.error('Error loading nodes:', error);
+        return;
+      }
+    }
     
-    try {
-      const { getNodesFromDB } = await import('@/lib/supabase');
-      const nodes = await getNodesFromDB();
-      
-      if (!nodes || nodes.length === 0) {
-        console.log('🦄 No partner nodes found in database');
+    if (!nodesToDisplay || nodesToDisplay.length === 0) {
+      console.log('🦄 No partner nodes to display');
+      return;
+    }
+    
+    console.log(`🦄 Adding ${nodesToDisplay.length} partner node markers...`);
+    
+    nodesToDisplay.forEach((node) => {
+      if (!node.latitude || !node.longitude) {
+        console.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
         return;
       }
       
-      console.log(`🦄 Adding ${nodes.length} partner node markers...`);
-      
-      nodes.forEach((node) => {
-        if (!node.latitude || !node.longitude) {
-          console.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
-          return;
-        }
+      try {
+        // 🦄 UNICORN: All nodes use the Zo flexing white logo
+        const markerElement = document.createElement('img');
+        markerElement.src = '/Zo_flexing_white.png';
+        markerElement.style.width = '50px';
+        markerElement.style.height = '50px';
+        markerElement.style.borderRadius = '50%';
+        markerElement.style.cursor = 'pointer';
+        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+        markerElement.title = node.name;
         
-        try {
-          // 🦄 UNICORN: All nodes use the Zo flexing white logo
-          const markerElement = document.createElement('img');
-          markerElement.src = '/Zo_flexing_white.png';
-          markerElement.style.width = '50px';
-          markerElement.style.height = '50px';
-          markerElement.style.borderRadius = '50%';
-          markerElement.style.cursor = 'pointer';
-          markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-          markerElement.title = node.name;
-          
-          const nodeMarker = new mapboxgl.Marker(markerElement)
-            .setLngLat([node.longitude, node.latitude])
-            .addTo(map.current!);
-          
-          console.log(`🦄 Added marker for ${node.name}`);
-          
-          // Store marker reference
-          partnerNodeMarkers.current.push(nodeMarker);
-          
-          // Create popup for the node
-          const popupContent = `
-            <div style="padding: 0;">
-              <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${node.name}</h3>
-              <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${node.city}, ${node.country}</p>
-              <div style="display: flex; gap: 8px;">
-                ${node.website ? `<a href="${node.website}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Visit</a>` : ''}
-                <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="glow-popup-button" style="flex: 1;">Directions</button>
-              </div>
+        const nodeMarker = new mapboxgl.Marker(markerElement)
+          .setLngLat([node.longitude, node.latitude])
+          .addTo(map.current!);
+        
+        console.log(`🦄 Added marker for ${node.name}`);
+        
+        // Store marker reference
+        partnerNodeMarkers.current.push(nodeMarker);
+        
+        // Create popup for the node
+        const popupContent = `
+          <div style="padding: 0;">
+            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${node.name}</h3>
+            <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${node.city}, ${node.country}</p>
+            <div style="display: flex; gap: 8px;">
+              ${node.website ? `<a href="${node.website}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Visit</a>` : ''}
+              <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="glow-popup-button" style="flex: 1;">Directions</button>
             </div>
-          `;
-          
-          const popup = new mapboxgl.Popup({
-            className: 'node-popup-clean',
-            closeButton: false,
-            closeOnClick: true,
-            offset: [0, -15],
-            maxWidth: '280px',
-            anchor: 'bottom'
-          })
-          .setHTML(popupContent);
-          
-          // Attach popup to marker
-          nodeMarker.setPopup(popup);
-          
-          // Handle marker click to track popup state
-          markerElement.addEventListener('click', () => {
-            if (currentOpenPopup && currentOpenPopup !== popup) {
-              try {
-                currentOpenPopup.remove();
-                activePopups.current.delete(currentOpenPopup);
-              } catch (error) {
-                console.warn('Error closing previous popup:', error);
-              }
+          </div>
+        `;
+        
+        const popup = new mapboxgl.Popup({
+          className: 'node-popup-clean',
+          closeButton: false,
+          closeOnClick: true,
+          offset: [0, -15],
+          maxWidth: '280px',
+          anchor: 'bottom'
+        })
+        .setHTML(popupContent);
+        
+        // Attach popup to marker
+        nodeMarker.setPopup(popup);
+        
+        // Handle marker click to track popup state
+        markerElement.addEventListener('click', () => {
+          if (currentOpenPopup && currentOpenPopup !== popup) {
+            try {
+              currentOpenPopup.remove();
+              activePopups.current.delete(currentOpenPopup);
+            } catch (error) {
+              console.warn('Error closing previous popup:', error);
             }
-            setCurrentOpenPopup(popup);
-            activePopups.current.add(popup);
-            
-            popup.once('close', () => {
-              if (currentOpenPopup === popup) {
-                setCurrentOpenPopup(null);
-              }
-              activePopups.current.delete(popup);
-            });
-          });
+          }
+          setCurrentOpenPopup(popup);
+          activePopups.current.add(popup);
           
-        } catch (error) {
-          console.error(`❌ Error creating marker for ${node.name}:`, error);
-        }
-      });
-      
-      console.log(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
-      
-    } catch (error) {
-      console.error('❌ Error loading partner nodes:', error);
-    }
+          popup.once('close', () => {
+            if (currentOpenPopup === popup) {
+              setCurrentOpenPopup(null);
+            }
+            activePopups.current.delete(popup);
+          });
+        });
+        
+      } catch (error) {
+        console.error(`❌ Error creating marker for ${node.name}:`, error);
+      }
+    });
+    
+    console.log(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
     
     /* Legacy example code removed
       try {
@@ -842,7 +846,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
-          console.log('📍 User location stored for wallet sync:', window.userLocationCoords);
+          console.log('📍 User location obtained:', window.userLocationCoords);
+          console.log('🦄 Showing unicorn marker at user location');
         }
         
         try {
@@ -936,7 +941,8 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
         }
       },
       (error) => {
-        console.log('Geolocation error:', error);
+        console.warn('⚠️ Geolocation permission denied or unavailable:', error.message);
+        console.log('💡 To enable location: Click the location icon in your browser address bar');
       },
       {
         enableHighAccuracy: true,
@@ -1240,6 +1246,14 @@ export default function MapCanvas({ events, onMapReady, flyToEvent, flyToNode, c
       console.warn('Error flying to node:', error);
     }
   }, [flyToNode, mapLoaded, currentOpenPopup]);
+
+  // Re-render node markers when nodes prop changes (e.g., switching between local/global mode)
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    
+    console.log('🔄 Nodes changed, updating markers...');
+    addPartnerNodeMarkers();
+  }, [nodes, mapLoaded]);
 
   return (
     <div 

@@ -7,30 +7,47 @@ import { GlowChip, GlowCard, GlowButton } from '@/components/ui';
 
 interface MobileNodesListOverlayProps {
   isVisible: boolean;
+  nodes?: PartnerNodeRecord[];
+  allNodes?: PartnerNodeRecord[];
   onClose: () => void;
   onNodeClick?: (node: PartnerNodeRecord) => void;
 }
 
 const MobileNodesListOverlay: React.FC<MobileNodesListOverlayProps> = ({ 
   isVisible, 
+  nodes: providedNodes,
+  allNodes,
   onClose,
   onNodeClick 
 }) => {
-  const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [nodes, setNodes] = useState<PartnerNodeRecord[]>(providedNodes || allNodes || []);
+  const [loading, setLoading] = useState(!(providedNodes || allNodes));
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    if (providedNodes) {
+      setNodes(providedNodes);
+      setLoading(false);
+      return;
+    }
+    if (allNodes) {
+      setNodes(allNodes);
+      setLoading(false);
+      return;
+    }
+  }, [providedNodes, allNodes]);
+
+  useEffect(() => {
+    if (providedNodes || allNodes || !isVisible) return;
+
     const loadNodes = async () => {
       setLoading(true);
       const data = await getNodesFromDB();
       if (data) setNodes(data);
       setLoading(false);
     };
-    if (isVisible) {
-      loadNodes();
-    }
-  }, [isVisible]);
+    loadNodes();
+  }, [isVisible, providedNodes, allNodes]);
 
   // Filter nodes based on search term
   const filteredNodes = nodes.filter(node => {

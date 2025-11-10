@@ -325,6 +325,33 @@ next-route-announcer,
   overflow: hidden;
 }
 
+.event-ticker.inline {
+  position: relative;
+  bottom: auto;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.event-ticker.inline .event-ticker-viewport {
+  border-radius: 9999px;
+  border-width: 1px;
+}
+
+.event-ticker.ticker-md .event-ticker-item {
+  padding: 8px 20px;
+  font-size: 0.95rem;
+}
+
+.event-ticker.ticker-mobile .event-ticker-item {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.event-ticker.ticker-mobile .event-ticker-viewport {
+  border-width: 1px;
+}
+
 .event-ticker-track {
   display: inline-block;
   white-space: nowrap;

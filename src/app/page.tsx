@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import LandingPage from '@/components/LandingPage';
 import OnboardingPage from '@/components/OnboardingPage';
 import MobileView from '@/components/MobileView';
@@ -10,6 +10,7 @@ import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { getCalendarUrls } from '@/lib/calendarConfig';
+import { isWithinRadius } from '@/lib/geoUtils';
 import mapboxgl from 'mapbox-gl';
 
 
@@ -32,6 +33,8 @@ export default function Home() {
   const [flyToNode, setFlyToNode] = useState<PartnerNodeRecord | null>(null);
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
   const [questCount, setQuestCount] = useState(0);
+  const [mapViewMode, setMapViewMode] = useState<'local' | 'global'>('global'); // Will be updated based on user location
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
@@ -48,6 +51,58 @@ export default function Home() {
     login: privyLogin,
     privyReady
   } = usePrivyUser();
+
+  // Get user's home location for distance calculations (before any conditional returns)
+  const userHomeLat = privyUserProfile?.lat || null;
+  const userHomeLng = privyUserProfile?.lng || null;
+
+  // Local radius in kilometers
+  const LOCAL_RADIUS_KM = 100;
+
+  // Calculate local events (always, regardless of mode) - MUST be before conditional returns
+  const localEvents = useMemo(() => {
+    if (!userHomeLat || !userHomeLng) return events;
+
+    return events.filter(event => {
+      const eventLat = parseFloat(event.Latitude);
+      const eventLng = parseFloat(event.Longitude);
+      
+      if (isNaN(eventLat) || isNaN(eventLng)) return false;
+      
+      return isWithinRadius(userHomeLat, userHomeLng, eventLat, eventLng, LOCAL_RADIUS_KM);
+    });
+  }, [events, userHomeLat, userHomeLng]);
+
+  // Calculate local nodes (always, regardless of mode) - MUST be before conditional returns
+  const localNodes = useMemo(() => {
+    if (!userHomeLat || !userHomeLng) return nodes;
+
+    const extractCoords = (node: PartnerNodeRecord) => {
+      const lat =
+        typeof node.latitude === 'number'
+          ? node.latitude
+          : typeof (node as any).lat === 'number'
+            ? (node as any).lat
+            : null;
+      const lng =
+        typeof node.longitude === 'number'
+          ? node.longitude
+          : typeof (node as any).lng === 'number'
+            ? (node as any).lng
+            : null;
+      return { lat, lng };
+    };
+
+    return nodes.filter(node => {
+      const { lat, lng } = extractCoords(node);
+      if (lat === null || lng === null) return false;
+      return isWithinRadius(userHomeLat, userHomeLng, lat, lng, LOCAL_RADIUS_KM);
+    });
+  }, [nodes, userHomeLat, userHomeLng]);
+
+  // Get the events and nodes to display based on current mode
+  const displayedEvents = mapViewMode === 'local' ? localEvents : events;
+  const displayedNodes = mapViewMode === 'local' ? localNodes : nodes;
 
   useEffect(() => {
     // Initialize Supabase and check Privy user profile
@@ -192,6 +247,54 @@ export default function Home() {
     }
   }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
 
+  // Set default map view mode based on whether user has location
+  useEffect(() => {
+    if (userProfileStatus === 'exists' && privyUserProfile) {
+      const hasLocation = !!privyUserProfile.lat && !!privyUserProfile.lng;
+      const defaultMode = hasLocation ? 'local' : 'global';
+      
+      console.log(`🗺️ Setting default map mode to ${defaultMode} (has location: ${hasLocation})`);
+      setMapViewMode(defaultMode);
+    }
+  }, [userProfileStatus, privyUserProfile]);
+
+  // Auto-save location from MapCanvas to user profile
+  useEffect(() => {
+    if (userProfileStatus !== 'exists' || !privyUser?.id || !privyUserProfile) return;
+    
+    // Check if MapCanvas has obtained location (stored in window)
+    const checkAndSaveLocation = async () => {
+      if (typeof window === 'undefined') return;
+      
+      const windowCoords = (window as any).userLocationCoords;
+      if (!windowCoords?.lat || !windowCoords?.lng) return;
+      
+      // If user profile doesn't have location yet, save it
+      if (!privyUserProfile.lat || !privyUserProfile.lng) {
+        console.log('💾 Saving MapCanvas location to user profile...');
+        try {
+          const { updateUserProfile } = await import('@/lib/privyDb');
+          await updateUserProfile(privyUser.id, {
+            lat: windowCoords.lat,
+            lng: windowCoords.lng,
+          });
+          console.log('✅ Location saved to profile');
+          
+          // Reload to update the UI with local mode
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          console.error('❌ Failed to save location:', error);
+        }
+      }
+    };
+    
+    // Check after a delay to allow MapCanvas to obtain location
+    const timeoutId = setTimeout(checkAndSaveLocation, 3000);
+    return () => clearTimeout(timeoutId);
+  }, [userProfileStatus, privyUser, privyUserProfile]);
+
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
     if (section === 'events' && typeof window !== 'undefined') {
@@ -276,6 +379,7 @@ export default function Home() {
       await upsertUserFromPrivy(privyUser!, {
         name: name.trim(),
         culture,
+        city: city || 'Unknown',
         lat: location?.lat || 0,
         lng: location?.lng || 0,
         onboarding_completed: true,
@@ -386,19 +490,94 @@ export default function Home() {
     );
   }
 
+  // Get user's city from profile
+  const userCity = privyUserProfile?.city || null;
+
+  // Handler for toggling map view mode
+  const handleMapViewToggle = async (mode: 'local' | 'global') => {
+    // If switching to local mode but no location, request it
+    if (mode === 'local' && !userHomeLat && !userHomeLng) {
+      console.log('📍 Local mode requested but no location - requesting permission...');
+      setIsRequestingLocation(true);
+      
+      try {
+        // Request location permission
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        console.log('📍 Location obtained:', { latitude, longitude });
+
+        // Update user profile with location
+        if (privyUser?.id) {
+          const { updateUserProfile } = await import('@/lib/privyDb');
+          await updateUserProfile(privyUser.id, {
+            lat: latitude,
+            lng: longitude,
+          });
+          console.log('✅ User location saved to profile');
+          
+          // Reload the profile to get the updated location
+          window.location.reload();
+        }
+      } catch (error: any) {
+        console.error('❌ Location request failed:', error);
+        let errorMessage = 'Failed to get your location';
+        
+        // Handle GeolocationPositionError
+        if (error && typeof error === 'object' && 'code' in error) {
+          switch (error.code) {
+            case 1: // PERMISSION_DENIED
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+              break;
+            case 2: // POSITION_UNAVAILABLE
+              errorMessage = 'Location information unavailable.';
+              break;
+            case 3: // TIMEOUT
+              errorMessage = 'Location request timed out.';
+              break;
+          }
+        }
+        
+        alert(errorMessage);
+        setIsRequestingLocation(false);
+        return; // Don't switch to local mode if location request fails
+      }
+      
+      setIsRequestingLocation(false);
+    }
+    
+    setMapViewMode(mode);
+    console.log(`🗺️ Map view changed to ${mode} mode`);
+  };
+
   // Render mobile or desktop view based on screen size
   if (isMobile) {
     return (
       <>
         <MobileView
-          events={events}
-          nodes={nodes}
+          events={displayedEvents}
+          nodes={displayedNodes}
+          allNodes={nodes}
+          totalEventsCount={events.length}
+          totalNodesCount={nodes.length}
           questCount={questCount}
+          userCity={userCity}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
           onEventClick={handleEventClick}
           onNodeClick={handleNodeClick}
+          mapViewMode={mapViewMode}
+          onMapViewToggle={handleMapViewToggle}
+          localCount={localEvents.length}
+          globalCount={events.length}
+          isRequestingLocation={isRequestingLocation}
         />
       </>
     );
@@ -407,14 +586,23 @@ export default function Home() {
   return (
     <>
       <DesktopView
-        events={events}
-        nodes={nodes}
+        events={displayedEvents}
+        nodes={displayedNodes}
+        allNodes={nodes}
+        totalEventsCount={events.length}
+        totalNodesCount={nodes.length}
         questCount={questCount}
+        userCity={userCity}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}
         onEventClick={handleEventClick}
         onNodeClick={handleNodeClick}
+        mapViewMode={mapViewMode}
+        onMapViewToggle={handleMapViewToggle}
+        localCount={localEvents.length}
+        globalCount={events.length}
+        isRequestingLocation={isRequestingLocation}
       />
     </>
   );

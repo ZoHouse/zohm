@@ -9,7 +9,10 @@ import MobileNodesListOverlay from '@/components/MobileNodesListOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
 import WalletOverlay from '@/components/WalletOverlay';
+import CityInfoCard from '@/components/CityInfoCard';
+import MapViewToggle from '@/components/MapViewToggle';
 import { PartnerNodeRecord } from '@/lib/supabase';
+import mapboxgl from 'mapbox-gl';
 
 interface EventData {
   'Event Name': string;
@@ -23,23 +26,41 @@ interface EventData {
 interface MobileViewProps {
   events: EventData[];
   nodes: PartnerNodeRecord[];
+  allNodes: PartnerNodeRecord[];
+  totalEventsCount: number;
+  totalNodesCount: number;
   questCount: number;
+  userCity?: string | null;
   onMapReady: (map: mapboxgl.Map) => void;
   flyToEvent: EventData | null;
   flyToNode: PartnerNodeRecord | null;
   onEventClick?: (event: EventData) => void;
   onNodeClick?: (node: PartnerNodeRecord) => void;
+  mapViewMode: 'local' | 'global';
+  onMapViewToggle: (mode: 'local' | 'global') => void;
+  localCount: number;
+  globalCount: number;
+  isRequestingLocation?: boolean;
 }
 
 const MobileView: React.FC<MobileViewProps> = ({
   events,
   nodes,
+  allNodes,
+  totalEventsCount,
+  totalNodesCount,
   questCount,
+  userCity,
   onMapReady,
   flyToEvent,
   flyToNode,
   onEventClick,
   onNodeClick,
+  mapViewMode,
+  onMapViewToggle,
+  localCount,
+  globalCount,
+  isRequestingLocation = false,
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
@@ -86,23 +107,48 @@ const MobileView: React.FC<MobileViewProps> = ({
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
           events={events}
+          nodes={nodes}
         />
       </motion.div>
 
-      {/* Logo/Header */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 text-center w-full px-4">
-        <img 
-          src="/Z_to_House.gif" 
-          alt="Zo House Events Calendar" 
-          className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
+      {/* City Info Card or Logo/Header */}
+      {userCity ? (
+        <CityInfoCard city={userCity} />
+      ) : (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 text-center w-full px-4">
+          <img 
+            src="/Z_to_House.gif" 
+            alt="Zo House Events Calendar" 
+            className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
+          />
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
+            <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
+            <span>{events.length} Events</span>
+            <span className="opacity-70">•</span>
+            <span>{nodes.length} Nodes</span>
+            <span className="opacity-70">•</span>
+            <span>{questCount} Quests</span>
+          </div>
+        </div>
+      )}
+
+      {/* Map View Toggle & Stats Pill - Mobile */}
+      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+        <MapViewToggle
+          viewMode={mapViewMode}
+          onToggle={onMapViewToggle}
+          localCount={localCount}
+          globalCount={globalCount}
+          isLoading={isRequestingLocation}
+          className="scale-90"
         />
-        <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
           <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
-          <span>{events.length} Events</span>
+          <span>{totalEventsCount} Events</span>
           <span className="opacity-70">•</span>
-          <span>{nodes.length} Nodes</span>
+          <span>{totalNodesCount} Nodes</span>
           <span className="opacity-70">•</span>
-          <span>{questCount} Quests</span>
+          <span>{questsCount} Quests</span>
         </div>
       </div>
 
@@ -142,6 +188,8 @@ const MobileView: React.FC<MobileViewProps> = ({
       <MobileNodesListOverlay
         isVisible={activeList === 'nodes'}
         onClose={handleCloseAll}
+        nodes={nodes}
+        allNodes={allNodes}
         onNodeClick={onNodeClick}
       />
 

@@ -6,6 +6,8 @@ import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 
 interface NodesOverlayProps {
   isVisible: boolean;
+  nodes?: PartnerNodeRecord[];
+  allNodes?: PartnerNodeRecord[];
   onNodeClick?: (node: PartnerNodeRecord) => void;
   closeMapPopups?: (() => void) | null;
   onClose?: () => void;
@@ -13,25 +15,43 @@ interface NodesOverlayProps {
 
 const NodesOverlay: React.FC<NodesOverlayProps> = ({ 
   isVisible, 
+  nodes: providedNodes,
+  allNodes,
   onNodeClick,
   closeMapPopups 
 }) => {
-  const [nodes, setNodes] = useState<PartnerNodeRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [nodes, setNodes] = useState<PartnerNodeRecord[]>(providedNodes || allNodes || []);
+  const [loading, setLoading] = useState(!(providedNodes || allNodes));
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode'>('all');
 
+  // Update nodes when provided via props (local/global filtering)
   useEffect(() => {
+    if (providedNodes) {
+      setNodes(providedNodes);
+      setLoading(false);
+      return;
+    }
+    if (allNodes) {
+      setNodes(allNodes);
+      setLoading(false);
+      return;
+    }
+  }, [providedNodes, allNodes]);
+
+  // Fallback to fetching from DB if no nodes provided
+  useEffect(() => {
+    if (providedNodes || allNodes || !isVisible) return;
+
     const loadNodes = async () => {
       setLoading(true);
       const data = await getNodesFromDB();
       if (data) setNodes(data);
       setLoading(false);
     };
-    if (isVisible) {
-      loadNodes();
-    }
-  }, [isVisible]);
+
+    loadNodes();
+  }, [isVisible, providedNodes, allNodes]);
 
   const filteredNodes = nodes.filter(n =>
     (activeFilter === 'all' || n.type === activeFilter) &&

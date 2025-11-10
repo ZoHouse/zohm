@@ -11,6 +11,9 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  // Only enable embedded wallets in production (HTTPS required)
+  const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
   return (
     <div suppressHydrationWarning>
       <BasePrivyProvider
@@ -21,11 +24,14 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
             theme: 'dark',
             accentColor: '#a855f7',
           },
-          embeddedWallets: {
-            solana: {
-              createOnLogin: 'users-without-wallets',
+          // Embedded wallets only work over HTTPS
+          ...(isProduction && {
+            embeddedWallets: {
+              solana: {
+                createOnLogin: 'users-without-wallets',
+              },
             },
-          },
+          }),
         }}
       >
         {children}

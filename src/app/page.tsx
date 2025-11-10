@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import SimpleOnboarding from '@/components/SimpleOnboarding';
 import LandingPage from '@/components/LandingPage';
 import OnboardingPage from '@/components/OnboardingPage';
 import MobileView from '@/components/MobileView';

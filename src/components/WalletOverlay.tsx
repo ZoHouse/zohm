@@ -136,7 +136,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999]">
+    <div className="fixed inset-0 z-[10001]">
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-4 right-4 z-[10000] animate-in slide-in-from-top">

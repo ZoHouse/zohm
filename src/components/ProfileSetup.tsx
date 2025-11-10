@@ -73,7 +73,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   // Privy authentication required
   if (!privyAuthenticated || !privyUser) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
         <div className="paper-overlay p-6 max-w-md">
           <h3 className="text-lg font-bold mb-4">🦄 Authentication Required</h3>
           <p className="mb-4">Please sign in with Privy to continue creating your profile.</p>
@@ -389,7 +389,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       

@@ -25,7 +25,7 @@ const MobileTileModal: React.FC<MobileTileModalProps> = ({ isVisible, onClose, o
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-50 overflow-hidden"
+          className="fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden"
         >
           {/* Handle bar */}
           <div className="flex justify-center pt-3 pb-2">

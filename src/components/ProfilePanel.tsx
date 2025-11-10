@@ -294,7 +294,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
     return (
         <div className="flex flex-col space-y-6">
             {notification && (
-                <div className={`fixed top-5 right-5 p-4 bg-white/20 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg z-[9999] ${notification.type === 'success' ? 'border-green-500/40' : 'border-red-500/40'}`}>
+                <div className={`fixed top-5 right-5 p-4 bg-white/20 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg z-[10001] ${notification.type === 'success' ? 'border-green-500/40' : 'border-red-500/40'}`}>
                     <div className="flex items-center space-x-2 text-black">
                         {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
                         <span>{notification.message}</span>

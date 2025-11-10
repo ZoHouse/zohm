@@ -63,7 +63,7 @@ const MobileNodesListOverlay: React.FC<MobileNodesListOverlayProps> = ({
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
+          className="fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col"
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-white/20">

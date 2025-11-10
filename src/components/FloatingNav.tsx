@@ -27,7 +27,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ onSectionChange, activeSectio
   };
 
   return (
-    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2" style={{ zIndex: 9999 }}>
+    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2" style={{ zIndex: 10001 }}>
       {/* Expanded buttons */}
       <AnimatePresence>
         {isExpanded && (

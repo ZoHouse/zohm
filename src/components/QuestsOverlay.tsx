@@ -226,14 +226,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
     <>
       {/* Desktop Overlay */}
       {isVisible && (
-        <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-10 flex-col">
+        <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-[10001] flex-col">
           {content}
         </GlowCard>
       )}
 
       {/* Mobile Overlay */}
       {isVisible && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-50 overflow-hidden flex flex-col">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col">
         {/* Mobile Header */}
         <div className="px-6 py-4 border-b border-white/20">
           <div className="flex items-center justify-between">
@@ -309,7 +309,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
 
       {/* Join Quest Popup */}
       {showJoinPopup && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[10001] p-4">
           <GlowCard className="max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">Join Quest</h3>

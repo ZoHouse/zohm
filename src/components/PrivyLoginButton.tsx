@@ -7,7 +7,7 @@ export function PrivyLoginButton() {
 
   if (!ready) {
     return (
-      <div className="fixed top-4 right-4 z-[9999] px-4 py-2 bg-purple-600 text-white rounded-lg">
+      <div className="fixed top-4 right-4 z-[10001] px-4 py-2 bg-purple-600 text-white rounded-lg">
         Loading Privy...
       </div>
     );
@@ -15,7 +15,7 @@ export function PrivyLoginButton() {
 
   if (authenticated && user) {
     return (
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border-2 border-purple-500">
+      <div className="fixed top-4 right-4 z-[10001] flex flex-col gap-2 bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border-2 border-purple-500">
         <div className="text-sm font-bold text-gray-900">
           ✅ Logged in with Privy!
         </div>
@@ -57,7 +57,7 @@ export function PrivyLoginButton() {
   return (
     <button
       onClick={login}
-      className="fixed top-4 right-4 z-[9999] px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 text-white rounded-full font-bold shadow-2xl hover:shadow-purple-500/50 transition-all transform hover:scale-105"
+      className="fixed top-4 right-4 z-[10001] px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 text-white rounded-full font-bold shadow-2xl hover:shadow-purple-500/50 transition-all transform hover:scale-105"
     >
       🦄 Login with Privy
     </button>

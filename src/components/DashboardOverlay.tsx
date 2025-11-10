@@ -18,7 +18,7 @@ const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose,
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[999]">
+    <div className="fixed inset-0 z-[10001]">
       {/* Close backdrop */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"

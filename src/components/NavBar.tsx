@@ -16,7 +16,7 @@ const NavBar: React.FC<NavBarProps> = ({ onSectionChange, activeSection, onDashb
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
+    <div className="fixed bottom-0 left-0 right-0 z-[10001] p-4">
       <div className="max-w-lg mx-auto bg-white/20 backdrop-blur-md border border-white/40 rounded-full shadow-lg p-2">
         <nav className="flex items-center justify-around gap-2">
           {navItems.map(item => (

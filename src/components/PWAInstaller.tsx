@@ -64,7 +64,7 @@ const PWAInstaller: React.FC = () => {
   if (!showInstallButton) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-[10001]">
       <button
         onClick={handleInstallClick}
         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors duration-200 flex items-center gap-2"

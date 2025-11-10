@@ -93,21 +93,21 @@
 
 /* Landing Character (Bro on "Take the Red Pill" screen) */
 .landing-character {
-  width: clamp(300px, 60vw, 600px) !important;
-  height: clamp(267px, 53vw, 533px) !important;
+  width: clamp(120px, 20vw, 180px) !important;
+  height: clamp(107px, 18vw, 160px) !important;
   object-fit: contain;
 }
 
 @media (max-width: 768px) {
   .landing-character {
-    width: clamp(200px, 50vw, 400px) !important;
-    height: clamp(178px, 44vw, 356px) !important;
+    width: clamp(100px, 18vw, 150px) !important;
+    height: clamp(89px, 16vw, 133px) !important;
   }
 }
 
 @media (max-width: 480px) {
   .landing-character {
-    width: clamp(150px, 40vw, 300px) !important;
-    height: clamp(133px, 35vw, 267px) !important;
+    width: clamp(80px, 15vw, 120px) !important;
+    height: clamp(71px, 13vw, 107px) !important;
   }
 }

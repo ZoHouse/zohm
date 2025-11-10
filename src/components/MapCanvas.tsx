@@ -534,7 +534,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       console.log('🦄 Loading partner nodes from database...');
       try {
         const { getNodesFromDB } = await import('@/lib/supabase');
-        nodesToDisplay = await getNodesFromDB();
+        const fetchedNodes = await getNodesFromDB();
+        nodesToDisplay = fetchedNodes || undefined; // Convert null to undefined
       } catch (error) {
         console.error('Error loading nodes:', error);
         return;

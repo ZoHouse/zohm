@@ -136,7 +136,8 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
 
-          let closestCity = CITIES[0];
+          // Find closest city name for display
+          let closestCityName = CITIES[0].name;
           let minDistance = Infinity;
 
           CITIES.forEach(c => {
@@ -145,12 +146,24 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
             );
             if (distance < minDistance) {
               minDistance = distance;
-              closestCity = c;
+              closestCityName = c.name;
             }
           });
 
-          setCity(closestCity);
+          // ✅ Store EXACT user location, not the closest city's coordinates
+          setCity({
+            name: closestCityName,
+            lat: userLat,  // User's actual latitude
+            lng: userLng   // User's actual longitude
+          });
           setErrors(prev => ({ ...prev, city: '' }));
+          
+          // Store in window for immediate map access
+          if (typeof window !== 'undefined') {
+            window.userLocationCoords = { lat: userLat, lng: userLng };
+          }
+          
+          console.log('📍 Exact user location captured:', { name: closestCityName, lat: userLat, lng: userLng });
         },
         error => {
           console.error('Error getting location:', error);
@@ -170,8 +183,8 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
         backgroundRepeat: 'no-repeat'
       }}
     >
-      <div className="bg-black/40 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-5xl mx-auto p-6 sm:p-8 border border-white/20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-black/40 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-6xl mx-auto p-4 sm:p-6 md:p-8 border border-white/20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-white">
               What is your name?
@@ -191,9 +204,18 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
           </div>
 
           <div className="space-y-3 dropdown-container">
-            <label className="block text-sm font-semibold text-white">
-              Where do you want to build?
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-semibold text-white">
+                Where do you want to build?
+              </label>
+              <button
+                type="button"
+                onClick={getUserLocation}
+                className="text-xs text-red-400 hover:text-red-300 underline"
+              >
+                Use my location
+              </button>
+            </div>
             <div className="relative">
               <button
                 type="button"
@@ -201,13 +223,6 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
                 className="w-full px-4 py-2.5 bg-white/10 border border-white/30 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 {city ? city.name : 'Select city'}
-              </button>
-              <button
-                type="button"
-                onClick={getUserLocation}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-white/70 hover:text-white"
-              >
-                Use my location
               </button>
               {showCityDropdown && (
                 <div className="absolute z-10 w-full mt-2 bg-black/80 border border-white/20 rounded-lg max-h-48 overflow-y-auto">
@@ -288,15 +303,15 @@ const SimpleOnboarding: React.FC<SimpleOnboardingProps> = ({ isVisible, onComple
           <p className="text-red-400 text-sm mt-4 text-center">{errors.submit}</p>
         )}
 
-        <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
-          <div className="text-xs text-white/60">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 sm:justify-between">
+          <div className="text-xs sm:text-sm text-white/60 text-center sm:text-left">
             Your data is used to build better quests, events, and city drops.
           </div>
           <button
             type="button"
             disabled={isLoading}
             onClick={handleSubmit}
-            className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center px-6 py-2.5 sm:py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap"
           >
             {isLoading ? 'Saving...' : 'Enter Zo World'}
           </button>

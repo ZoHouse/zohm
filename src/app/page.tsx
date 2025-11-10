@@ -299,8 +299,21 @@ export default function Home() {
     );
   }
 
-  // Show LandingPage if not authenticated
-  if (!privyAuthenticated) {
+  // Wait for Privy to fully load before showing landing page
+  // This prevents flickering for returning users
+  if (!privyReady) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show LandingPage only if not authenticated AND Privy is ready
+  if (!privyAuthenticated && privyReady) {
     return <LandingPage onConnect={privyLogin} />;
   }
 

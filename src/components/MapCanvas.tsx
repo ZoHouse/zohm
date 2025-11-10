@@ -819,11 +819,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
         // Get user location - use saved location first, otherwise prompt
         if (userLocation?.lat && userLocation?.lng) {
-          console.log('📍 Using saved user location from profile:', userLocation);
+          console.log('📍 Using saved user location:', userLocation);
+          console.log('🎬 Should animate from space?', shouldAnimateFromSpace);
+          
+          // Create marker and trigger animation if needed
           createUserLocationMarker(userLocation.lat, userLocation.lng);
-        } else {
+        } else if (!shouldAnimateFromSpace) {
+          // Only prompt for location if NOT animating (returning users without location)
           console.log('📍 No saved location, prompting user...');
           getUserLocation();
+        } else {
+          console.log('⏭️ Animating from space - waiting for location...');
         }
         
         // Add Zo House markers
@@ -869,20 +875,25 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       });
       
       if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
-        console.log('🚀 Flying from outer space to user location...');
+        console.log('🚀 Flying from outer space to user location NOW');
         hasAnimatedFromSpace.current = true;
         
-        map.current.flyTo({
-          center: coords,
-          zoom: isMobile() ? 17.5 : 17,
-          pitch: isMobile() ? 65 : 65,
-          bearing: -30,
-          duration: 8000, // 8 seconds for dramatic effect
-          essential: true,
-          easing: (t) => {
-            // Custom easing for space entry effect
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-          }
+        // Start animation on next frame to ensure map is fully initialized
+        requestAnimationFrame(() => {
+          if (!map.current) return;
+          
+          map.current.flyTo({
+            center: coords,
+            zoom: isMobile() ? 17.5 : 17,
+            pitch: isMobile() ? 65 : 65,
+            bearing: -30,
+            duration: 8000, // 8 seconds
+            essential: true,
+            easing: (t) => {
+              // Custom easing for space entry effect
+              return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            }
+          });
         });
       } else {
         // Normal update without animation

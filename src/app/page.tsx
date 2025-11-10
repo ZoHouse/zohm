@@ -612,6 +612,7 @@ export default function Home() {
           totalNodesCount={nodes.length}
           questCount={questCount}
           userCity={userCity}
+          userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -638,6 +639,7 @@ export default function Home() {
         totalNodesCount={nodes.length}
         questCount={questCount}
         userCity={userCity}
+        userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}

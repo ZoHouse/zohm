@@ -31,6 +31,7 @@ interface MobileViewProps {
   totalNodesCount: number;
   questCount: number;
   userCity?: string | null;
+  userLocation?: { lat: number; lng: number } | null;
   onMapReady: (map: mapboxgl.Map) => void;
   flyToEvent: EventData | null;
   flyToNode: PartnerNodeRecord | null;
@@ -52,6 +53,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   totalNodesCount,
   questCount,
   userCity,
+  userLocation,
   onMapReady,
   flyToEvent,
   flyToNode,
@@ -111,6 +113,7 @@ const MobileView: React.FC<MobileViewProps> = ({
           events={events}
           nodes={nodes}
           shouldAnimateFromSpace={shouldAnimateFromSpace}
+          userLocation={userLocation}
         />
       </motion.div>
 

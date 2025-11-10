@@ -31,6 +31,7 @@ interface DesktopViewProps {
   totalNodesCount: number;
   questCount: number;
   userCity?: string | null;
+  userLocation?: { lat: number; lng: number } | null;
   onMapReady: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
   flyToEvent: EventData | null;
   flyToNode: PartnerNodeRecord | null;
@@ -52,6 +53,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   totalNodesCount,
   questCount,
   userCity,
+  userLocation,
   onMapReady,
   flyToEvent,
   flyToNode,
@@ -97,6 +99,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         events={events}
         nodes={nodes}
         shouldAnimateFromSpace={shouldAnimateFromSpace}
+        userLocation={userLocation}
       />
 
       {/* City Info Card or Logo/Header */}
@@ -121,7 +124,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
       )}
 
       {/* Map View Toggle & Stats Pill */}
-      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-3">
+      <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-4">
         <MapViewToggle
           viewMode={mapViewMode}
           onToggle={onMapViewToggle}

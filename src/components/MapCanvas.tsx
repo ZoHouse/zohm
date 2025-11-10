@@ -40,9 +40,10 @@ interface MapCanvasProps {
   flyToNode?: PartnerNodeRecord | null;
   className?: string;
   shouldAnimateFromSpace?: boolean;
+  userLocation?: { lat: number; lng: number } | null; // Saved user location from profile
 }
 
-export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false }: MapCanvasProps) {
+export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false, userLocation }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -808,8 +809,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           onMapReady(map.current, closeAllPopups);
         }
 
-        // Get user location
-        getUserLocation();
+        // Get user location - use saved location first, otherwise prompt
+        if (userLocation?.lat && userLocation?.lng) {
+          console.log('📍 Using saved user location from profile:', userLocation);
+          createUserLocationMarker(userLocation.lat, userLocation.lng);
+        } else {
+          console.log('📍 No saved location, prompting user...');
+          getUserLocation();
+        }
         
         // Add Zo House markers
         addZoHouseMarkers();
@@ -834,139 +841,140 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     }
   };
 
-  // Get user location with proper error handling
+  // Create user location marker (reusable for both saved location and geolocation)
+  const createUserLocationMarker = (lat: number, lng: number) => {
+    if (!map.current) return;
+    
+    const coords: [number, number] = [lng, lat];
+    
+    // Store coordinates in window for wallet sync
+    if (typeof window !== 'undefined') {
+      window.userLocationCoords = { lat, lng };
+      console.log('📍 User location set:', window.userLocationCoords);
+    }
+    
+    try {
+      // 🚀 Animate from space to user location if requested
+      console.log('🎬 Animation check:', {
+        shouldAnimateFromSpace,
+        hasAnimatedFromSpace: hasAnimatedFromSpace.current
+      });
+      
+      if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
+        console.log('🚀 Flying from outer space to user location...');
+        hasAnimatedFromSpace.current = true;
+        
+        map.current.flyTo({
+          center: coords,
+          zoom: isMobile() ? 17.5 : 17,
+          pitch: isMobile() ? 65 : 65,
+          bearing: -30,
+          duration: 8000, // 8 seconds for dramatic effect
+          essential: true,
+          easing: (t) => {
+            // Custom easing for space entry effect
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          }
+        });
+      } else {
+        // Normal update without animation
+        map.current.setCenter(coords);
+      }
+
+      // 🦄 Remove old user location marker if it exists
+      if (userLocationMarker.current) {
+        userLocationMarker.current.remove();
+      }
+
+      // 🦄 UNICORN: Create custom user location marker with unicorn GIF
+      const userMarkerElement = document.createElement('img');
+      userMarkerElement.src = '/Green+Day+Unicorn.gif';
+      userMarkerElement.style.width = '60px';
+      userMarkerElement.style.height = '60px';
+      userMarkerElement.style.borderRadius = '50%';
+      userMarkerElement.style.cursor = 'pointer';
+      userMarkerElement.style.boxShadow = '0 4px 16px rgba(255, 105, 180, 0.5)'; // Pink glow
+      userMarkerElement.style.border = '3px solid #ff69b4'; // Pink border
+      userMarkerElement.title = 'Your Location 🦄';
+
+      const userMarker = new mapboxgl.Marker(userMarkerElement)
+        .setLngLat(coords)
+        .addTo(map.current!);
+
+      // Set high z-index to ensure user marker is always on top
+      const userMarkerEl = userMarker.getElement();
+      if (userMarkerEl) {
+        userMarkerEl.style.zIndex = '10000'; // Higher than all other markers
+      }
+
+      // Store marker reference
+      userLocationMarker.current = userMarker;
+
+      console.log('🦄 Added unicorn marker for user location');
+
+      // Create popup content matching the event popup style
+      const userPopupContent = `
+        <div style="padding: 0;">
+          <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">🦄 Your Location</h3>
+          <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 Current position</p>
+          <p style="margin: 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📱 ${userLocation ? 'Saved location' : 'Auto-detected via GPS'}</p>
+        </div>
+      `;
+
+      const userPopup = new mapboxgl.Popup({
+        className: 'node-popup-clean',
+        closeButton: false,
+        closeOnClick: true,
+        offset: [0, -15],
+        maxWidth: '280px',
+        anchor: 'bottom'
+      }).setHTML(userPopupContent);
+
+      // Attach popup to marker
+      userMarker.setPopup(userPopup);
+      
+      // Handle marker click
+      userMarkerElement.addEventListener('click', () => {
+        if (currentOpenPopup && currentOpenPopup !== userPopup) {
+          try {
+            currentOpenPopup.remove();
+            activePopups.current.delete(currentOpenPopup);
+          } catch (error) {
+            console.warn('Error closing previous popup:', error);
+          }
+        }
+        setCurrentOpenPopup(userPopup);
+        activePopups.current.add(userPopup);
+        
+        userPopup.once('close', () => {
+          if (currentOpenPopup === userPopup) {
+            setCurrentOpenPopup(null);
+          }
+          activePopups.current.delete(userPopup);
+        });
+      });
+      
+      // Show popup briefly
+      setTimeout(() => {
+        if (map.current) {
+          userPopup.addTo(map.current!);
+          setTimeout(() => {
+            userPopup.remove();
+          }, 3000);
+        }
+      }, 1000);
+    } catch (error) {
+      console.warn('Error setting user location:', error);
+    }
+  };
+
+  // Get user location with proper error handling (prompt for permission)
   const getUserLocation = () => {
     if (!navigator.geolocation || !map.current) return;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (!map.current) return;
-        
-        const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
-        
-        // Store coordinates in window for wallet sync
-        if (typeof window !== 'undefined') {
-          window.userLocationCoords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          console.log('📍 User location obtained:', window.userLocationCoords);
-          console.log('🦄 Showing unicorn marker at user location');
-        }
-        
-        try {
-          // 🚀 Animate from space to user location if requested
-          console.log('🎬 Animation check:', {
-            shouldAnimateFromSpace,
-            hasAnimatedFromSpace: hasAnimatedFromSpace.current
-          });
-          
-          if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
-            console.log('🚀 Flying from outer space to user location...');
-            hasAnimatedFromSpace.current = true;
-            
-            map.current.flyTo({
-              center: coords,
-              zoom: isMobile() ? 17.5 : 17,
-              pitch: isMobile() ? 65 : 65,
-              bearing: -30,
-              duration: 8000, // 8 seconds for dramatic effect
-              essential: true,
-              easing: (t) => {
-                // Custom easing for space entry effect
-                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-              }
-            });
-          } else {
-            // Normal update without animation
-            map.current.setCenter(coords);
-          }
-
-          // 🦄 Remove old user location marker if it exists
-          if (userLocationMarker.current) {
-            userLocationMarker.current.remove();
-          }
-
-          // 🦄 UNICORN: Create custom user location marker with unicorn GIF
-          const userMarkerElement = document.createElement('img');
-          userMarkerElement.src = '/Green+Day+Unicorn.gif';
-          userMarkerElement.style.width = '60px';
-          userMarkerElement.style.height = '60px';
-          userMarkerElement.style.borderRadius = '50%';
-          userMarkerElement.style.cursor = 'pointer';
-          userMarkerElement.style.boxShadow = '0 4px 16px rgba(255, 105, 180, 0.5)'; // Pink glow
-          userMarkerElement.style.border = '3px solid #ff69b4'; // Pink border
-          userMarkerElement.title = 'Your Location 🦄';
-
-          const userMarker = new mapboxgl.Marker(userMarkerElement)
-            .setLngLat(coords)
-            .addTo(map.current!);
-
-          // Set high z-index to ensure user marker is always on top
-          const userMarkerEl = userMarker.getElement();
-          if (userMarkerEl) {
-            userMarkerEl.style.zIndex = '10000'; // Higher than all other markers
-          }
-
-          // Store marker reference
-          userLocationMarker.current = userMarker;
-
-          console.log('🦄 Added unicorn marker for user location');
-
-          // Create popup content matching the event popup style
-          const userPopupContent = `
-            <div style="padding: 0;">
-              <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">🦄 Your Location</h3>
-              <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 Current position</p>
-              <p style="margin: 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📱 Auto-detected via GPS</p>
-            </div>
-          `;
-
-          const userPopup = new mapboxgl.Popup({
-            className: 'node-popup-clean',
-            closeButton: false,
-            closeOnClick: true,
-            offset: [0, -15],
-            maxWidth: '280px',
-            anchor: 'bottom'
-          }).setHTML(userPopupContent);
-
-          // Attach popup to marker
-          userMarker.setPopup(userPopup);
-          
-          // Handle marker click
-          userMarkerElement.addEventListener('click', () => {
-            if (currentOpenPopup && currentOpenPopup !== userPopup) {
-              try {
-                currentOpenPopup.remove();
-                activePopups.current.delete(currentOpenPopup);
-              } catch (error) {
-                console.warn('Error closing previous popup:', error);
-              }
-            }
-            setCurrentOpenPopup(userPopup);
-            activePopups.current.add(userPopup);
-            
-            userPopup.once('close', () => {
-              if (currentOpenPopup === userPopup) {
-                setCurrentOpenPopup(null);
-              }
-              activePopups.current.delete(userPopup);
-            });
-          });
-          
-          // Show popup briefly
-          setTimeout(() => {
-            if (map.current) {
-              userPopup.addTo(map.current!);
-              setTimeout(() => {
-                userPopup.remove();
-              }, 3000);
-            }
-          }, 1000);
-        } catch (error) {
-          console.warn('Error setting user location:', error);
-        }
+        createUserLocationMarker(position.coords.latitude, position.coords.longitude);
       },
       (error) => {
         console.warn('⚠️ Geolocation permission denied or unavailable:', error.message);

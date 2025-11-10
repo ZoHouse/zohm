@@ -106,9 +106,6 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
           </div>
         </div>
 
-        {/* City Description */}
-        <p className="text-xs sm:text-base text-black/90 mb-1">{cityDescription}</p>
-
         {/* Local Time */}
         {cityTimezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && (
           <p className="text-[10px] sm:text-xs text-black/70">

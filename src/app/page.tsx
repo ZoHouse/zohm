@@ -278,6 +278,7 @@ export default function Home() {
         culture,
         lat: location?.lat || 0,
         lng: location?.lng || 0,
+        onboarding_completed: true,
       });
       
       console.log('✅ Profile saved successfully!');

@@ -289,10 +289,15 @@ export default function Home() {
           });
           console.log('✅ Location saved to profile');
           
-          // Reload to update the UI with local mode
+          // Enable space animation immediately
+          setShouldAnimateFromSpace(true);
+          console.log('🚀 Space animation enabled after location obtained');
+          
+          // Reload after animation completes (10 seconds) to update local mode
           setTimeout(() => {
+            console.log('🔄 Reloading to update map with saved location');
             window.location.reload();
-          }, 1000);
+          }, 10000);
         } catch (error) {
           console.error('❌ Failed to save location:', error);
         }
@@ -385,17 +390,32 @@ export default function Home() {
       // Use existing upsertUserFromPrivy with new data
       const { upsertUserFromPrivy } = await import('@/lib/privyDb');
       
-      await upsertUserFromPrivy(privyUser!, {
+      // Build profile update object
+      const profileUpdate: any = {
         name: name.trim(),
         culture,
         city: city || 'Unknown',
-        lat: location?.lat || 0,
-        lng: location?.lng || 0,
         onboarding_completed: true,
-      });
+      };
+      
+      // Only include location if it's actually available (not null/undefined)
+      if (location?.lat && location?.lng) {
+        profileUpdate.lat = location.lat;
+        profileUpdate.lng = location.lng;
+        console.log('📍 Saving onboarding location:', location);
+      } else {
+        console.log('⏭️ No location obtained during onboarding, MapCanvas will get it later');
+      }
+      
+      await upsertUserFromPrivy(privyUser!, profileUpdate);
       
       console.log('✅ Profile saved successfully!');
       setUserProfileStatus('exists');
+      
+      // Enable space animation if we have location
+      if (location?.lat && location?.lng) {
+        setShouldAnimateFromSpace(true);
+      }
     } catch (error) {
       console.error('❌ Error saving profile:', error);
     }

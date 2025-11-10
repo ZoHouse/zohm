@@ -41,6 +41,7 @@ interface MobileViewProps {
   localCount: number;
   globalCount: number;
   isRequestingLocation?: boolean;
+  shouldAnimateFromSpace?: boolean;
 }
 
 const MobileView: React.FC<MobileViewProps> = ({
@@ -61,6 +62,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   localCount,
   globalCount,
   isRequestingLocation = false,
+  shouldAnimateFromSpace = false,
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
@@ -108,6 +110,7 @@ const MobileView: React.FC<MobileViewProps> = ({
           flyToNode={flyToNode}
           events={events}
           nodes={nodes}
+          shouldAnimateFromSpace={shouldAnimateFromSpace}
         />
       </motion.div>
 
@@ -121,14 +124,6 @@ const MobileView: React.FC<MobileViewProps> = ({
             alt="Zo House Events Calendar" 
             className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
           />
-          <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
-            <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
-            <span>{events.length} Events</span>
-            <span className="opacity-70">•</span>
-            <span>{nodes.length} Nodes</span>
-            <span className="opacity-70">•</span>
-            <span>{questCount} Quests</span>
-          </div>
         </div>
       )}
 
@@ -148,7 +143,7 @@ const MobileView: React.FC<MobileViewProps> = ({
           <span className="opacity-70">•</span>
           <span>{totalNodesCount} Nodes</span>
           <span className="opacity-70">•</span>
-          <span>{questsCount} Quests</span>
+          <span>{questCount} Quests</span>
         </div>
       </div>
 

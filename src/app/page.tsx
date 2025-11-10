@@ -35,6 +35,7 @@ export default function Home() {
   const [questCount, setQuestCount] = useState(0);
   const [mapViewMode, setMapViewMode] = useState<'local' | 'global'>('global'); // Will be updated based on user location
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [shouldAnimateFromSpace, setShouldAnimateFromSpace] = useState(false);
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
   
@@ -257,6 +258,14 @@ export default function Home() {
       setMapViewMode(defaultMode);
     }
   }, [userProfileStatus, privyUserProfile]);
+
+  // Enable space animation when user completes onboarding or returns
+  useEffect(() => {
+    if (privyOnboardingComplete && userProfileStatus === 'exists') {
+      console.log('🚀 Enabling space-to-location animation');
+      setShouldAnimateFromSpace(true);
+    }
+  }, [privyOnboardingComplete, userProfileStatus]);
 
   // Auto-save location from MapCanvas to user profile
   useEffect(() => {
@@ -578,6 +587,7 @@ export default function Home() {
           localCount={localEvents.length}
           globalCount={events.length}
           isRequestingLocation={isRequestingLocation}
+          shouldAnimateFromSpace={shouldAnimateFromSpace}
         />
       </>
     );
@@ -603,6 +613,7 @@ export default function Home() {
         localCount={localEvents.length}
         globalCount={events.length}
         isRequestingLocation={isRequestingLocation}
+        shouldAnimateFromSpace={shouldAnimateFromSpace}
       />
     </>
   );

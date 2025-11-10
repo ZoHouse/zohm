@@ -39,15 +39,17 @@ interface MapCanvasProps {
   flyToEvent?: ParsedEvent | null;
   flyToNode?: PartnerNodeRecord | null;
   className?: string;
+  shouldAnimateFromSpace?: boolean;
 }
 
-export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className }: MapCanvasProps) {
+export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
   const [markersMap, setMarkersMap] = useState<Map<string, mapboxgl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
+  const hasAnimatedFromSpace = useRef(false);
   const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
   const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
   const userLocationMarker = useRef<mapboxgl.Marker | null>(null); // 🦄 User location unicorn marker
@@ -708,15 +710,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const initialZoom = isMobile() ? 17.5 : 17; // 🦄 Zoomed in to see 3D buildings
-      const initialPitch = isMobile() ? 65 : 65; // 🦄 Tilted for dramatic 3D view
+      // 🚀 Start from outer space if animation is requested
+      const initialZoom = shouldAnimateFromSpace ? 0 : (isMobile() ? 17.5 : 17); // 🦄 Zoomed in to see 3D buildings
+      const initialPitch = shouldAnimateFromSpace ? 0 : (isMobile() ? 65 : 65); // 🦄 Tilted for dramatic 3D view
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         center: DEFAULT_CENTER,
         zoom: initialZoom,
         pitch: initialPitch,
-        bearing: -30,
+        bearing: shouldAnimateFromSpace ? 0 : -30,
         style: 'mapbox://styles/mapbox/standard'
       });
 
@@ -851,8 +854,32 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         }
         
         try {
-          // Update map center to user location
-          map.current.setCenter(coords);
+          // 🚀 Animate from space to user location if requested
+          console.log('🎬 Animation check:', {
+            shouldAnimateFromSpace,
+            hasAnimatedFromSpace: hasAnimatedFromSpace.current
+          });
+          
+          if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
+            console.log('🚀 Flying from outer space to user location...');
+            hasAnimatedFromSpace.current = true;
+            
+            map.current.flyTo({
+              center: coords,
+              zoom: isMobile() ? 17.5 : 17,
+              pitch: isMobile() ? 65 : 65,
+              bearing: -30,
+              duration: 8000, // 8 seconds for dramatic effect
+              essential: true,
+              easing: (t) => {
+                // Custom easing for space entry effect
+                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+              }
+            });
+          } else {
+            // Normal update without animation
+            map.current.setCenter(coords);
+          }
 
           // 🦄 Remove old user location marker if it exists
           if (userLocationMarker.current) {
@@ -972,6 +999,28 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       }
     };
   }, []);
+
+  // Handle animation when shouldAnimateFromSpace prop changes (race condition fix)
+  useEffect(() => {
+    if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current && map.current && userLocationMarker.current) {
+      // If location was already obtained before animation flag was set, animate now
+      const userCoords = userLocationMarker.current.getLngLat();
+      console.log('🚀 Animation flag changed - flying from space to existing location');
+      hasAnimatedFromSpace.current = true;
+      
+      map.current.flyTo({
+        center: [userCoords.lng, userCoords.lat],
+        zoom: isMobile() ? 17.5 : 17,
+        pitch: isMobile() ? 65 : 65,
+        bearing: -30,
+        duration: 8000,
+        essential: true,
+        easing: (t) => {
+          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+      });
+    }
+  }, [shouldAnimateFromSpace]);
 
   // Add markers for events
   useEffect(() => {

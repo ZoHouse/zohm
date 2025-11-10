@@ -41,6 +41,7 @@ interface DesktopViewProps {
   localCount: number;
   globalCount: number;
   isRequestingLocation?: boolean;
+  shouldAnimateFromSpace?: boolean;
 }
 
 const DesktopView: React.FC<DesktopViewProps> = ({
@@ -61,6 +62,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   localCount,
   globalCount,
   isRequestingLocation = false,
+  shouldAnimateFromSpace = false,
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -94,6 +96,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         flyToNode={flyToNode}
         events={events}
         nodes={nodes}
+        shouldAnimateFromSpace={shouldAnimateFromSpace}
       />
 
       {/* City Info Card or Logo/Header */}

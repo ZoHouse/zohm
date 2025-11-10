@@ -36,6 +36,32 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Custom Cursor for Desktop */
+@media (min-width: 768px) {
+  html,
+  body,
+  * {
+    cursor: url('/cursornormal.png') 16 16, auto !important;
+  }
+  
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    cursor: url('/cursornormal.png') 16 16, pointer !important;
+  }
+  
+  button:active,
+  a:active,
+  [role="button"]:active,
+  input[type="button"]:active,
+  input[type="submit"]:active,
+  *:active {
+    cursor: url('/cursoronclick.png') 16 16, pointer !important;
+  }
+}
+
 .paper-ui {
   background-color: var(--paper-bg);
   background-image: radial-gradient(var(--paper-stroke) 1px, transparent 0);

@@ -134,71 +134,68 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
   };
 
   return (
-    <div className="new-onboarding">
+    <div className="figma-onboarding">
       {/* Background */}
-      <div className="new-onboarding__background" />
+      <div className="figma-onboarding__bg" />
       
       {/* Zo Logo */}
       <img 
         src="/Zo_flexing_white.png" 
         alt="Zo" 
-        className="new-onboarding__logo" 
+        className="figma-onboarding__logo" 
       />
       
-      {/* Content */}
-      <div className="new-onboarding__content">
+      {/* Main Content */}
+      <div className="figma-onboarding__container">
         {/* Title */}
-        <h1 className="new-onboarding__title">WHO ARE YOU?</h1>
+        <h1 className="figma-onboarding__title">WHO ARE YOU?</h1>
         
         {/* Subtitle */}
-        <p className="new-onboarding__subtitle">
-          A difficult question, I know. We'll get to it.
-          <br />
+        <p className="figma-onboarding__subtitle">
+          A difficult question, I know. We'll get to it.<br />
           But let's start with choosing a nick.
         </p>
 
         {/* Username Input */}
-        <div className="new-onboarding__input-container">
+        <div className="figma-onboarding__input-wrapper">
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="ishaan"
             maxLength={12}
-            className="new-onboarding__username-input"
+            className="figma-onboarding__input"
             autoFocus
           />
         </div>
 
         {/* Avatar Selector */}
-        <div className="new-onboarding__avatar-selector">
-          <div className="new-onboarding__avatar-grid">
-            {AVATAR_OPTIONS.map((avatar, index) => (
-              <div
-                key={index}
-                className={`new-onboarding__avatar ${selectedAvatar === index ? 'selected' : ''}`}
-                onClick={() => setSelectedAvatar(index)}
-              >
-                <img src={avatar} alt={`Avatar ${index + 1}`} />
-              </div>
-            ))}
-          </div>
+        <div className="figma-onboarding__avatars">
+          {AVATAR_OPTIONS.map((avatar, index) => (
+            <div
+              key={index}
+              className={`figma-onboarding__avatar ${selectedAvatar === index ? 'selected' : ''}`}
+              onClick={() => setSelectedAvatar(index)}
+            >
+              <img src={avatar} alt={`Avatar ${index + 1}`} />
+            </div>
+          ))}
         </div>
 
-        {/* X Connect Button */}
+        {/* X Connect Button / Status */}
         {!isXConnected ? (
           <button 
             onClick={handleConnectX} 
-            className="new-onboarding__x-connect"
+            className="figma-onboarding__connect-x"
             type="button"
           >
             Connect X (Twitter)
           </button>
         ) : (
-          <div className="new-onboarding__x-connected">
+          <div className="figma-onboarding__x-status">
             ✓ X Connected
             {xAccount && (xAccount as any).username && (
-              <span className="new-onboarding__x-username">
+              <span className="figma-onboarding__x-username">
                 @{(xAccount as any).username}
               </span>
             )}
@@ -207,24 +204,20 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
 
         {/* Location Status */}
         {isRequestingLocation && (
-          <p className="new-onboarding__location-status">
-            📍 Getting your location...
-          </p>
+          <p className="figma-onboarding__location-text">📍 Getting your location...</p>
         )}
         {!isRequestingLocation && location && (
-          <p className="new-onboarding__location-ready">
-            ✓ Location ready
-          </p>
+          <p className="figma-onboarding__location-ready">✓ Location ready</p>
         )}
 
         {/* Error Message */}
-        {error && <p className="new-onboarding__error">{error}</p>}
+        {error && <p className="figma-onboarding__error">{error}</p>}
 
         {/* Get Citizenship Button */}
         <button
           onClick={handleSubmit}
           disabled={isLoading || !location || !username.trim()}
-          className="new-onboarding__submit-btn"
+          className="figma-onboarding__submit"
           type="button"
         >
           {isLoading ? 'Saving...' : 'Get Citizenship'}
@@ -234,7 +227,7 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
   );
 };
 
-// Voice Auth Screen Component (inline for now)
+// Voice Auth Screen Component
 const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [isListening, setIsListening] = useState(false);
   const [recognized, setRecognized] = useState(false);
@@ -305,55 +298,63 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
   };
 
   return (
-    <div className="voice-auth">
+    <div className="voice-auth-screen">
       {/* Background */}
-      <div className="voice-auth__background" />
+      <div className="voice-auth-screen__bg" />
       
       {/* Logo */}
       <img 
         src="/Zo_flexing_white.png" 
         alt="Zo" 
-        className="voice-auth__logo" 
+        className="voice-auth-screen__logo" 
       />
 
-      {/* Content */}
-      <div className="voice-auth__content">
-        {/* Title */}
-        <div className="voice-auth__title-container">
-          <h1 className="voice-auth__title">QUANTUM</h1>
-          <h1 className="voice-auth__title">SYNC</h1>
+      {/* Main Content */}
+      <div className="voice-auth-screen__container">
+        {/* Title with metallic effect */}
+        <div className="voice-auth-screen__title-wrapper">
+          <h1 className="voice-auth-screen__title">QUANTUM</h1>
+          <h1 className="voice-auth-screen__title">SYNC</h1>
         </div>
 
-        <p className="voice-auth__subtitle">
-          Zo World is a reality,
-          <br />
+        <p className="voice-auth-screen__subtitle">
+          Zo World is a reality,<br />
           you tune in with the sound Zo
         </p>
 
-        {/* Microphone Visualization */}
-        <div 
-          className={`voice-auth__microphone ${isListening ? 'listening' : ''} ${recognized ? 'recognized' : ''}`}
-          onClick={handleStartListening}
-        >
-          <div className="voice-auth__mic-icon">🎤</div>
-          <div className="voice-auth__ring voice-auth__ring--1"></div>
-          <div className="voice-auth__ring voice-auth__ring--2"></div>
-          <div className="voice-auth__ring voice-auth__ring--3"></div>
+        {/* Microphone Visualization with Platform */}
+        <div className="voice-auth-screen__mic-area">
+          <div 
+            className={`voice-auth-screen__mic ${isListening ? 'listening' : ''} ${recognized ? 'recognized' : ''}`}
+            onClick={handleStartListening}
+          >
+            <div className="voice-auth-screen__mic-icon">🎤</div>
+            <div className="voice-auth-screen__ring voice-auth-screen__ring--1"></div>
+            <div className="voice-auth-screen__ring voice-auth-screen__ring--2"></div>
+            <div className="voice-auth-screen__ring voice-auth-screen__ring--3"></div>
+          </div>
+          
+          {/* Stone Platform */}
+          <img 
+            src="/platform.png" 
+            alt="" 
+            className="voice-auth-screen__platform" 
+          />
         </div>
 
         {/* Instruction */}
-        <p className="voice-auth__instruction">
+        <p className="voice-auth-screen__instruction">
           {recognized ? '✓ Success!' : "Tap & say 'Zo Zo Zo'"}
         </p>
 
         {/* Error Message */}
-        {error && <p className="voice-auth__error">{error}</p>}
+        {error && <p className="voice-auth-screen__error">{error}</p>}
 
         {/* Skip Button */}
         {attempts >= 2 && (
           <button 
             onClick={handleSkip}
-            className="voice-auth__skip-btn"
+            className="voice-auth-screen__skip"
             type="button"
           >
             Skip Voice Auth
@@ -365,4 +366,3 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
 };
 
 export default NewOnboarding;
-

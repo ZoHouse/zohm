@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import LandingPage from '@/components/LandingPage';
-import SimpleOnboarding from '@/components/SimpleOnboarding';
+import NewOnboarding from '@/components/NewOnboarding';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
@@ -384,11 +384,14 @@ export default function Home() {
     setUserProfileStatus('exists');
   };
 
-  // Handle onboarding complete from SimpleOnboarding
-  const handleOnboardingComplete = async () => {
-    console.log('🎉 Simple onboarding complete!');
+  // Handle onboarding complete from NewOnboarding
+  const handleOnboardingComplete = async (location: { lat: number; lng: number }) => {
+    console.log('🎉 New onboarding complete with location:', location);
     
-    // SimpleOnboarding already saved to DB with location
+    // Store location immediately for map access
+    setOnboardingLocation(location);
+    
+    // NewOnboarding already saved to DB with location
     setIsTransitioningFromOnboarding(true);
     
     // ❗ Set isLoading to false immediately
@@ -437,9 +440,9 @@ export default function Home() {
   const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
     
   if (shouldShowOnboarding) {
-    // Return simple onboarding immediately - no loading screens, no animations
+    // Return new onboarding immediately - no loading screens, no animations
     return (
-      <SimpleOnboarding
+      <NewOnboarding
         isVisible={true}
         onComplete={handleOnboardingComplete}
       />

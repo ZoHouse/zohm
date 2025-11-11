@@ -1,0 +1,508 @@
+/* ================================================
+   NEW ONBOARDING - Screen 1: "WHO ARE YOU?"
+   ================================================ */
+
+.new-onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.new-onboarding__background {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  background-image: url('/loading background.gif');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.new-onboarding__logo {
+  position: absolute;
+  top: 70px;
+  left: 24px;
+  width: 40px;
+  height: 40px;
+  z-index: 2;
+}
+
+.new-onboarding__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 360px;
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+.new-onboarding__title {
+  font-family: 'Syne', 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.24px;
+  line-height: 32px;
+  margin: 0;
+}
+
+.new-onboarding__subtitle {
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.44);
+  text-align: center;
+  line-height: 20px;
+  margin: 0;
+  max-width: 320px;
+}
+
+.new-onboarding__input-container {
+  width: 100%;
+  max-width: 280px;
+}
+
+.new-onboarding__username-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.new-onboarding__username-input:focus {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.new-onboarding__username-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Avatar Selector */
+.new-onboarding__avatar-selector {
+  width: 100%;
+  max-width: 320px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 16px;
+}
+
+.new-onboarding__avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.new-onboarding__avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.new-onboarding__avatar:hover {
+  transform: scale(1.05);
+  border-color: rgba(207, 255, 80, 0.5);
+}
+
+.new-onboarding__avatar.selected {
+  border-color: #cfff50;
+  background: rgba(207, 255, 80, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(207, 255, 80, 0.5);
+}
+
+.new-onboarding__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* X Connect Button */
+.new-onboarding__x-connect {
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 40px;
+  color: #fff;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-onboarding__x-connect:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
+
+.new-onboarding__x-connected {
+  padding: 12px 24px;
+  background: rgba(207, 255, 80, 0.2);
+  border: 1px solid #cfff50;
+  border-radius: 40px;
+  color: #cfff50;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.new-onboarding__x-username {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Location Status */
+.new-onboarding__location-status,
+.new-onboarding__location-ready {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  text-align: center;
+}
+
+.new-onboarding__location-ready {
+  color: #cfff50;
+}
+
+/* Error Message */
+.new-onboarding__error {
+  color: #ff4d6d;
+  font-size: 14px;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  text-align: center;
+  max-width: 280px;
+}
+
+/* Submit Button */
+.new-onboarding__submit-btn {
+  width: 100%;
+  max-width: 312px;
+  padding: 16px 20px;
+  background: #f5f5f7;
+  color: #121212;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.new-onboarding__submit-btn:hover:not(:disabled) {
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+}
+
+.new-onboarding__submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ================================================
+   VOICE AUTH - Screen 2: "SAY ZO ZO ZO"
+   ================================================ */
+
+.voice-auth {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #000;
+}
+
+.voice-auth__background {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  background-image: url('/loading background.gif');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.4;
+  z-index: -1;
+}
+
+.voice-auth__logo {
+  position: absolute;
+  top: 70px;
+  left: 24px;
+  width: 40px;
+  height: 40px;
+  z-index: 2;
+}
+
+.voice-auth__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.voice-auth__title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.voice-auth__title {
+  font-family: 'Syne', 'Space Grotesk', sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 2px;
+  line-height: 1;
+  margin: 0;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, #fff 0%, #888 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.voice-auth__subtitle {
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.44);
+  text-align: center;
+  line-height: 20px;
+  margin: 0;
+}
+
+/* Microphone Visualization */
+.voice-auth__microphone {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.voice-auth__microphone:hover {
+  transform: scale(1.05);
+}
+
+.voice-auth__mic-icon {
+  position: relative;
+  z-index: 3;
+  font-size: 80px;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+}
+
+.voice-auth__ring {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.voice-auth__ring--1 {
+  width: 120px;
+  height: 120px;
+}
+
+.voice-auth__ring--2 {
+  width: 160px;
+  height: 160px;
+}
+
+.voice-auth__ring--3 {
+  width: 200px;
+  height: 200px;
+}
+
+/* Listening Animation */
+.voice-auth__microphone.listening .voice-auth__ring {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+.voice-auth__microphone.listening .voice-auth__ring--1 {
+  animation-delay: 0s;
+}
+
+.voice-auth__microphone.listening .voice-auth__ring--2 {
+  animation-delay: 0.3s;
+}
+
+.voice-auth__microphone.listening .voice-auth__ring--3 {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 1;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* Recognized State */
+.voice-auth__microphone.recognized .voice-auth__mic-icon {
+  animation: success-bounce 0.6s ease;
+}
+
+.voice-auth__microphone.recognized .voice-auth__ring {
+  border-color: #cfff50;
+  animation: success-ring 0.6s ease;
+}
+
+@keyframes success-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes success-ring {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.voice-auth__instruction {
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+}
+
+.voice-auth__error {
+  color: #ff4d6d;
+  font-size: 14px;
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  text-align: center;
+  max-width: 280px;
+}
+
+.voice-auth__skip-btn {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 20px;
+}
+
+.voice-auth__skip-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* ================================================
+   MOBILE RESPONSIVE
+   ================================================ */
+
+@media (max-width: 480px) {
+  .new-onboarding__title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  
+  .new-onboarding__avatar-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .new-onboarding__avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .voice-auth__title {
+    font-size: 36px;
+  }
+
+  .voice-auth__microphone {
+    width: 200px;
+    height: 200px;
+  }
+
+  .voice-auth__mic-icon {
+    font-size: 60px;
+  }
+}
+
+/* Scrollbar styling for avatar selector */
+.new-onboarding__avatar-selector::-webkit-scrollbar {
+  width: 6px;
+}
+
+.new-onboarding__avatar-selector::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.new-onboarding__avatar-selector::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+.new-onboarding__avatar-selector::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+

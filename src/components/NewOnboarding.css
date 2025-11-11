@@ -1,5 +1,5 @@
 /* ================================================
-   SCREEN 1: WHO ARE YOU? - Figma Design
+   SCREEN 1: WHO ARE YOU? - With Real Figma Assets
    ================================================ */
 
 .figma-onboarding {
@@ -11,6 +11,7 @@
   align-items: center;
   justify-content: flex-start;
   overflow-y: auto;
+  background: #000;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
 }
 
@@ -18,18 +19,18 @@
   position: absolute;
   inset: 0;
   background: #000;
-  background-image: url('/loading%20background.gif');
+  background-image: url('/figma-assets/onboarding-bg.png');
   background-size: cover;
   background-position: center;
   opacity: 0.4;
-  z-index: -1;
+  z-index: 0;
 }
 
 .figma-onboarding__bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50.721%, #000000 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, #000000 100%);
 }
 
 .figma-onboarding__logo {
@@ -38,30 +39,30 @@
   left: 24px;
   width: 40px;
   height: 40px;
-  z-index: 2;
+  z-index: 10;
 }
 
 .figma-onboarding__container {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   max-width: 360px;
   width: 100%;
-  padding: 156px 24px 40px;
+  padding: 160px 24px 40px;
   margin: 0 auto;
 }
 
 .figma-onboarding__title {
   font-family: 'Syne', 'Space Grotesk', sans-serif;
-  font-size: clamp(28px, 7vw, 40px);
+  font-size: 40px;
   font-weight: 700;
   text-transform: uppercase;
   color: #fff;
   text-align: center;
-  letter-spacing: 1.6px;
+  letter-spacing: 2px;
   line-height: 1;
   margin: 0;
 }
@@ -73,22 +74,22 @@
   color: rgba(255, 255, 255, 0.44);
   text-align: center;
   line-height: 20px;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   max-width: 312px;
 }
 
-/* Username Input */
+/* Username Input - Match Figma exactly */
 .figma-onboarding__input-wrapper {
   width: 100%;
-  max-width: 312px;
+  max-width: 280px;
 }
 
 .figma-onboarding__input {
   width: 100%;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   color: #fff;
   font-size: 24px;
@@ -96,48 +97,49 @@
   text-align: center;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .figma-onboarding__input:focus {
-  border-color: rgba(255, 255, 255, 0.44);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .figma-onboarding__input::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* Avatar Selector */
+/* Avatar Selector - Horizontal 2-item row like Figma */
 .figma-onboarding__avatars {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  width: 100%;
-  max-width: 200px;
-  margin: 8px 0;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin: 12px 0;
 }
 
 .figma-onboarding__avatar {
-  width: 88px;
-  height: 88px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  border: 3px solid transparent;
+  border: 3px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .figma-onboarding__avatar:hover {
-  transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .figma-onboarding__avatar.selected {
   border-color: #cfff50;
-  background: rgba(207, 255, 80, 0.1);
-  transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(207, 255, 80, 0.4);
+  background: rgba(207, 255, 80, 0.15);
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(207, 255, 80, 0.5);
 }
 
 .figma-onboarding__avatar img {
@@ -148,28 +150,28 @@
 
 /* X Connect Button */
 .figma-onboarding__connect-x {
-  padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 12px 28px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
   color: #fff;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .figma-onboarding__connect-x:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.44);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .figma-onboarding__x-status {
-  padding: 12px 24px;
-  background: rgba(207, 255, 80, 0.1);
-  border: 1px solid #cfff50;
+  padding: 12px 28px;
+  background: rgba(207, 255, 80, 0.12);
+  border: 1px solid rgba(207, 255, 80, 0.5);
   border-radius: 100px;
   color: #cfff50;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
@@ -188,7 +190,7 @@
 .figma-onboarding__location-text,
 .figma-onboarding__location-ready {
   color: rgba(255, 255, 255, 0.44);
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   margin: 0;
 }
@@ -200,18 +202,18 @@
 /* Error Message */
 .figma-onboarding__error {
   color: #ff4d6d;
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   margin: 0;
 }
 
-/* Submit Button */
+/* Get Citizenship Button - White like Figma */
 .figma-onboarding__submit {
   width: 100%;
   max-width: 312px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   background: #f5f5f7;
-  color: #121212;
+  color: #1a1a1a;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
   font-size: 16px;
   font-weight: 500;
@@ -219,22 +221,22 @@
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .figma-onboarding__submit:hover:not(:disabled) {
   background: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
 .figma-onboarding__submit:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 /* ================================================
-   SCREEN 2: SAY ZO ZO ZO - Figma Design
+   SCREEN 2: QUANTUM SYNC - With Real Figma Assets
    ================================================ */
 
 .voice-auth-screen {
@@ -247,17 +249,18 @@
   justify-content: center;
   background: #000;
   font-family: 'Rubik', 'Space Grotesk', sans-serif;
+  overflow: hidden;
 }
 
 .voice-auth-screen__bg {
   position: absolute;
   inset: 0;
   background: #000;
-  background-image: url('/loading%20background.gif');
+  background-image: url('/figma-assets/onboarding-bg.png');
   background-size: cover;
   background-position: center;
   opacity: 0.3;
-  z-index: -1;
+  z-index: 0;
 }
 
 .voice-auth-screen__logo {
@@ -266,46 +269,35 @@
   left: 24px;
   width: 40px;
   height: 40px;
-  z-index: 2;
+  z-index: 10;
 }
 
 .voice-auth-screen__container {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   max-width: 360px;
   width: 100%;
   padding: 0 24px;
 }
 
-/* Quantum Sync Title */
+/* QUANTUM SYNC Title - Using Real Figma Asset */
 .voice-auth-screen__title-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
-  mix-blend-mode: lighten;
+  margin-bottom: 8px;
 }
 
-.voice-auth-screen__title {
-  font-family: 'Syne', 'Space Grotesk', sans-serif;
-  font-size: clamp(40px, 10vw, 56px);
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #fff;
-  text-align: center;
-  letter-spacing: 2.5px;
-  line-height: 1;
-  margin: 0;
-  /* Metallic gradient effect */
-  background: linear-gradient(180deg, #ffffff 0%, #888888 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+.voice-auth-screen__title-image {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  mix-blend-mode: lighten;
+  filter: brightness(1.1);
 }
 
 .voice-auth-screen__subtitle {
@@ -314,110 +306,64 @@
   color: rgba(255, 255, 255, 0.44);
   text-align: center;
   line-height: 20px;
-  margin: 0;
+  margin: 0 0 20px;
 }
 
 /* Microphone Area with Platform */
 .voice-auth-screen__mic-area {
   position: relative;
   width: 100%;
-  max-width: 320px;
-  height: 360px;
+  max-width: 360px;
+  height: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin: 24px 0;
+  justify-content: flex-start;
+  margin: 20px 0 16px;
 }
 
-/* Microphone Visualization */
+/* Microphone with Rings - Using Real Figma Asset */
 .voice-auth-screen__mic {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   width: 240px;
   height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.3s;
+  margin-top: 20px;
   mix-blend-mode: lighten;
 }
 
 .voice-auth-screen__mic:hover {
-  transform: translateX(-50%) scale(1.05);
+  transform: scale(1.05);
 }
 
-.voice-auth-screen__mic-icon {
-  position: relative;
-  z-index: 3;
-  font-size: 72px;
-  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6));
+.voice-auth-screen__mic-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(1.1);
 }
 
-.voice-auth-screen__ring {
-  position: absolute;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  opacity: 0;
+/* Pulsing animation on listening */
+.voice-auth-screen__mic.listening {
+  animation: pulse-scale 2s ease-in-out infinite;
 }
 
-.voice-auth-screen__ring--1 {
-  width: 140px;
-  height: 140px;
-}
-
-.voice-auth-screen__ring--2 {
-  width: 180px;
-  height: 180px;
-}
-
-.voice-auth-screen__ring--3 {
-  width: 220px;
-  height: 220px;
-}
-
-/* Listening Animation */
-.voice-auth-screen__mic.listening .voice-auth-screen__ring {
-  animation: pulse-ring 2s ease-out infinite;
-}
-
-.voice-auth-screen__mic.listening .voice-auth-screen__ring--1 {
-  animation-delay: 0s;
-}
-
-.voice-auth-screen__mic.listening .voice-auth-screen__ring--2 {
-  animation-delay: 0.3s;
-}
-
-.voice-auth-screen__mic.listening .voice-auth-screen__ring--3 {
-  animation-delay: 0.6s;
-}
-
-@keyframes pulse-ring {
-  0% {
-    opacity: 1;
-    transform: scale(0.7);
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
   }
   50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.3);
+    transform: scale(1.05);
   }
 }
 
-/* Recognized State */
-.voice-auth-screen__mic.recognized .voice-auth-screen__mic-icon {
+/* Success state */
+.voice-auth-screen__mic.recognized {
   animation: success-bounce 0.6s ease;
-}
-
-.voice-auth-screen__mic.recognized .voice-auth-screen__ring {
-  border-color: #cfff50;
-  animation: success-ring 0.6s ease;
 }
 
 @keyframes success-bounce {
@@ -429,28 +375,17 @@
   }
 }
 
-@keyframes success-ring {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.6);
-  }
-}
-
-/* Stone Platform */
+/* Stone Platform - Using existing asset */
 .voice-auth-screen__platform {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 360px;
+  width: 120%;
+  max-width: 430px;
   height: auto;
-  mix-blend-mode: lighten;
-  opacity: 0.8;
+  opacity: 0.9;
+  filter: brightness(0.8) contrast(1.1);
 }
 
 .voice-auth-screen__instruction {
@@ -463,22 +398,22 @@
 
 .voice-auth-screen__error {
   color: #ff4d6d;
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   margin: 0;
   max-width: 280px;
 }
 
 .voice-auth-screen__skip {
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .voice-auth-screen__skip:hover {
@@ -492,43 +427,26 @@
 
 @media (max-width: 480px) {
   .figma-onboarding__title {
-    font-size: 32px;
-  }
-  
-  .figma-onboarding__avatars {
-    max-width: 180px;
+    font-size: 36px;
   }
 
-  .figma-onboarding__avatar {
-    width: 76px;
-    height: 76px;
-  }
-
-  .voice-auth-screen__title {
-    font-size: 40px;
+  .voice-auth-screen__title-image {
+    max-width: 280px;
   }
 
   .voice-auth-screen__mic {
     width: 200px;
     height: 200px;
   }
-
-  .voice-auth-screen__mic-icon {
-    font-size: 60px;
-  }
 }
 
 @media (max-height: 700px) {
   .figma-onboarding__container {
-    padding-top: 120px;
-    gap: 12px;
-  }
-
-  .figma-onboarding__avatars {
-    margin: 4px 0;
+    padding-top: 130px;
+    gap: 16px;
   }
 
   .voice-auth-screen__mic-area {
-    height: 300px;
+    height: 360px;
   }
 }

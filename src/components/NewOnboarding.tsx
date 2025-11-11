@@ -311,10 +311,13 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
 
       {/* Main Content */}
       <div className="voice-auth-screen__container">
-        {/* Title with metallic effect */}
+        {/* QUANTUM SYNC Title - Real Figma Asset */}
         <div className="voice-auth-screen__title-wrapper">
-          <h1 className="voice-auth-screen__title">QUANTUM</h1>
-          <h1 className="voice-auth-screen__title">SYNC</h1>
+          <img 
+            src="/figma-assets/quantum-sync-title.png" 
+            alt="QUANTUM SYNC" 
+            className="voice-auth-screen__title-image" 
+          />
         </div>
 
         <p className="voice-auth-screen__subtitle">
@@ -328,10 +331,11 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
             className={`voice-auth-screen__mic ${isListening ? 'listening' : ''} ${recognized ? 'recognized' : ''}`}
             onClick={handleStartListening}
           >
-            <div className="voice-auth-screen__mic-icon">🎤</div>
-            <div className="voice-auth-screen__ring voice-auth-screen__ring--1"></div>
-            <div className="voice-auth-screen__ring voice-auth-screen__ring--2"></div>
-            <div className="voice-auth-screen__ring voice-auth-screen__ring--3"></div>
+            <img 
+              src="/figma-assets/microphone-rings.png" 
+              alt="Microphone" 
+              className="voice-auth-screen__mic-image" 
+            />
           </div>
           
           {/* Stone Platform */}

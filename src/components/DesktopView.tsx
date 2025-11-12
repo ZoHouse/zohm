@@ -11,6 +11,7 @@ import WalletOverlay from '@/components/WalletOverlay';
 import CityInfoCard from '@/components/CityInfoCard';
 import MapViewToggle from '@/components/MapViewToggle';
 import StatsPill from '@/components/StatsPill';
+import QuantumSyncHeader from '@/components/QuantumSyncHeader';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -32,6 +33,7 @@ interface DesktopViewProps {
   questCount: number;
   userCity?: string | null;
   userLocation?: { lat: number; lng: number } | null;
+  userId?: string;
   onMapReady: (map: mapboxgl.Map, closeAllPopups: () => void) => void;
   flyToEvent: EventData | null;
   flyToNode: PartnerNodeRecord | null;
@@ -54,6 +56,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   questCount,
   userCity,
   userLocation,
+  userId,
   onMapReady,
   flyToEvent,
   flyToNode,
@@ -101,6 +104,15 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         shouldAnimateFromSpace={shouldAnimateFromSpace}
         userLocation={userLocation}
       />
+
+      {/* User Balance and Avatar Header */}
+      {userId && (
+        <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
+          <div className="pointer-events-auto">
+            <QuantumSyncHeader userId={userId} />
+          </div>
+        </div>
+      )}
 
       {/* City Info Card or Logo/Header */}
       {userCity ? (

@@ -95,12 +95,12 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
   const localGmtOffset = getLocalGmtOffset();
 
   return (
-    <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-2xl px-4">
-      <div className="bg-white/20 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg px-4 py-3 sm:px-6 sm:py-4">
+    <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-xl px-4">
+      <div className="bg-white/20 backdrop-blur-md border border-white/40 rounded-xl shadow-lg px-3 py-2 sm:px-4 sm:py-2.5">
         {/* City Name & Time */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-          <h1 className="text-xl sm:text-3xl font-bold text-black">{city}</h1>
-          <div className="flex items-center gap-1 text-xs sm:text-sm text-black/90">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+          <h1 className="text-base sm:text-xl font-bold text-black">{city}</h1>
+          <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-black/90">
             <span>☀️</span>
             <span className="font-mono">{cityTime} GMT{cityGmtOffset}</span>
           </div>
@@ -108,7 +108,7 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
 
         {/* Local Time */}
         {cityTimezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && (
-          <p className="text-[10px] sm:text-xs text-black/70">
+          <p className="text-[9px] sm:text-[10px] text-black/70">
             Local Time: {localTime} GMT{localGmtOffset}
           </p>
         )}

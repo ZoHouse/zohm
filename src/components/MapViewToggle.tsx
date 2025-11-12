@@ -20,13 +20,13 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className={`inline-flex items-center gap-1 p-1 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg ${className}`}>
+    <div className={`inline-flex items-center gap-0.5 p-0.5 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg ${className}`}>
       {/* Local Mode Button */}
       <button
         onClick={() => onToggle('local')}
         disabled={isLoading}
         className={`
-          flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200
+          flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
           ${viewMode === 'local' 
             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' 
             : 'text-gray-600 hover:text-gray-900'
@@ -36,16 +36,16 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
       >
         {isLoading ? (
           <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
             <span>Getting location...</span>
           </>
         ) : (
           <>
-            <MapPin size={16} />
+            <MapPin size={14} />
             <span>Local</span>
             {localCount !== undefined && (
               <span className={`
-                ml-1 px-2 py-0.5 rounded-full text-xs font-bold
+                ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold
                 ${viewMode === 'local' ? 'bg-white/20' : 'bg-gray-200'}
               `}>
                 {localCount}
@@ -60,7 +60,7 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
         onClick={() => onToggle('global')}
         disabled={isLoading}
         className={`
-          flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200
+          flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
           ${viewMode === 'global' 
             ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
             : 'text-gray-600 hover:text-gray-900'
@@ -68,11 +68,11 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
           ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
-        <Globe size={16} />
+        <Globe size={14} />
         <span>Global</span>
         {globalCount !== undefined && (
           <span className={`
-            ml-1 px-2 py-0.5 rounded-full text-xs font-bold
+            ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold
             ${viewMode === 'global' ? 'bg-white/20' : 'bg-gray-200'}
           `}>
             {globalCount}

@@ -755,13 +755,50 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         shouldAnimateFromSpace
       });
       
+      console.log('🔑 Mapbox token:', MAPBOX_TOKEN ? `${MAPBOX_TOKEN.substring(0, 20)}...` : 'MISSING!');
+      
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         center: initialCenter,
         zoom: initialZoom,
         pitch: initialPitch,
         bearing: initialBearing,
-        style: 'mapbox://styles/mapbox/standard'
+        style: 'mapbox://styles/mapbox/streets-v12' // Changed from 'standard' to reliable streets style
+      });
+
+      console.log('✅ Map object created:', !!map.current);
+      console.log('🎨 Map container dimensions:', {
+        width: mapContainer.current.offsetWidth,
+        height: mapContainer.current.offsetHeight,
+        display: window.getComputedStyle(mapContainer.current).display
+      });
+
+      // Add comprehensive error handlers
+      map.current.on('error', (e) => {
+        console.error('❌ Mapbox error:', e.error);
+        console.error('❌ Error details:', e);
+      });
+      
+      map.current.on('styledata', () => {
+        console.log('🎨 Map style loaded successfully');
+      });
+      
+      map.current.on('style.load', () => {
+        console.log('🎨 Map style load event fired');
+      });
+      
+      map.current.on('sourcedataloading', (e) => {
+        console.log('📦 Source data loading:', e.sourceId);
+      });
+      
+      map.current.on('sourcedata', (e) => {
+        if (e.isSourceLoaded) {
+          console.log('📦 Source data loaded:', e.sourceId);
+        }
+      });
+      
+      map.current.on('dataloading', (e) => {
+        console.log('🔄 Map data loading...');
       });
 
       // Ensure the map resizes correctly when container size changes
@@ -776,10 +813,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       window.addEventListener('resize', handleResize);
 
       // Wait for map to load before setting up features
-      map.current.on('load', () => {
+      console.log('📡 Attaching map load event listener...');
+      const isAlreadyLoaded = map.current.loaded();
+      console.log('📡 Map state before load:', { loaded: isAlreadyLoaded, isMoving: map.current.isMoving() });
+      
+      // Function to set up map features (called when map is loaded)
+      const setupMapFeatures = () => {
+        console.log('🎉 Setting up map features...');
         if (!map.current) return;
         
         setMapLoaded(true);
+        console.log('✅ setMapLoaded(true) called');
 
         // Force a resize after load to render tiles if container was hidden/absolute
         try {
@@ -803,41 +847,47 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
         // Add 3D buildings layer
         try {
-          // Check if composite source exists before adding 3D buildings
-          const style = map.current.getStyle();
-          if (style.sources && style.sources.composite) {
-            map.current.addLayer({
-              id: '3d-buildings',
-              source: 'composite',
-              'source-layer': 'building',
-              filter: ['==', 'extrude', 'true'],
-              type: 'fill-extrusion',
-              minzoom: 15,
-              paint: {
-                'fill-extrusion-color': '#aaa',
-                'fill-extrusion-height': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'height']
-                ],
-                'fill-extrusion-base': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'min_height']
-                ],
-                'fill-extrusion-opacity': 0.6
-              }
-            });
+          // Check if layer already exists (React Strict Mode calls this twice)
+          if (!map.current.getLayer('3d-buildings')) {
+            // Check if composite source exists before adding 3D buildings
+            const style = map.current.getStyle();
+            if (style.sources && style.sources.composite) {
+              map.current.addLayer({
+                id: '3d-buildings',
+                source: 'composite',
+                'source-layer': 'building',
+                filter: ['==', 'extrude', 'true'],
+                type: 'fill-extrusion',
+                minzoom: 15,
+                paint: {
+                  'fill-extrusion-color': '#aaa',
+                  'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    15.05,
+                    ['get', 'height']
+                  ],
+                  'fill-extrusion-base': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    15.05,
+                    ['get', 'min_height']
+                  ],
+                  'fill-extrusion-opacity': 0.6
+                }
+              });
+              console.log('✅ 3D buildings layer added');
+            } else {
+              console.log('🏢 3D buildings not available with current map style');
+            }
           } else {
-            console.log('🏢 3D buildings not available with current map style');
+            console.log('ℹ️ 3D buildings layer already exists, skipping');
           }
         } catch (error) {
           console.warn('Could not add 3D buildings:', error);
@@ -865,7 +915,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         
         // Add Zo House markers
         addZoHouseMarkers();
-        addPartnerNodeMarkers();
+        // Note: Partner node markers are added via useEffect when nodes prop is available
 
         // Expose directions helper on window for popup buttons
         try {
@@ -879,7 +929,39 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             };
           }
         } catch {}
-      });
+      };
+      
+      // If map is already loaded, set up features immediately
+      // Otherwise, wait for load or idle event
+      if (isAlreadyLoaded) {
+        console.log('⚡ Map already loaded - setting up features immediately');
+        setupMapFeatures();
+      } else {
+        console.log('⏳ Waiting for map load event...');
+        
+        let hasSetup = false;
+        
+        const doSetup = (source: string) => {
+          if (hasSetup) return;
+          hasSetup = true;
+          console.log(`🎉 MAP LOADED (via ${source})!`);
+          setupMapFeatures();
+        };
+        
+        // Listen for load event (primary)
+        map.current.on('load', () => doSetup('load'));
+        
+        // Listen for idle event (backup - fires when map is fully loaded and idle)
+        map.current.on('idle', () => doSetup('idle'));
+        
+        // Fallback: Force setup after 3 seconds if style is loaded
+        setTimeout(() => {
+          if (!hasSetup && map.current && map.current.isStyleLoaded()) {
+            console.warn('⚠️ Load event timeout - forcing setup (style is loaded)');
+            doSetup('timeout');
+          }
+        }, 3000);
+      }
 
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -911,10 +993,23 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         console.log('🎯 Duration: 8 seconds');
         hasAnimatedFromSpace.current = true;
         
-        // Start animation on next frame to ensure map is fully initialized
-        requestAnimationFrame(() => {
+        // Wait for map to be fully ready before animating
+        const startAnimation = () => {
           if (!map.current) {
             console.error('❌ Map not available for animation!');
+            return;
+          }
+          
+          // Verify map is loaded and has valid dimensions
+          const mapLoaded = map.current.loaded();
+          const container = map.current.getContainer();
+          const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
+          
+          console.log('🔍 Animation readiness:', { mapLoaded, hasValidDimensions });
+          
+          if (!mapLoaded || !hasValidDimensions) {
+            console.warn('⏳ Map not ready, retrying in 200ms...');
+            setTimeout(startAnimation, 200);
             return;
           }
           
@@ -932,7 +1027,10 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             }
           });
           console.log('🎬 Animation started successfully!');
-        });
+        };
+        
+        // Start the animation
+        startAnimation();
       } else {
         console.log('⏭️ Skipping animation:', {
           shouldAnimateFromSpace,
@@ -976,12 +1074,33 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       console.log('🦄 Added unicorn marker for user location');
 
-      // Create popup content matching the event popup style
+      // Create popup content as a quest
       const userPopupContent = `
         <div style="padding: 0;">
-          <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">🦄 Your Location</h3>
-          <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 Current position</p>
-          <p style="margin: 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📱 ${userLocation ? 'Saved location' : 'Auto-detected via GPS'}</p>
+          <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">Main Quest</h3>
+          <p style="margin: 0 0 8px 0; font-size: 15px; color: #1a1a1a; line-height: 1.4; font-weight: 600;">Place a \\z/ here</p>
+          <p style="margin: 0 0 12px 0; font-size: 12px; color: #666; line-height: 1.4;">Mark your territory in the Zo World</p>
+          <button 
+            onclick="window.open('https://form.typeform.com/to/voEnDiSl', '_blank')"
+            style="
+              width: 100%;
+              padding: 10px 16px;
+              background: linear-gradient(135deg, #ff4d6d 0%, #ff6b9d 100%);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 600;
+              font-family: 'Space Grotesk', sans-serif;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              box-shadow: 0 2px 8px rgba(255, 77, 109, 0.3);
+            "
+            onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255, 77, 109, 0.4)';"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 77, 109, 0.3)';"
+          >
+            Host Your Node
+          </button>
         </div>
       `;
 
@@ -1089,26 +1208,90 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     });
     
     if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current && map.current && userLocationMarker.current) {
+      // Ensure map is fully loaded and has valid dimensions before animating
+      const mapLoaded = map.current.loaded();
+      const container = map.current.getContainer();
+      const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
+      
+      if (!mapLoaded || !hasValidDimensions) {
+        console.log(`⏳ Map/marker ready but map not fully loaded (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
+        return; // Wait for retry mechanism below
+      }
+      
       // If location was already obtained before animation flag was set, animate now
       const userCoords = userLocationMarker.current.getLngLat();
       console.log('🚀 Animation flag changed - flying from space to existing location:', userCoords);
       hasAnimatedFromSpace.current = true;
       
-      map.current.flyTo({
-        center: [userCoords.lng, userCoords.lat],
-        zoom: isMobile() ? 17.5 : 17,
-        pitch: isMobile() ? 65 : 65,
-        bearing: -30,
-        duration: 8000,
-        essential: true,
-        easing: (t) => {
-          return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        }
-      });
+      // Add small delay to ensure map is stable
+      setTimeout(() => {
+        if (!map.current) return;
+        
+        map.current.flyTo({
+          center: [userCoords.lng, userCoords.lat],
+          zoom: isMobile() ? 17.5 : 17,
+          pitch: isMobile() ? 65 : 65,
+          bearing: -30,
+          duration: 8000,
+          essential: true,
+          easing: (t) => {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          }
+        });
+      }, 100);
     } else if (shouldAnimateFromSpace && hasAnimatedFromSpace.current) {
       console.log('⏭️ Animation already played this session');
     } else if (shouldAnimateFromSpace && !userLocationMarker.current) {
       console.log('⏳ Animation flag set but waiting for user location marker...');
+      
+      // Retry every 500ms until marker is ready (max 10 seconds)
+      const maxRetries = 20;
+      let retryCount = 0;
+      
+      const retryInterval = setInterval(() => {
+        retryCount++;
+        console.log(`🔄 Retry ${retryCount}/${maxRetries}: Checking for user location marker...`);
+        
+        if (userLocationMarker.current && map.current && !hasAnimatedFromSpace.current) {
+          // Extra checks: ensure map is fully loaded and has valid dimensions
+          const mapLoaded = map.current.loaded();
+          const container = map.current.getContainer();
+          const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
+          
+          if (!mapLoaded || !hasValidDimensions) {
+            console.log(`⏳ Map not ready yet (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
+            return; // Keep retrying
+          }
+          
+          clearInterval(retryInterval);
+          const userCoords = userLocationMarker.current.getLngLat();
+          console.log('🚀 Marker ready and map loaded - starting animation:', userCoords);
+          hasAnimatedFromSpace.current = true;
+          
+          // Use setTimeout to ensure map has one more render cycle
+          setTimeout(() => {
+            if (!map.current) return;
+            
+            map.current.flyTo({
+              center: [userCoords.lng, userCoords.lat],
+              zoom: isMobile() ? 17.5 : 17,
+              pitch: isMobile() ? 65 : 65,
+              bearing: -30,
+              duration: 8000,
+              essential: true,
+              easing: (t) => {
+                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+              }
+            });
+          }, 100);
+        } else if (retryCount >= maxRetries) {
+          clearInterval(retryInterval);
+          console.warn('⚠️ Animation timeout: User marker not ready after 10 seconds');
+        }
+      }, 500);
+      
+      // Cleanup on unmount
+      return () => clearInterval(retryInterval);
     }
   }, [shouldAnimateFromSpace]);
 

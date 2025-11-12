@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import LandingPage from '@/components/LandingPage';
-import NewOnboarding from '@/components/NewOnboarding';
+import Onboarding2 from '@/components/Onboarding2';
+import QuestAudio from '@/components/QuestAudio';
+import QuestComplete from '@/components/QuestComplete';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
 import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
@@ -36,8 +38,12 @@ export default function Home() {
   const [mapViewMode, setMapViewMode] = useState<'local' | 'global'>('global'); // Will be updated based on user location
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [shouldAnimateFromSpace, setShouldAnimateFromSpace] = useState(false);
+  const [animationFlagSet, setAnimationFlagSet] = useState(false); // Track if we've set the flag
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
+  
+  // Onboarding flow state
+  const [onboardingStep, setOnboardingStep] = useState<'profile' | 'voice' | 'complete' | null>(null);
   
   // Temporary location state for immediate onboarding transition
   const [onboardingLocation, setOnboardingLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -67,6 +73,18 @@ export default function Home() {
 
   // Local radius in kilometers
   const LOCAL_RADIUS_KM = 100;
+
+  // Immediately set animation flag for returning users on mount
+  useEffect(() => {
+    if (animationFlagSet) return; // Only run once
+    
+    const hasLocation = !!(privyUserProfile?.lat && privyUserProfile?.lng);
+    if (privyOnboardingComplete && hasLocation && !shouldAnimateFromSpace) {
+      console.log('🚀 Setting animation flag for returning user (mount)');
+      setShouldAnimateFromSpace(true);
+      setAnimationFlagSet(true);
+    }
+  }, []); // Run once on mount
 
   // Calculate local events (always, regardless of mode) - MUST be before conditional returns
   const localEvents = useMemo(() => {
@@ -137,8 +155,7 @@ export default function Home() {
               } else {
                 console.log('📝 Onboarding required');
                 setUserProfileStatus('not_exists');
-                // Skip map loading for onboarding users
-                setIsLoading(false);
+                // Don't set isLoading to false here - let onboarding screens manage loading state
               }
             }
           } else {
@@ -163,13 +180,15 @@ export default function Home() {
 
   // Load map data (events and nodes) only after onboarding is complete
   useEffect(() => {
+    console.log('🔍 Map data loading effect triggered - userProfileStatus:', userProfileStatus);
+    
     // Only load map data if user has completed onboarding
     if (userProfileStatus !== 'exists') {
-      console.log('⏸️ Skipping map data load - onboarding not complete');
+      console.log('⏸️ Skipping map data load - onboarding not complete (status:', userProfileStatus, ')');
       return;
     }
 
-    console.log('🗺️ Loading map data after onboarding complete...');
+    console.log('🗺️ ✅ Loading map data - user onboarding complete!');
 
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
@@ -178,13 +197,14 @@ export default function Home() {
         
         // Get calendar URLs dynamically from database
         const calendarUrls = await getCalendarUrls();
-        console.log('📅 Got calendar URLs:', calendarUrls);
+        console.log('📅 Got calendar URLs:', calendarUrls.length, 'calendars');
         
         console.log('🔄 Fetching live events from iCal feeds...');
         const liveEvents = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
         
         if (liveEvents.length > 0) {
           console.log('✅ Loaded', liveEvents.length, 'live events from', calendarUrls.length, 'calendars');
+          console.log('📍 Setting events state with', liveEvents.length, 'events');
           setEvents(liveEvents);
         } else {
           console.log('⚠️ No live events found');
@@ -195,32 +215,40 @@ export default function Home() {
         console.error('❌ Error loading live events:', error);
         setEvents([]);
       } finally {
-        console.log('🏁 Setting isLoading to false');
+        console.log('🏁 Events loading complete - setting isLoading to false');
         setIsLoading(false);
       }
     };
 
     // Start loading events
+    console.log('🚀 Initiating event loading...');
     loadLiveEvents();
 
     // Load nodes
     const loadNodes = async () => {
       try {
+        console.log('🏘️ Loading partner nodes...');
         const { getNodesFromDB } = await import('@/lib/supabase');
         const data = await getNodesFromDB();
-        if (data) setNodes(data);
+        if (data) {
+          console.log('✅ Loaded', data.length, 'partner nodes');
+          setNodes(data);
+        }
       } catch (e) {
-        console.error('Error loading nodes', e);
+        console.error('❌ Error loading nodes:', e);
       }
     };
     loadNodes();
 
     const loadQuestsCount = async () => {
       try {
+        console.log('🎯 Loading quests count...');
         const quests = await getQuests();
-        setQuestCount(Array.isArray(quests) ? quests.length : 0);
+        const count = Array.isArray(quests) ? quests.length : 0;
+        console.log('✅ Loaded', count, 'quests');
+        setQuestCount(count);
       } catch (e) {
-        console.error('Error loading quests', e);
+        console.error('❌ Error loading quests:', e);
         setQuestCount(0);
       }
     };
@@ -228,21 +256,38 @@ export default function Home() {
     
     // Temporary: Set a timeout to prevent infinite loading during development
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Loading timeout reached, proceeding anyway');
+      console.log('⏰ Loading timeout reached (5s), proceeding anyway');
       setIsLoading(false);
     }, 5000);
     
     // Cleanup timeout if component unmounts
-    return () => clearTimeout(timeoutId);
+    return () => {
+      console.log('🧹 Cleaning up map data loading effect');
+      clearTimeout(timeoutId);
+    };
   }, [userProfileStatus]);
+
+  // 🐛 DEBUG: Log current state for debugging
+  useEffect(() => {
+    console.log('🎯 App State:', {
+      privyAuthenticated,
+      privyLoading,
+      privyReady,
+      onboardingStep,
+      userProfileStatus,
+      privyOnboardingComplete,
+      hasProfile: !!privyUserProfile,
+      profileName: privyUserProfile?.name
+    });
+  }, [privyAuthenticated, privyLoading, privyReady, onboardingStep, userProfileStatus, privyOnboardingComplete, privyUserProfile]);
 
   // Effect to check user profile when Privy authenticates
   useEffect(() => {
+    // Only run once when status is null
     if (privyAuthenticated && !privyLoading && userProfileStatus === null) {
       console.log('🔍 Privy authenticated, checking profile...');
-      setUserProfileStatus('loading');
       
-      const checkUserProfile = async () => {
+      const checkUserProfile = () => {
         if (privyOnboardingComplete && privyUserProfile) {
           console.log('✅ Profile complete:', privyUserProfile.name);
           setUserProfileStatus('exists');
@@ -252,7 +297,9 @@ export default function Home() {
         }
       };
 
-      checkUserProfile();
+      // Use timeout to prevent rapid updates
+      const timeoutId = setTimeout(checkUserProfile, 100);
+      return () => clearTimeout(timeoutId);
     }
   }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
 
@@ -267,19 +314,29 @@ export default function Home() {
     }
   }, [userProfileStatus, privyUserProfile]);
 
-  // Enable space animation when user completes onboarding or returns
+  // Enable space animation for NEW users after completing onboarding
+  // (Returning users get the flag computed in shouldTriggerAnimation useMemo)
   useEffect(() => {
-    console.log('🎬 Animation check:', {
+    const hasLocation = !!(privyUserProfile?.lat && privyUserProfile?.lng);
+    
+    console.log('🎬 Animation effect check (new users):', {
       privyOnboardingComplete,
       userProfileStatus,
-      shouldTrigger: privyOnboardingComplete && userProfileStatus === 'exists'
+      hasUserLocation: hasLocation,
+      currentAnimationFlag: shouldAnimateFromSpace,
+      shouldTrigger: privyOnboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation
     });
     
-    if (privyOnboardingComplete && userProfileStatus === 'exists') {
-      console.log('🚀 Enabling space-to-location animation');
+    // Set flag for new users who just completed onboarding
+    // Returning users get flag computed synchronously in useMemo
+    if (privyOnboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation) {
+      console.log('🚀 Enabling space-to-location animation (new user post-onboarding)');
       setShouldAnimateFromSpace(true);
+      setAnimationFlagSet(true);
+    } else if (!shouldAnimateFromSpace && !hasLocation) {
+      console.log('⏭️ No location available for animation');
     }
-  }, [privyOnboardingComplete, userProfileStatus]);
+  }, [privyOnboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
 
   // Auto-save location from MapCanvas to user profile (for returning users without location)
   useEffect(() => {
@@ -384,39 +441,60 @@ export default function Home() {
     setUserProfileStatus('exists');
   };
 
-  // Handle onboarding complete from NewOnboarding
-  const handleOnboardingComplete = async (location: { lat: number; lng: number }) => {
-    console.log('🎉 New onboarding complete with location:', location);
+  // Handle Onboarding2 complete (nickname + avatar saved)
+  const handleOnboardingComplete = () => {
+    console.log('✅ Onboarding2 complete - moving to voice quest');
+    setOnboardingStep('voice');
+  };
+  
+  // State for quest results
+  const [questScore, setQuestScore] = useState(0);
+  const [questTokens, setQuestTokens] = useState(0);
+
+  // Handle QuestAudio complete (voice + game done)
+  const handleQuestAudioComplete = (score: number, tokensEarned: number) => {
+    console.log('✅ QuestAudio complete - moving to quest complete', { score, tokensEarned });
+    setQuestScore(score);
+    setQuestTokens(tokensEarned);
+    setOnboardingStep('complete');
+  };
+  
+  // Handle QuestComplete - go to map
+  const handleQuestCompleteGoHome = async () => {
+    console.log('🎉 Full onboarding flow complete!');
     
-    // Store location immediately for map access
-    setOnboardingLocation(location);
+    // Mark onboarding as complete
+    if (privyUser?.id) {
+      const { updateUserProfile } = await import('@/lib/privyDb');
+      await updateUserProfile(privyUser.id, {
+        onboarding_completed: true
+      });
+    }
     
-    // NewOnboarding already saved to DB with location
     setIsTransitioningFromOnboarding(true);
     
-    // ❗ Set isLoading to false immediately
-    console.log('🎯 Setting isLoading = false');
-    setIsLoading(false);
-    
-    // Wait a bit for DB save to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Reload profile to get the saved location
+    // Reload profile first to get updated data
     console.log('🔄 Reloading profile...');
     await reloadProfile();
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
     
-    // Wait for state to update
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Update state in correct order
+    console.log('🗺️ Setting userProfileStatus to exists');
+    setUserProfileStatus('exists');
     
-    // 🚀 Enable animation flag
+    // Small delay to ensure state updates
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Enable animation
     console.log('🚀 Enabling space-to-location animation');
     setShouldAnimateFromSpace(true);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Clear onboarding step
+    setOnboardingStep(null);
     
-    // 🗺️ Show map
-    console.log('🗺️ Showing map at zoom 0');
-    setUserProfileStatus('exists');
+    // Force loading to false AFTER state is set
+    console.log('🎯 Setting isLoading = false');
+    setIsLoading(false);
   };
 
   // Show loading screen while Privy initializes - SKIP during onboarding transition
@@ -437,14 +515,36 @@ export default function Home() {
   }
 
   // Show onboarding when user hasn't completed profile
+  // Don't wait for other loading states - let onboarding screens render immediately
   const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
     
   if (shouldShowOnboarding) {
-    // Return new onboarding immediately - no loading screens, no animations
+    // Show different screens based on onboarding step
+    if (onboardingStep === 'voice') {
+      return (
+        <QuestAudio 
+          onComplete={handleQuestAudioComplete} 
+          userId={privyUser?.id}
+        />
+      );
+    }
+    
+    if (onboardingStep === 'complete') {
+      return (
+        <QuestComplete 
+          onGoHome={handleQuestCompleteGoHome} 
+          userId={privyUser?.id}
+          score={questScore}
+          tokensEarned={questTokens}
+        />
+      );
+    }
+    
+    // Default: Show Onboarding2 (nickname → portal → avatar)
     return (
-      <NewOnboarding
-        isVisible={true}
+      <Onboarding2 
         onComplete={handleOnboardingComplete}
+        userId={privyUser?.id}
       />
     );
   }
@@ -475,6 +575,16 @@ export default function Home() {
 
   // Get user's city from profile
   const userCity = privyUserProfile?.city || null;
+
+  // 🔍 DEBUG: Log render decision
+  console.log('🎬 Render Decision:', {
+    userProfileStatus,
+    isTransitioningFromOnboarding,
+    isMobileReady,
+    eventsCount: events.length,
+    nodesCount: nodes.length,
+    isLoading
+  });
 
   // Handler for toggling map view mode
   const handleMapViewToggle = async (mode: 'local' | 'global') => {
@@ -552,6 +662,7 @@ export default function Home() {
           questCount={questCount}
           userCity={userCity}
           userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
+          userId={privyUser?.id}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -579,6 +690,7 @@ export default function Home() {
         questCount={questCount}
         userCity={userCity}
         userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
+        userId={privyUser?.id}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}

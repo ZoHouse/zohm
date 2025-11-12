@@ -16,7 +16,7 @@ function Game1111({
   isVideoLockedRef 
 }: { 
   onWin: (score: number, hasWon: boolean) => void; 
-  videoRef: React.RefObject<HTMLVideoElement>; 
+  videoRef: React.RefObject<HTMLVideoElement | null>; 
   isVideoLockedRef: React.MutableRefObject<boolean>;
 }) {
   const [counter, setCounter] = useState(0);

@@ -49,19 +49,19 @@ export default function QuantumSyncHeader({
     if (!userId) return;
 
     // Fetch user progress to get token balance
-    async function getBalance() {
-      const progress = await fetchUserProgress(userId);
+    async function getBalance(id: string) {
+      const progress = await fetchUserProgress(id);
       if (progress?.quests?.zo_points !== undefined) {
         setBalance(progress.quests.zo_points);
       }
     }
 
     // Fetch immediately on mount
-    getBalance();
+    getBalance(userId);
 
     // Set up polling interval to keep balance fresh
     const intervalId = setInterval(() => {
-      getBalance();
+      getBalance(userId);
     }, refreshInterval);
 
     // Cleanup interval on unmount

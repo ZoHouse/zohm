@@ -44,24 +44,28 @@ export default function QuantumSyncHeader({
     }
   }, [avatarSrc]);
 
-  // Fetch and refresh balance periodically
+  // Fetch and refresh balance and avatar periodically
   useEffect(() => {
     if (!userId) return;
 
-    // Fetch user progress to get token balance
-    async function getBalance(id: string) {
+    // Fetch user progress to get token balance and avatar
+    async function getBalanceAndAvatar(id: string) {
       const progress = await fetchUserProgress(id);
       if (progress?.quests?.zo_points !== undefined) {
         setBalance(progress.quests.zo_points);
       }
+      // Update avatar from API if available
+      if (progress?.user?.pfp) {
+        setAvatar(progress.user.pfp);
+      }
     }
 
     // Fetch immediately on mount
-    getBalance(userId);
+    getBalanceAndAvatar(userId);
 
-    // Set up polling interval to keep balance fresh
+    // Set up polling interval to keep balance and avatar fresh
     const intervalId = setInterval(() => {
-      getBalance(userId);
+      getBalanceAndAvatar(userId);
     }, refreshInterval);
 
     // Cleanup interval on unmount

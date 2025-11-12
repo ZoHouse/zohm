@@ -3,10 +3,10 @@ import { getReputations, getReputationDescription, getReputationIcon } from '@/l
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    const { id: userId } = await params;
     const reputations = await getReputations(userId);
 
     // Enhance with descriptions and icons

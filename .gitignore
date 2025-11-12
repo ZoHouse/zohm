@@ -51,3 +51,34 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Development documentation and internal guides
+*_FIX.md
+*_GUIDE.md
+*_SUMMARY.md
+*_COMPLETE.md
+*_PLAN.md
+*_ANALYSIS.md
+*_QUICKSTART.md
+IMPLEMENTATION_*.md
+FIGMA_*.md
+ONBOARDING_*.md
+MAP_*.md
+GLOW_*.md
+LEADERBOARD_*.md
+QUESTS_*.md
+GIT_CLEANUP_ANALYSIS.md
+
+# Reference and archived code
+reference/
+working*/
+
+# Test and debug files
+TEST_*.html
+test-*.html
+
+# Internal documentation (development notes)
+docs/
+
+# Temporary design assets
+public/duration/

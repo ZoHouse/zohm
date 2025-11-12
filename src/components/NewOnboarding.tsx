@@ -3,28 +3,29 @@
 import React, { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { upsertUserFromPrivy } from '@/lib/privyDb';
-import './NewOnboarding.css';
+import PortalAnimation from './PortalAnimation';
 
 interface NewOnboardingProps {
   isVisible: boolean;
   onComplete: (location: { lat: number; lng: number }) => void;
 }
 
+// All 14 unicorn avatars from Figma
 const AVATAR_OPTIONS = [
-  '/unicorn images/UnicornMemes_v1-01.png',
-  '/unicorn images/UnicornMemes_v1-02.png',
-  '/unicorn images/UnicornMemes_v1-03.png',
-  '/unicorn images/UnicornMemes_v1-04.png',
-  '/unicorn images/UnicornMemes_v1-05.png',
-  '/unicorn images/UnicornMemes_v1-06.png',
-  '/unicorn images/UnicornMemes_v1-07.png',
-  '/unicorn images/Unicorn_Crying.png',
-  '/unicorn images/Unicorn_Rainbow.png',
-  '/unicorn images/UnicornCool.png',
-  '/unicorn images/UnicornMagnifyingGlass.png',
-  '/unicorn images/UnicornMemes_poppedeye.png',
-  '/unicorn images/UnicornRainbowPuke.png',
-  '/unicorn images/UnicornRocket.png'
+  '/figma-assets/unicorn-avatar-1.png',
+  '/figma-assets/unicorn-avatar-2.png',
+  '/figma-assets/unicorn-avatar-3.png',
+  '/figma-assets/unicorn-avatar-4.png',
+  '/figma-assets/unicorn-avatar-5.png',
+  '/figma-assets/unicorn-avatar-6.png',
+  '/figma-assets/unicorn-avatar-7.png',
+  '/figma-assets/unicorn-avatar-8.png',
+  '/figma-assets/unicorn-avatar-9.png',
+  '/figma-assets/unicorn-avatar-10.png',
+  '/figma-assets/unicorn-avatar-11.png',
+  '/figma-assets/unicorn-avatar-12.png',
+  '/figma-assets/unicorn-avatar-13.png',
+  '/figma-assets/unicorn-avatar-14.png'
 ];
 
 const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) => {
@@ -135,14 +136,40 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
 
   return (
     <div className="figma-onboarding">
-      {/* Background */}
-      <div className="figma-onboarding__bg" />
+      {/* Video Background - same as landing page */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="figma-onboarding__bg-video"
+      >
+        <source src="/videos/loading-screen-background.mp4" type="video/mp4" />
+      </video>
+      <div className="figma-onboarding__bg-gradient" />
       
-      {/* Zo Logo */}
+      {/* Status Bar with real Figma assets */}
+      <div className="figma-onboarding__status-bar">
+        <span className="figma-onboarding__time">4:20</span>
+        <div className="figma-onboarding__status-icons">
+          <img src="/figma-assets/status-wifi.png" alt="" />
+          <img src="/figma-assets/status-signal.png" alt="" />
+          <img src="/figma-assets/status-battery.png" alt="" />
+        </div>
+      </div>
+      
+      {/* Zo Logo - Real Figma asset */}
       <img 
-        src="/Zo_flexing_white.png" 
+        src="/figma-assets/onboarding-zo-logo.png" 
         alt="Zo" 
         className="figma-onboarding__logo" 
+      />
+      
+      {/* Home Indicator - Real Figma asset */}
+      <img 
+        src="/figma-assets/home-indicator.png" 
+        alt="" 
+        className="figma-onboarding__home-indicator" 
       />
       
       {/* Main Content */}
@@ -169,9 +196,9 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
           />
         </div>
 
-        {/* Avatar Selector */}
+        {/* Avatar Selector - Now showing 2 at a time like Figma */}
         <div className="figma-onboarding__avatars">
-          {AVATAR_OPTIONS.map((avatar, index) => (
+          {AVATAR_OPTIONS.slice(0, 2).map((avatar, index) => (
             <div
               key={index}
               className={`figma-onboarding__avatar ${selectedAvatar === index ? 'selected' : ''}`}
@@ -189,6 +216,7 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
             className="figma-onboarding__connect-x"
             type="button"
           >
+            <img src="/figma-assets/wallet-icon-rect.png" alt="" className="figma-onboarding__x-icon" />
             Connect X (Twitter)
           </button>
         ) : (
@@ -213,15 +241,38 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
         {/* Error Message */}
         {error && <p className="figma-onboarding__error">{error}</p>}
 
-        {/* Get Citizenship Button */}
+        {/* Get Citizenship Button - Real Figma asset */}
         <button
           onClick={handleSubmit}
           disabled={isLoading || !location || !username.trim()}
           className="figma-onboarding__submit"
           type="button"
         >
-          {isLoading ? 'Saving...' : 'Get Citizenship'}
+          <img 
+            src="/figma-assets/get-citizenship-button.png" 
+            alt="Get Citizenship" 
+            className="figma-onboarding__submit-image"
+          />
+          <span className="figma-onboarding__submit-text">
+            {isLoading ? 'Saving...' : 'Get Citizenship'}
+          </span>
         </button>
+      </div>
+
+      {/* Keyboard with real Figma assets */}
+      <div className="figma-onboarding__keyboard">
+        <div className="figma-onboarding__keyboard-toolbar">
+          <img src="/figma-assets/keyboard-arrow-left.png" alt="" />
+          <img src="/figma-assets/keyboard-sticker.png" alt="" />
+          <img src="/figma-assets/keyboard-gif.png" alt="" />
+          <img src="/figma-assets/keyboard-paste.png" alt="" />
+          <img src="/figma-assets/keyboard-settings.png" alt="" />
+          <img src="/figma-assets/keyboard-more.png" alt="" />
+          <img src="/figma-assets/keyboard-voice.png" alt="" />
+        </div>
+        <div className="figma-onboarding__keyboard-dismiss">
+          <img src="/figma-assets/icon-arrow-down.png" alt="" />
+        </div>
       </div>
     </div>
   );
@@ -233,6 +284,7 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
   const [recognized, setRecognized] = useState(false);
   const [error, setError] = useState('');
   const [attempts, setAttempts] = useState(0);
+  const [showPortalAnimation, setShowPortalAnimation] = useState(false);
 
   useEffect(() => {
     // Check if browser supports speech recognition
@@ -270,9 +322,10 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
       if (zoCount >= 3 || transcript.includes('zo zo zo')) {
         console.log('✅ Voice auth successful!');
         setRecognized(true);
+        // Show portal animation after 1 second
         setTimeout(() => {
-          onComplete();
-        }, 1500);
+          setShowPortalAnimation(true);
+        }, 1000);
       } else {
         setError(`Heard: "${transcript}". Try saying "Zo Zo Zo"`);
         setAttempts(prev => prev + 1);
@@ -294,27 +347,122 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
 
   const handleSkip = () => {
     console.log('⏭️ Skipped voice auth');
-    onComplete();
+    // Show portal animation even on skip
+    setShowPortalAnimation(true);
   };
 
+  // If portal animation should show, render it
+  if (showPortalAnimation) {
+    return <PortalAnimation onComplete={onComplete} />;
+  }
+
+  // Determine which state assets to use
+  const getStateAssets = () => {
+    if (recognized) {
+      return {
+        bg: '/figma-assets/voice-bg-success-1.png',
+        title: '/figma-assets/quantum-title-success.png',
+        avatar: '/figma-assets/voice-avatar-success.png',
+        coins: [
+          '/figma-assets/coin-success-1.png',
+          '/figma-assets/coin-success-2.png',
+          '/figma-assets/coin-success-3.png',
+          '/figma-assets/coin-success-4.png',
+          '/figma-assets/coin-success-5.png'
+        ],
+        platform: '/figma-assets/voice-platform.png',
+        status: {
+          wifi: '/figma-assets/voice-status-wifi-success.png',
+          signal: '/figma-assets/voice-status-signal-success.png',
+          battery: '/figma-assets/voice-status-battery-success.png'
+        }
+      };
+    } else if (error && attempts >= 1) {
+      return {
+        bg: '/figma-assets/voice-bg-fail.png',
+        title: '/figma-assets/quantum-title-fail.png',
+        avatar: '/figma-assets/voice-avatar-fail.png',
+        coins: [
+          '/figma-assets/coin-fail-1.png',
+          '/figma-assets/coin-fail-2.png',
+          '/figma-assets/coin-fail-3.png',
+          '/figma-assets/coin-fail-4.png'
+        ],
+        platform: '/figma-assets/voice-platform.png',
+        status: {
+          wifi: '/figma-assets/voice-status-wifi-fail.png',
+          signal: '/figma-assets/voice-status-signal-fail.png',
+          battery: '/figma-assets/voice-status-battery-fail.png'
+        }
+      };
+    } else if (isListening) {
+      return {
+        bg: '/figma-assets/voice-bg-pressed.png',
+        title: '/figma-assets/quantum-sync-title.png',
+        avatar: '/figma-assets/voice-avatar-pressed.png',
+        coins: [
+          '/figma-assets/coin-pressed-1.png',
+          '/figma-assets/coin-pressed-2.png',
+          '/figma-assets/coin-pressed-3.png',
+          '/figma-assets/coin-pressed-4.png',
+          '/figma-assets/coin-pressed-5.png'
+        ],
+        platform: '/figma-assets/voice-platform.png',
+        status: {
+          wifi: '/figma-assets/status-wifi-pressed.png',
+          signal: '/figma-assets/status-signal-pressed.png',
+          battery: '/figma-assets/status-battery-pressed.png'
+        }
+      };
+    } else {
+      return {
+        bg: '/figma-assets/voice-default-bg.png',
+        title: '/figma-assets/quantum-sync-title.png',
+        avatar: '/figma-assets/voice-default-avatar.png',
+        coins: [
+          '/figma-assets/voice-default-coin-1.png',
+          '/figma-assets/voice-default-coin-2.png',
+          '/figma-assets/voice-default-coin-3.png',
+          '/figma-assets/voice-default-coin-4.png',
+          '/figma-assets/voice-default-coin-5.png'
+        ],
+        platform: '/figma-assets/voice-platform.png',
+        status: {
+          wifi: '/figma-assets/voice-status-wifi.png',
+          signal: '/figma-assets/voice-status-signal.png',
+          battery: '/figma-assets/voice-status-battery.png'
+        }
+      };
+    }
+  };
+
+  const assets = getStateAssets();
+
   return (
-    <div className="voice-auth-screen">
-      {/* Background */}
-      <div className="voice-auth-screen__bg" />
+    <div className="voice-auth-screen" style={{ backgroundImage: `url(${assets.bg})` }}>
+      {/* Status Bar with state-specific assets */}
+      <div className="voice-auth-screen__status-bar">
+        <span className="voice-auth-screen__time">4:20</span>
+        <div className="voice-auth-screen__status-icons">
+          <img src={assets.status.wifi} alt="" />
+          <img src={assets.status.signal} alt="" />
+          <img src={assets.status.battery} alt="" />
+        </div>
+      </div>
       
-      {/* Logo */}
+      {/* Zo Logo - Real Figma asset */}
       <img 
-        src="/Zo_flexing_white.png" 
+        src="/figma-assets/voice-zo-logo.png" 
         alt="Zo" 
         className="voice-auth-screen__logo" 
       />
 
       {/* Main Content */}
       <div className="voice-auth-screen__container">
-        {/* QUANTUM SYNC Title - Real Figma Asset */}
+        {/* QUANTUM SYNC Title - Real Figma Asset with state */}
         <div className="voice-auth-screen__title-wrapper">
           <img 
-            src="/figma-assets/quantum-sync-title.png" 
+            src={assets.title} 
             alt="QUANTUM SYNC" 
             className="voice-auth-screen__title-image" 
           />
@@ -325,22 +473,46 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
           you tune in with the sound Zo
         </p>
 
-        {/* Microphone Visualization with Platform */}
+        {/* Microphone Visualization with Platform and Coins */}
         <div className="voice-auth-screen__mic-area">
+          {/* Floating Coins */}
+          <div className="voice-auth-screen__coins">
+            {assets.coins.map((coin, index) => (
+              <img 
+                key={index}
+                src={coin} 
+                alt="" 
+                className={`voice-auth-screen__coin voice-auth-screen__coin-${index + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Avatar/Microphone with Video Animation */}
           <div 
             className={`voice-auth-screen__mic ${isListening ? 'listening' : ''} ${recognized ? 'recognized' : ''}`}
             onClick={handleStartListening}
           >
-            <img 
-              src="/figma-assets/microphone-rings.png" 
-              alt="Microphone" 
-              className="voice-auth-screen__mic-image" 
-            />
+            {isListening ? (
+              <video 
+                src="/videos/mic-recording.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
+                className="voice-auth-screen__mic-video"
+              />
+            ) : (
+              <img 
+                src={assets.avatar} 
+                alt="Microphone" 
+                className="voice-auth-screen__mic-image" 
+              />
+            )}
           </div>
           
           {/* Stone Platform */}
           <img 
-            src="/platform.png" 
+            src={assets.platform} 
             alt="" 
             className="voice-auth-screen__platform" 
           />
@@ -348,7 +520,7 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
 
         {/* Instruction */}
         <p className="voice-auth-screen__instruction">
-          {recognized ? '✓ Success!' : "Tap & say 'Zo Zo Zo'"}
+          {recognized ? '✓ PREPARING ZO WORLD!' : isListening ? '🎤 LISTENING...' : "Tap & say 'Zo Zo Zo'"}
         </p>
 
         {/* Error Message */}
@@ -365,6 +537,13 @@ const VoiceAuthScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) =
           </button>
         )}
       </div>
+
+      {/* Home Indicator */}
+      <img 
+        src="/figma-assets/home-indicator.png" 
+        alt="" 
+        className="voice-auth-screen__home-indicator" 
+      />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import './OnboardingPage.css';
 import { getCityFromCoordinates } from '@/lib/geocoding';
 
 interface OnboardingPageProps {
@@ -215,6 +214,18 @@ export default function OnboardingPage({ onComplete, onNavigateToHome, getAccess
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[1000]" style={{ backgroundColor: '#121212' }}>
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+        style={{ pointerEvents: 'none' }}
+      >
+        <source src="/videos/loading-screen-background.mp4" type="video/mp4" />
+      </video>
+      
       <div 
         ref={starfieldRef}
         className="absolute inset-0 z-0"

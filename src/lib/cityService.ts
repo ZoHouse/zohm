@@ -148,13 +148,22 @@ export async function syncUserHomeCity(
   cityId: string
 ): Promise<{ success: boolean; zoEarned: number; city: City | null }> {
   try {
+    // Get current sync count first
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('city_sync_count')
+      .eq('id', userId)
+      .single();
+    
+    const currentCount = currentUser?.city_sync_count || 0;
+    
     // Update user's home city
     const { data: userData, error: userError } = await supabase
       .from('users')
       .update({
         home_city_id: cityId,
         city_synced_at: new Date().toISOString(),
-        city_sync_count: supabase.sql`city_sync_count + 1`
+        city_sync_count: currentCount + 1
       })
       .eq('id', userId)
       .select()

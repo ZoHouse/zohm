@@ -36,19 +36,22 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
 
     // Format for frontend
-    const leaderboard = leaderboardData?.map((user, index) => ({
-      rank: index + 1,
-      user_id: user.id,
-      nickname: user.nickname || 'Anon',
-      avatar: user.avatar,
-      zo_points: user.zo_points || 0,
-      total_quests_completed: user.total_quests_completed || 0,
-      home_city: user.cities ? {
-        id: user.cities.id,
-        name: user.cities.name,
-        country: user.cities.country,
-      } : null,
-    })) || [];
+    const leaderboard = leaderboardData?.map((user, index) => {
+      const city = Array.isArray(user.cities) ? user.cities[0] : user.cities;
+      return {
+        rank: index + 1,
+        user_id: user.id,
+        nickname: user.nickname || 'Anon',
+        avatar: user.avatar,
+        zo_points: user.zo_points || 0,
+        total_quests_completed: user.total_quests_completed || 0,
+        home_city: city ? {
+          id: city.id,
+          name: city.name,
+          country: city.country,
+        } : null,
+      };
+    }) || [];
 
     return NextResponse.json({
       leaderboard,

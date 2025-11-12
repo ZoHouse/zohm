@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.searchParams;
+    const { searchParams } = new URL(request.url);
     const scope = searchParams.get('scope') || 'global'; // 'global' | 'local'
     const cityId = searchParams.get('cityId'); // Required for 'local' scope
     const limit = parseInt(searchParams.get('limit') || '10');

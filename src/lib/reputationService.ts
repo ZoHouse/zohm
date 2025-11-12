@@ -108,20 +108,45 @@ export async function updateReputation(
   delta: number
 ): Promise<ReputationWithLevel | null> {
   try {
-    const { data, error } = await supabase
+    // Check if reputation already exists
+    const { data: existing } = await supabase
       .from('user_reputations')
-      .insert({
-        user_id: userId,
-        trait,
-        score: delta,
-      })
-      .select()
-      .single()
-      .onConflict(['user_id', 'trait'])
-      .merge({
-        score: supabase.raw('user_reputations.score + ?', [delta]),
-        updated_at: new Date().toISOString(),
-      });
+      .select('score')
+      .eq('user_id', userId)
+      .eq('trait', trait)
+      .single();
+    
+    let data;
+    let error;
+    
+    if (existing) {
+      // Update existing reputation
+      const result = await supabase
+        .from('user_reputations')
+        .update({
+          score: existing.score + delta,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .eq('trait', trait)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new reputation
+      const result = await supabase
+        .from('user_reputations')
+        .insert({
+          user_id: userId,
+          trait,
+          score: delta,
+        })
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       console.warn(`⚠️ Error updating ${trait} reputation:`, error.message);

@@ -123,10 +123,21 @@ export async function addItem(
     if (error) {
       // If item already exists, update quantity
       if (error.code === '23505') {
+        // Get current quantity
+        const { data: currentItem } = await supabase
+          .from('user_inventory')
+          .select('quantity')
+          .eq('user_id', userId)
+          .eq('item_type', itemType)
+          .eq('item_id', itemId)
+          .single();
+        
+        const currentQuantity = currentItem?.quantity || 0;
+        
         const { data: updateData, error: updateError } = await supabase
           .from('user_inventory')
           .update({
-            quantity: supabase.raw('quantity + ?', [quantity]),
+            quantity: currentQuantity + quantity,
           })
           .eq('user_id', userId)
           .eq('item_type', itemType)

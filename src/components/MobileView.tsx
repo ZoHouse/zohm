@@ -167,8 +167,9 @@ const MobileView: React.FC<MobileViewProps> = ({
         onClick={handleUnicornClick}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-[#ff4d6d] to-[#ff3355] border-4 border-white shadow-2xl flex items-center justify-center z-40 p-2"
+        className="fixed left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-[#ff4d6d] to-[#ff3355] border-4 border-white shadow-2xl flex items-center justify-center z-40 p-2"
         style={{
+          bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
           boxShadow: '0 8px 32px rgba(255, 77, 109, 0.4)',
         }}
       >

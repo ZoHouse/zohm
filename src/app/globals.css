@@ -162,7 +162,10 @@ next-route-announcer,
   --mobile-vh: 100vh;
   --available-height: 100vh;
   --real-vh: 100vh;
+  --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
 /* Disable default mapbox popup animations - appear directly at pin */
@@ -485,6 +488,39 @@ next-route-announcer,
     width: 100%;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area support for bottom elements on iPhone */
+  .safe-area-bottom {
+    padding-bottom: var(--safe-area-bottom) !important;
+  }
+
+  /* For elements with bottom positioning */
+  .bottom-safe {
+    bottom: var(--safe-area-bottom) !important;
+  }
+
+  /* Add safe area padding to mapbox popups at bottom */
+  .mapboxgl-popup-anchor-bottom .mapboxgl-popup-content,
+  .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-content,
+  .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-content {
+    padding-bottom: calc(12px + var(--safe-area-bottom)) !important;
+  }
+
+  /* Adjust popup tip position for bottom-anchored popups */
+  .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+    margin-bottom: var(--safe-area-bottom);
+  }
+
+  /* Ensure minimum bottom spacing for all fixed/absolute bottom elements */
+  [class*="bottom-"] {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Add safe area to modals and sheets that slide from bottom */
+  .sheet-container,
+  .modal-container {
+    padding-bottom: var(--safe-area-bottom);
   }
 
   /* Mobile button active states */

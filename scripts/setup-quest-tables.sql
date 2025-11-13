@@ -188,3 +188,4 @@ WHERE routine_name = 'update_user_quest_stats';
 -- 3. Check user_quest_stats table for updated stats
 -- 4. View leaderboard in QuestComplete screen
 
+

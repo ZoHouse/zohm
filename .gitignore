@@ -61,6 +61,8 @@ next-env.d.ts
 *_ANALYSIS.md
 *_QUICKSTART.md
 IMPLEMENTATION_*.md
+.windsurfrules
+pnpm-lock.yaml
 FIGMA_*.md
 ONBOARDING_*.md
 MAP_*.md

@@ -28,8 +28,8 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
               : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
           }`}
           onClick={() => onChange('bro')}
-        type="button"
-      >
+          type="button"
+        >
           <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
             <span className="text-[40px]">👨</span>
           </div>
@@ -44,7 +44,11 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
             </div>
           )}
         </button>
+<<<<<<< HEAD
       
+=======
+        
+>>>>>>> f5a92bf (fix: ui bugs)
         {/* Bae button (female) */}
         <button
           className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
@@ -53,8 +57,8 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
               : 'border-white/20 bg-white/5 hover-border-white/40 hover:bg-white/10'
           }`}
           onClick={() => onChange('bae')}
-        type="button"
-      >
+          type="button"
+        >
           <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600">
             <span className="text-[40px]">👩</span>
           </div>
@@ -140,8 +144,8 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
       console.log('🎬 Saving nickname, body_type, and city to database...', { nickname, bodyType, city });
       const user = await upsertUserFromPrivy(privyUser, {
         name: nickname,
-        city: city || null, // Save city if available
         body_type: bodyType, // Save body type for avatar generation
+        city: city || null, // Save city if available
       });
       
       // Save data to localStorage for subsequent steps

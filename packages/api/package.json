@@ -1,0 +1,13 @@
+{
+  "name": "@zohm/api",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "node src/server.js",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0"
+  }
+}

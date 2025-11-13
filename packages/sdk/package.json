@@ -1,0 +1,35 @@
+{
+  "name": "@zohm/sdk",
+  "version": "0.1.0",
+  "description": "Shared SDK for ZOHM WebApp and Mobile - types and API client utilities",
+  "private": true,
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "zohm",
+    "zo",
+    "sdk",
+    "api-client"
+  ],
+  "author": "Zo House",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  }
+}

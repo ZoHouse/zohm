@@ -33,6 +33,7 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
 
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(0);
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -111,6 +112,7 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
       await upsertUserFromPrivy(privyUser, {
         name: trimmedUsername,
         pfp: AVATAR_OPTIONS[selectedAvatar],
+        gender: gender,
         lat: location.lat,
         lng: location.lng,
         onboarding_completed: true,
@@ -136,6 +138,7 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
 
   return (
     <div className="figma-onboarding">
+
       {/* Video Background - same as landing page */}
       <video
         autoPlay
@@ -196,15 +199,33 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
           />
         </div>
 
+
         {/* Avatar Selector - Now showing 2 at a time like Figma */}
         <div className="figma-onboarding__avatars">
           {AVATAR_OPTIONS.slice(0, 2).map((avatar, index) => (
             <div
               key={index}
               className={`figma-onboarding__avatar ${selectedAvatar === index ? 'selected' : ''}`}
-              onClick={() => setSelectedAvatar(index)}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('🎭 Avatar clicked:', index, index === 0 ? 'male' : 'female');
+                setSelectedAvatar(index);
+                setGender(index === 0 ? 'male' : 'female');
+              }}
+              style={{
+                cursor: 'pointer',
+                userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
-              <img src={avatar} alt={`Avatar ${index + 1}`} />
+              <img 
+                src={avatar} 
+                alt={`Avatar ${index + 1}`}
+                style={{ pointerEvents: 'none' }}
+              />
+              {selectedAvatar === index && (
+                <div className="figma-onboarding__avatar-checkmark">✓</div>
+              )}
             </div>
           ))}
         </div>

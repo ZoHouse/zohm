@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Fetch user progress function
 async function fetchUserProgress(userId: string) {
@@ -33,6 +33,7 @@ export default function QuantumSyncHeader({
 }) {
   const [avatar, setAvatar] = useState(avatarSrc || '/quest-audio-assets/avatar.png');
   const [balance, setBalance] = useState(0);
+  const coinVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     // Get selected avatar from localStorage if not provided
@@ -72,9 +73,18 @@ export default function QuantumSyncHeader({
     return () => clearInterval(intervalId);
   }, [userId, refreshInterval]);
 
+  // Ensure coin animation plays (mobile browsers may block without interaction)
+  useEffect(() => {
+    if (coinVideoRef.current) {
+      coinVideoRef.current.play().catch((error) => {
+        console.warn('⚠️ Coin video autoplay blocked:', error);
+      });
+    }
+  }, [balance]);
+
   return (
     <div className="quantum-sync-header">
-      {/* Zo Logo - 20% smaller: 40px → 32px */}
+      {/* Zo Logo */}
       <div className="quantum-sync-header__logo">
         <img
           src="/quest-audio-assets/zo-logo.png"
@@ -85,56 +95,47 @@ export default function QuantumSyncHeader({
       </div>
       
       {!withoutProfile && (
-        /* Profile Container - 20% smaller */
+        /* Profile Container */
         <div className="quantum-sync-header__profile">
-          {/* Avatar - 20% smaller: 32px → 26px */}
           <div className="profile-avatar">
             <img
               src={avatar}
               alt="Avatar"
-              width="26"
-              height="26"
+              width="34"
+              height="34"
             />
           </div>
           
-          {/* Tags Container - 20% smaller */}
           <div className="profile-tokens">
             <span>{balance}</span>
-            {/* Coin Icon - 20% smaller: 16px → 13px */}
             <div className="coin-icon">
-              <img
-                src="/quest-audio-assets/coin-1.png"
-                alt="Coin"
-                width="13"
-                height="13"
-              />
-              <img
-                src="/quest-audio-assets/coin-2.png"
-                alt=""
-                width="13"
-                height="13"
-                className="coin-overlay"
-              />
+              <video
+                ref={coinVideoRef}
+                className="coin-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+              >
+                <source src="/videos/zo-coin-slow.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
       )}
       <style jsx>{`
-        /* Header Container */
         .quantum-sync-header {
           position: absolute;
-          top: 52px;
+          top: 48px;
           left: 0;
           right: 0;
-          height: 80px;
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 0 24px;
-          z-index: 100;
+          z-index: 140;
         }
 
-        /* Zo Logo - 20% smaller: 40px → 32px */
         .quantum-sync-header__logo {
           width: 32px;
           height: 32px;
@@ -149,26 +150,27 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Profile Container - 20% smaller padding: 8px → 6px */
         .quantum-sync-header__profile {
           display: flex;
           align-items: center;
-          gap: 3px;
-          padding: 6px;
-          background: rgba(18, 18, 18, 0.2);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 100px;
+          gap: 10px;
+          padding: 8px 12px 8px 8px;
+          background: rgba(18, 18, 18, 0.78);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
           cursor: pointer;
         }
 
-        /* Avatar - 20% smaller: 32px → 26px */
         .profile-avatar {
-          width: 26px;
-          height: 26px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
         }
 
         .profile-avatar img {
@@ -177,30 +179,31 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Tags Container - 20% smaller */
         .profile-tokens {
           display: flex;
           align-items: center;
-          gap: 3px;
-          background: rgba(255, 255, 255, 0.06);
-          border-radius: 100px;
-          padding: 3px 6px;
+          gap: 6px;
+          padding: 6px 12px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 999px;
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 10px;
-          font-weight: 400;
-          line-height: 14px;
-          letter-spacing: 0.1px;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 16px;
+          letter-spacing: 0.16px;
           color: white;
         }
 
-        /* Coin Icon - 20% smaller: 16px → 13px */
         .coin-icon {
           position: relative;
-          width: 13px;
-          height: 13px;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          overflow: hidden;
         }
 
-        .coin-icon img {
+        .coin-video {
           position: absolute;
           inset: 0;
           width: 100%;
@@ -208,8 +211,8 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        .coin-overlay {
-          z-index: 1;
+        .coin-icon img {
+          display: none;
         }
       `}</style>
     </div>

@@ -49,13 +49,7 @@ function Game1111({
     <>
       {/* QUANTUM SYNC Logo - Exact Figma: top-[156px] */}
       <div className="absolute top-[156px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
-        <div className="w-[320px] h-[80px] flex items-center justify-center">
-          <img
-            src="/quest-audio-assets/quantum-sync-logo.png"
-            alt="QUANTUM SYNC"
-            className="w-[320px] h-[80px] object-contain"
-          />
-        </div>
+        <QuantumSyncLogo />
         <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px]">
           {hasWon ? 'success!' : 'in progress'}
         </p>
@@ -382,12 +376,27 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const shouldShowVideo = audioStatus === 'processing' || audioStatus === 'success' || audioStatus === 'fail' || audioStatus === 'game1111';
   const shouldPlayVideo = audioStatus === 'processing' || audioStatus === 'success' || audioStatus === 'fail';
 
+  // Unlock and rewind video whenever we enter a state that should animate the success clip
+  useEffect(() => {
+    if (shouldPlayVideo) {
+      isVideoLockedRef.current = false;
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+      }
+    }
+  }, [shouldPlayVideo]);
+
   // Auto-play/pause video when status changes
   useEffect(() => {
     if (videoRef.current) {
       if (shouldPlayVideo && !isVideoLockedRef.current) {
         console.log('🎬 Auto-play useEffect: PLAYING (status:', audioStatus, ')');
-        videoRef.current.play();
+        const playPromise = videoRef.current.play();
+        if (playPromise?.catch) {
+          playPromise.catch((error) => {
+            console.warn('⚠️ Unable to autoplay success video:', error);
+          });
+        }
       } else {
         console.log('⏸️ Auto-play useEffect: PAUSING (status:', audioStatus, ', locked:', isVideoLockedRef.current, ')');
         videoRef.current.pause();
@@ -463,16 +472,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
 
         <QuantumSyncHeader />
 
-        <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[360px] mx-auto w-full">
-          {/* QUANTUM SYNC Logo - Exact Figma: top-[156px], logo: 320×80px */}
+        <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[480px] mx-auto w-full">
+          {/* QUANTUM SYNC Logo - Exact Figma positioning */}
           <div className="absolute top-[156px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0">
-            <div className="w-[320px] h-[80px] flex items-center justify-center">
-            <img
-              src="/quest-audio-assets/quantum-sync-logo.png"
-              alt="QUANTUM SYNC"
-                className="w-[320px] h-[80px] object-contain"
-            />
-            </div>
+            <QuantumSyncLogo />
             <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px] min-w-full w-min whitespace-pre-wrap">
               Zo World is a reality,<br />
               you tune in with the sound Zo
@@ -515,7 +518,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             </div>
           </div>
 
-          <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
+          <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[760px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
             Tap & say 'Zo Zo Zo'
           </p>
         </div>
@@ -580,16 +583,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
 
         <QuantumSyncHeader />
 
-        <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[360px] mx-auto w-full">
+        <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[480px] mx-auto w-full">
           {/* QUANTUM SYNC Logo - Exact Figma: top-[156px], logo: 320×80px */}
           <div className="absolute top-[156px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0">
-            <div className="w-[320px] h-[80px] flex items-center justify-center">
-            <img
-              src="/quest-audio-assets/quantum-sync-logo.png"
-              alt="QUANTUM SYNC"
-                className="w-[320px] h-[80px] object-contain"
-            />
-            </div>
+            <QuantumSyncLogo />
             <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px] min-w-full w-min whitespace-pre-wrap">
               Zo World is a reality,<br />
               you tune in with the sound Zo
@@ -611,7 +608,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             </div>
           </div>
 
-          <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
+          <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[760px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
             Tap & say 'Zo Zo Zo'
           </p>
         </div>
@@ -759,22 +756,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           />
         ) : (
           <>
-            {/* QUANTUM SYNC Logo - Exact Figma: top-[156px] */}
-            <div className="absolute top-[156px] left-1/2 -translate-x-1/2 w-[360px] flex flex-col items-center">
-              {/* Logo: 320×80px */}
-              <div className="w-[320px] h-[80px] flex items-center justify-center">
-                <img
-                  src="/quest-audio-assets/quantum-sync-logo.png"
-                  alt="QUANTUM SYNC"
-                  className="w-[320px] h-[80px] object-contain"
-                />
-              </div>
+            {/* QUANTUM SYNC Logo - Exact Figma positioning */}
+            <div className="absolute top-[156px] left-1/2 -translate-x-1/2 w-[480px] max-w-full flex flex-col items-center">
+              <QuantumSyncLogo />
               {/* Subtitle - Full width, centered text */}
-              <div className="w-full">
-                <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px] whitespace-pre-wrap">
-                  {getStatusText()}
-                </p>
-              </div>
+              <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px] whitespace-pre-wrap">
+                Zo World is a reality,
+                you tune in with the sound Zo
+              </p>
             </div>
 
             {audioStatus === 'idle' ? (
@@ -797,7 +786,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     </video>
                   </button>
                 </div>
-                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
+                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[760px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
                   Tap & say 'Zo Zo Zo'
                 </p>
               </>
@@ -821,7 +810,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     </video>
                   </button>
                 </div>
-                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
+                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[760px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
                   listening...
                 </p>
               </>
@@ -862,7 +851,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     />
                   </div>
                 </div>
-                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110] whitespace-pre-wrap">
+                <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[760px] left-1/2 -translate-x-1/2 w-[320px] z-[110] whitespace-pre-wrap">
                   preparing...
                 </p>
               </>
@@ -870,6 +859,17 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           </>
         )}
       </div>
+
+      {/* Floating Rocks - hidden while success video animates */}
+      {!shouldPlayVideo && (
+        <div className="floating-rocks">
+          <img
+            src="/figma-assets/rocks-portal-cam.png"
+            alt=""
+            className="floating-rocks__image"
+          />
+        </div>
+      )}
 
       {/* Home Indicator at bottom */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] max-w-[360px] w-full flex items-center justify-center z-10">

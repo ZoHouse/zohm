@@ -10,36 +10,49 @@ interface NicknameStepProps {
   onNicknameSet: () => void;
 }
 
-// Gender selector component (matching Figma exactly - toggle style)
+// Gender selector component (matching Figma exactly - toggle style with animations)
 function GenderSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [clickedButton, setClickedButton] = useState<string | null>(null);
+
+  const handleClick = (gender: 'male' | 'female') => {
+    console.log(`${gender === 'male' ? '👨' : '👩'} ${gender.toUpperCase()} BUTTON CLICKED!`);
+    setClickedButton(gender);
+    onChange(gender);
+    
+    // Remove animation class after animation completes
+    setTimeout(() => setClickedButton(null), 400);
+  };
+
   return (
-    <div className="relative flex items-center justify-center h-[48px] w-[116px] bg-[#49494A] rounded-full p-[2px]">
+    <div className="gender-selector-container">
       {/* Selected indicator background */}
-      <div 
-        className={`absolute top-[2px] h-[44px] w-[56px] bg-zo-accent rounded-full transition-all duration-300 ${
-          value === 'male' ? 'left-[2px]' : 'left-[58px]'
-        }`}
-      />
+      <div className={`gender-selector-indicator ${value}`} />
       
       {/* Male button */}
       <button
-        className="relative z-10 flex items-center justify-center h-[44px] w-[56px] rounded-full transition-all duration-300"
-        onClick={() => onChange('male')}
+        className={`gender-selector-button ${value === 'male' ? 'selected' : ''} ${clickedButton === 'male' ? 'selected' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick('male');
+        }}
         type="button"
       >
-        <div className="w-[32px] h-[32px] rounded-full overflow-hidden flex items-center justify-center bg-[#FF6B6B]">
-          <span className="text-[20px]">👨</span>
+        <div className="gender-emoji-container male">
+          <span className="text-[20px]" style={{ pointerEvents: 'none' }}>👨</span>
         </div>
       </button>
       
       {/* Female button */}
       <button
-        className="relative z-10 flex items-center justify-center h-[44px] w-[56px] rounded-full transition-all duration-300"
-        onClick={() => onChange('female')}
+        className={`gender-selector-button ${value === 'female' ? 'selected' : ''} ${clickedButton === 'female' ? 'selected' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick('female');
+        }}
         type="button"
       >
-        <div className="w-[32px] h-[32px] rounded-full overflow-hidden flex items-center justify-center bg-[#8E8E93]">
-          <span className="text-[20px]">👩</span>
+        <div className="gender-emoji-container female">
+          <span className="text-[20px]" style={{ pointerEvents: 'none' }}>👩</span>
         </div>
       </button>
     </div>
@@ -109,9 +122,10 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     }
     
     try {
-      console.log('🎬 Saving nickname, gender, and city to database...');
+      console.log('🎬 Saving nickname, gender, and city to database...', { nickname, gender, city });
       const user = await upsertUserFromPrivy(privyUser, {
         name: nickname,
+        gender: gender, // Save selected gender
         city: city || null, // Save city if available
       });
       

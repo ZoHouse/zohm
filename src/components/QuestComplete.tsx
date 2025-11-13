@@ -131,7 +131,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
         <QuantumSyncHeader userId={userId} />
 
         {/* Scrollable Content */}
-        <div className="w-full h-full overflow-y-auto pb-20 pt-[80px]">
+        <div className="w-full h-full overflow-y-auto pb-20 pt-[140px]">
           {/* Main Content */}
           <div className="flex flex-col items-center w-full px-6">
             

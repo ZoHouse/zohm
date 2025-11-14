@@ -1,0 +1,147 @@
+# Zo World - Cursor AI Rules
+# Version: 1.0
+# Last Updated: 2025-11-13
+#
+# These rules define how AI assistants should interact with the Zo World codebase.
+# Read Docs/PROJECT_RULES.md for the 25 foundational principles.
+# Read Docs/cursorrule.md for detailed technical constraints and workflows.
+
+## Core Philosophy
+
+You are working on Zo World - a Life Design Simulation Engine that helps people live consciously, creatively, and in sync with their highest timeline.
+
+Every code change must:
+1. Align with Docs/PROJECT_RULES.md (25 foundational rules)
+2. Respect Docs/zo_protocol_lore.md (operating ontology)
+3. Strengthen the engine (Vibe Score, Quests, Nodes, Citizens, Map, Narrative)
+4. Generate meaningful signals for the Life Design Engine
+
+## Before Making Any Changes
+
+ALWAYS read these files first:
+- `Docs/PROJECT_RULES.md` - 25 foundational rules
+- `Docs/ARCHITECTURE.md` - System architecture
+- `Docs/CONSTRAINTS.md` - What you can/cannot modify
+- `Docs/cursorrule.md` - Detailed AI pair-coding rules
+
+## Safe Editing Zones
+
+You MAY edit without pre-approval:
+- `apps/web/src/components/**` - UI components
+- `apps/web/src/hooks/**` - React hooks
+- `packages/sdk/**` - Shared SDK
+- `docs/**` - Documentation
+- `tests/**` - Tests
+
+## Requires Human Review
+
+Create PR but DO NOT merge:
+- `apps/web/src/app/api/**` - API routes (security sensitive)
+- `packages/api/migrations/**` - Database migrations
+- `apps/web/src/lib/supabase.ts` - DB configuration
+- `.github/workflows/**` - CI/CD
+
+## Forbidden - Never Touch
+
+- `.env` or any environment files
+- `apps/web/package.json` - Dependency changes
+- `apps/web/next.config.ts` - Build configuration
+- `packages/contracts/**` - Smart contracts
+- Any files with secrets
+
+## Key Principles to Internalize
+
+1. **Reality is a Graph Not a Tree** - Design features as graph entities with propagation
+2. **Single Source of Truth** - No duplicate state (Identity→ZO API, App state→Supabase)
+3. **Engine Compatible** - Every feature must emit signals for the Life Design Engine
+4. **Observable by Default** - Emit telemetry for meaningful state changes
+5. **3AM Fixable** - Write clear code a stranger can debug at 3AM
+6. **Lore Compliance** - Never contradict Docs/zo_protocol_lore.md
+7. **All Changes Must Roll Back** - Migrations need down scripts
+8. **Simulation Integrity** - Preserve engine invariants over convenience
+9. **Keep Magic Alive** - Every interaction should feel meaningful and alive
+10. **Code as Craft** - No sloppy code, no messy architectures
+
+## Before Creating a PR
+
+1. Create laundry list in `Docs/LAUNDRY/YYYYMMDD-<slug>-LAUNDRY.md`
+2. For larger changes, create work order in `Docs/WORK_ORDERS/`
+3. Run `scripts/generate_receipt.py` for protected path changes
+4. Run tests: `pnpm test`
+5. Verify lore compliance with `Docs/zo_protocol_lore.md`
+6. If adding signals, document in `Docs/SIGNALS.md`
+7. If adding API endpoints, update `Docs/API_CONTRACTS.md`
+
+## Architecture Constraints
+
+- Components: No direct DB access
+- API routes: No UI logic
+- Migrations: Must be reversible
+- SDK: Interface-only, no implementation
+- Map interactions: Are narrative triggers, not just UI
+- Quest proofs: Must be timestamped, hashed, replay-protected
+- Vibe Score: Math must be explainable and auditable
+
+## The Six Core Systems
+
+Every feature must strengthen at least one:
+1. **Vibe Score** - Real-time alignment percentage
+2. **Quests** - Interaction primitives that generate signals
+3. **Nodes** - Physical locations with resonance
+4. **Citizens** - Users with identity and progression
+5. **Map Interface** - Reality interaction canvas (not just UI)
+6. **Narrative Engine** - Processes signals into story
+
+## Signal Generation
+
+Every citizen interaction must produce a signal:
+- Quest submissions → quest_completed signal
+- Map movements → location_updated signal
+- Event attendance → event_joined signal
+- Time in nodes → node_presence signal
+- Creative outputs → creation_shared signal
+- Social interactions → social_connection signal
+
+Signals flow: raw data → signals → state → narrative
+
+## Conflict Resolution
+
+- **Human wins** - If human reviewer requests changes, comply
+- **Lore conflicts** - Create RFC in Docs/ARCHITECTURE.md, request human review
+- **Missing signal contract** - Do not implement, create draft, wait for approval
+- **Forbidden path needed** - Create work order, assign to human, do not edit
+
+## Code Quality Standards
+
+- Clear types, explicit errors, minimal surprises
+- Files should be short with explicit names
+- No hidden complexity or implicit state changes
+- Prefer readability over clever abstractions
+- If it can be built simply, it must be
+
+## Human + AI Philosophy
+
+- Humans set direction and approve critical paths
+- AI performs safe local edits and fast iteration
+- Humans oversee identity, culture, design, architecture
+- AI never merges changes to protected areas
+
+## Emergency Protocol
+
+If you cannot meet requirements:
+1. Abort the change
+2. Create issue with failure reason
+3. Attach diagnostics
+4. Tag relevant owners
+
+## Remember
+
+- Zo World must feel alive
+- Build for the future, not the past
+- Protect the vibe
+- Keep magic alive
+- Ship fast, ship clean
+- Citizens come first
+
+Read Docs/PROJECT_RULES.md for full context and Docs/cursorrule.md for detailed workflows.
+

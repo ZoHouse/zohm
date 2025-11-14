@@ -247,6 +247,8 @@ export async function upsertUserFromPrivy(
       ...profileData, // profileData can override the default pfp if provided
     };
 
+    console.log('📝 Attempting to upsert user:', userData);
+    
     const { data, error } = await supabase
       .from('users')
       .upsert(userData, { onConflict: 'id' })
@@ -254,9 +256,17 @@ export async function upsertUserFromPrivy(
       .single();
 
     if (error) {
-      console.error('❌ Error saving user to Supabase:', error.message || error);
+      console.error('❌ Error saving user to Supabase:', error);
+      console.error('❌ Error details:', { message: error.message, code: error.code, details: error.details, hint: error.hint });
       throw new Error(`Supabase error: ${error.message || 'Unknown error'}`);
     }
+
+    if (!data) {
+      console.error('❌ No data returned from upsert!');
+      throw new Error('No data returned from Supabase upsert');
+    }
+
+    console.log('✅ Supabase returned data:', data);
 
     if (isNewUser) {
       console.log('✅ New user created with unicorn avatar:', defaultPfp);

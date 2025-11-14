@@ -14,6 +14,12 @@ export const GEOJSON_SOURCE_ID = 'events-and-nodes';
 export function setupClusteringLayers(map: mapboxgl.Map) {
   if (!map) return;
 
+  // Check if source exists first
+  if (!map.getSource(GEOJSON_SOURCE_ID)) {
+    console.warn('⚠️ GeoJSON source not loaded yet, skipping cluster layer setup');
+    return;
+  }
+
   try {
     // 1. Cluster circles (showing count)
     if (!map.getLayer('clusters')) {

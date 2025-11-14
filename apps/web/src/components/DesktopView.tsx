@@ -7,6 +7,7 @@ import EventsOverlay from '@/components/EventsOverlay';
 import NodesOverlay from '@/components/NodesOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
 import DashboardOverlay from '@/components/DashboardOverlay';
+import DesktopDashboard from '@/components/desktop-dashboard/DesktopDashboard';
 import WalletOverlay from '@/components/WalletOverlay';
 import CityInfoCard from '@/components/CityInfoCard';
 import MapViewToggle from '@/components/MapViewToggle';
@@ -111,6 +112,17 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     console.log('Desktop Map is ready!');
   };
 
+  // 🎨 Show full-page dashboard when open, otherwise show map view
+  if (isDashboardOpen) {
+    return (
+      <DesktopDashboard 
+        onClose={() => setIsDashboardOpen(false)}
+        events={events}
+        onLaunchGame={handleLaunchGame}
+      />
+    );
+  }
+
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#f4f1ea]">
       {/* Map Canvas - shows only filtered events and nodes based on mode */}
@@ -181,13 +193,6 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         isVisible={activeSection === 'quests'} 
         onClose={() => setActiveSection('events')}
         onLaunchGame={handleLaunchGame}
-      />
-
-      {/* Dashboard Overlay */}
-      <DashboardOverlay 
-        isVisible={isDashboardOpen}
-        onClose={() => setIsDashboardOpen(false)}
-        onOpenWallet={() => setIsWalletOpen(true)}
       />
 
       {/* Wallet Overlay - rendered at root level */}

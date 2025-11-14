@@ -57,7 +57,10 @@ export function useOnboardingTransition() {
     location: { lat: number; lng: number } | null,
     reloadProfile: () => Promise<void>
   ) => {
+    console.log('🚀 prepareTransition called with:', { userId, hasLocation: !!location, location });
+    
     if (!userId) {
+      console.error('❌ Transition error: No user ID');
       setState(prev => ({
         ...prev,
         phase: 'error',
@@ -66,17 +69,37 @@ export function useOnboardingTransition() {
       return;
     }
 
-    if (!location) {
-      setState(prev => ({
-        ...prev,
-        phase: 'error',
-        error: 'Location required for transition',
-      }));
-      return;
+    // If no location provided, try to get it from the profile after reloading
+    let finalLocation = location;
+    
+    if (!finalLocation) {
+      console.log('⚠️ No location provided, reloading profile to check for saved location...');
+      await reloadProfile();
+      
+      // Wait a moment for profile to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Try to get location from updated profile
+      const { getUserById } = await import('@/lib/privyDb');
+      const userProfile = await getUserById(userId);
+      
+      if (userProfile?.lat && userProfile?.lng) {
+        finalLocation = { lat: userProfile.lat, lng: userProfile.lng };
+        console.log('✅ Got location from profile:', finalLocation);
+      } else {
+        console.error('❌ Transition error: No location in profile either');
+        setState(prev => ({
+          ...prev,
+          phase: 'error',
+          error: 'Location required for transition. Please allow location access.',
+        }));
+        return;
+      }
     }
 
     try {
       // Phase 1: Update database
+      console.log('📝 Phase 1: Setting state to "preparing"');
       setState({
         phase: 'preparing',
         progress: 10,
@@ -84,6 +107,7 @@ export function useOnboardingTransition() {
         data: null,
         error: null,
       });
+      console.log('✅ State set to preparing');
 
       const { updateUserProfile } = await import('@/lib/privyDb');
       await updateUserProfile(userId, { onboarding_completed: true });
@@ -144,7 +168,7 @@ export function useOnboardingTransition() {
         data: {
           events,
           nodes,
-          location,
+          location: finalLocation,
           userProfile: {}, // Will be populated from context
         },
         error: null,

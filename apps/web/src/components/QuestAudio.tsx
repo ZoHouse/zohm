@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
-import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -124,7 +123,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const isVideoLockedRef = useRef(false); // Lock video from playing during game
 
   // Check quest cooldown (12 hours for game1111)
-  const { canPlay, timeRemaining, isChecking } = useQuestCooldown(userId, 'game-1111', 12);
+  // Note: Cooldown checking disabled during onboarding since this is the user's first play
+  // Cooldown only applies when playing from the quests overlay after onboarding
+  const { canPlay, timeRemaining, isChecking } = { canPlay: true, timeRemaining: '', isChecking: false };
 
   // Check microphone permission on mount
   useEffect(() => {

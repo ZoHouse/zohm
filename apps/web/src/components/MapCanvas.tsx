@@ -78,6 +78,26 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     enabled: mapLoaded // Only fetch after map loads
   });
 
+  // 🎯 Setup clustering layers AFTER GeoJSON source is loaded
+  useEffect(() => {
+    if (!map.current || !mapLoaded || geoJSONLoading) return;
+    
+    // Check if source exists and clustering layers don't
+    const source = map.current.getSource(GEOJSON_SOURCE_ID);
+    const clustersLayer = map.current.getLayer('clusters');
+    
+    if (source && !clustersLayer) {
+      console.log('🗺️ GeoJSON source ready - setting up clustering layers...');
+      try {
+        setupClusteringLayers(map.current);
+        setupClusterClickHandlers(map.current);
+        console.log('✅ Clustering layers setup complete');
+      } catch (error) {
+        console.error('❌ Error setting up clustering layers:', error);
+      }
+    }
+  }, [mapLoaded, geoJSONLoading]);
+
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
 
@@ -385,22 +405,47 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     traversalFrameRef.current = requestAnimationFrame(step);
   };
 
+  // Helper function to safely remove a source and all its layers
+  const removeMapsourceWithLayers = (sourceId: string) => {
+    if (!map.current) return;
+    try {
+      const source = map.current.getSource(sourceId);
+      if (!source) return;
+
+      // Get all layers that use this source
+      const style = map.current.getStyle();
+      if (style && style.layers) {
+        const layersUsingSource = style.layers.filter((layer: any) => layer.source === sourceId);
+        
+        // Remove all layers using this source
+        layersUsingSource.forEach((layer: any) => {
+          try {
+            if (map.current!.getLayer(layer.id)) {
+              map.current!.removeLayer(layer.id);
+            }
+          } catch (e) {
+            console.warn(`Could not remove layer ${layer.id}:`, e);
+          }
+        });
+      }
+
+      // Now remove the source
+      try {
+        if (map.current.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+      } catch (e) {
+        console.warn(`Could not remove source ${sourceId}:`, e);
+      }
+    } catch (e) {
+      console.warn(`Error in removeMapsourceWithLayers for ${sourceId}:`, e);
+    }
+  };
+
   // Clear any drawn route and its markers
   const clearRoute = () => {
     if (!map.current) return;
     try {
-      // Remove route layer/source
-      try {
-        if (map.current.getLayer(currentRouteLayerId.current)) {
-          map.current.removeLayer(currentRouteLayerId.current);
-        }
-      } catch {}
-      try {
-        if (map.current.getSource(currentRouteSourceId.current)) {
-          map.current.removeSource(currentRouteSourceId.current);
-        }
-      } catch {}
-
       // Remove route markers
       currentRouteMarkers.current.forEach(m => {
         try { m.remove(); } catch {}
@@ -417,9 +462,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         traversalMarkerRef.current = null;
       }
 
-      // Remove progress line
-      try { if (map.current.getLayer(progressLayerIdRef.current)) map.current.removeLayer(progressLayerIdRef.current); } catch {}
-      try { if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current); } catch {}
+      // Remove route source and all its layers
+      removeMapsourceWithLayers(currentRouteSourceId.current);
+
+      // Remove progress source and all its layers (including rainbow layers)
+      removeMapsourceWithLayers(progressSourceIdRef.current);
     } catch (e) {
       console.warn('Error clearing route:', e);
     }
@@ -958,15 +1005,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           }
         } catch {}
 
-        // 🗺️ Setup GeoJSON clustering layers
-        console.log('🗺️ Setting up GeoJSON clustering...');
-        try {
-          setupClusteringLayers(map.current);
-          setupClusterClickHandlers(map.current);
-          console.log('✅ GeoJSON clustering setup complete');
-        } catch (error) {
-          console.error('❌ Error setting up clustering:', error);
-        }
+        // 🗺️ GeoJSON clustering is now handled by dedicated useEffect
+        // that waits for the GeoJSON source to be loaded first
       };
       
       // If map is already loaded, set up features immediately
@@ -1111,79 +1151,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       userLocationMarker.current = userMarker;
 
       console.log('🦄 Added unicorn marker for user location');
-
-      // Create popup content as a quest
-      const userPopupContent = `
-        <div style="padding: 0;">
-          <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">Main Quest</h3>
-          <p style="margin: 0 0 8px 0; font-size: 15px; color: #1a1a1a; line-height: 1.4; font-weight: 600;">Place a \\z/ here</p>
-          <p style="margin: 0 0 12px 0; font-size: 12px; color: #666; line-height: 1.4;">Mark your territory in the Zo World</p>
-          <button 
-            onclick="window.open('https://form.typeform.com/to/voEnDiSl', '_blank')"
-            style="
-              width: 100%;
-              padding: 10px 16px;
-              background: linear-gradient(135deg, #ff4d6d 0%, #ff6b9d 100%);
-              color: white;
-              border: none;
-              border-radius: 8px;
-              font-size: 14px;
-              font-weight: 600;
-              font-family: 'Space Grotesk', sans-serif;
-              cursor: pointer;
-              transition: all 0.2s ease;
-              box-shadow: 0 2px 8px rgba(255, 77, 109, 0.3);
-            "
-            onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255, 77, 109, 0.4)';"
-            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 77, 109, 0.3)';"
-          >
-            Host Your Node
-          </button>
-        </div>
-      `;
-
-      const userPopup = new mapboxgl.Popup({
-        className: 'node-popup-clean',
-        closeButton: false,
-        closeOnClick: true,
-        offset: [0, -15],
-        maxWidth: '280px',
-        anchor: 'bottom'
-      }).setHTML(userPopupContent);
-
-      // Attach popup to marker
-      userMarker.setPopup(userPopup);
       
-      // Handle marker click
-      userMarkerElement.addEventListener('click', () => {
-        if (currentOpenPopup && currentOpenPopup !== userPopup) {
-          try {
-            currentOpenPopup.remove();
-            activePopups.current.delete(currentOpenPopup);
-          } catch (error) {
-            console.warn('Error closing previous popup:', error);
-          }
-        }
-        setCurrentOpenPopup(userPopup);
-        activePopups.current.add(userPopup);
-        
-        userPopup.once('close', () => {
-          if (currentOpenPopup === userPopup) {
-            setCurrentOpenPopup(null);
-          }
-          activePopups.current.delete(userPopup);
-        });
-      });
-      
-      // Show popup briefly
-      setTimeout(() => {
-        if (map.current) {
-          userPopup.addTo(map.current!);
-          setTimeout(() => {
-            userPopup.remove();
-          }, 3000);
-        }
-      }, 1000);
+      // Note: User location marker popup removed - no popup on click
     } catch (error) {
       console.warn('Error setting user location:', error);
     }

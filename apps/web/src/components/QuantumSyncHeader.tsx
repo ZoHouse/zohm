@@ -5,13 +5,24 @@ import { useEffect, useState } from 'react';
 // Fetch user progress function
 async function fetchUserProgress(userId: string) {
   try {
-    const response = await fetch(`/api/users/${userId}/progress`);
+    const response = await fetch(`/api/users/${userId}/progress`, {
+      // Add cache control to prevent aggressive caching
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
     if (response.ok) {
       const data = await response.json();
       return data;
+    } else {
+      // Silently fail for non-critical data
+      console.warn(`⚠️ User progress fetch returned ${response.status}`);
     }
   } catch (error) {
-    console.error('Error fetching user progress:', error);
+    // Silently fail - header should still render without live balance
+    console.warn('⚠️ Could not fetch user progress (non-critical):', error instanceof Error ? error.message : 'Unknown error');
   }
   return null;
 }

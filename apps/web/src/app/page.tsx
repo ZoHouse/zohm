@@ -5,10 +5,9 @@ import LandingPage from '@/components/LandingPage';
 import Onboarding2 from '@/components/Onboarding2';
 import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
-import TransitionScreen from '@/components/TransitionScreen';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import { pingSupabase, verifyMembersTable, PartnerNodeRecord, getQuests } from '@/lib/supabase';
+import { pingSupabase, PartnerNodeRecord, getQuests } from '@/lib/supabase';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useOnboardingTransition } from '@/hooks/useOnboardingTransition';
@@ -55,6 +54,9 @@ export default function Home() {
   
   // 🔒 Race condition fix: Prevent multiple profile status updates during Privy auth
   const hasSetProfileStatus = useRef(false);
+  
+  // 🔒 Race condition fix: Prevent initApp from running multiple times during Privy loading
+  const hasInitialized = useRef(false);
   
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
@@ -146,47 +148,22 @@ export default function Home() {
   const displayedNodes = mapViewMode === 'local' ? localNodes : nodes;
 
   useEffect(() => {
+    // 🔒 Prevent multiple initializations
+    if (hasInitialized.current) {
+      console.log('⏭️ Skipping initApp - already initialized');
+      return;
+    }
+    
     // Initialize Supabase and check Privy user profile
     const initApp = async () => {
+      console.log('🚀 Starting initApp...');
+      hasInitialized.current = true; // Mark as initialized immediately
+      
       try {
         const basicConnection = await pingSupabase();
         if (basicConnection) {
           console.log('🚀 Supabase basic connection ready!');
-          
-          // Verify table setup
-          const tableVerification = await verifyMembersTable();
-          if (tableVerification.exists) {
-            console.log('✅ Database tables verified');
-            
-            // 🔒 FIX: Only set profile status once to prevent race conditions
-            // Check Privy user profile status - ONLY when Privy is fully ready and loaded
-            // privyLoading false means wallet creation and profile sync are complete
-            if (
-              privyReady && 
-              privyAuthenticated && 
-              !privyLoading && 
-              privyUserProfile &&
-              !hasSetProfileStatus.current  // ✅ Prevent multiple calls
-            ) {
-              console.log('🦄 Privy user authenticated and stable!');
-              
-              // Add small delay to ensure profile is fully loaded
-              await new Promise(resolve => setTimeout(resolve, 100));
-              
-              if (privyOnboardingComplete) {
-                console.log('✅ Profile complete:', privyUserProfile.name);
-                setUserProfileStatus('exists');
-              } else {
-                console.log('📝 Onboarding required');
-                setUserProfileStatus('not_exists');
-                // Don't set isLoading to false here - let onboarding screens manage loading state
-              }
-              
-              hasSetProfileStatus.current = true; // ✅ Mark as set
-            }
-          } else {
-            console.warn('⚠️ Database setup needed:', tableVerification.error);
-          }
+          console.log('✅ Database connection verified');
         }
       } catch (error) {
         console.error('Supabase initialization error:', error);
@@ -196,6 +173,23 @@ export default function Home() {
     initApp();
   }, [privyReady, privyAuthenticated, privyOnboardingComplete, privyLoading]);
   // ⚠️ REMOVED privyUserProfile from deps to prevent re-triggers during profile loading
+
+  // 🔒 Keep profile status in sync with privyOnboardingComplete
+  // This runs whenever the onboarding flag changes (e.g. after completing onboarding)
+  useEffect(() => {
+    if (
+      privyReady && 
+      privyAuthenticated && 
+      privyUserProfile
+    ) {
+      const newStatus = privyOnboardingComplete ? 'exists' : 'not_exists';
+      
+      if (userProfileStatus !== newStatus) {
+        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus}`);
+        setUserProfileStatus(newStatus);
+      }
+    }
+  }, [privyReady, privyAuthenticated, privyUserProfile, privyOnboardingComplete, userProfileStatus]);
 
   // Skip loading screen when Privy is ready for returning users
   useEffect(() => {
@@ -458,6 +452,42 @@ export default function Home() {
     }
   }, [isDashboardOpen, privyAuthenticated, privyUserProfile, privyOnboardingComplete]);
 
+  // 🎯 Handle transition completion atomically (moved to useEffect to avoid render loop)
+  useEffect(() => {
+    console.log('🔍 Transition phase changed:', transitionPhase, { hasData: !!transitionData });
+    
+    if (transitionPhase === 'ready' && transitionData) {
+      console.log('🎯 Transition ready - applying state atomically', { 
+        transitionData,
+        currentEvents: events.length,
+        currentNodes: nodes.length 
+      });
+      
+      // Update state atomically with transition data
+      if (events.length === 0 && transitionData.events.length > 0) {
+        console.log('📊 Setting events:', transitionData.events.length);
+        setEvents(transitionData.events);
+      }
+      if (nodes.length === 0 && transitionData.nodes.length > 0) {
+        console.log('📍 Setting nodes:', transitionData.nodes.length);
+        setNodes(transitionData.nodes);
+      }
+      if (!onboardingLocation && transitionData.location) {
+        console.log('🗺️ Setting location:', transitionData.location);
+        setOnboardingLocation(transitionData.location);
+      }
+      
+      // Apply state immediately - no delay needed since coin collection video is handling timing
+      console.log('✅ Clearing onboarding state and showing map');
+      setUserProfileStatus('exists');
+      setOnboardingStep(null);
+      setShouldAnimateFromSpace(true);
+      setIsLoading(false);
+      setIsTransitioningFromOnboarding(false); // Clear the transition flag
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transitionPhase, transitionData]);
+
 
   // Handle ritual completion
   const handleRitualComplete = () => {
@@ -486,75 +516,57 @@ export default function Home() {
     setOnboardingStep('complete');
   };
   
-  // Handle QuestComplete - go to map (REFACTORED: No more race conditions!)
-  const handleQuestCompleteGoHome = async () => {
+  // Handle QuestComplete - go to dashboard after onboarding
+  // Returns a promise that resolves when the map is ready to show dashboard
+  const handleQuestCompleteGoHome = async (): Promise<void> => {
     console.log('🎉 Full onboarding flow complete!');
+    console.log('🔍 Starting transition with:', { 
+      userId: privyUser?.id, 
+      hasLocation: !!onboardingLocation,
+      location: onboardingLocation 
+    });
     
-    // 🚀 NEW: Use transition coordinator to handle everything atomically
+    // 🚀 Start transition preparation
     await prepareTransition(privyUser?.id, onboardingLocation, reloadProfile);
     
-    // Transition hook will handle:
-    // 1. Update DB (onboarding_completed = true)
-    // 2. Reload profile + wait for stability
-    // 3. Pre-fetch events/nodes
-    // 4. Package everything for single render
+    console.log('✅ prepareTransition completed, waiting for ready state...');
     
-    // Once transition is ready, the rendering logic below will handle the rest
+    // Wait for transition to reach 'ready' state AND map data to be applied
+    return new Promise<void>((resolve) => {
+      let attempts = 0;
+      const maxAttempts = 100; // 10 seconds max
+      
+      const checkReady = () => {
+        attempts++;
+        console.log(`🔍 Check ${attempts}: transitionPhase=${transitionPhase}, hasData=${!!transitionData}, events=${events.length}, nodes=${nodes.length}`);
+        
+        if (transitionPhase === 'ready' && transitionData && events.length > 0 && nodes.length > 0) {
+          console.log('✅ Map is ready - opening dashboard for new user');
+          // Open dashboard immediately after onboarding
+          setIsDashboardOpen(true);
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          console.warn('⚠️ Timeout waiting for map ready, opening dashboard anyway');
+          setIsDashboardOpen(true);
+          resolve();
+        } else {
+          // Check again in 100ms
+          setTimeout(checkReady, 100);
+        }
+      };
+      
+      // Start checking after a small delay to let state propagate
+      setTimeout(checkReady, 100);
+    });
   };
 
-  // Show loading screen while Privy initializes - SKIP during onboarding transition
-  if ((!privyReady || privyLoading) && !isTransitioningFromOnboarding) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-          <p className="text-white text-lg">Loading Zo World...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show LandingPage only if not authenticated
-  if (!privyAuthenticated) {
-    return <LandingPage onConnect={privyLogin} />;
-  }
-
-  // 🚀 Show transition screen during onboarding completion
-  if (transitionPhase === 'preparing' || transitionPhase === 'loading-data') {
-    return (
-      <TransitionScreen 
-        message={transitionMessage}
-        progress={transitionProgress}
-      />
-    );
-  }
-
-  // 🎯 Transition complete - proceed to main app with pre-loaded data
-  if (transitionPhase === 'ready' && transitionData) {
-    // Update state atomically with transition data
-    if (events.length === 0 && transitionData.events.length > 0) {
-      setEvents(transitionData.events);
-    }
-    if (nodes.length === 0 && transitionData.nodes.length > 0) {
-      setNodes(transitionData.nodes);
-    }
-    if (!onboardingLocation && transitionData.location) {
-      setOnboardingLocation(transitionData.location);
-    }
-    
-    // Clear onboarding state and proceed to map
-    setUserProfileStatus('exists');
-    setOnboardingStep(null);
-    setShouldAnimateFromSpace(true);
-    setIsLoading(false);
-    // Let it fall through to main app rendering below
-  }
-
+  // 🎯 Memoize onboarding screens BEFORE any early returns (Rules of Hooks requirement)
   // Show onboarding when user hasn't completed profile
-  // Don't wait for other loading states - let onboarding screens render immediately
   const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
+  
+  const onboardingScreen = useMemo(() => {
+    if (!shouldShowOnboarding) return null;
     
-  if (shouldShowOnboarding) {
     // Show different screens based on onboarding step
     if (onboardingStep === 'voice') {
       return (
@@ -583,6 +595,43 @@ export default function Home() {
         userId={privyUser?.id}
       />
     );
+  }, [shouldShowOnboarding, onboardingStep, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
+  
+  // Show loading screen while Privy initializes
+  if (!privyReady && !isTransitioningFromOnboarding) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Loading Zo World...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show LandingPage if not authenticated
+  if (!privyAuthenticated) {
+    return <LandingPage onConnect={privyLogin} />;
+  }
+
+  // Show loading screen while determining profile status (ONLY when authenticated)
+  // This prevents flashing during wallet setup
+  if (privyAuthenticated && userProfileStatus === null && !isTransitioningFromOnboarding) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Setting up your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🎬 Transition screen removed - coin collection video in QuestComplete is our only loading screen
+  // The video stays visible until the map is ready (handled by Promise.all in QuestComplete)
+  
+  if (onboardingScreen) {
+    return onboardingScreen;
   }
 
   // Only render main app if user has completed onboarding

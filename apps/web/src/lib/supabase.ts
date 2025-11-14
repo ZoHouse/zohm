@@ -334,13 +334,13 @@ export async function getNodesFromDB(): Promise<PartnerNodeRecord[] | null> {
         console.log('ℹ️ nodes table not found. Use createNodesTableSQL to set it up.');
         return [];
       }
-      console.error('Error fetching nodes:', error);
-      return null;
+      console.warn('Unable to fetch nodes:', error);
+      return [];
     }
     return (data as PartnerNodeRecord[]) || [];
   } catch (e) {
-    console.error('Exception fetching nodes:', e);
-    return null;
+    console.warn('Unable to fetch nodes:', e);
+    return [];
   }
 }
 
@@ -387,13 +387,13 @@ export async function getLeaderboards(): Promise<LeaderboardEntry[] | null> {
         console.log('ℹ️ leaderboards table not found. Using empty mock.');
         return [];
       }
-      console.error('Error fetching leaderboards:', error);
-      return null;
+      console.warn('Unable to fetch leaderboards:', error);
+      return [];
     }
     return (data as LeaderboardEntry[]) || [];
   } catch (e) {
-    console.error('Exception fetching leaderboards:', e);
-    return null;
+    console.warn('Unable to fetch leaderboards:', e);
+    return [];
   }
 }
 
@@ -409,13 +409,13 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
         console.log('ℹ️ quests table not found. Using empty mock.');
         return [];
       }
-      console.error('Error fetching quests:', error);
-      return null;
+      console.warn('Unable to fetch quests:', error);
+      return [];
     }
     return (data as QuestEntry[]) || [];
   } catch (e) {
-    console.error('Exception fetching quests:', e);
-    return null;
+    console.warn('Unable to fetch quests:', e);
+    return [];
   }
 }
 

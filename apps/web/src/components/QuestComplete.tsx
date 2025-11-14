@@ -5,7 +5,7 @@ import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
 
 interface QuestCompleteProps {
-  onGoHome: () => void;
+  onGoHome: () => Promise<void>; // Now returns a promise that resolves when map is ready
   userId?: string;
   score?: number;
   tokensEarned?: number;
@@ -98,14 +98,58 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
     fetchData();
   }, [userId, tokensEarned]);
 
-  const handleMapYourSync = () => {
+  const handleMapYourSync = async () => {
     // Show loading overlay with Coin Collection video
     setIsLoading(true);
     
-    // Simulate map loading time (3-4 seconds), then go home
-    setTimeout(() => {
-      onGoHome();
-    }, 4000); // 4 seconds for map to "load" while video plays
+    console.log('🎬 MapYourSync clicked - starting transition flow');
+    
+    // Get user's location first (required for transition)
+    try {
+      console.log('📍 Requesting user location...');
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+      
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      
+      console.log('✅ Got location:', location);
+      
+      // Save location to user profile
+      if (userId) {
+        const { updateUserProfile } = await import('@/lib/privyDb');
+        await updateUserProfile(userId, {
+          lat: location.lat,
+          lng: location.lng
+        });
+        console.log('✅ Saved location to profile');
+      }
+      
+      // Start BOTH the video (4s minimum) AND the map preparation in PARALLEL
+      console.log('⏱️ Starting video (4s) and map preparation in parallel...');
+      
+      const videoPromise = new Promise(resolve => setTimeout(resolve, 4000));
+      const mapReadyPromise = onGoHome(); // This will prepare the map
+      
+      // Wait for BOTH to complete
+      await Promise.all([videoPromise, mapReadyPromise]);
+      
+      console.log('✅ Video complete AND map ready - hiding loading screen');
+      setIsLoading(false);
+      
+    } catch (error) {
+      console.error('❌ Error in transition:', error);
+      // Still wait for video, then hide loading
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      setIsLoading(false);
+    }
   };
 
   return (

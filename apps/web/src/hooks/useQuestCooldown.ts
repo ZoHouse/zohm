@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getTimeUntilNextQuest } from '@/lib/questService';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Hook to check if a quest is available based on cooldown
@@ -14,6 +14,18 @@ export function useQuestCooldown(
   const [timeRemaining, setTimeRemaining] = useState<string>('Available now');
   const [isChecking, setIsChecking] = useState(true);
   const [nextAvailableAt, setNextAvailableAt] = useState<Date | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Force refresh on window focus (when user returns from game)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 Window focused, forcing cooldown refresh');
+      setRefreshTrigger(prev => prev + 1);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   useEffect(() => {
     // If no user, allow play (guest mode)
@@ -26,21 +38,61 @@ export function useQuestCooldown(
 
     const checkCooldown = async () => {
       try {
-        const time = await getTimeUntilNextQuest(userId, questSlug, cooldownHours);
-        setTimeRemaining(time);
+        console.log('🔍 Checking cooldown for quest:', questSlug);
         
-        const available = time === 'Available now';
-        setCanPlay(available);
-        
-        // Calculate next available timestamp
-        if (!available && time.includes('h')) {
-          const [hours, minutes] = time.split(':').map(part => parseInt(part.replace(/\D/g, '')));
-          const next = new Date();
-          next.setHours(next.getHours() + (hours || 0));
-          next.setMinutes(next.getMinutes() + (minutes || 0));
-          setNextAvailableAt(next);
-        } else {
+        // Get the last completion directly from completed_quests
+        const { data, error } = await supabase
+          .from('completed_quests')
+          .select('completed_at')
+          .eq('user_id', userId)
+          .eq('quest_id', questSlug)
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('⚠️ Error checking quest cooldown:', error.message);
+          setCanPlay(true);
+          setTimeRemaining('Available now');
           setNextAvailableAt(null);
+          setIsChecking(false);
+          return;
+        }
+
+        if (!data) {
+          // No previous completion found - user can play
+          console.log('✅ No previous completion, quest available');
+          setCanPlay(true);
+          setTimeRemaining('Available now');
+          setNextAvailableAt(null);
+          setIsChecking(false);
+          return;
+        }
+
+        // Calculate time since last completion
+        const lastCompletedAt = new Date(data.completed_at);
+        const now = new Date();
+        const hoursSinceLastCompletion = (now.getTime() - lastCompletedAt.getTime()) / (1000 * 60 * 60);
+
+        console.log('⏰ Last completed:', lastCompletedAt, 'Hours since:', hoursSinceLastCompletion);
+
+        if (hoursSinceLastCompletion >= cooldownHours) {
+          // Cooldown expired - user can play
+          console.log('✅ Cooldown expired, quest available');
+          setCanPlay(true);
+          setTimeRemaining('Available now');
+          setNextAvailableAt(null);
+        } else {
+          // Still on cooldown
+          const nextAvailable = new Date(lastCompletedAt.getTime() + cooldownHours * 60 * 60 * 1000);
+          console.log('⏳ On cooldown, next available:', nextAvailable);
+          setCanPlay(false);
+          setNextAvailableAt(nextAvailable);
+          
+          const diffMs = nextAvailable.getTime() - now.getTime();
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          setTimeRemaining(`${hours}h : ${minutes}m`);
         }
         
         setIsChecking(false);
@@ -56,11 +108,11 @@ export function useQuestCooldown(
     // Initial check
     checkCooldown();
     
-    // Refresh every minute to update countdown
-    const interval = setInterval(checkCooldown, 60000);
+    // Refresh every 10 seconds for faster updates
+    const interval = setInterval(checkCooldown, 10000);
     
     return () => clearInterval(interval);
-  }, [userId, questSlug, cooldownHours]);
+  }, [userId, questSlug, cooldownHours, refreshTrigger]);
 
   return { 
     canPlay, 

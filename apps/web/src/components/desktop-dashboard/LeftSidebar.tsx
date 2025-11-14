@@ -142,7 +142,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               color: DashboardColors.text.primary,
               textAlign: 'center',
             }}>
-              {userProfile?.name || userProfile?.ens_name || 'aatmaan.eth'}
+              {userProfile?.name || 'Anonymous'}
             </p>
             {/* Verified Badge */}
             <div className="w-10 h-10 flex items-center justify-center overflow-hidden">

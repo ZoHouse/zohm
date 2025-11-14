@@ -1263,3 +1263,12 @@ div[class*="ModalOverlay"] {
   object-fit: contain; /* Show full image without cropping */
   object-position: center bottom;
 }
+
+.quest-complete__scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quest-complete__scroll::-webkit-scrollbar {
+  display: none;
+}

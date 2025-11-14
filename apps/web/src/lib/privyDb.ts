@@ -20,7 +20,6 @@ export interface UserRecord {
   pfp: string | null;
   culture: string | null;
   city: string | null;
-  body_type: string | null;  // 'bro', 'bae'
   email: string | null;
   x_handle: string | null;
   x_connected: boolean;

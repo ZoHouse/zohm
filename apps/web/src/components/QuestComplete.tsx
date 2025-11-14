@@ -32,6 +32,14 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   
   const [leaderboard, setLeaderboard] = useState<LeaderboardPlayer[]>([]);
 
+  const questMilestones = { start: 3, mid: 7, end: 11 };
+  const milestoneRange = Math.max(questMilestones.end - questMilestones.start, 1);
+  const questProgressRaw = (userStats.total_quests_completed - questMilestones.start) / milestoneRange;
+  const questProgress = Math.min(Math.max(questProgressRaw, 0), 1);
+  const questProgressPercent = questProgress * 100;
+  const sliderPosition = `${questProgressPercent}%`;
+  const portalBoost = (1 + questProgress * 0.8).toFixed(2);
+
   // Get current date/time and location
   const now = new Date();
   const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -131,7 +139,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
         <QuantumSyncHeader userId={userId} />
 
         {/* Scrollable Content */}
-        <div className="w-full h-full overflow-y-auto pb-20 pt-[140px]">
+        <div className="quest-complete__scroll w-full h-full overflow-y-auto pb-20 pt-[140px]">
           {/* Main Content */}
           <div className="flex flex-col items-center w-full px-6">
             
@@ -178,35 +186,53 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
               </div>
 
               {/* UserStats Component */}
-              <div className="flex flex-col gap-3 px-6 py-4 rounded-[20px] bg-white/10 items-center mx-9">
-                <div className="flex items-center gap-[6px] px-3 py-[6px] rounded-[145px] bg-white/6">
-                  <p className="font-rubik text-[14px] font-normal text-white m-0">{userStats.zo_points}</p>
-                  <div className="w-6 h-6 rounded-[40px] overflow-hidden">
-                    <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                      <source src="/videos/zo-coin-slow.mp4" type="video/mp4" />
-                    </video>
+              <div className="relative mx-auto flex w-full max-w-[288px] flex-col gap-4 rounded-[32px] border border-white/10 bg-[rgba(18,18,18,0.9)] px-6 py-6 text-white shadow-[0_20px_45px_rgba(0,0,0,0.5)] backdrop-blur-[18px]">
+
+                <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 backdrop-blur-[6px]">
+                    <p className="font-rubik text-[20px] font-semibold leading-none">{userStats.zo_points}</p>
+                    <div className="h-7 w-7 overflow-hidden rounded-full">
+                      <video autoPlay loop muted playsInline className="h-full w-full object-cover">
+                        <source src="/videos/zo-coin-slow.mp4" type="video/mp4" />
+                      </video>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex flex-col gap-1 w-full">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="font-rubik text-[12px] font-normal text-white/44 m-0">Quests Completed</p>
-                    <p className="font-rubik text-[12px] font-normal text-white m-0">{userStats.total_quests_completed}</p>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-rubik text-[13px] font-normal text-white/40">Quests Completed</p>
+                    <p className="font-rubik text-[15px] font-medium text-white">{userStats.total_quests_completed}</p>
                   </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="font-rubik text-[12px] font-normal text-white/44 m-0">Total Zo Points</p>
-                    <p className="font-rubik text-[12px] font-normal text-white m-0">{userStats.zo_points}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-rubik text-[13px] font-normal text-white/40">Total Zo Points</p>
+                    <p className="font-rubik text-[15px] font-medium text-white">{userStats.zo_points}</p>
                   </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="font-rubik text-[12px] font-normal text-white/44 m-0">Latest Score</p>
-                    <p className="font-rubik text-[12px] font-normal text-white m-0">{score}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-rubik text-[13px] font-normal text-white/40">Latest Score</p>
+                    <p className="font-rubik text-[15px] font-medium text-white">{score}</p>
                   </div>
                 </div>
-                
-                <div className="w-full">
-                  <div className="flex justify-center mb-1">
-                    <p className="font-rubik text-[12px] font-normal text-white/60 m-0">More stats coming soon...</p>
+
+                <div className="mt-2 flex flex-col gap-2">
+                  <div className="relative h-2 w-full rounded-full bg-white/10">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#CFFF80] via-[#8AF9FF] to-[#6D6CFF]"
+                      style={{ width: `${Math.max(questProgressPercent, 4)}%` }}
+                    />
+                    <div
+                      className="absolute top-1/2 h-4 w-4 -translate-y-1/2 -translate-x-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]"
+                      style={{ left: sliderPosition }}
+                    />
                   </div>
+                  <div className="flex items-center justify-between font-rubik text-[11px] font-medium uppercase tracking-[0.24em] text-white/40">
+                    <span>{questMilestones.start}</span>
+                    <span>{questMilestones.mid}</span>
+                    <span>{questMilestones.end}</span>
+                  </div>
+                  <p className="font-rubik text-[12px] font-normal text-center text-white/50">
+                    Keep syncing to unlock the next milestone.
+                  </p>
                 </div>
               </div>
 

@@ -2,6 +2,12 @@
 
 ## Date: Nov 13, 2025 - 3:00 PM
 
+## Date: Nov 15, 2025 - 12:00 AM
+- Hid the QuestComplete scroll container scrollbar while preserving scroll momentum.
+- Wired the new utility class into the component so the vertical bar disappears.
+- Rebuilt the QuestComplete stats card to match Figma: new portal boost badge, balanced typography, and milestone slider.
+- Removed the temporary portal boost chip behind the token counter to keep the stats card clean.
+
 ### Issue 1: Microphone Permission Not Working
 **Problem**: After granting microphone permission, the app still showed "Allow Audio Permissions" prompt.
 

@@ -10,10 +10,11 @@
 
 **New to the project?** Start here:
 
-1. **`ARCHITECTURE.md`** - System architecture and tech stack
-2. **`AI_PAIR_CODING_SETUP.md`** - How to work with this repo
-3. **`CONSTRAINTS.md`** - What you can/cannot modify
-4. **`FEATURES/README.md`** - Feature specifications
+1. **`PROJECT_RULES.md`** ⭐ - **25 Foundational Rules** for building Zo World
+2. **`ARCHITECTURE.md`** - System architecture and tech stack
+3. **`AI_PAIR_CODING_SETUP.md`** - How to work with this repo
+4. **`CONSTRAINTS.md`** - What you can/cannot modify
+5. **`FEATURES/README.md`** - Feature specifications
 
 ---
 
@@ -22,6 +23,7 @@
 ```
 Docs/
 ├── 🏗️ Core System Docs
+│   ├── PROJECT_RULES.md ⭐ 25 FOUNDATIONAL RULES
 │   ├── ARCHITECTURE.md ⭐ START HERE
 │   ├── DATABASE_SCHEMA.md
 │   ├── API_ENDPOINTS.md

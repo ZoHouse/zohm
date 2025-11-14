@@ -199,7 +199,7 @@ export function createApiClient(baseUrl: string, authToken?: string) {
         };
       }
     } catch (error: any) {
-      return {
+  return {
         success: false,
         error: error.message || 'Network error',
       };
@@ -226,6 +226,6 @@ export function getResponseData<T>(
 ): T {
   if (response.success && response.data !== undefined) {
     return response.data;
-  }
+    }
   return defaultValue;
 }

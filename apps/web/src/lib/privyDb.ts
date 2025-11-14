@@ -32,6 +32,8 @@ export interface UserRecord {
   side_quest_url: string | null;
   onboarding_completed: boolean;
   onboarding_step: number;
+  body_type: 'bro' | 'bae' | null;  // ZO API avatar generation body type
+  profile_synced_at: string | null;  // Last sync with ZO API
   created_at: string;
   last_seen: string | null;
   updated_at: string;
@@ -295,6 +297,8 @@ export async function updateUserProfile(
   updates: Partial<UserRecord>
 ): Promise<UserRecord | null> {
   try {
+    console.log('🔄 Updating user profile:', { privyId, updates });
+    
     const { data, error } = await supabase
       .from('users')
       .update(updates)
@@ -302,10 +306,20 @@ export async function updateUserProfile(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+    
+    console.log('✅ Profile updated successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error updating user profile:', error);
+    console.error('❌ Error updating user profile:', error);
     return null;
   }
 }

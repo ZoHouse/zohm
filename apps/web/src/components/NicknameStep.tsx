@@ -10,38 +10,66 @@ interface NicknameStepProps {
   onNicknameSet: () => void;
 }
 
-// Gender selector component (matching Figma exactly - toggle style)
-function GenderSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// Body Type selector component (bro/bae matching ZO API spec)
+function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="relative flex items-center justify-center h-[48px] w-[116px] bg-[#49494A] rounded-full p-[2px]">
-      {/* Selected indicator background */}
-      <div 
-        className={`absolute top-[2px] h-[44px] w-[56px] bg-zo-accent rounded-full transition-all duration-300 ${
-          value === 'male' ? 'left-[2px]' : 'left-[58px]'
-        }`}
-      />
+    <div className="flex flex-col items-center gap-3">
+      {/* Label */}
+      <p className="font-rubik text-[14px] font-normal text-white/80 text-center">
+        Choose your avatar style
+      </p>
       
-      {/* Male button */}
+      <div className="flex gap-4">
+        {/* Bro button (male) */}
       <button
-        className="relative z-10 flex items-center justify-center h-[44px] w-[56px] rounded-full transition-all duration-300"
-        onClick={() => onChange('male')}
+          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
+            value === 'bro' 
+              ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
+              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+          }`}
+          onClick={() => onChange('bro')}
         type="button"
       >
-        <div className="w-[32px] h-[32px] rounded-full overflow-hidden flex items-center justify-center bg-[#FF6B6B]">
-          <span className="text-[20px]">👨</span>
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
+            <span className="text-[40px]">👨</span>
+          </div>
+          <span className={`font-rubik text-[14px] font-medium transition-colors ${
+            value === 'bro' ? 'text-zo-accent' : 'text-white/60'
+          }`}>
+            Bro
+          </span>
+          {value === 'bro' && (
+            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-zo-accent flex items-center justify-center">
+              <span className="text-zo-dark text-[14px] font-bold">✓</span>
         </div>
+          )}
       </button>
       
-      {/* Female button */}
+        {/* Bae button (female) */}
       <button
-        className="relative z-10 flex items-center justify-center h-[44px] w-[56px] rounded-full transition-all duration-300"
-        onClick={() => onChange('female')}
+          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
+            value === 'bae' 
+              ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
+              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+          }`}
+          onClick={() => onChange('bae')}
         type="button"
       >
-        <div className="w-[32px] h-[32px] rounded-full overflow-hidden flex items-center justify-center bg-[#8E8E93]">
-          <span className="text-[20px]">👩</span>
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600">
+            <span className="text-[40px]">👩</span>
+          </div>
+          <span className={`font-rubik text-[14px] font-medium transition-colors ${
+            value === 'bae' ? 'text-zo-accent' : 'text-white/60'
+          }`}>
+            Bae
+          </span>
+          {value === 'bae' && (
+            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-zo-accent flex items-center justify-center">
+              <span className="text-zo-dark text-[14px] font-bold">✓</span>
         </div>
+          )}
       </button>
+      </div>
     </div>
   );
 }
@@ -51,7 +79,7 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
   
   const [nickname, setNickname] = useState('');
   const [city, setCity] = useState('');
-  const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [bodyType, setBodyType] = useState<'bro' | 'bae'>('bro');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -109,18 +137,20 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     }
     
     try {
-      console.log('🎬 Saving nickname, gender, and city to database...');
+      console.log('🎬 Saving nickname, body_type, and city to database...');
       const user = await upsertUserFromPrivy(privyUser, {
         name: nickname,
         city: city || null, // Save city if available
+        body_type: bodyType, // Save body type for avatar generation
       });
       
-      // Save nickname and city to localStorage for subsequent steps
+      // Save data to localStorage for subsequent steps
       localStorage.setItem('zo_nickname', nickname);
       localStorage.setItem('zo_city', city);
+      localStorage.setItem('zo_body_type', bodyType);
       
-      console.log('✅ Nickname and city saved successfully!', city ? `City: ${city}` : 'No city');
-      console.log('➡️ Moving to avatar selection...');
+      console.log('✅ Nickname, body type, and city saved successfully!', { bodyType, city: city || 'No city' });
+      console.log('➡️ Moving to avatar generation...');
       onNicknameSet();
     } catch (err) {
       console.error('❌ Error saving nickname:', err);
@@ -229,29 +259,29 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
           />
         </div>
         
-        {/* Gender Selector - Figma: top-[376px] */}
-        <div className="absolute top-[376px] left-1/2 -translate-x-1/2">
-          <GenderSelector value={gender} onChange={(v) => setGender(v as 'male' | 'female')} />
+        {/* Body Type Selector - adjusted spacing */}
+        <div className="absolute top-[380px] left-1/2 -translate-x-1/2">
+          <BodyTypeSelector value={bodyType} onChange={(v) => setBodyType(v as 'bro' | 'bae')} />
         </div>
         
-        {/* Location Button (hidden in Figma but keeping for functionality) */}
+        {/* Location Button - adjusted spacing */}
         {!locationEnabled && (
           <button
             onClick={handleEnableLocation}
             disabled={isGettingLocation}
-            className="absolute top-[444px] left-1/2 -translate-x-1/2 w-[312px] h-[48px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute top-[560px] left-1/2 -translate-x-1/2 w-[312px] h-[48px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
             {isGettingLocation ? '🌐 Detecting location...' : '📍 Enable Location'}
           </button>
         )}
         
-        {/* "Get Citizenship" Button - centered */}
+        {/* "Get Citizenship" Button - adjusted spacing */}
         <button
           onClick={handleGetCitizenship}
           disabled={!isValid || isLoading}
           className={`absolute left-1/2 -translate-x-1/2 bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-[312px] h-[56px] cursor-pointer transition-all duration-200 hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-            locationEnabled ? 'top-[444px]' : 'top-[508px]'
+            locationEnabled ? 'top-[560px]' : 'top-[624px]'
           }`}
           type="button"
         >

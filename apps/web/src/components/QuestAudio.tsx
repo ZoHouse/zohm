@@ -701,8 +701,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             onWin={(score, hasWon) => {
               console.log('🎮 Game completed:', { score, hasWon, userId });
               
-              // Calculate tokens earned (100 base + 100 bonus for winning)
-              const tokensEarned = hasWon ? 200 : 100;
+              // ⭐ DYNAMIC TOKEN CALCULATION based on proximity to 1111
+              // Formula: Base 50 + (1 - distance/1111) * 150
+              // Perfect 1111 = 200 tokens, 0 = 50 tokens
+              const distance = Math.abs(score - 1111);
+              const proximityFactor = Math.max(0, 1 - (distance / 1111));
+              const tokensEarned = Math.round(50 + (proximityFactor * 150));
+              
+              console.log(`💰 Tokens calculation: score=${score}, distance=${distance}, proximity=${proximityFactor.toFixed(2)}, tokens=${tokensEarned}`);
               
               // Record quest completion via API if user is logged in (non-blocking)
               if (userId) {
@@ -724,11 +730,16 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     },
                     body: JSON.stringify({
                       user_id: userId,
-                      quest_id: 'voice-sync-quest',
+                      quest_id: 'game-1111', // Quest slug for Game1111
                       score,
                       location,
                       metadata: {
-                        hasWon,
+                        quest_title: 'Quantum Voice Sync',
+                        completed_via: 'webapp',
+                        game_won: hasWon,
+                        reward_zo: tokensEarned, // Include dynamic token calculation
+                        distance_from_target: distance,
+                        proximity_factor: proximityFactor,
                         timestamp: new Date().toISOString(),
                       },
                     }),

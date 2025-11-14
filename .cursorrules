@@ -49,6 +49,20 @@ Create PR but DO NOT merge:
 - `packages/contracts/**` - Smart contracts
 - Any files with secrets
 
+## Reality Engine Doctrine
+
+The Reality Engine is the core of Zo World. All code must respect these constraints:
+
+1. **Engine Consistency** - The Reality Engine must never break consistency between identity, nodes, quests, and vibe score
+2. **Signal Format** - All features must emit signals in the Reality Engine format
+3. **Core Loop Integration** - All new modules must integrate into Observe → Model → Simulate → Reinforce
+4. **Deterministic Output** - Engine outputs must remain deterministic and auditable
+5. **Four Pillars Compliance**:
+   - Identity as Dynamic Variable
+   - Nodes as Programmable Reality Portals
+   - Quests as Reality Programs
+   - Vibe Score as Universal Reality Measure
+
 ## Key Principles to Internalize
 
 1. **Reality is a Graph Not a Tree** - Design features as graph entities with propagation

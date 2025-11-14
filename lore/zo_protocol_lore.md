@@ -12,6 +12,8 @@ It is not a brand, not a community product, and not a traditional network. It is
 
 Within Zo World, every action is a signal. Every signal affects the field. The field then responds with new opportunities, interactions, and narrative shifts. This recursive loop forms the basis of a Life Design Simulation Engine that guides people toward aligned timelines.
 
+**The Reality Engine** is the invisible architect behind the Zo World. It reads your presence, tunes your path, and reveals the most aligned timeline available to you. As you move through Zo Nodes, your reality shifts. On web, it watches. On mobile, it listens. On glasses, it reveals.
+
 Zo World is built on three primary pillars:
 
 * **Citizens**: The human agents inside the simulation.
@@ -19,6 +21,8 @@ Zo World is built on three primary pillars:
 * **The Engine**: The algorithmic system that observes, models, and tunes reality.
 
 Together they form a distributed architecture that blends consciousness, culture, computation, and physical space into a continuously evolving reality protocol.
+
+The Engine operates through a simple but powerful loop: **Observe → Model → Simulate → Reinforce**. It captures your behavior, computes your alignment, generates your next quest, and rewards your progress. This is how default reality becomes programmable.
 
 ---
 

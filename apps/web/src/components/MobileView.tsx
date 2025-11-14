@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import MapCanvas from '@/components/MapCanvas';
 import MobileTileModal from '@/components/MobileTileModal';
 import MobileEventsListOverlay from '@/components/MobileEventsListOverlay';
@@ -122,12 +121,11 @@ const MobileView: React.FC<MobileViewProps> = ({
   return (
     <main className={`relative w-full h-screen overflow-hidden ${isAnyModalOpen ? 'bg-black' : 'bg-[#f4f1ea]'}`}>
       {/* Map Canvas - shrinks to top half when modal is open */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          height: isAnyModalOpen ? '50%' : '100%',
-        }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-all duration-300 ease-out ${
+          isAnyModalOpen ? 'h-[50%]' : 'h-full'
+        }`}
+        style={{ willChange: 'height' }}
       >
         <MapCanvas 
           className="absolute inset-0 pointer-events-auto" 
@@ -139,7 +137,7 @@ const MobileView: React.FC<MobileViewProps> = ({
           shouldAnimateFromSpace={shouldAnimateFromSpace}
           userLocation={userLocation}
         />
-      </motion.div>
+      </div>
 
       {/* User Balance and Avatar Header */}
       {userId && (
@@ -187,11 +185,9 @@ const MobileView: React.FC<MobileViewProps> = ({
       </div>
 
       {/* Unicorn Button */}
-      <motion.button
+      <button
         onClick={handleUnicornClick}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="fixed left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-[#ff4d6d] to-[#ff3355] border-4 border-white shadow-2xl flex items-center justify-center z-40 p-2"
+        className="fixed left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-[#ff4d6d] to-[#ff3355] border-4 border-white shadow-2xl flex items-center justify-center z-40 p-2 transition-transform duration-200 ease-out hover:scale-110 active:scale-90"
         style={{
           bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
           boxShadow: '0 8px 32px rgba(255, 77, 109, 0.4)',
@@ -202,7 +198,7 @@ const MobileView: React.FC<MobileViewProps> = ({
           alt="Follow Your Heart" 
           className="w-full h-full object-contain"
         />
-      </motion.button>
+      </button>
 
       {/* 4-Tile Modal */}
       <MobileTileModal

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
 import { getUserByWallet } from '@/lib/privyDb';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
@@ -46,8 +47,11 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
         // Check completion status and cooldown for each quest
         const questsWithCompletion = await Promise.all(
           q.map(async (quest) => {
+            console.log('🔍 Quest data:', { id: quest.id, slug: quest.slug });
+            
             // For repeatable quests (with cooldown)
             if (quest.cooldown_hours && quest.cooldown_hours > 0 && user) {
+              console.log('⏰ Checking cooldown for quest:', quest.id, 'slug:', quest.slug);
               const cooldownCheck = await canUserCompleteQuest(
                 user.id, 
                 quest.id, 
@@ -95,6 +99,11 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
         setGame1111UserId(user.id);
         setShowGame1111(true);
         console.log('🎮 Launching game1111 for user:', user.id);
+        
+        // Close quest overlay for seamless full-screen experience
+        if (onClose) {
+          onClose();
+        }
       } else {
         setVerificationResult('User profile not found. Please complete onboarding.');
       }
@@ -452,9 +461,9 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
 
       <LeaderboardsOverlay isVisible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
       
-      {/* Game1111 Full-Screen Experience */}
-      {showGame1111 && (
-        <div className="fixed inset-0 z-[100] bg-black">
+      {/* Game1111 Full-Screen Experience - Rendered at document root via Portal */}
+      {showGame1111 && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black">
           <QuestAudio
             userId={game1111UserId}
             onComplete={async (score, tokensEarned) => {
@@ -507,7 +516,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
               setTimeout(() => setVerificationResult(''), 5000);
             }}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

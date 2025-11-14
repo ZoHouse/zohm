@@ -117,15 +117,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 backgroundColor: 'transparent',
               }}
             >
-              <img 
+            <img 
                 src={userProfile?.pfp || DashboardAssets.profile.photo}
-                alt="Profile" 
+              alt="Profile" 
                 className="w-full h-full"
                 style={{
                   objectFit: 'contain',
                   backgroundColor: 'transparent',
                 }}
-              />
+            />
             </div>
           </div>
         </div>
@@ -212,7 +212,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               >
                 <div className="w-5 h-5">
                   <img src={DashboardAssets.icons.xTwitter} alt="X" className="w-full h-full object-contain" />
-                </div>
+            </div>
               </button>
               
               {/* Telegram */}
@@ -457,7 +457,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             letterSpacing: DashboardTypography.size.small.letterSpacing,
             color: DashboardColors.text.secondary,
           }}>
-            {userProfile?.offer || 'Deep understanding of Web3 and product development to create seamless, gamified platforms that empower decentralized communities.'}
+            {userProfile?.bio || 'Deep understanding of Web3 and product development to create seamless, gamified platforms that empower decentralized communities.'}
           </p>
         </div>
       </div>
@@ -492,7 +492,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             letterSpacing: DashboardTypography.size.small.letterSpacing,
             color: DashboardColors.text.secondary,
           }}>
-            {userProfile?.help_needed || 'Branding and product design to refine Wall.app\'s identity and user experience. Expertise in crafting cohesive narratives and user-centric designs to stand out and drive adoption.'}
+            {'Branding and product design to refine Wall.app\'s identity and user experience. Expertise in crafting cohesive narratives and user-centric designs to stand out and drive adoption.'}
           </p>
         </div>
       </div>

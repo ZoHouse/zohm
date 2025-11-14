@@ -54,10 +54,10 @@ const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [
       
       {/* Content Container */}
       <div className="relative z-10 flex flex-col h-full overflow-hidden">
-        {/* Header */}
-        <DashboardHeader onClose={onClose} />
-        
-        {/* Main Body: 3 Column Layout */}
+      {/* Header */}
+      <DashboardHeader onClose={onClose} />
+      
+      {/* Main Body: 3 Column Layout */}
         <div 
           className="flex items-start justify-between overflow-y-auto flex-1"
           style={{
@@ -65,13 +65,13 @@ const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [
             padding: DashboardSpacing.xl,
           }}
         >
-          {/* Left Sidebar */}
-          <LeftSidebar userProfile={userProfile} />
-          
-          {/* Center Column */}
+        {/* Left Sidebar */}
+        <LeftSidebar userProfile={userProfile} />
+        
+        {/* Center Column */}
           <CenterColumn userProfile={userProfile} onOpenMap={onClose} onLaunchGame={onLaunchGame} />
-          
-          {/* Right Sidebar */}
+        
+        {/* Right Sidebar */}
           <RightSidebar userProfile={userProfile} events={events} />
         </div>
       </div>

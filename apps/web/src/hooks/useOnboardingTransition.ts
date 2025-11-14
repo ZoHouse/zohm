@@ -215,7 +215,7 @@ export function useOnboardingTransition() {
  */
 async function fetchEvents(): Promise<any[]> {
   try {
-    const { fetchAllCalendarEventsWithGeocoding, getCalendarUrls } = await import('@/lib/icalParser');
+    const { fetchAllCalendarEventsWithGeocoding } = await import('@/lib/icalParser');
     const { getCalendarUrls: getUrls } = await import('@/lib/calendarConfig');
     
     const calendarUrls = await getUrls();

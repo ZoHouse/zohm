@@ -268,7 +268,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
                 color: DashboardColors.text.secondary,
                 textAlign: 'center',
               }}>No upcoming events found nearby</p>
-            </div>
+                  </div>
           ) : (
             events.map((event) => (
               <div 
@@ -324,8 +324,8 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>{extractCity(event.location)}</p>
-                  </div>
-                  
+                </div>
+                
                   {/* Free/Paid and View button aligned on right */}
                   <div className="flex items-center" style={{ gap: DashboardSpacing.md, flexShrink: 0 }}>
                     <p style={{
@@ -359,7 +359,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
               </div>
             ))
           )}
-        </div>
+          </div>
       </div>
 
       {/* ZO CARD Application */}

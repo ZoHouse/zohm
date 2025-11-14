@@ -425,7 +425,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             }
           } catch (e) {
             console.warn(`Could not remove layer ${layer.id}:`, e);
-          }
+        }
         });
       }
 
@@ -439,7 +439,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       }
     } catch (e) {
       console.warn(`Error in removeMapsourceWithLayers for ${sourceId}:`, e);
-    }
+        }
   };
 
   // Clear any drawn route and its markers
@@ -1151,7 +1151,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       userLocationMarker.current = userMarker;
 
       console.log('🦄 Added unicorn marker for user location');
-      
+
       // Note: User location marker popup removed - no popup on click
     } catch (error) {
       console.warn('Error setting user location:', error);

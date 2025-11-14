@@ -82,12 +82,23 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
     // Fetch calendar URLs
     let calendarUrls = await getCalendarUrls();
     
+    // Log what we got
+    console.log(`📅 Fetched ${calendarUrls.length} calendar URLs from config`);
+    if (verbose) {
+      console.log('📋 Calendar URLs:', calendarUrls);
+    }
+    
     // Filter to single calendar if specified
     if (config.calendarId) {
       calendarUrls = calendarUrls.filter(url => url.includes(config.calendarId!));
       if (calendarUrls.length === 0) {
         throw new Error(`Calendar ${config.calendarId} not found`);
       }
+    }
+    
+    if (calendarUrls.length === 0) {
+      console.warn('⚠️  No calendar URLs configured! Check calendars table in database.');
+      return stats;
     }
     
     console.log(`📅 Processing ${calendarUrls.length} calendar(s)`);
@@ -143,7 +154,7 @@ async function processEvent(
   // Check if event already exists
   const { data: existing, error: queryError } = await supabase
     .from('canonical_events')
-    .select('id, lat, lng, geocode_status, event_version')
+    .select('id, lat, lng, geocode_status, geocode_attempted_at, event_version')
     .eq('canonical_uid', uid)
     .maybeSingle();
   
@@ -257,12 +268,15 @@ async function updateExistingEvent(
   event: ParsedEvent,
   verbose: boolean
 ): Promise<void> {
-  // Only update if geocoding is missing and we can provide it
-  const needsGeocode = !existing.lat || !existing.lng || existing.geocode_status === 'failed';
+  // Check if we should retry geocoding
+  const shouldRetryGeocode = 
+    (!existing.lat || !existing.lng || existing.geocode_status === 'failed') &&
+    (!existing.geocode_attempted_at || 
+     (new Date().getTime() - new Date(existing.geocode_attempted_at).getTime()) > 86400000); // 24h
   
-  if (!needsGeocode) {
+  if (!shouldRetryGeocode) {
     if (verbose) {
-      console.log(`⏭️  Skipped (already complete): "${event['Event Name']}"`);
+      console.log(`⏭️  Skipped (already complete or recently attempted): "${event['Event Name']}"`);
     }
     return;
   }
@@ -278,6 +292,7 @@ async function updateExistingEvent(
       geocode_status: geocode.status,
       geocode_attempted_at: geocode.attempted_at,
       event_version: existing.event_version + 1,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', existing.id);
   

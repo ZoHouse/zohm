@@ -17,18 +17,28 @@ export async function getCalendarUrls(): Promise<string[]> {
       return EMERGENCY_FALLBACK_URLS;
     }
     
+    // Check if running server-side (for worker) or client-side
+    const isServerSide = typeof window === 'undefined';
+    const baseUrl = isServerSide 
+      ? (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001')
+      : '';
+    
     // Convert URLs to use our proxy API to avoid CORS issues
     const urls = calendars.map(calendar => {
       if (calendar.url.startsWith('http')) {
         // Direct URL - proxy it through our API
-        return `/api/calendar?url=${encodeURIComponent(calendar.url)}`;
+        const relativeUrl = `/api/calendar?url=${encodeURIComponent(calendar.url)}`;
+        return isServerSide ? `${baseUrl}${relativeUrl}` : relativeUrl;
       } else {
         // Already a relative API URL
-        return calendar.url;
+        return isServerSide ? `${baseUrl}${calendar.url}` : calendar.url;
       }
     });
     
-    console.log('📅 Loaded calendar URLs from database:', urls);
+    console.log('📅 Loaded calendar URLs from database:', urls.length, 'calendars');
+    if (isServerSide) {
+      console.log('🔧 Server-side mode: using absolute URLs');
+    }
     return urls;
   } catch (error) {
     console.error('Error fetching calendar URLs, using emergency fallback:', error);

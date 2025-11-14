@@ -157,7 +157,10 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         onNodeClick={onNodeClick}
         closeMapPopups={closePopupsFn}
       />
-      <QuestsOverlay isVisible={activeSection === 'quests'} />
+      <QuestsOverlay 
+        isVisible={activeSection === 'quests'} 
+        onClose={() => setActiveSection(null)} 
+      />
 
       {/* Dashboard Overlay */}
       <DashboardOverlay 

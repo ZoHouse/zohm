@@ -109,10 +109,12 @@ const NewOnboarding: React.FC<NewOnboardingProps> = ({ isVisible, onComplete }) 
     setError('');
 
     try {
+      // Map gender values to body_type values expected by database
+      const bodyType = gender === 'male' ? 'bro' : 'bae';
       await upsertUserFromPrivy(privyUser, {
         name: trimmedUsername,
         pfp: AVATAR_OPTIONS[selectedAvatar],
-        gender: gender,
+        body_type: bodyType,
         lat: location.lat,
         lng: location.lng,
         onboarding_completed: true,

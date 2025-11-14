@@ -251,6 +251,12 @@ microphone=()  // ❌ Blocks microphone for all origins
 - Increased top padding (`pt-[140px]`) in `QuestComplete` scroll container to avoid logo overlap
 - Autoplay guard added for the coin video (with warning on failure)
 
+**Database Schema Fix** (11:17 AM)
+- Updated `gender` field to `body_type` in database schema
+- Mapped frontend values: `male` → `bro`, `female` → `bae`
+- Fixed NicknameStep and NewOnboarding components to use correct field mapping
+- Updated UserRecord interface comment to reflect correct values
+
 **Changes Applied**:
 - Updated component dimensions: `width: '480px', height: '150px'`
 - Updated image attributes: `width="480" height="150"`

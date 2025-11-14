@@ -191,10 +191,10 @@ export function useOnboardingTransition() {
  */
 async function fetchEvents(): Promise<any[]> {
   try {
-    const { fetchAllCalendarEventsWithGeocoding, getCalendarUrls } = await import('@/lib/icalParser');
-    const { getCalendarUrls: getUrls } = await import('@/lib/calendarConfig');
+    const { fetchAllCalendarEventsWithGeocoding } = await import('@/lib/icalParser');
+    const { getCalendarUrls } = await import('@/lib/calendarConfig');
     
-    const calendarUrls = await getUrls();
+    const calendarUrls = await getCalendarUrls();
     const events = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
     
     console.log('✅ Pre-fetched', events.length, 'events for transition');

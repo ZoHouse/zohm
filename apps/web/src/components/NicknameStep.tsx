@@ -22,13 +22,13 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
       <div className="flex gap-4">
         {/* Bro button (male) */}
         <button
+          type="button"
           className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
             value === 'bro' 
               ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
               : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
           }`}
           onClick={() => onChange('bro')}
-          type="button"
         >
           <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
             <span className="text-[40px]">👨</span>
@@ -44,20 +44,16 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
             </div>
           )}
         </button>
-<<<<<<< HEAD
-      
-=======
         
->>>>>>> f5a92bf (fix: ui bugs)
         {/* Bae button (female) */}
         <button
+          type="button"
           className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
             value === 'bae' 
               ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
-              : 'border-white/20 bg-white/5 hover-border-white/40 hover:bg-white/10'
+              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
           }`}
           onClick={() => onChange('bae')}
-          type="button"
         >
           <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600">
             <span className="text-[40px]">👩</span>

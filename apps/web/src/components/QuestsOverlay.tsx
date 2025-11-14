@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
 import { getUserByWallet } from '@/lib/privyDb';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
@@ -9,15 +8,15 @@ import { canUserCompleteQuest } from '@/lib/questService';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
-import QuestAudio from './QuestAudio';
 import CooldownTimer from './CooldownTimer';
 
 interface QuestsOverlayProps {
   isVisible: boolean;
   onClose?: () => void;
+  onLaunchGame?: (userId: string) => void;
 }
 
-const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => {
+const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLaunchGame }) => {
   const { primaryWalletAddress, authenticated } = usePrivyUser();
   const [quests, setQuests] = useState<QuestEntry[] | null>(null);
   const [leaders, setLeaders] = useState<LeaderboardEntry[] | null>(null);
@@ -28,10 +27,6 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
   const [twitterUrl, setTwitterUrl] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string>('');
-  
-  // Game1111 launcher state
-  const [showGame1111, setShowGame1111] = useState(false);
-  const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
 
   // Load quests and check completion status
   useEffect(() => {
@@ -95,16 +90,16 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       // Get user by wallet address
       const user = await getUserByWallet(primaryWalletAddress);
       
-      if (user) {
-        setGame1111UserId(user.id);
-        setShowGame1111(true);
+      if (user && onLaunchGame) {
+        // Call parent callback to launch game
+        onLaunchGame(user.id);
         console.log('🎮 Launching game1111 for user:', user.id);
         
         // Close quest overlay for seamless full-screen experience
         if (onClose) {
           onClose();
         }
-      } else {
+      } else if (!user) {
         setVerificationResult('User profile not found. Please complete onboarding.');
       }
       return;
@@ -460,65 +455,6 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       )}
 
       <LeaderboardsOverlay isVisible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
-      
-      {/* Game1111 Full-Screen Experience - Rendered at document root via Portal */}
-      {showGame1111 && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black">
-          <QuestAudio
-            userId={game1111UserId}
-            onComplete={async (score, tokensEarned) => {
-              console.log('🎮 Game1111 completed:', { score, tokensEarned });
-              
-              // Close game view
-              setShowGame1111(false);
-              setGame1111UserId(undefined);
-              
-              // Refresh quests to show new cooldown status
-              if (primaryWalletAddress) {
-                const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
-                
-                if (q) {
-                  const user = await getUserByWallet(primaryWalletAddress);
-                  
-                  const questsWithCompletion = await Promise.all(
-                    q.map(async (quest) => {
-                      if (quest.cooldown_hours && quest.cooldown_hours > 0 && user) {
-                        const cooldownCheck = await canUserCompleteQuest(
-                          user.id, 
-                          quest.id, 
-                          quest.cooldown_hours
-                        );
-                        
-                        return {
-                          ...quest,
-                          canComplete: cooldownCheck.canComplete,
-                          nextAvailableAt: cooldownCheck.nextAvailableAt,
-                          lastCompletedAt: cooldownCheck.lastCompletedAt
-                        };
-                      }
-                      
-                      const isCompleted = await isQuestCompleted(primaryWalletAddress, quest.id);
-                      return {
-                        ...quest,
-                        status: isCompleted ? 'completed' : quest.status,
-                        canComplete: !isCompleted
-                      };
-                    })
-                  );
-                  setQuests(questsWithCompletion);
-                }
-                
-                setLeaders(lb);
-              }
-              
-              // Show success message
-              setVerificationResult(`🎉 Quest completed! You earned ${tokensEarned} $ZO`);
-              setTimeout(() => setVerificationResult(''), 5000);
-            }}
-          />
-        </div>,
-        document.body
-      )}
     </>
   );
 };

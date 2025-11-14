@@ -12,6 +12,7 @@ import CityInfoCard from '@/components/CityInfoCard';
 import MapViewToggle from '@/components/MapViewToggle';
 import StatsPill from '@/components/StatsPill';
 import QuantumSyncHeader from '@/components/QuantumSyncHeader';
+import QuestAudio from '@/components/QuestAudio';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -73,6 +74,25 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
+  
+  // Game1111 state
+  const [showGame1111, setShowGame1111] = useState(false);
+  const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
+
+  const handleLaunchGame = (userId: string) => {
+    console.log('🎮 Launching game1111 for user:', userId);
+    setGame1111UserId(userId);
+    setShowGame1111(true);
+    // Close all overlays
+    setActiveSection('events');
+    setIsDashboardOpen(false);
+  };
+  
+  const handleGameComplete = (score: number, tokensEarned: number) => {
+    console.log('🎮 Game completed:', { score, tokensEarned });
+    setShowGame1111(false);
+    setGame1111UserId(undefined);
+  };
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -159,7 +179,8 @@ const DesktopView: React.FC<DesktopViewProps> = ({
       />
       <QuestsOverlay 
         isVisible={activeSection === 'quests'} 
-        onClose={() => setActiveSection(null)} 
+        onClose={() => setActiveSection('events')}
+        onLaunchGame={handleLaunchGame}
       />
 
       {/* Dashboard Overlay */}
@@ -183,6 +204,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
           onDashboardClick={() => setIsDashboardOpen(true)}
         />
       </div>
+      
+      {/* Game1111 Full-Screen Experience - Independent of overlays */}
+      {showGame1111 && (
+        <div className="fixed inset-0 z-[10000] bg-black">
+          <QuestAudio
+            userId={game1111UserId}
+            onComplete={handleGameComplete}
+          />
+        </div>
+      )}
     </main>
   );
 };

@@ -11,10 +11,11 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
-  const { userProfile, isFounder, userId } = usePrivyUser();
+  const { userProfile, isFounder } = usePrivyUser();
   const { login, logout, authenticated } = usePrivy();
   const [balance, setBalance] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const userId = userProfile?.id;
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fetch token balance

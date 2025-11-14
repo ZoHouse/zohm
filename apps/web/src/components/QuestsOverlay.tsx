@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
+import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted, supabase } from '@/lib/supabase';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
+import { canUserCompleteQuest } from '@/lib/questService';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
+import QuestAudio from './QuestAudio';
+import CooldownTimer from './CooldownTimer';
 
 interface QuestsOverlayProps {
   isVisible: boolean;
@@ -23,6 +26,10 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
   const [twitterUrl, setTwitterUrl] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string>('');
+  
+  // Game1111 launcher state
+  const [showGame1111, setShowGame1111] = useState(false);
+  const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
 
   // Load quests and check completion status
   useEffect(() => {
@@ -32,13 +39,38 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
       
       if (q) {
-        // Check completion status for each quest
+        // Get user ID for cooldown checks
+        const { data: user } = await supabase
+          .from('users')
+          .select('id')
+          .eq('wallet_address', primaryWalletAddress)
+          .single();
+        
+        // Check completion status and cooldown for each quest
         const questsWithCompletion = await Promise.all(
           q.map(async (quest) => {
+            // For repeatable quests (with cooldown)
+            if (quest.cooldown_hours && quest.cooldown_hours > 0 && user) {
+              const cooldownCheck = await canUserCompleteQuest(
+                user.id, 
+                quest.id, 
+                quest.cooldown_hours
+              );
+              
+              return {
+                ...quest,
+                canComplete: cooldownCheck.canComplete,
+                nextAvailableAt: cooldownCheck.nextAvailableAt,
+                lastCompletedAt: cooldownCheck.lastCompletedAt
+              };
+            }
+            
+            // For one-time quests (no cooldown)
             const isCompleted = await isQuestCompleted(primaryWalletAddress, quest.id);
             return {
               ...quest,
-              status: isCompleted ? 'completed' : quest.status
+              status: isCompleted ? 'completed' : quest.status,
+              canComplete: !isCompleted
             };
           })
         );
@@ -51,12 +83,32 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
     loadQuestsAndCheckCompletion();
   }, [isVisible, primaryWalletAddress]);
 
-  const handleJoinQuest = (quest: QuestEntry) => {
+  const handleJoinQuest = async (quest: QuestEntry) => {
     if (!authenticated || !primaryWalletAddress) {
       setVerificationResult('Please log in first');
       return;
     }
     
+    // Special handling for game-1111 quest
+    if (quest.slug === 'game-1111') {
+      // Get user ID from users table
+      const { data: user } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', primaryWalletAddress)
+        .single();
+      
+      if (user) {
+        setGame1111UserId(user.id);
+        setShowGame1111(true);
+        console.log('🎮 Launching game1111 for user:', user.id);
+      } else {
+        setVerificationResult('User profile not found. Please complete onboarding.');
+      }
+      return;
+    }
+    
+    // Original logic for other quests
     setSelectedQuest(quest);
     setShowJoinPopup(true);
   };
@@ -195,13 +247,24 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-lg text-black">{q.title}</h3>
-                    {q.status === 'active' && <GlowChip showDot>Active</GlowChip>}
-                    {q.status === 'completed' && <GlowChip>Completed</GlowChip>}
+                    {/* Status badges with cooldown support */}
+                    {q.status === 'active' && q.canComplete !== false && <GlowChip showDot>Available</GlowChip>}
+                    {q.status === 'active' && q.canComplete === false && <GlowChip>On Cooldown</GlowChip>}
+                    {q.status === 'completed' && !q.cooldown_hours && <GlowChip>Completed</GlowChip>}
                     {q.status === 'developing' && <GlowChip>Developing</GlowChip>}
                   </div>
                   <p className="text-sm text-gray-700 mb-3">{q.description}</p>
-                  <div className="flex items-center gap-2">
-                    <GlowChip>420 $ZO</GlowChip>
+                  
+                  {/* Cooldown timer */}
+                  {q.canComplete === false && q.nextAvailableAt && (
+                    <p className="text-xs text-gray-600 mb-2 font-rubik">
+                      ⏰ Available in: <CooldownTimer targetDate={q.nextAvailableAt} />
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <GlowChip>{q.reward} $ZO</GlowChip>
+                    {q.cooldown_hours && <GlowChip>Every {q.cooldown_hours}h</GlowChip>}
                   </div>
                 </div>
               </div>
@@ -209,10 +272,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 <GlowButton 
                   variant="primary"
                   className="w-full"
-                  onClick={() => q.status !== 'completed' && authenticated && handleJoinQuest(q)}
-                  disabled={q.status === 'completed' || !authenticated}
+                  onClick={() => handleJoinQuest(q)}
+                  disabled={!authenticated || q.canComplete === false || q.status === 'developing'}
                 >
-                  {q.status === 'completed' ? 'Completed' : 'Join Quest'}
+                  {!authenticated ? 'Log in to Play' : 
+                   q.canComplete === false ? 'On Cooldown' : 
+                   q.status === 'completed' ? 'Completed' :
+                   q.status === 'developing' ? 'Coming Soon' : 
+                   'Play Quest'}
                 </GlowButton>
               </div>
             </GlowCard>
@@ -268,13 +335,24 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-base text-black">{q.title}</h3>
-                        {q.status === 'active' && <GlowChip showDot>Active</GlowChip>}
-                        {q.status === 'completed' && <GlowChip>Completed</GlowChip>}
+                        {/* Status badges with cooldown support */}
+                        {q.status === 'active' && q.canComplete !== false && <GlowChip showDot>Available</GlowChip>}
+                        {q.status === 'active' && q.canComplete === false && <GlowChip>On Cooldown</GlowChip>}
+                        {q.status === 'completed' && !q.cooldown_hours && <GlowChip>Completed</GlowChip>}
                         {q.status === 'developing' && <GlowChip>Developing</GlowChip>}
                       </div>
                       <p className="text-sm text-gray-700 mb-3">{q.description}</p>
-                      <div className="flex items-center gap-2">
-                        <GlowChip>420 $ZO</GlowChip>
+                      
+                      {/* Cooldown timer */}
+                      {q.canComplete === false && q.nextAvailableAt && (
+                        <p className="text-xs text-gray-600 mb-2 font-rubik">
+                          ⏰ Available in: <CooldownTimer targetDate={q.nextAvailableAt} />
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <GlowChip>{q.reward} $ZO</GlowChip>
+                        {q.cooldown_hours && <GlowChip>Every {q.cooldown_hours}h</GlowChip>}
                       </div>
                     </div>
                   </div>
@@ -282,10 +360,14 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                     <GlowButton 
                       variant="primary"
                       className="w-full"
-                      onClick={() => q.status !== 'completed' && authenticated && handleJoinQuest(q)}
-                      disabled={q.status === 'completed' || !authenticated}
+                      onClick={() => handleJoinQuest(q)}
+                      disabled={!authenticated || q.canComplete === false || q.status === 'developing'}
                     >
-                      {q.status === 'completed' ? 'Completed' : 'Join Quest'}
+                      {!authenticated ? 'Log in to Play' : 
+                       q.canComplete === false ? 'On Cooldown' : 
+                       q.status === 'completed' ? 'Completed' :
+                       q.status === 'developing' ? 'Coming Soon' : 
+                       'Play Quest'}
                     </GlowButton>
                   </div>
                 </GlowCard>
@@ -376,6 +458,68 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       )}
 
       <LeaderboardsOverlay isVisible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
+      
+      {/* Game1111 Full-Screen Experience */}
+      {showGame1111 && (
+        <div className="fixed inset-0 z-[100] bg-black">
+          <QuestAudio
+            userId={game1111UserId}
+            onComplete={async (score, tokensEarned) => {
+              console.log('🎮 Game1111 completed:', { score, tokensEarned });
+              
+              // Close game view
+              setShowGame1111(false);
+              setGame1111UserId(undefined);
+              
+              // Refresh quests to show new cooldown status
+              if (primaryWalletAddress) {
+                const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
+                
+                if (q) {
+                  const { data: user } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('wallet_address', primaryWalletAddress)
+                    .single();
+                  
+                  const questsWithCompletion = await Promise.all(
+                    q.map(async (quest) => {
+                      if (quest.cooldown_hours && quest.cooldown_hours > 0 && user) {
+                        const cooldownCheck = await canUserCompleteQuest(
+                          user.id, 
+                          quest.id, 
+                          quest.cooldown_hours
+                        );
+                        
+                        return {
+                          ...quest,
+                          canComplete: cooldownCheck.canComplete,
+                          nextAvailableAt: cooldownCheck.nextAvailableAt,
+                          lastCompletedAt: cooldownCheck.lastCompletedAt
+                        };
+                      }
+                      
+                      const isCompleted = await isQuestCompleted(primaryWalletAddress, quest.id);
+                      return {
+                        ...quest,
+                        status: isCompleted ? 'completed' : quest.status,
+                        canComplete: !isCompleted
+                      };
+                    })
+                  );
+                  setQuests(questsWithCompletion);
+                }
+                
+                setLeaders(lb);
+              }
+              
+              // Show success message
+              setVerificationResult(`🎉 Quest completed! You earned ${tokensEarned} $ZO`);
+              setTimeout(() => setVerificationResult(''), 5000);
+            }}
+          />
+        </div>
+      )}
     </>
   );
 };

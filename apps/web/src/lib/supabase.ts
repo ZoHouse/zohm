@@ -358,10 +358,21 @@ export interface LeaderboardEntry {
 
 export interface QuestEntry {
   id: string;
+  slug: string;
   title: string;
   description: string;
   reward: number;
   status: string;
+  category?: string;
+  cooldown_hours?: number;
+  rewards_breakdown?: any;
+  created_at?: string;
+  updated_at?: string;
+  
+  // Runtime fields for cooldown tracking (added by quest loading logic)
+  canComplete?: boolean;
+  nextAvailableAt?: string;
+  lastCompletedAt?: string;
 }
 
 export async function getLeaderboards(): Promise<LeaderboardEntry[] | null> {

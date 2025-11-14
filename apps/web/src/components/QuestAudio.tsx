@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
+import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -13,11 +14,17 @@ interface QuestAudioProps {
 function Game1111({ 
   onWin, 
   videoRef, 
-  isVideoLockedRef 
+  isVideoLockedRef,
+  userId,
+  canPlay,
+  timeRemaining
 }: { 
   onWin: (score: number, hasWon: boolean) => void; 
   videoRef: React.RefObject<HTMLVideoElement | null>; 
   isVideoLockedRef: React.MutableRefObject<boolean>;
+  userId?: string;
+  canPlay: boolean;
+  timeRemaining: string;
 }) {
   const [counter, setCounter] = useState(0);
   const [isRunning, setIsRunning] = useState(true);
@@ -25,13 +32,14 @@ function Game1111({
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isRunning) {
+    // Only run counter if can play and is running
+    if (isRunning && canPlay) {
       interval = setInterval(() => {
         setCounter((prev) => (prev + 1) % 10000);
       }, 1);
     }
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isRunning, canPlay]);
 
   const handleStop = () => {
     setIsRunning(false);
@@ -71,10 +79,14 @@ function Game1111({
         {/* Stop Button - Matching mobile app styling */}
         <button
           onClick={handleStop}
-          disabled={!isRunning}
-          className="px-5 py-4 bg-white text-black font-rubik text-[16px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+          disabled={!isRunning || !canPlay}
+          className={`px-5 py-4 font-rubik text-[16px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
+            canPlay 
+              ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
+              : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
+          }`}
         >
-          {isRunning ? 'Stop at 1111' : 'Try Again'}
+          {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
         </button>
         
         {/* Win/Try again message - Matching mobile app */}
@@ -88,11 +100,11 @@ function Game1111({
       {/* Bottom Text - Exact mobile app positioning */}
       <div className="absolute bottom-[56px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 z-20">
         <p className="font-rubik text-[16px] font-medium text-white text-center leading-[20px] m-0">
-          {hasWon ? 'You Won! 1111 $Zo Synced!' : 'Sync at 1111 & Manifest $Zo'}
+          {hasWon ? 'You Won! 1111 $Zo Synced!' : (canPlay ? 'Sync at 1111 & Manifest $Zo' : 'Quest on Cooldown')}
         </p>
         {!hasWon && (
           <p className="font-rubik text-[14px] font-normal text-white/60 text-center leading-[18px] m-0 mt-1">
-            Once every 12 hrs
+            {canPlay ? 'Once every 12 hrs' : `Next available in: ${timeRemaining}`}
           </p>
         )}
       </div>
@@ -110,6 +122,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isVideoLockedRef = useRef(false); // Lock video from playing during game
+
+  // Check quest cooldown (12 hours for game1111)
+  const { canPlay, timeRemaining, isChecking } = useQuestCooldown(userId, 'game-1111', 12);
 
   // Check microphone permission on mount
   useEffect(() => {
@@ -698,6 +713,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[360px] mx-auto w-full">
         {audioStatus === 'game1111' ? (
           <Game1111 
+            userId={userId}
+            canPlay={canPlay}
+            timeRemaining={timeRemaining}
             onWin={(score, hasWon) => {
               console.log('🎮 Game completed:', { score, hasWon, userId });
               

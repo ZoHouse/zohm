@@ -13,6 +13,26 @@ export default function ServiceWorkerRegistration() {
     // Only register service worker in production
     if (process.env.NODE_ENV !== 'production') {
       console.log('🔧 [SW] Skipping service worker registration in development');
+      
+      // Clear any production service worker cache that might persist
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+            console.log('🗑️ [SW] Unregistered service worker from dev environment');
+          });
+        });
+        
+        // Clear caches
+        if ('caches' in window) {
+          caches.keys().then((cacheNames) => {
+            cacheNames.forEach((cacheName) => {
+              caches.delete(cacheName);
+              console.log('🗑️ [SW] Deleted cache:', cacheName);
+            });
+          });
+        }
+      }
       return;
     }
 

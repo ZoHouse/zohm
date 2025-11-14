@@ -12,6 +12,7 @@ import WalletOverlay from '@/components/WalletOverlay';
 import CityInfoCard from '@/components/CityInfoCard';
 import MapViewToggle from '@/components/MapViewToggle';
 import QuantumSyncHeader from '@/components/QuantumSyncHeader';
+import QuestAudio from '@/components/QuestAudio';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -72,10 +73,30 @@ const MobileView: React.FC<MobileViewProps> = ({
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  
+  // Game1111 state
+  const [showGame1111, setShowGame1111] = useState(false);
+  const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
 
   const handleUnicornClick = () => {
     setShowTileModal(true);
     setActiveList(null);
+  };
+  
+  const handleLaunchGame = (userId: string) => {
+    console.log('🎮 Launching game1111 for user:', userId);
+    setGame1111UserId(userId);
+    setShowGame1111(true);
+    // Close all overlays
+    setActiveList(null);
+    setShowTileModal(false);
+  };
+  
+  const handleGameComplete = (score: number, tokensEarned: number) => {
+    console.log('🎮 Game completed:', { score, tokensEarned });
+    setShowGame1111(false);
+    setGame1111UserId(undefined);
+    // Don't automatically reopen quest list - let user navigate naturally
   };
 
   const handleTileClick = (section: 'events' | 'nodes' | 'quests' | 'dashboard') => {
@@ -208,7 +229,11 @@ const MobileView: React.FC<MobileViewProps> = ({
       />
 
       {/* Quests Overlay */}
-      <QuestsOverlay isVisible={activeList === 'quests'} onClose={handleCloseAll} />
+      <QuestsOverlay 
+        isVisible={activeList === 'quests'} 
+        onClose={handleCloseAll}
+        onLaunchGame={handleLaunchGame}
+      />
 
       {/* Dashboard Overlay */}
       <DashboardOverlay 
@@ -222,6 +247,16 @@ const MobileView: React.FC<MobileViewProps> = ({
         isVisible={isWalletOpen} 
         onClose={handleCloseWallet} 
       />
+      
+      {/* Game1111 Full-Screen Experience - Independent of overlays */}
+      {showGame1111 && (
+        <div className="fixed inset-0 z-[10000] bg-black">
+          <QuestAudio
+            userId={game1111UserId}
+            onComplete={handleGameComplete}
+          />
+        </div>
+      )}
     </main>
   );
 };

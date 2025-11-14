@@ -6,6 +6,13 @@ import { ParsedEvent } from '@/lib/icalParser';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
 import { getNodeTypeColor } from '@/lib/nodeTypes';
+import { useMapGeoJSON } from '@/hooks/useMapGeoJSON';
+import { 
+  GEOJSON_SOURCE_ID, 
+  setupClusteringLayers, 
+  setupClusterClickHandlers,
+  removeClusteringLayers 
+} from '@/lib/mapClustering';
 
 // Zo House locations with precise coordinates
 const ZO_HOUSES = [
@@ -62,6 +69,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   const traversalFrameRef = useRef<number | null>(null);
   const progressSourceIdRef = useRef<string>('user-to-destination-route-progress');
   const progressLayerIdRef = useRef<string>('user-to-destination-route-progress-layer');
+
+  // 🗺️ GeoJSON clustering hook - auto-fetches events and nodes
+  const { loading: geoJSONLoading, featureCount } = useMapGeoJSON({
+    map: map.current,
+    sourceId: GEOJSON_SOURCE_ID,
+    includeNodes: true,
+    enabled: mapLoaded // Only fetch after map loads
+  });
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -942,6 +957,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             };
           }
         } catch {}
+
+        // 🗺️ Setup GeoJSON clustering layers
+        console.log('🗺️ Setting up GeoJSON clustering...');
+        try {
+          setupClusteringLayers(map.current);
+          setupClusterClickHandlers(map.current);
+          console.log('✅ GeoJSON clustering setup complete');
+        } catch (error) {
+          console.error('❌ Error setting up clustering:', error);
+        }
       };
       
       // If map is already loaded, set up features immediately
@@ -1196,6 +1221,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
     return () => {
       if (map.current) {
+        // 🗺️ Clean up GeoJSON clustering layers
+        try {
+          removeClusteringLayers(map.current);
+        } catch (error) {
+          console.warn('Error removing clustering layers:', error);
+        }
+        
         map.current.remove();
         map.current = null;
         setMapLoaded(false);

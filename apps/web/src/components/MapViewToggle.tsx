@@ -19,11 +19,23 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
   className = '',
   isLoading = false,
 }) => {
+  const handleToggle = (mode: 'local' | 'global') => {
+    console.log('🎯 MapViewToggle clicked:', mode);
+    onToggle(mode);
+  };
+
   return (
-    <div className={`inline-flex items-center gap-0.5 p-0.5 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg ${className}`}>
+    <div 
+      className={`inline-flex items-center gap-0.5 p-0.5 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg ${className}`}
+      style={{ touchAction: 'auto' }}
+    >
       {/* Local Mode Button */}
       <button
-        onClick={() => onToggle('local')}
+        onClick={() => handleToggle('local')}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          if (!isLoading) handleToggle('local');
+        }}
         disabled={isLoading}
         className={`
           flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
@@ -31,8 +43,9 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' 
             : 'text-gray-600 hover:text-gray-900'
           }
-          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+          ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
         `}
+        style={{ touchAction: 'auto' }}
       >
         {isLoading ? (
           <>
@@ -57,7 +70,11 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
 
       {/* Global Mode Button */}
       <button
-        onClick={() => onToggle('global')}
+        onClick={() => handleToggle('global')}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          if (!isLoading) handleToggle('global');
+        }}
         disabled={isLoading}
         className={`
           flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
@@ -65,8 +82,9 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
             ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
             : 'text-gray-600 hover:text-gray-900'
           }
-          ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+          ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
         `}
+        style={{ touchAction: 'auto' }}
       >
         <Globe size={14} />
         <span>Global</span>

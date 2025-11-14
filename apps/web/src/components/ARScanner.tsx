@@ -67,13 +67,14 @@ export default function ARScanner({
   const loadARLibraries = async () => {
     try {
       if (typeof window !== 'undefined') {
+        // TODO: Uncomment when AR is ready for production
         // Dynamically import A-Frame and AR.js
-        if (!(window as any).AFRAME) {
-          await import('aframe');
-        }
-        if (!(window as any).ARJS) {
-          await import('ar.js');
-        }
+        // if (!(window as any).AFRAME) {
+        //   await import('aframe');
+        // }
+        // if (!(window as any).ARJS) {
+        //   await import('ar.js');
+        // }
         
         // Register custom marker found/lost events
         setTimeout(() => {
@@ -168,16 +169,15 @@ export default function ARScanner({
     <div className="fixed inset-0 z-[9999] bg-black">
       {/* AR Scene Container */}
       <div ref={sceneRef} className="absolute inset-0">
-        {!isLoading && hasPermission && (
+        {/* TODO: Uncomment when AR is ready for production */}
+        {/* {!isLoading && hasPermission && (
           <a-scene
             embedded
             arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
             vr-mode-ui="enabled: false"
             renderer="logarithmicDepthBuffer: true; precision: medium;"
           >
-            {/* AR Marker */}
             <a-marker preset="hiro" emitevents="true">
-              {/* 3D Zo Logo Box */}
               <a-box
                 position="0 0.5 0"
                 rotation="0 45 0"
@@ -186,7 +186,6 @@ export default function ARScanner({
                 material="shader: flat"
               ></a-box>
               
-              {/* Zo Zo Zo Text */}
               <a-text
                 value="Zo Zo Zo!"
                 position="0 1.5 0"
@@ -196,7 +195,6 @@ export default function ARScanner({
                 font="roboto"
               ></a-text>
               
-              {/* Orbiting particles */}
               <a-sphere
                 position="1 0.5 0"
                 radius="0.1"
@@ -212,10 +210,9 @@ export default function ARScanner({
               ></a-sphere>
             </a-marker>
 
-            {/* Camera */}
             <a-entity camera></a-entity>
           </a-scene>
-        )}
+        )} */}
       </div>
 
       {/* Loading Overlay */}

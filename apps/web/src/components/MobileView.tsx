@@ -102,14 +102,14 @@ const MobileView: React.FC<MobileViewProps> = ({
     <main className={`relative w-full h-screen overflow-hidden ${isAnyModalOpen ? 'bg-black' : 'bg-[#f4f1ea]'}`}>
       {/* Map Canvas - shrinks to top half when modal is open */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         animate={{
           height: isAnyModalOpen ? '50%' : '100%',
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       >
         <MapCanvas 
-          className="absolute inset-0" 
+          className="absolute inset-0 pointer-events-auto" 
           onMapReady={onMapReady}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -122,7 +122,7 @@ const MobileView: React.FC<MobileViewProps> = ({
 
       {/* User Balance and Avatar Header */}
       {userId && (
-        <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
           <div className="pointer-events-auto">
             <QuantumSyncHeader userId={userId} />
           </div>
@@ -143,7 +143,10 @@ const MobileView: React.FC<MobileViewProps> = ({
       )}
 
       {/* Map View Toggle & Stats Pill - Mobile */}
-      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+      <div 
+        className="absolute top-24 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-auto"
+        style={{ touchAction: 'auto' }}
+      >
         <MapViewToggle
           viewMode={mapViewMode}
           onToggle={onMapViewToggle}

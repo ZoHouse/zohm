@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabase } from '@/lib/supabase';
 
 /**
  * POST /api/avatar/generate
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user's auth token from Supabase (or session)
-    const supabase = await createClient();
+    // Using imported supabase client
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

@@ -323,13 +323,6 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
               <p className="font-rubik text-[16px] font-normal text-white text-center leading-5 tracking-[0.16px] mt-4 px-4">
                 Explore the map, complete quests and climb the leaderboard
               </p>
-              
-              <button 
-                onClick={onGoHome}
-                className="w-full h-[56px] bg-white text-black font-rubik text-[16px] font-semibold border-none rounded-[12px] cursor-pointer transition-all duration-200 hover:bg-zo-accent active:scale-95 mt-4"
-              >
-                Home
-              </button>
             </div>
           </div>
         </div>

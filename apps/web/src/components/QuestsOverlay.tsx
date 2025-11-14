@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted, supabase } from '@/lib/supabase';
+import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
+import { getUserByWallet } from '@/lib/privyDb';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
 import { canUserCompleteQuest } from '@/lib/questService';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
@@ -40,11 +41,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
       
       if (q) {
         // Get user ID for cooldown checks
-        const { data: user } = await supabase
-          .from('users')
-          .select('id')
-          .eq('wallet_address', primaryWalletAddress)
-          .single();
+        const user = await getUserByWallet(primaryWalletAddress);
         
         // Check completion status and cooldown for each quest
         const questsWithCompletion = await Promise.all(
@@ -91,12 +88,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
     
     // Special handling for game-1111 quest
     if (quest.slug === 'game-1111') {
-      // Get user ID from users table
-      const { data: user } = await supabase
-        .from('users')
-        .select('id')
-        .eq('wallet_address', primaryWalletAddress)
-        .single();
+      // Get user by wallet address
+      const user = await getUserByWallet(primaryWalletAddress);
       
       if (user) {
         setGame1111UserId(user.id);
@@ -476,11 +469,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose }) => 
                 const [q, lb] = await Promise.all([getQuests(), getLeaderboards()]);
                 
                 if (q) {
-                  const { data: user } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('wallet_address', primaryWalletAddress)
-                    .single();
+                  const user = await getUserByWallet(primaryWalletAddress);
                   
                   const questsWithCompletion = await Promise.all(
                     q.map(async (quest) => {

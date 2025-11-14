@@ -35,6 +35,12 @@ export function useMapGeoJSON({
 
       // Get map bounds if not provided
       const bounds = bbox || map.getBounds();
+      if (!bounds) {
+        console.warn('⚠️ Map bounds not available yet');
+        setLoading(false);
+        return;
+      }
+      
       const west = bounds.getWest();
       const south = bounds.getSouth();
       const east = bounds.getEast();

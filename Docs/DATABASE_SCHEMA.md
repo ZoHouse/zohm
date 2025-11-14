@@ -35,12 +35,14 @@
 - **Quest system**: Repeatable quests with cooldowns and rewards
 - **City progression**: Gamified city-level growth system
 - **Individual progression**: Reputation, streaks, inventory tracking
+- **Canonical events**: Deduplicated, cached event storage with geocoding
 - **Row-Level Security (RLS)**: User-level access control
 
 ### Migration History
 1. **001_privy_migration.sql** - Privy auth support (users, user_wallets, user_auth_methods)
 2. **002_foundation_individual_progression.sql** - Quest repeatability, reputation, streaks, inventory
 3. **003_city_progression.sql** - City system, community goals, city sync
+4. **006_create_canonical_events.sql** - Canonical event store with deduplication and geocoding cache
 
 ---
 
@@ -732,6 +734,136 @@ CREATE TABLE calendars (
 
 **Constraints**:
 - `type` CHECK: Must be in ('luma', 'ical', 'google', 'outlook')
+
+---
+
+### 15. `canonical_events`
+**Purpose**: Deduplicated event storage with geocoding cache
+
+```sql
+CREATE TABLE canonical_events (
+  -- Identity
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Deduplication key (SHA256 hash of normalized event data)
+  canonical_uid TEXT NOT NULL UNIQUE,
+  
+  -- Event metadata
+  title TEXT NOT NULL,
+  description TEXT,
+  location_raw TEXT,
+  
+  -- Geocoded coordinates (cached to reduce API costs)
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  geocode_status TEXT DEFAULT 'pending',  -- 'pending' | 'success' | 'failed' | 'cached'
+  geocode_attempted_at TIMESTAMPTZ,
+  
+  -- Timezone-aware timestamps
+  starts_at TIMESTAMPTZ NOT NULL,
+  tz TEXT DEFAULT 'UTC',                  -- Original timezone from iCal
+  ends_at TIMESTAMPTZ,
+  
+  -- Source tracking (array of {calendar_id, event_url, fetched_at})
+  source_refs JSONB NOT NULL DEFAULT '[]',
+  
+  -- Raw iCal data for debugging/re-processing
+  raw_payload JSONB,
+  
+  -- Versioning for audit trail
+  event_version INTEGER DEFAULT 1,
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Indexes**:
+- `idx_canonical_events_starts_at` ON `(starts_at)` - For chronological queries
+- `idx_canonical_events_location` ON `(lat, lng)` WHERE lat IS NOT NULL - For location queries
+- `idx_canonical_events_uid` ON `(canonical_uid)` - For deduplication lookups
+- `idx_canonical_events_geocode_status` ON `(geocode_status)` - For filtering by geocoding status
+
+**Constraints**:
+- `geocode_status` CHECK: Must be in ('pending', 'success', 'failed', 'cached')
+
+**Triggers**:
+- `trigger_update_canonical_events_updated_at` - Auto-update `updated_at` on row changes
+
+**Purpose**:
+- Consolidates events from multiple calendar sources
+- Caches geocoding results to reduce Mapbox API costs (~70% reduction)
+- Deduplicates events using canonical UID (SHA256 hash)
+- Stores timezone information for accurate display
+- Enables fast queries for map interface
+
+**Typical Query**:
+```sql
+-- Get upcoming events near San Francisco
+SELECT title, location_raw, starts_at, geocode_status
+FROM canonical_events
+WHERE starts_at >= NOW()
+  AND lat IS NOT NULL
+  AND lng IS NOT NULL
+  AND ST_Distance(
+      ST_MakePoint(lng, lat)::geography,
+      ST_MakePoint(-122.4194, 37.7749)::geography
+    ) < 100000  -- 100km radius
+ORDER BY starts_at
+LIMIT 50;
+```
+
+---
+
+### 16. `canonical_event_changes`
+**Purpose**: Audit trail for all event operations
+
+```sql
+CREATE TABLE canonical_event_changes (
+  -- Identity
+  id BIGSERIAL PRIMARY KEY,
+  
+  -- Reference to canonical event (nullable for dry-run logs)
+  canonical_event_id UUID REFERENCES canonical_events(id) ON DELETE CASCADE,
+  
+  -- Change type: 'dry-run', 'insert', 'update', 'delete', 'merge'
+  change_type TEXT NOT NULL,
+  
+  -- Full payload of the change (for audit and rollback)
+  payload JSONB,
+  
+  -- Timestamp
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Indexes**:
+- `idx_event_changes_type` ON `(change_type)` - For filtering by operation type
+- `idx_event_changes_created` ON `(created_at)` - For chronological queries
+- `idx_event_changes_event_id` ON `(canonical_event_id)` - For event history
+
+**Constraints**:
+- `change_type` CHECK: Must be in ('dry-run', 'insert', 'update', 'delete', 'merge')
+
+**Purpose**:
+- Tracks all operations on canonical events
+- Enables dry-run mode for safe testing
+- Provides audit trail for debugging
+- Supports rollback scenarios
+
+**Typical Query**:
+```sql
+-- View recent event operations
+SELECT 
+  change_type,
+  payload->>'event_name' as event,
+  payload->>'action' as action,
+  created_at
+FROM canonical_event_changes
+ORDER BY created_at DESC
+LIMIT 20;
+```
 
 ---
 

@@ -203,7 +203,89 @@ User Starts Quest (e.g., Game1111)
 └──────────────────────────┘
 ```
 
-### 3. Avatar Generation Flow (Phase 2)
+### 3. Canonical Events Sync Flow
+
+```
+Worker Triggered (Scheduled/Manual)
+     │
+     ▼
+┌──────────────────────────────────┐
+│  POST /api/worker/sync-events    │
+│  (apply=true for real writes)    │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Fetch Calendar Sources          │
+│  from Supabase (calendars table) │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Fetch iCal Feeds                │
+│  (Luma, Partiful, etc.)          │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Parse iCal Events               │
+│  (icalParser.ts)                 │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Generate Canonical UID          │
+│  (SHA256 hash for dedup)         │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Check if Event Exists           │
+│  (canonical_events.canonical_uid)│
+└──────────────────────────────────┘
+     │
+     ├──> Exists ───> Update (if needed)
+     │
+     └──> New ──────> Geocode Location
+                           │
+                           ▼
+                      ┌────────────────────┐
+                      │  Mapbox Geocoding  │
+                      │  (cache hit/miss)  │
+                      └────────────────────┘
+                           │
+                           ▼
+                      ┌────────────────────┐
+                      │  Insert to Database│
+                      │  (canonical_events)│
+                      └────────────────────┘
+                           │
+                           ▼
+                      ┌────────────────────┐
+                      │  Log to Audit Trail│
+                      │  (..event_changes) │
+                      └────────────────────┘
+```
+
+**UI reads events:**
+```
+Map Component Loads
+     │
+     ▼
+┌──────────────────────────────────┐
+│  Check Feature Flag              │
+│  FEATURE_CANONICAL_EVENTS_READ   │
+└──────────────────────────────────┘
+     │
+     ├──> true ───> GET /api/events/canonical
+     │                      │
+     │                      ▼
+     │              Read from canonical_events
+     │
+     └──> false ──> Fetch & parse iCal (legacy)
+```
+
+### 4. Avatar Generation Flow (Phase 2)
 
 ```
 User Selects Body Type ("bro" | "bae")
@@ -603,6 +685,7 @@ This eliminates the need for complex multi-wallet management while still providi
 
 - **Avatar Status**: Poll every 1s (max 10 attempts)
 - **Leaderboard**: Refresh on page load
+- **Events**: Server-side worker sync (on-demand/scheduled)
 - **Quest Status**: Check on component mount
 
 ### Future: Supabase Realtime

@@ -593,6 +593,173 @@ POST /api/add-calendar
 
 ---
 
+### Get Canonical Events (NEW)
+
+```http
+GET /api/events/canonical
+```
+
+**Description**: Fetch deduplicated, geocoded events from canonical event store. Supports filtering by location and date range.
+
+**Query Parameters**:
+- `lat` (number, optional) - Latitude for location-based filtering
+- `lng` (number, optional) - Longitude for location-based filtering  
+- `radius` (number, optional) - Radius in kilometers (requires lat/lng)
+- `from` (ISO timestamp, optional) - Start date filter (default: now)
+- `to` (ISO timestamp, optional) - End date filter
+- `limit` (number, optional) - Max results (default: 100)
+
+**Response**:
+```json
+{
+  "events": [
+    {
+      "Event Name": "Founders Dinner",
+      "Date & Time": "2025-11-15T19:00:00.000Z",
+      "Location": "Zo House, 300 4th St, San Francisco, CA",
+      "Latitude": "37.7817",
+      "Longitude": "-122.4012",
+      "Event URL": "https://luma.com/event/evt-xxx",
+      "_canonical": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "uid": "1d736245c0cd",
+        "tz": "America/Los_Angeles",
+        "geocode_status": "success",
+        "version": 1
+      }
+    }
+  ],
+  "meta": {
+    "total": 46,
+    "filtered_by_location": true,
+    "location_filter": {
+      "lat": 37.7749,
+      "lng": -122.4194,
+      "radius": 100
+    },
+    "date_range": {
+      "from": "2025-11-14T00:00:00Z",
+      "to": "unlimited"
+    },
+    "limit": 100,
+    "source": "canonical_events"
+  }
+}
+```
+
+**Feature Flags**:
+- Requires `FEATURE_CANONICAL_EVENTS_READ=true`
+- Returns 503 if feature is disabled
+
+**Example Requests**:
+```bash
+# Get all upcoming events
+curl http://localhost:3000/api/events/canonical
+
+# Get events near San Francisco within 50km
+curl "http://localhost:3000/api/events/canonical?lat=37.7749&lng=-122.4194&radius=50"
+
+# Get events for specific date range
+curl "http://localhost:3000/api/events/canonical?from=2025-11-20T00:00:00Z&to=2025-11-30T23:59:59Z"
+```
+
+---
+
+### Trigger Event Sync Worker (NEW)
+
+```http
+POST /api/worker/sync-events
+```
+
+**Description**: Manually trigger the canonical events sync worker. Fetches events from all calendar sources, deduplicates, geocodes, and upserts to database.
+
+**Query Parameters**:
+- `apply` (boolean, optional) - Enable writes (default: dry-run)
+- `calendar` (string, optional) - Process single calendar only (e.g., `cal-123`)
+- `verbose` (boolean, optional) - Enable detailed logging
+
+**Response**:
+```json
+{
+  "success": true,
+  "stats": {
+    "processed": 46,
+    "inserted": 12,
+    "updated": 5,
+    "skipped": 29,
+    "errors": 0,
+    "dryRunOnly": false,
+    "duration_ms": 8234
+  },
+  "duration_ms": 8234,
+  "config": {
+    "dry_run": false,
+    "calendar_filter": "all",
+    "feature_flags": {
+      "read": false,
+      "write": true,
+      "dryRun": false,
+      "fullyEnabled": false,
+      "workerWriting": true
+    }
+  },
+  "timestamp": "2025-11-14T10:30:00.000Z"
+}
+```
+
+**Feature Flags**:
+- Respects `CANONICAL_DRY_RUN` environment variable
+- Respects `FEATURE_CANONICAL_EVENTS_WRITE` environment variable
+
+**Example Requests**:
+```bash
+# Dry-run mode (safe, no DB writes)
+curl -X POST http://localhost:3000/api/worker/sync-events
+
+# Apply mode (actual writes)
+curl -X POST "http://localhost:3000/api/worker/sync-events?apply=true"
+
+# Process single calendar with verbose logging
+curl -X POST "http://localhost:3000/api/worker/sync-events?calendar=cal-ZVonmjVxLk7F2oM&verbose=true"
+```
+
+**Security Note**: This endpoint should be protected with authentication in production.
+
+---
+
+### Check Worker Status (NEW)
+
+```http
+GET /api/worker/sync-events
+```
+
+**Description**: Check the status of the event sync worker and current feature flag configuration.
+
+**Response**:
+```json
+{
+  "status": "ready",
+  "worker": "canonical-events-sync",
+  "feature_flags": {
+    "read": false,
+    "write": false,
+    "dryRun": true,
+    "fullyEnabled": false,
+    "workerWriting": false
+  },
+  "usage": {
+    "trigger_sync": "POST /api/worker/sync-events",
+    "dry_run": "POST /api/worker/sync-events (default)",
+    "apply_mode": "POST /api/worker/sync-events?apply=true",
+    "single_calendar": "POST /api/worker/sync-events?calendar=cal-123",
+    "verbose_logs": "POST /api/worker/sync-events?verbose=true"
+  },
+  "timestamp": "2025-11-14T10:30:00.000Z"
+}
+```
+
+---
+
 ## AR Features
 
 ### AR Scan Verification

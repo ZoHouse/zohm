@@ -88,7 +88,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           </div>
         </div>
 
-        {/* Profile Photo with Frame */}
+        {/* Profile Photo with Animated GIF Frame */}
         <div className="flex flex-col items-center justify-center w-[312px]" style={{ gap: DashboardSpacing.sm }}>
           <div 
             className="relative"
@@ -97,9 +97,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               height: '355px',
             }}
           >
-            {/* Background Frame */}
+            {/* Animated GIF Frame (transparent) */}
             <img 
-              src={DashboardAssets.profile.frame}
+              src="/Profileacrd.gif"
               alt="Profile Frame" 
               className="absolute inset-0 w-full h-full object-cover pointer-events-none"
             />

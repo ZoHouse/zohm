@@ -143,8 +143,8 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
   const isLoading = isGenerating || isPolling;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-black max-w-screen w-screen h-screen overflow-hidden md:max-w-[360px] md:max-h-[800px] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:shadow-[0_0_40px_rgba(0,0,0,0.8)]">
-      {/* Background - consistent with other screens */}
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-black w-screen h-screen overflow-hidden">
+      {/* Background - Full screen on all devices */}
       <div className="absolute inset-0 z-0">
         <div className="absolute bg-black inset-0" />
         <video
@@ -159,13 +159,13 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
         <div className="absolute bg-gradient-to-b from-[50.721%] from-transparent to-black inset-0" />
       </div>
       
-      {/* Home Indicator at bottom */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10">
+      {/* Home Indicator at bottom - Mobile only */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden">
         <div className="w-[72px] h-[5px] bg-white rounded-full" />
       </div>
 
       {/* Zo Logo */}
-      <div className="absolute left-[24px] top-[40px] w-[40px] h-[40px] overflow-clip z-10">
+      <div className="absolute left-[24px] top-[40px] w-[40px] h-[40px] md:w-[60px] md:h-[60px] md:left-[60px] md:top-[60px] overflow-clip z-10">
         <img src="/figma-assets/landing-zo-logo.png" alt="Zo" className="w-full h-full object-cover" />
       </div>
       
@@ -173,22 +173,22 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
         {isLoading && !avatarUrl && (
           <>
             {/* Generating state */}
-            <div className="flex flex-col items-center gap-8">
-              {/* Avatar placeholder with pulse animation */}
-              <div className="relative w-[200px] h-[200px]">
+            <div className="flex flex-col items-center gap-8 md:gap-12">
+              {/* Avatar placeholder with pulse animation - scales on desktop */}
+              <div className="relative w-[200px] h-[200px] md:w-[280px] md:h-[280px] lg:w-[320px] lg:h-[320px]">
                 <div className="absolute inset-0 rounded-full bg-zo-accent/20 animate-pulse" />
                 <div className="absolute inset-4 rounded-full bg-zo-accent/30 animate-pulse" style={{ animationDelay: '0.5s' }} />
                 <div className="absolute inset-8 rounded-full bg-zo-accent/40 animate-pulse" style={{ animationDelay: '1s' }} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-6xl">{bodyType === 'bro' ? '👨' : '👩'}</span>
+                  <span className="text-6xl md:text-8xl lg:text-9xl">{bodyType === 'bro' ? '👨' : '👩'}</span>
                 </div>
               </div>
               
-              <div className="text-center space-y-2">
-                <h2 className="font-['Syne'] text-[28px] font-extrabold text-white uppercase tracking-[0.28px]">
+              <div className="text-center space-y-2 md:space-y-4">
+                <h2 className="font-['Syne'] text-[28px] md:text-[42px] lg:text-[56px] font-extrabold text-white uppercase tracking-[0.28px] md:tracking-[0.42px]">
                   {isGenerating ? 'Generating Avatar' : 'Almost Ready'}
                 </h2>
-                <p className="font-rubik text-[14px] text-white/60 w-[312px]">
+                <p className="font-rubik text-[14px] md:text-[18px] lg:text-[20px] text-white/60 w-[312px] md:w-[500px]">
                   {isGenerating 
                     ? 'Creating your unique ZO avatar...' 
                     : 'Checking avatar status...'
@@ -197,10 +197,10 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
               </div>
 
               {/* Loading indicator */}
-              <div className="flex gap-2">
-                <div className="w-2 h-2 rounded-full bg-zo-accent animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.2s' }} />
-                <div className="w-2 h-2 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.4s' }} />
+              <div className="flex gap-2 md:gap-3">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" />
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.4s' }} />
               </div>
             </div>
           </>
@@ -209,11 +209,11 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
         {avatarUrl && (
           <>
             {/* Avatar ready state */}
-            <div className="flex flex-col items-center gap-8">
-              {/* Generated avatar with success animation */}
-              <div className="relative w-[200px] h-[200px]">
+            <div className="flex flex-col items-center gap-8 md:gap-12">
+              {/* Generated avatar with success animation - scales on desktop */}
+              <div className="relative w-[200px] h-[200px] md:w-[280px] md:h-[280px] lg:w-[320px] lg:h-[320px]">
                 <div className="absolute inset-0 rounded-full bg-zo-accent/20 animate-ping" />
-                <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-zo-accent shadow-[0_0_40px_rgba(207,255,80,0.6)]">
+                <div className="relative w-full h-full rounded-full overflow-hidden border-4 md:border-6 border-zo-accent shadow-[0_0_40px_rgba(207,255,80,0.6)] md:shadow-[0_0_60px_rgba(207,255,80,0.7)]">
                   <img 
                     src={avatarUrl} 
                     alt="Generated Avatar"
@@ -221,16 +221,16 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
                   />
                 </div>
                 {/* Success checkmark */}
-                <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-full bg-zo-accent flex items-center justify-center text-zo-dark text-2xl font-bold shadow-lg">
+                <div className="absolute -bottom-2 -right-2 w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full bg-zo-accent flex items-center justify-center text-zo-dark text-2xl md:text-4xl lg:text-5xl font-bold shadow-lg">
                   ✓
                 </div>
               </div>
               
-              <div className="text-center space-y-2">
-                <h2 className="font-['Syne'] text-[28px] font-extrabold text-white uppercase tracking-[0.28px]">
+              <div className="text-center space-y-2 md:space-y-4">
+                <h2 className="font-['Syne'] text-[28px] md:text-[42px] lg:text-[56px] font-extrabold text-white uppercase tracking-[0.28px] md:tracking-[0.42px]">
                   Avatar Ready!
                 </h2>
-                <p className="font-rubik text-[14px] text-white/60 w-[312px]">
+                <p className="font-rubik text-[14px] md:text-[18px] lg:text-[20px] text-white/60 w-[312px] md:w-[500px]">
                   Your unique ZO identity has been created
                 </p>
               </div>
@@ -239,21 +239,21 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
         )}
 
         {error && !isLoading && (
-          <div className="flex flex-col items-center gap-8">
-            <div className="w-[200px] h-[200px] rounded-full bg-red-500/20 flex items-center justify-center">
-              <span className="text-6xl">⚠️</span>
+          <div className="flex flex-col items-center gap-8 md:gap-12">
+            <div className="w-[200px] h-[200px] md:w-[280px] md:h-[280px] lg:w-[320px] lg:h-[320px] rounded-full bg-red-500/20 flex items-center justify-center">
+              <span className="text-6xl md:text-8xl lg:text-9xl">⚠️</span>
             </div>
-            <div className="text-center space-y-2">
-              <h2 className="font-['Syne'] text-[24px] font-extrabold text-white uppercase">
+            <div className="text-center space-y-2 md:space-y-4">
+              <h2 className="font-['Syne'] text-[24px] md:text-[36px] lg:text-[48px] font-extrabold text-white uppercase">
                 Oops!
               </h2>
-              <p className="font-rubik text-[14px] text-red-400 w-[312px]">
+              <p className="font-rubik text-[14px] md:text-[18px] lg:text-[20px] text-red-400 w-[312px] md:w-[500px]">
                 {error}
               </p>
             </div>
             <button
               onClick={handleGenerateAvatar}
-              className="bg-white px-8 py-4 rounded-button font-rubik text-[16px] font-medium text-zo-dark hover:bg-gray-100 transition-all duration-200"
+              className="bg-white px-8 py-4 md:px-12 md:py-5 rounded-button font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-zo-dark hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] transition-all duration-300 active:scale-[0.98]"
             >
               Retry
             </button>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Comic_Neue } from "next/font/google";
+import { Comic_Neue, Abril_Fatface } from "next/font/google";
 import "./globals.css";
 import { PrivyProvider } from "@/providers/PrivyProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -9,6 +9,13 @@ const comicNeue = Comic_Neue({
   variable: '--font-comic-neue',
   display: 'swap',
   weight: ['400', '700']
+});
+
+const abrilFatface = Abril_Fatface({
+  subsets: ["latin"],
+  variable: '--font-abril-fatface',
+  display: 'swap',
+  weight: '400'
 });
 
 export const metadata: Metadata = {
@@ -63,7 +70,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body 
-        className={`${comicNeue.className} paper-ui antialiased bg-black text-white`}
+        className={`${comicNeue.variable} ${abrilFatface.variable} paper-ui antialiased bg-black text-white`}
         suppressHydrationWarning
       >
         <ServiceWorkerRegistration />

@@ -199,8 +199,8 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
   if (!authenticated || !privyUser) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-black max-w-screen w-screen h-screen overflow-hidden md:max-w-[360px] md:max-h-[800px] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:shadow-[0_0_40px_rgba(0,0,0,0.8)]">
-      {/* Background - Figma exact with video */}
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-black w-screen h-screen overflow-hidden">
+      {/* Background - Full screen on all devices */}
       <div className="absolute inset-0 z-0">
         {/* Fallback black background - always visible */}
         <div className="absolute bg-black inset-0" />
@@ -223,75 +223,75 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
         <div className="absolute bg-gradient-to-b from-[50.721%] from-transparent to-black inset-0" />
       </div>
       
-      {/* Home Indicator at bottom */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10">
+      {/* Home Indicator at bottom - Mobile only */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden">
         <div className="w-[72px] h-[5px] bg-white rounded-full" />
       </div>
 
-      {/* Zo Logo - adjusted positioning */}
-      <div className="absolute left-[24px] top-[40px] w-[40px] h-[40px] overflow-clip z-10">
+      {/* Zo Logo */}
+      <div className="absolute left-[24px] top-[40px] w-[40px] h-[40px] md:w-[60px] md:h-[60px] md:left-[60px] md:top-[60px] overflow-clip z-10">
         <img src="/figma-assets/landing-zo-logo.png" alt="Zo" className="w-full h-full object-cover" />
       </div>
       
       <div className="relative z-10 w-full h-full flex flex-col items-center">
-        {/* Title - Figma: top-[192px] */}
-        <h1 className="absolute top-[192px] left-1/2 -translate-x-1/2 font-['Syne'] text-[32px] font-extrabold text-white text-center leading-[32px] tracking-[0.32px] uppercase w-[312px] m-0">
+        {/* Title - Mobile: fixed position, Desktop: responsive */}
+        <h1 className="absolute top-[192px] md:top-[20vh] left-1/2 -translate-x-1/2 font-['Syne'] text-[32px] md:text-[48px] lg:text-[56px] font-extrabold text-white text-center leading-[32px] md:leading-[50px] lg:leading-[60px] tracking-[0.32px] uppercase w-[312px] md:w-[600px] m-0">
           WHO ARE YOU?
         </h1>
         
-        {/* Subtitle - Figma: top-[244px] */}
-        <p className="absolute top-[244px] left-1/2 -translate-x-1/2 font-rubik text-[14px] font-normal text-white/60 text-center leading-[21px] m-0 w-[312px]">
+        {/* Subtitle - Mobile: fixed position, Desktop: responsive */}
+        <p className="absolute top-[244px] md:top-[30vh] left-1/2 -translate-x-1/2 font-rubik text-[14px] md:text-[16px] lg:text-[18px] font-normal text-white/60 text-center leading-[21px] md:leading-[24px] lg:leading-[28px] m-0 w-[312px] md:w-[500px]">
           A difficult question, I know. We'll get to it.<br />
           But let's start with choosing a nick.
         </p>
         
-        {/* Nickname Input - Figma: top-[304px] */}
-        <div className="absolute top-[304px] left-1/2 -translate-x-1/2 w-[312px] h-[56px]">
+        {/* Nickname Input - Mobile: fixed position, Desktop: responsive */}
+        <div className="absolute top-[304px] md:top-[40vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px]">
           <input
             type="text"
             value={nickname}
             onChange={(e) => setNickname(e.target.value.toLowerCase())}
             placeholder="samurai"
             maxLength={16}
-            className="w-full h-full px-5 bg-black border-[1px] border-[#49494A] rounded-button text-white text-[16px] font-rubik font-normal placeholder:text-white/40 focus:outline-none focus:border-zo-accent transition-all duration-200"
+            className="w-full h-full px-5 bg-black border-[1px] border-[#49494A] rounded-button text-white text-[16px] md:text-[18px] lg:text-[20px] font-rubik font-normal placeholder:text-white/40 focus:outline-none focus:border-zo-accent transition-all duration-200"
             autoFocus
             autoComplete="off"
           />
         </div>
         
-        {/* Body Type Selector - adjusted spacing */}
-        <div className="absolute top-[380px] left-1/2 -translate-x-1/2">
+        {/* Body Type Selector - Mobile: fixed position, Desktop: responsive */}
+        <div className="absolute top-[380px] md:top-[52vh] left-1/2 -translate-x-1/2 scale-100 md:scale-110">
           <BodyTypeSelector value={bodyType} onChange={(v) => setBodyType(v as 'bro' | 'bae')} />
         </div>
         
-        {/* Location Button - adjusted spacing */}
+        {/* Location Button - Mobile: fixed position, Desktop: responsive */}
         {!locationEnabled && (
           <button
             onClick={handleEnableLocation}
             disabled={isGettingLocation}
-            className="absolute top-[560px] left-1/2 -translate-x-1/2 w-[312px] h-[48px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute top-[560px] md:top-[72vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[400px] lg:w-[480px] h-[48px] md:h-[56px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] md:text-[16px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
             {isGettingLocation ? '🌐 Detecting location...' : '📍 Enable Location'}
           </button>
         )}
         
-        {/* "Get Citizenship" Button - adjusted spacing */}
+        {/* "Get Citizenship" Button - Mobile: fixed position, Desktop: responsive */}
         <button
           onClick={handleGetCitizenship}
           disabled={!isValid || isLoading}
-          className={`absolute left-1/2 -translate-x-1/2 bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-[312px] h-[56px] cursor-pointer transition-all duration-200 hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-            locationEnabled ? 'top-[560px]' : 'top-[624px]'
+          className={`absolute left-1/2 -translate-x-1/2 bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+            locationEnabled ? 'top-[560px] md:top-[72vh]' : 'top-[624px] md:top-[80vh]'
           }`}
           type="button"
         >
-          <span className="font-rubik text-[16px] font-medium text-zo-dark leading-normal">
+          <span className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-zo-dark leading-normal">
           {isLoading ? 'Processing...' : 'Get Citizenship'}
           </span>
         </button>
 
         {error && (
-          <p className="absolute bottom-[100px] left-1/2 -translate-x-1/2 font-rubik text-[14px] font-medium text-red-400 text-center w-[312px]">
+          <p className="absolute bottom-[100px] md:bottom-[10vh] left-1/2 -translate-x-1/2 font-rubik text-[14px] md:text-[16px] font-medium text-red-400 text-center w-[312px] md:w-[400px]">
             {error}
           </p>
         )}

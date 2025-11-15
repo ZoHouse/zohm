@@ -154,28 +154,15 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-start bg-black w-screen h-screen overflow-hidden">
-      {/* Background Video - Paused at stone ring, covers full screen */}
-      <video
-        ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        muted
-        playsInline
-        onLoadedMetadata={(e) => {
-          const video = e.currentTarget;
-          video.currentTime = 4.0;
-          video.pause();
-        }}
-      >
-        <source src="/videos/zozozo-success.mp4" type="video/mp4" />
-      </video>
-
-      {/* Centered content container */}
-      <div className="relative z-10 w-full max-w-[360px] h-full flex flex-col items-center">
+      {/* Pure black background for both mobile and desktop */}
+      
+      {/* Centered content container - responsive */}
+      <div className="relative z-10 w-full max-w-[360px] md:max-w-[500px] lg:max-w-[600px] h-full flex flex-col items-center">
         
         <QuantumSyncHeader userId={userId} />
 
-        {/* Scrollable Content */}
-        <div className="w-full h-full overflow-y-auto pb-20 pt-[80px]">
+        {/* Scrollable content with hidden scrollbar */}
+        <div className="w-full h-full overflow-y-auto pb-20 pt-[80px] scrollbar-hide">
           {/* Main Content */}
           <div className="flex flex-col items-center w-full px-6">
             
@@ -197,8 +184,12 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
               <p className="font-rubik text-[12px] font-normal text-black/40 m-0 leading-none mt-1">Get more $Zo</p>
             </button>
             
-            <p className="font-rubik text-[40px] font-bold text-white text-center m-0 mt-2 leading-normal tracking-[0.4px]">
-              {userStats.zo_points} Zo
+            {/* Show actual score, not tokens */}
+            <p className="font-rubik text-[40px] md:text-[56px] font-bold text-white text-center m-0 mt-2 leading-normal tracking-[0.4px]">
+              {score}
+            </p>
+            <p className="font-rubik text-[14px] md:text-[16px] font-normal text-white/60 text-center m-0 mt-1">
+              +{tokensEarned} $Zo earned
             </p>
             
             <div className="w-[144px] h-[144px] rounded-[40px] overflow-hidden mt-2">
@@ -377,11 +368,12 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
 
       {/* Loading Overlay with Coin Collection Video */}
       {isLoading && (
-        <div className="absolute inset-0 z-[10000]">
+        <div className="absolute inset-0 z-[10000] bg-black">
           {/* Coin Collection Video - User collecting 200 $Zo for location sync */}
+          {/* Mobile: fills screen, Desktop: centered at natural size */}
           <video
             ref={coinVideoRef}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover md:object-contain"
             autoPlay
             loop
             muted

@@ -6,7 +6,7 @@ import MobileTileModal from '@/components/MobileTileModal';
 import MobileEventsListOverlay from '@/components/MobileEventsListOverlay';
 import MobileNodesListOverlay from '@/components/MobileNodesListOverlay';
 import QuestsOverlay from '@/components/QuestsOverlay';
-import DashboardOverlay from '@/components/DashboardOverlay';
+import { MobileDashboard } from '@/components/mobile-dashboard';
 import WalletOverlay from '@/components/WalletOverlay';
 import CityInfoCard from '@/components/CityInfoCard';
 import MapViewToggle from '@/components/MapViewToggle';
@@ -231,11 +231,11 @@ const MobileView: React.FC<MobileViewProps> = ({
         onLaunchGame={handleLaunchGame}
       />
 
-      {/* Dashboard Overlay */}
-      <DashboardOverlay 
+      {/* Mobile Dashboard */}
+      <MobileDashboard 
         isVisible={activeList === 'dashboard'} 
-        onClose={handleCloseAll} 
-        onOpenWallet={handleOpenWallet}
+        onClose={handleCloseAll}
+        onLaunchGame={handleLaunchGame}
       />
 
       {/* Wallet Overlay - rendered at root level */}

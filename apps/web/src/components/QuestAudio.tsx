@@ -28,6 +28,17 @@ function Game1111({
   const [counter, setCounter] = useState(0);
   const [isRunning, setIsRunning] = useState(true);
   const [hasWon, setHasWon] = useState(false);
+  const [showResultVideo, setShowResultVideo] = useState(false);
+  const resultVideoRef = useRef<HTMLVideoElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile/desktop on mount
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -40,13 +51,23 @@ function Game1111({
     return () => clearInterval(interval);
   }, [isRunning, canPlay]);
 
+  // Play result video when user stops (win or loss)
+  useEffect(() => {
+    if (showResultVideo && resultVideoRef.current) {
+      console.log('🎬 Playing result video:', hasWon ? 'SUCCESS' : 'FAIL');
+      resultVideoRef.current.play();
+    }
+  }, [showResultVideo, hasWon]);
+
   const handleStop = () => {
     setIsRunning(false);
     const won = counter === 1111;
-    if (won) {
-      setHasWon(true);
-    }
-    // Always navigate to quest complete after 2 seconds (like mobile app)
+    setHasWon(won);
+    
+    // Show result video (success or fail)
+    setShowResultVideo(true);
+    
+    // Always navigate to quest complete after 2 seconds
     setTimeout(() => {
       onWin(counter, won); // Pass score and win status
     }, 2000);
@@ -54,59 +75,100 @@ function Game1111({
 
   return (
     <>
-      {/* QUANTUM SYNC Logo - Exact Figma: top-[156px] */}
-      <div className="absolute top-[156px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
-        <div className="w-[320px] h-[80px] flex items-center justify-center">
-          <img
-            src="/quest-audio-assets/quantum-sync-logo.png"
-            alt="QUANTUM SYNC"
-            className="w-[320px] h-[80px] object-contain"
-          />
+      {/* Result Video - Both success and fail are backgrounds with UI on top */}
+      {showResultVideo && (
+        <div className="absolute inset-0 z-[5] bg-black">
+          <video
+            ref={resultVideoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            onLoadedData={() => {
+              console.log(`✅ ${hasWon ? 'Success' : 'Fail'} video loaded, playing...`);
+              resultVideoRef.current?.play();
+            }}
+            onPlay={() => {
+              console.log(`▶️ ${hasWon ? 'Success' : 'Fail'} video playing`);
+            }}
+            onError={(e) => {
+              console.error(`❌ ${hasWon ? 'Success' : 'Fail'} video error:`, e);
+            }}
+          >
+            <source 
+              src={
+                hasWon
+                  ? (isMobile 
+                      ? "/gamevoicequest/mobile_zozozosuccess.mp4"
+                      : "/gamevoicequest/desktop_zozozosuccess.mp4")
+                  : (isMobile
+                      ? "/gamevoicequest/mobile_zozozofail.mp4"
+                      : "/gamevoicequest/desktop_zozozofail.mp4")
+              } 
+              type="video/mp4" 
+            />
+          </video>
         </div>
-        <p className="font-rubik text-[16px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] m-0 tracking-[0.16px]">
-          {hasWon ? 'success!' : 'in progress'}
-        </p>
-      </div>
+      )}
 
-      {/* Game Counter and Button - Overlaid on paused video (stone ring) */}
-      <div className="absolute top-[420px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
-        {/* Counter - Matching mobile app: 48px font */}
-        <div className="font-rubik font-bold text-[48px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none">
-          {counter.toString().padStart(4, '0')}
-        </div>
-        
-        {/* Stop Button - Matching mobile app styling */}
-        <button
-          onClick={handleStop}
-          disabled={!isRunning || !canPlay}
-          className={`px-5 py-4 font-rubik text-[16px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
-            canPlay 
-              ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
-              : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
-          }`}
-        >
-          {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
-        </button>
-        
-        {/* Win/Try again message - Matching mobile app */}
-        {!isRunning && (
-          <p className="font-rubik text-[16px] font-normal text-white text-center m-0">
-            {hasWon ? 'Congratulations! You won!' : 'Try again!'}
-          </p>
-        )}
-      </div>
+      {/* Game UI - Always visible (on top of result videos) */}
+      {(
+        <>
+          {/* QUANTUM SYNC Logo - Moderate scaling for desktop */}
+          <div className="absolute top-[156px] md:top-[15vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
+            <div className="w-[320px] md:w-[400px] lg:w-[480px] h-[80px] md:h-[100px] lg:h-[120px] flex items-center justify-center">
+              <img
+                src="/quest-audio-assets/quantum-sync-logo.png"
+                alt="QUANTUM SYNC"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] md:leading-[22px] lg:leading-[24px] m-0 tracking-[0.16px]">
+              {hasWon ? 'success!' : 'in progress'}
+            </p>
+          </div>
 
-      {/* Bottom Text - Exact mobile app positioning */}
-      <div className="absolute bottom-[56px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 z-20">
-        <p className="font-rubik text-[16px] font-medium text-white text-center leading-[20px] m-0">
+          {/* Game Counter and Button - Responsive positioning, centered */}
+          <div className="absolute top-[420px] md:top-[45vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
+            {/* Counter - More moderate scaling for desktop */}
+            <div className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none">
+              {counter.toString().padStart(4, '0')}
+            </div>
+            
+            {/* Stop Button - Moderate scaling */}
+            <button
+              onClick={handleStop}
+              disabled={!isRunning || !canPlay}
+              className={`px-5 py-4 md:px-7 md:py-5 lg:px-8 lg:py-5 font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
+                canPlay 
+                  ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
+                  : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
+            </button>
+            
+            {/* Win/Try again message - Moderate scaling */}
+            {!isRunning && (
+              <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-white text-center m-0">
+                {hasWon ? 'Congratulations! You won!' : 'Try again!'}
+              </p>
+            )}
+          </div>
+
+          {/* Bottom Text - Responsive positioning */}
+          <div className="absolute bottom-[56px] md:bottom-[8vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 z-20">
+            <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-white text-center leading-[20px] md:leading-[24px] m-0">
           {hasWon ? 'You Won! 1111 $Zo Synced!' : (canPlay ? 'Sync at 1111 & Manifest $Zo' : 'Quest on Cooldown')}
         </p>
         {!hasWon && (
-          <p className="font-rubik text-[14px] font-normal text-white/60 text-center leading-[18px] m-0 mt-1">
+              <p className="font-rubik text-[14px] md:text-[16px] lg:text-[18px] font-normal text-white/60 text-center leading-[18px] md:leading-[22px] m-0 mt-1">
             {canPlay ? 'Once every 12 hrs' : `Next available in: ${timeRemaining}`}
           </p>
         )}
       </div>
+        </>
+      )}
     </>
   );
 }
@@ -680,7 +742,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // Permission granted - show main audio quest UI
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-start bg-black w-screen h-screen overflow-hidden">
-      {/* Background - Static or Success Video */}
+      {/* Background - Static or Active Video */}
       {shouldShowVideo ? (
       <video
         ref={videoRef}
@@ -697,7 +759,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           }
         }}
       >
-        <source src="/videos/zozozo-success.mp4" type="video/mp4" />
+        <source 
+          src={typeof window !== 'undefined' && window.innerWidth >= 768
+            ? "/gamevoicequest/Desktop_zozozoactive.mp4"
+            : "/gamevoicequest/mobile_zozozoactive.mp4"
+          } 
+          type="video/mp4" 
+        />
       </video>
       ) : (
         <div className="absolute inset-0 z-0">
@@ -711,7 +779,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
 
       <QuantumSyncHeader userId={userId} />
 
-      <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[360px] mx-auto w-full">
+      {/* Game1111 renders full-screen, outside constrained container */}
         {audioStatus === 'game1111' ? (
           <Game1111 
             userId={userId}
@@ -788,7 +856,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             isVideoLockedRef={isVideoLockedRef} 
           />
         ) : (
-          <>
+          <div className="fixed inset-0 z-[5] flex flex-col items-center justify-start max-w-[360px] mx-auto w-full">
             {/* QUANTUM SYNC Logo - Exact Figma: top-[156px] */}
             <div className="absolute top-[156px] left-1/2 -translate-x-1/2 w-[360px] flex flex-col items-center">
               {/* Logo: 320×80px */}
@@ -897,9 +965,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                 </p>
               </>
             ) : null}
-          </>
-        )}
       </div>
+        )
+      }
 
       {/* Home Indicator at bottom */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] max-w-[360px] w-full flex items-center justify-center z-10">

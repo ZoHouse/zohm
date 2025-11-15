@@ -30,8 +30,8 @@ export default function PortalAnimation({ onComplete }: PortalAnimationProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black max-w-screen w-screen h-screen overflow-hidden md:max-w-[360px] md:max-h-[800px] md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:shadow-[0_0_40px_rgba(0,0,0,0.8)]">
-      {/* Base Background Video - Always visible (consistent with other screens) */}
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black w-screen h-screen overflow-hidden">
+      {/* Base Background Video - Always visible, full screen on all devices */}
       <video
         autoPlay
         loop
@@ -42,7 +42,7 @@ export default function PortalAnimation({ onComplete }: PortalAnimationProps) {
         <source src="/videos/loading-screen-background.mp4" type="video/mp4" />
       </video>
 
-      {/* Opening Disks Video - Plays for 2 seconds then goes to mic permission */}
+      {/* Opening Disks Video - Plays for 2 seconds then goes to mic permission, full screen on all devices */}
       <video 
         ref={openingVideoRef}
         src="/opening-disks.mp4" 

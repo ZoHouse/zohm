@@ -9,6 +9,7 @@ import MobileQuantumSyncCard from './MobileQuantumSyncCard';
 import MobileCooldownTimer from './MobileCooldownTimer';
 import MobileStatsCard from './MobileStatsCard';
 import MobileLeaderboard from './MobileLeaderboard';
+import MobileMiniMap from './MobileMiniMap';
 
 interface MobileDashboardProps {
   isVisible: boolean;
@@ -135,6 +136,9 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
             milestones={[3, 7, 11]}
           />
         </div>
+        
+        {/* Mini Map */}
+        <MobileMiniMap onOpenMap={onClose} />
         
         {/* Leaderboard */}
         <MobileLeaderboard 

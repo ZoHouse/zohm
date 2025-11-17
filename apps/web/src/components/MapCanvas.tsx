@@ -48,9 +48,10 @@ interface MapCanvasProps {
   className?: string;
   shouldAnimateFromSpace?: boolean;
   userLocation?: { lat: number; lng: number } | null; // Saved user location from profile
+  isMiniMap?: boolean; // Indicates this is a mini map view (adjusts zoom/pitch for better visibility)
 }
 
-export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false, userLocation }: MapCanvasProps) {
+export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false, userLocation, isMiniMap = false }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -806,11 +807,18 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         console.log('🚀 Starting from space (will animate to:', initialCenter, ')');
       } else if (hasUserLocation) {
         // Returning user with location: Start at street level
-        initialZoom = isMobile() ? 17.5 : 17;
-        initialPitch = isMobile() ? 65 : 65;
-        initialBearing = -30;
+        // Mini maps use slightly zoomed out view for better context and visibility
+        if (isMiniMap) {
+          initialZoom = isMobile() ? 15.5 : 15;
+          initialPitch = 45; // Less tilted for mini map
+          initialBearing = -20;
+        } else {
+          initialZoom = isMobile() ? 17.5 : 17;
+          initialPitch = isMobile() ? 65 : 65;
+          initialBearing = -30;
+        }
         initialCenter = [userLocation.lng, userLocation.lat];
-        console.log('🏠 Returning user: Starting at street level:', initialCenter);
+        console.log('🏠 Returning user: Starting at street level:', initialCenter, isMiniMap ? '(mini map)' : '');
       } else {
         // No location: Show space view at neutral position (zoom 0)
         initialZoom = 0;
@@ -1092,11 +1100,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           }
           
           console.log('✈️ Executing flyTo animation...');
+          // Mini maps use slightly zoomed out view for better visibility
+          const targetZoom = isMiniMap ? (isMobile() ? 15.5 : 15) : (isMobile() ? 17.5 : 17);
+          const targetPitch = isMiniMap ? 45 : (isMobile() ? 65 : 65);
+          const targetBearing = isMiniMap ? -20 : -30;
+          
           map.current.flyTo({
             center: coords,
-            zoom: isMobile() ? 17.5 : 17,
-            pitch: isMobile() ? 65 : 65,
-            bearing: -30,
+            zoom: targetZoom,
+            pitch: targetPitch,
+            bearing: targetBearing,
             duration: 8000, // 8 seconds
             essential: true,
             easing: (t) => {

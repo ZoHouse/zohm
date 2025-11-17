@@ -138,7 +138,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         </div>
         
         {/* Mini Map */}
-        <MobileMiniMap onOpenMap={onClose} />
+        <MobileMiniMap onOpenMap={onClose} userProfile={userProfile} />
         
         {/* Leaderboard */}
         <MobileLeaderboard 

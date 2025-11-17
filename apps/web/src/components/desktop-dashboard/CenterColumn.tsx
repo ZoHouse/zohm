@@ -297,6 +297,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 flyToNode={null}
                 shouldAnimateFromSpace={false}
                 userLocation={{ lat: userLat, lng: userLng }}
+                isMiniMap={true}
                 className="w-full h-full"
               />
             </div>

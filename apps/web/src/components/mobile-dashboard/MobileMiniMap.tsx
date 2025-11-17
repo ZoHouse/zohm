@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
+import { PrivyUserProfile } from '@/types/privy';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('../MapCanvas'), {
@@ -15,44 +16,32 @@ const MapCanvas = dynamic(() => import('../MapCanvas'), {
 
 interface MobileMiniMapProps {
   onOpenMap: () => void;
+  userProfile: PrivyUserProfile | null;
 }
 
-const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
-  const [hasLocation, setHasLocation] = useState(false);
-  const [userLat, setUserLat] = useState(0);
-  const [userLng, setUserLng] = useState(0);
-  const [mapKey, setMapKey] = useState(0);
-  const [locationDebug, setLocationDebug] = useState('');
-
-  // Get user location from localStorage
-  useEffect(() => {
-    const storedLat = localStorage.getItem('zo_lat');
-    const storedLng = localStorage.getItem('zo_lng');
-    
-    console.log('🗺️ MobileMiniMap: Checking location', { storedLat, storedLng });
-    
-    if (storedLat && storedLng) {
-      const lat = parseFloat(storedLat);
-      const lng = parseFloat(storedLng);
-      
-      console.log('🗺️ MobileMiniMap: Parsed location', { lat, lng });
-      
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setUserLat(lat);
-        setUserLng(lng);
-        setHasLocation(true);
-        setLocationDebug(`✅ ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        // Force map to re-render with new location
-        setMapKey(prev => prev + 1);
-        console.log('✅ MobileMiniMap: Location set!', { lat, lng });
-      } else {
-        setLocationDebug('❌ Invalid coordinates');
-      }
-    } else {
-      console.log('❌ MobileMiniMap: No location in localStorage');
-      setLocationDebug('❌ No location in storage');
+const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile }) => {
+  // Get user location from profile (same as desktop)
+  const userLat = userProfile?.lat || 0;
+  const userLng = userProfile?.lng || 0;
+  const hasLocation = userLat !== 0 && userLng !== 0;
+  const [mapKey, setMapKey] = React.useState(0);
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🗺️ MobileMiniMap: User location from profile:', {
+      userLat,
+      userLng,
+      hasLocation,
+      profileHasValues: !!userProfile?.lat && !!userProfile?.lng
+    });
+  }, [userLat, userLng, hasLocation, userProfile]);
+  
+  // Force remount when location changes (same as desktop)
+  React.useEffect(() => {
+    if (hasLocation) {
+      setMapKey(prev => prev + 1);
     }
-  }, []);
+  }, [userLat, userLng, hasLocation]);
 
   return (
     <div className="px-6 mt-6">
@@ -63,31 +52,36 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
         </p>
 
         {/* Mini Map Container */}
-        <div className="relative w-full h-[240px] rounded-2xl overflow-hidden bg-[#0A0A0A]">
-          {/* MapCanvas Component */}
-          {hasLocation ? (
-            <div 
-              key={mapKey}
-              className="absolute inset-0 w-full h-full"
-            >
-              <MapCanvas
-                events={[]}
-                nodes={[]}
-                flyToEvent={null}
-                flyToNode={null}
-                shouldAnimateFromSpace={false}
-                userLocation={{ lat: userLat, lng: userLng }}
-                className="w-full h-full"
-              />
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <p className="font-rubik text-[14px] text-white/60">
-                Location not available
-              </p>
-              <p className="font-rubik text-[12px] text-white/40">
-                {locationDebug || 'Checking...'}
-              </p>
+        <div className="relative w-full h-[240px] rounded-2xl overflow-hidden">
+          {/* MapCanvas Component - No overflow positioning to keep user marker visible */}
+          <div 
+            key={mapKey}
+            className="absolute inset-0 w-full h-full"
+            style={{ 
+              borderRadius: '16px',
+              overflow: 'hidden',
+            }}
+          >
+            <MapCanvas
+              events={[]}
+              nodes={[]}
+              flyToEvent={null}
+              flyToNode={null}
+              shouldAnimateFromSpace={false}
+              userLocation={hasLocation ? { lat: userLat, lng: userLng } : null}
+              isMiniMap={true}
+              className="w-full h-full"
+            />
+          </div>
+          
+          {/* Show overlay text if no location */}
+          {!hasLocation && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 500 }}>
+              <div className="bg-black/60 px-4 py-2 rounded-lg backdrop-blur-sm">
+                <p className="font-rubik text-[12px] text-white/80">
+                  Location not set
+                </p>
+              </div>
             </div>
           )}
 
@@ -97,7 +91,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
               onClick={onOpenMap}
               className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200 active:scale-95"
               style={{
-                backgroundColor: 'rgba(18, 18, 18, 0.4)',
+                backgroundColor: 'rgba(18, 18, 18, 0.3)',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
                 borderColor: 'rgba(255, 255, 255, 0.16)',

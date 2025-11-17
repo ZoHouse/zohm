@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
+import { addToQueue, processQueue, initQueueProcessing, stopQueueProcessing } from '@/lib/questQueue';
+import type { QuestCompletionData } from '@/lib/questQueue';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -25,12 +27,18 @@ function Game1111({
   canPlay: boolean;
   timeRemaining: string;
 }) {
-  const [counter, setCounter] = useState(0);
+  // P0-3: Use ref instead of state for counter (performance optimization)
+  const counterRef = useRef(0);
+  const counterDisplayRef = useRef<HTMLDivElement>(null);
   const [isRunning, setIsRunning] = useState(true);
   const [hasWon, setHasWon] = useState(false);
   const [showResultVideo, setShowResultVideo] = useState(false);
   const resultVideoRef = useRef<HTMLVideoElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const rafIdRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<number>(0);
+  // P0-5: Double-click protection guard
+  const isSubmittingRef = useRef(false);
   
   // Detect mobile/desktop on mount
   useEffect(() => {
@@ -40,15 +48,37 @@ function Game1111({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // P0-3: Replace setInterval with requestAnimationFrame for smooth 60fps
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     // Only run counter if can play and is running
     if (isRunning && canPlay) {
-      interval = setInterval(() => {
-        setCounter((prev) => (prev + 1) % 10000);
-      }, 1);
+      const updateCounter = (timestamp: number) => {
+        // Update counter every 1ms (same as before, but without React re-renders)
+        if (timestamp - lastUpdateRef.current >= 1) {
+          counterRef.current = (counterRef.current + 1) % 10000;
+          
+          // Direct DOM update (no React re-render)
+          if (counterDisplayRef.current) {
+            counterDisplayRef.current.textContent = counterRef.current.toString().padStart(4, '0');
+          }
+          
+          lastUpdateRef.current = timestamp;
+        }
+        
+        // Continue animation loop
+        rafIdRef.current = requestAnimationFrame(updateCounter);
+      };
+      
+      // Start the animation loop
+      rafIdRef.current = requestAnimationFrame(updateCounter);
     }
-    return () => clearInterval(interval);
+    
+    return () => {
+      // Cleanup: cancel animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
   }, [isRunning, canPlay]);
 
   // Play result video when user stops (win or loss)
@@ -59,9 +89,39 @@ function Game1111({
     }
   }, [showResultVideo, hasWon]);
 
+  // P0-4: Tab visibility detection (anti-cheat)
+  // Automatically pause the game when tab becomes hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isRunning) {
+        console.log('👁️ Tab hidden - pausing game (anti-cheat)');
+        setIsRunning(false);
+        
+        // Show a message to user that game was paused
+        console.warn('⚠️ Game paused due to tab switch');
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isRunning]);
+
   const handleStop = () => {
+    // P0-5: Double-click protection - prevent multiple submissions
+    if (isSubmittingRef.current) {
+      console.warn('⚠️ Submission already in progress, ignoring click');
+      return;
+    }
+    
+    isSubmittingRef.current = true;
     setIsRunning(false);
-    const won = counter === 1111;
+    
+    // P0-3: Read from counterRef instead of state
+    const finalScore = counterRef.current;
+    const won = finalScore === 1111;
     setHasWon(won);
     
     // Show result video (success or fail)
@@ -69,7 +129,9 @@ function Game1111({
     
     // Always navigate to quest complete after 2 seconds
     setTimeout(() => {
-      onWin(counter, won); // Pass score and win status
+      onWin(finalScore, won); // Pass score and win status
+      // Reset guard after submission completes
+      isSubmittingRef.current = false;
     }, 2000);
   };
 
@@ -130,10 +192,13 @@ function Game1111({
 
           {/* Game Counter and Button - Responsive positioning, centered */}
           <div className="absolute top-[420px] md:top-[45vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
-            {/* Counter - More moderate scaling for desktop */}
-            <div className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none">
-          {counter.toString().padStart(4, '0')}
-        </div>
+            {/* Counter - More moderate scaling for desktop, P0-3: Direct DOM updates via ref */}
+            <div 
+              ref={counterDisplayRef}
+              className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none"
+            >
+              0000
+            </div>
         
             {/* Stop Button - Moderate scaling */}
         <button
@@ -188,6 +253,17 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // Note: Cooldown checking disabled during onboarding since this is the user's first play
   // Cooldown only applies when playing from the quests overlay after onboarding
   const { canPlay, timeRemaining, isChecking } = { canPlay: true, timeRemaining: '', isChecking: false };
+
+  // P0-2: Initialize offline queue processing
+  useEffect(() => {
+    console.log('🔄 Initializing quest queue processing...');
+    initQueueProcessing();
+    
+    return () => {
+      console.log('🛑 Stopping quest queue processing...');
+      stopQueueProcessing();
+    };
+  }, []);
 
   // Check microphone permission on mount
   useEffect(() => {
@@ -799,7 +875,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               
               // Record quest completion via API if user is logged in (non-blocking)
               if (userId) {
-                // Fire-and-forget API call - don't block UI transition
+                // Fire-and-forget API call with offline queue support
                 (async () => {
                 try {
                   // Get location from localStorage
@@ -807,7 +883,24 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     ? localStorage.getItem('zo_city') || 'Unknown'
                     : 'Unknown';
                   
-                    console.log('📤 Sending quest completion to API...');
+                  console.log('📤 Sending quest completion to API...');
+                  
+                  // Prepare quest completion data
+                  const completionData: QuestCompletionData = {
+                    user_id: userId,
+                    quest_id: 'game-1111', // Quest slug for Game1111
+                    score,
+                    location,
+                    metadata: {
+                      quest_title: 'Quantum Voice Sync',
+                      completed_via: 'webapp',
+                      game_won: hasWon,
+                      reward_zo: tokensEarned, // Include dynamic token calculation
+                      distance_from_target: distance,
+                      proximity_factor: proximityFactor,
+                      timestamp: new Date().toISOString(),
+                    },
+                  };
                     
                   // Call quest completion API
                   const response = await fetch('/api/quests/complete', {
@@ -815,35 +908,49 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     headers: {
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                      user_id: userId,
-                      quest_id: 'game-1111', // Quest slug for Game1111
-                      score,
-                      location,
-                      metadata: {
-                        quest_title: 'Quantum Voice Sync',
-                        completed_via: 'webapp',
-                        game_won: hasWon,
-                        reward_zo: tokensEarned, // Include dynamic token calculation
-                        distance_from_target: distance,
-                        proximity_factor: proximityFactor,
-                        timestamp: new Date().toISOString(),
-                      },
-                    }),
+                    body: JSON.stringify(completionData),
                   });
                   
                   if (response.ok) {
                     const result = await response.json();
                     console.log('✅ Quest completion recorded:', result);
                   } else if (response.status === 429) {
-                    // Cooldown not finished
+                    // Cooldown not finished - add to queue for retry
                     const error = await response.json();
-                    console.warn('⏳ Quest on cooldown:', error.next_available_at);
+                    console.warn('⏳ Quest on cooldown, adding to retry queue:', error.next_available_at);
+                    addToQueue(completionData);
+                    processQueue(); // Try processing immediately
                   } else {
-                    console.error('❌ Error recording quest completion:', await response.text());
+                    // Other error - add to queue for retry
+                    console.error('❌ Error recording quest completion, adding to retry queue:', await response.text());
+                    addToQueue(completionData);
+                    processQueue(); // Try processing immediately
                   }
                 } catch (error) {
-                  console.error('❌ Exception recording quest completion:', error);
+                  // Network error - add to queue for offline retry
+                  console.error('❌ Network error, adding to offline queue:', error);
+                  const location = typeof window !== 'undefined' 
+                    ? localStorage.getItem('zo_city') || 'Unknown'
+                    : 'Unknown';
+                  
+                  const completionData: QuestCompletionData = {
+                    user_id: userId,
+                    quest_id: 'game-1111',
+                    score,
+                    location,
+                    metadata: {
+                      quest_title: 'Quantum Voice Sync',
+                      completed_via: 'webapp',
+                      game_won: hasWon,
+                      reward_zo: tokensEarned,
+                      distance_from_target: distance,
+                      proximity_factor: proximityFactor,
+                      timestamp: new Date().toISOString(),
+                    },
+                  };
+                  
+                  addToQueue(completionData);
+                  // Will be retried automatically by the queue processor
                 }
                 })();
               }

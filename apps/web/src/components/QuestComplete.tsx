@@ -155,7 +155,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-start bg-black w-screen h-screen overflow-hidden">
       {/* Pure black background for both mobile and desktop */}
-      
+
       {/* Centered content container - responsive */}
       <div className="relative z-10 w-full max-w-[360px] md:max-w-[500px] lg:max-w-[600px] h-full flex flex-col items-center">
         

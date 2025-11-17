@@ -234,7 +234,7 @@ const MobileView: React.FC<MobileViewProps> = ({
       {/* Mobile Dashboard */}
       <MobileDashboard 
         isVisible={activeList === 'dashboard'} 
-        onClose={handleCloseAll}
+        onClose={handleCloseAll} 
         onLaunchGame={handleLaunchGame}
       />
 

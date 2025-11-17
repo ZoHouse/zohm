@@ -117,44 +117,44 @@ function Game1111({
           {/* QUANTUM SYNC Logo - Moderate scaling for desktop */}
           <div className="absolute top-[156px] md:top-[15vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
             <div className="w-[320px] md:w-[400px] lg:w-[480px] h-[80px] md:h-[100px] lg:h-[120px] flex items-center justify-center">
-              <img
-                src="/quest-audio-assets/quantum-sync-logo.png"
-                alt="QUANTUM SYNC"
+          <img
+            src="/quest-audio-assets/quantum-sync-logo.png"
+            alt="QUANTUM SYNC"
                 className="w-full h-full object-contain"
-              />
-            </div>
+          />
+        </div>
             <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] md:leading-[22px] lg:leading-[24px] m-0 tracking-[0.16px]">
-              {hasWon ? 'success!' : 'in progress'}
-            </p>
-          </div>
+          {hasWon ? 'success!' : 'in progress'}
+        </p>
+      </div>
 
           {/* Game Counter and Button - Responsive positioning, centered */}
           <div className="absolute top-[420px] md:top-[45vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
             {/* Counter - More moderate scaling for desktop */}
             <div className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none">
-              {counter.toString().padStart(4, '0')}
-            </div>
-            
+          {counter.toString().padStart(4, '0')}
+        </div>
+        
             {/* Stop Button - Moderate scaling */}
-            <button
-              onClick={handleStop}
-              disabled={!isRunning || !canPlay}
+        <button
+          onClick={handleStop}
+          disabled={!isRunning || !canPlay}
               className={`px-5 py-4 md:px-7 md:py-5 lg:px-8 lg:py-5 font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
-                canPlay 
-                  ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
-                  : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
-              }`}
-            >
-              {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
-            </button>
-            
+            canPlay 
+              ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
+              : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
+        </button>
+        
             {/* Win/Try again message - Moderate scaling */}
-            {!isRunning && (
+        {!isRunning && (
               <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-white text-center m-0">
-                {hasWon ? 'Congratulations! You won!' : 'Try again!'}
-              </p>
-            )}
-          </div>
+            {hasWon ? 'Congratulations! You won!' : 'Try again!'}
+          </p>
+        )}
+      </div>
 
           {/* Bottom Text - Responsive positioning */}
           <div className="absolute bottom-[56px] md:bottom-[8vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 z-20">

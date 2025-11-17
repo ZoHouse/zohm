@@ -6,6 +6,8 @@ import QuantumSyncLogo from './QuantumSyncLogo';
 import { addToQueue, processQueue, initQueueProcessing, stopQueueProcessing } from '@/lib/questQueue';
 import type { QuestCompletionData } from '@/lib/questQueue';
 import { useQuestCooldown, setQuestCooldown } from '@/hooks/useQuestCooldown';
+// Load debug utils for browser console
+import '@/lib/questQueueDebug';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -254,6 +256,11 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // The server validates cooldowns atomically, but we check client-side for better UX
   // Quest slug 'voice-sync-quest' matches the database entry
   const { canPlay, timeRemaining, isChecking } = useQuestCooldown('voice-sync-quest', userId);
+  
+  // Debug: Log cooldown state
+  useEffect(() => {
+    console.log('🎮 QuestAudio cooldown state:', { userId, canPlay, timeRemaining, isChecking });
+  }, [userId, canPlay, timeRemaining, isChecking]);
 
   // P0-2: Initialize offline queue processing
   useEffect(() => {
@@ -922,19 +929,18 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                       console.log('🔒 Cooldown set until:', result.next_available_at);
                     }
                   } else if (response.status === 429) {
-                    // P0-6: Cooldown active - store end time for UI and add to retry queue
+                    // P0-6: Cooldown active - store end time for UI
+                    // DO NOT add to queue - this is an intentional cooldown, not a failure
                     const error = await response.json();
-                    console.warn('⏳ Quest on cooldown, adding to retry queue:', error.next_available_at);
+                    console.warn('⏳ Quest on cooldown (not retrying):', error.next_available_at);
                     
                     // Store cooldown in localStorage for UI display
                     if (userId && error.next_available_at) {
                       setQuestCooldown('voice-sync-quest', userId, error.next_available_at);
                     }
-                    
-                    addToQueue(completionData);
-                    processQueue(); // Try processing immediately
+                    // Note: We don't queue 429 errors because they're cooldowns, not temporary failures
                   } else {
-                    // Other error - add to queue for retry
+                    // Other error (5xx, 4xx non-cooldown) - add to queue for retry
                     console.error('❌ Error recording quest completion, adding to retry queue:', await response.text());
                     addToQueue(completionData);
                     processQueue(); // Try processing immediately

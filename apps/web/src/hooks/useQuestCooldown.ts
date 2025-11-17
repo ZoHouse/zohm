@@ -48,19 +48,16 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
       const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
       const storedCooldown = localStorage.getItem(storageKey);
 
-      console.log('🔍 Cooldown check:', { storageKey, storedCooldown, userId, questId });
-
       if (!storedCooldown) {
         // No cooldown stored
-        console.log('✅ No cooldown found - can play');
         setCooldownState({
           canPlay: true,
           timeRemaining: '',
           isChecking: false,
           nextAvailableAt: null,
         });
-          return;
-        }
+        return;
+      }
 
       try {
         const nextAvailableAt = new Date(storedCooldown);
@@ -68,7 +65,6 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
 
         if (now >= nextAvailableAt) {
           // Cooldown expired
-          console.log('✅ Cooldown expired - can play now');
           localStorage.removeItem(storageKey);
           setCooldownState({
             canPlay: true,
@@ -81,7 +77,6 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
           const remainingMs = nextAvailableAt.getTime() - now.getTime();
           const timeString = formatTimeRemaining(remainingMs);
 
-          console.log('🔒 Cooldown active:', { remainingMs, timeString, nextAvailableAt: nextAvailableAt.toISOString() });
           setCooldownState({
             canPlay: false,
             timeRemaining: timeString,

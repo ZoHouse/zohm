@@ -256,11 +256,6 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // The server validates cooldowns atomically, but we check client-side for better UX
   // Quest slug 'game-1111' matches the database entry
   const { canPlay, timeRemaining, isChecking } = useQuestCooldown('game-1111', userId);
-  
-  // Debug: Log cooldown state
-  useEffect(() => {
-    console.log('🎮 QuestAudio cooldown state:', { userId, canPlay, timeRemaining, isChecking });
-  }, [userId, canPlay, timeRemaining, isChecking]);
 
   // P0-2: Initialize offline queue processing
   useEffect(() => {

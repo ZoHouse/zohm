@@ -85,47 +85,44 @@ export default function QuantumSyncHeader({
 
   return (
     <div className="quantum-sync-header">
-      {/* Zo Logo - 20% smaller: 40px → 32px */}
+      {/* Zo Logo */}
       <div className="quantum-sync-header__logo">
         <img
           src="/quest-audio-assets/zo-logo.png"
           alt="Zo"
-          width="32"
-          height="32"
+          width="40"
+          height="40"
         />
       </div>
       
       {!withoutProfile && (
-        /* Profile Container - 20% smaller */
+        /* Profile Container */
         <div className="quantum-sync-header__profile">
-          {/* Avatar - 20% smaller: 32px → 26px */}
+          {/* Avatar */}
           <div className="profile-avatar">
             <img
               src={avatar}
               alt="Avatar"
-              width="26"
-              height="26"
+              width="36"
+              height="36"
             />
           </div>
           
-          {/* Tags Container - 20% smaller */}
+          {/* Tags Container */}
           <div className="profile-tokens">
             <span>{balance}</span>
-            {/* Coin Icon - 20% smaller: 16px → 13px */}
+            {/* Coin Video */}
             <div className="coin-icon">
-              <img
-                src="/quest-audio-assets/coin-1.png"
-                alt="Coin"
-                width="13"
-                height="13"
-              />
-              <img
-                src="/quest-audio-assets/coin-2.png"
-                alt=""
-                width="13"
-                height="13"
-                className="coin-overlay"
-              />
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                width="18"
+                height="18"
+              >
+                <source src="/videos/zo-coin.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
@@ -145,10 +142,10 @@ export default function QuantumSyncHeader({
           z-index: 100;
         }
 
-        /* Zo Logo - 20% smaller: 40px → 32px */
+        /* Zo Logo */
         .quantum-sync-header__logo {
-          width: 32px;
-          height: 32px;
+          width: 40px;
+          height: 40px;
           cursor: pointer;
           overflow: hidden;
           border-radius: 4px;
@@ -160,12 +157,12 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Profile Container - 20% smaller padding: 8px → 6px */
+        /* Profile Container */
         .quantum-sync-header__profile {
           display: flex;
           align-items: center;
-          gap: 3px;
-          padding: 6px;
+          gap: 4px;
+          padding: 8px;
           background: rgba(18, 18, 18, 0.2);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -174,10 +171,10 @@ export default function QuantumSyncHeader({
           cursor: pointer;
         }
 
-        /* Avatar - 20% smaller: 32px → 26px */
+        /* Avatar */
         .profile-avatar {
-          width: 26px;
-          height: 26px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           overflow: hidden;
         }
@@ -188,39 +185,35 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Tags Container - 20% smaller */
+        /* Tags Container */
         .profile-tokens {
           display: flex;
           align-items: center;
-          gap: 3px;
+          gap: 4px;
           background: rgba(255, 255, 255, 0.06);
           border-radius: 100px;
-          padding: 3px 6px;
+          padding: 4px 8px;
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 10px;
+          font-size: 13px;
           font-weight: 400;
-          line-height: 14px;
+          line-height: 16px;
           letter-spacing: 0.1px;
           color: white;
         }
 
-        /* Coin Icon - 20% smaller: 16px → 13px */
+        /* Coin Icon */
         .coin-icon {
           position: relative;
-          width: 13px;
-          height: 13px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          overflow: hidden;
         }
 
-        .coin-icon img {
-          position: absolute;
-          inset: 0;
+        .coin-icon video {
           width: 100%;
           height: 100%;
           object-fit: cover;
-        }
-
-        .coin-overlay {
-          z-index: 1;
         }
       `}</style>
     </div>

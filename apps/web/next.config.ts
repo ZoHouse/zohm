@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=*, camera=(), microphone=(), payment=()',
+            value: 'geolocation=*, camera=(), microphone=*, payment=()',
           },
           // CSP: Allow unsafe-eval in dev for HMR, restrict in production
           // IMPORTANT: worker-src 'self' blob: is required for Mapbox GL JS

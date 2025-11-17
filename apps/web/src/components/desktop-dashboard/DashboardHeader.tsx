@@ -9,13 +9,37 @@ interface DashboardHeaderProps {
   onClose?: () => void;
 }
 
+// Get initial avatar synchronously to prevent flash
+function getInitialAvatar(): string {
+  if (typeof window !== 'undefined') {
+    const storedAvatar = localStorage.getItem('zo_avatar');
+    if (storedAvatar) {
+      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      return storedAvatar;
+    }
+  }
+  console.log('🎨 No avatar in localStorage, using default');
+  return '/quest-audio-assets/avatar.png';
+}
+
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
   const { userProfile, isFounder } = usePrivyUser();
   const { login, logout, authenticated } = usePrivy();
   const [balance, setBalance] = useState(0);
+  const [avatar, setAvatar] = useState(getInitialAvatar);
   const [showMenu, setShowMenu] = useState(false);
   const userId = userProfile?.id;
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Update avatar when userProfile loads from API (but only if different)
+  useEffect(() => {
+    if (userProfile?.pfp && userProfile.pfp !== avatar) {
+      console.log('🎨 Updating avatar from API:', userProfile.pfp);
+      setAvatar(userProfile.pfp);
+      // Also update localStorage for next time
+      localStorage.setItem('zo_avatar', userProfile.pfp);
+    }
+  }, [userProfile?.pfp, avatar]);
 
   // Fetch token balance
   useEffect(() => {
@@ -118,7 +142,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
               }}
             >
               <img 
-                src={userProfile?.pfp || '/quest-audio-assets/avatar.png'} 
+                src={avatar} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
               />

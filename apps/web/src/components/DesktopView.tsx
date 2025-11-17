@@ -14,6 +14,7 @@ import MapViewToggle from '@/components/MapViewToggle';
 import StatsPill from '@/components/StatsPill';
 import QuantumSyncHeader from '@/components/QuantumSyncHeader';
 import QuestAudio from '@/components/QuestAudio';
+import QuestComplete from '@/components/QuestComplete';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -79,6 +80,9 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   // Game1111 state
   const [showGame1111, setShowGame1111] = useState(false);
   const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
+  const [showQuestComplete, setShowQuestComplete] = useState(false);
+  const [questScore, setQuestScore] = useState(0);
+  const [questTokens, setQuestTokens] = useState(0);
 
   const handleLaunchGame = (userId: string) => {
     console.log('🎮 Launching game1111 for user:', userId);
@@ -93,7 +97,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     console.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
-    // Open dashboard after quest completion
+    setQuestScore(score);
+    setQuestTokens(tokensEarned);
+    // Show quest complete page with leaderboard
+    setShowQuestComplete(true);
+  };
+
+  const handleQuestCompleteGoHome = async (): Promise<void> => {
+    console.log('🏠 Going home from quest complete');
+    setShowQuestComplete(false);
+    // Open dashboard after viewing quest results
     setIsDashboardOpen(true);
   };
 
@@ -113,6 +126,18 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     onMapReady(map, closeAllPopups);
     console.log('Desktop Map is ready!');
   };
+
+  // 🎨 Show quest complete page after finishing quest
+  if (showQuestComplete) {
+    return (
+      <QuestComplete 
+        onGoHome={handleQuestCompleteGoHome}
+        userId={userId}
+        score={questScore}
+        tokensEarned={questTokens}
+      />
+    );
+  }
 
   // 🎨 Show full-page dashboard when open, otherwise show map view
   if (isDashboardOpen) {

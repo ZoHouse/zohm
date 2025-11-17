@@ -89,7 +89,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
   if (!isVisible) return null;
 
   return (
-    <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-[10001] flex-col">
+    <GlowCard className="hidden md:flex fixed top-[100px] right-5 bottom-10 w-[380px] z-[10001] flex-col">
       {/* Header - compact with inline search */}
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-4">

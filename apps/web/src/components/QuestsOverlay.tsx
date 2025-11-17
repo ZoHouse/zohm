@@ -290,7 +290,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
     <>
       {/* Desktop Overlay */}
       {isVisible && (
-        <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-[10001] flex-col">
+        <GlowCard className="hidden md:flex fixed top-[100px] right-5 bottom-10 w-[380px] z-[10001] flex-col">
           {content}
         </GlowCard>
       )}

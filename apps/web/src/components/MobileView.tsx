@@ -70,7 +70,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   shouldAnimateFromSpace = false,
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
-  const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>(null);
+  const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>('dashboard');
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   
   // Game1111 state
@@ -95,7 +95,8 @@ const MobileView: React.FC<MobileViewProps> = ({
     console.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
-    // Don't automatically reopen quest list - let user navigate naturally
+    // Open dashboard after quest completion
+    setActiveList('dashboard');
   };
 
   const handleTileClick = (section: 'events' | 'nodes' | 'quests' | 'dashboard') => {

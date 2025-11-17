@@ -72,7 +72,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   shouldAnimateFromSpace = false,
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(true);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
   
@@ -93,6 +93,8 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     console.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
+    // Open dashboard after quest completion
+    setIsDashboardOpen(true);
   };
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
@@ -175,25 +177,29 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         />
       </div>
 
-      {/* Right-side Overlays */}
-      <EventsOverlay 
-        isVisible={activeSection === 'events'} 
-        events={events}
-        onEventClick={onEventClick}
-        closeMapPopups={closePopupsFn}
-      />
-      <NodesOverlay 
-        isVisible={activeSection === 'nodes'}
-        nodes={nodes}
-        allNodes={allNodes}
-        onNodeClick={onNodeClick}
-        closeMapPopups={closePopupsFn}
-      />
-      <QuestsOverlay 
-        isVisible={activeSection === 'quests'} 
-        onClose={() => setActiveSection('events')}
-        onLaunchGame={handleLaunchGame}
-      />
+      {/* Right-side Overlays - Hidden when game is active */}
+      {!showGame1111 && (
+        <>
+          <EventsOverlay 
+            isVisible={activeSection === 'events'} 
+            events={events}
+            onEventClick={onEventClick}
+            closeMapPopups={closePopupsFn}
+          />
+          <NodesOverlay 
+            isVisible={activeSection === 'nodes'}
+            nodes={nodes}
+            allNodes={allNodes}
+            onNodeClick={onNodeClick}
+            closeMapPopups={closePopupsFn}
+          />
+          <QuestsOverlay 
+            isVisible={activeSection === 'quests'} 
+            onClose={() => setActiveSection('events')}
+            onLaunchGame={handleLaunchGame}
+          />
+        </>
+      )}
 
       {/* Wallet Overlay - rendered at root level */}
       <WalletOverlay 
@@ -201,14 +207,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         onClose={() => setIsWalletOpen(false)}
       />
 
-      {/* Bottom Navigation - DESKTOP */}
-      <div className="hidden md:block">
-        <NavBar 
-          onSectionChange={handleSectionChange}
-          activeSection={activeSection}
-          onDashboardClick={() => setIsDashboardOpen(true)}
-        />
-      </div>
+      {/* Bottom Navigation - DESKTOP - Hidden when game is active */}
+      {!showGame1111 && (
+        <div className="hidden md:block">
+          <NavBar 
+            onSectionChange={handleSectionChange}
+            activeSection={activeSection}
+            onDashboardClick={() => setIsDashboardOpen(true)}
+          />
+        </div>
+      )}
       
       {/* Game1111 Full-Screen Experience - Independent of overlays */}
       {showGame1111 && (

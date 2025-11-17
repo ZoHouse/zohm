@@ -131,14 +131,14 @@ export default function QuantumSyncHeader({
         /* Header Container */
         .quantum-sync-header {
           position: absolute;
-          top: 52px;
+          top: 16px;
           left: 0;
           right: 0;
-          height: 80px;
+          height: 60px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0 24px;
+          padding: 0 8px 0 24px;
           z-index: 100;
         }
 
@@ -149,6 +149,7 @@ export default function QuantumSyncHeader({
           cursor: pointer;
           overflow: hidden;
           border-radius: 4px;
+          visibility: hidden;
         }
 
         .quantum-sync-header__logo img {

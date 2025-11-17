@@ -13,6 +13,31 @@
 import { createClient } from '@supabase/supabase-js';
 import https from 'https';
 import { URL } from 'url';
+import { config } from 'dotenv';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Get script directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env.local
+const envPath = resolve(__dirname, '../apps/web/.env.local');
+try {
+  const envConfig = readFileSync(envPath, 'utf-8');
+  const env = {};
+  envConfig.split('\n').forEach(line => {
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      env[key.trim()] = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+    }
+  });
+  Object.assign(process.env, env);
+  console.log('✅ Loaded environment variables from .env.local\n');
+} catch (error) {
+  console.warn('⚠️  Could not load .env.local, using system environment variables');
+}
 
 // Supabase credentials from environment
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;

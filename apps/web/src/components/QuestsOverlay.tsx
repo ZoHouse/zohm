@@ -85,8 +85,8 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
       return;
     }
     
-    // Special handling for game-1111 quest
-    if (quest.slug === 'game-1111') {
+    // Special handling for voice-sync-quest (Game1111)
+    if (quest.slug === 'voice-sync-quest' || quest.slug === 'game-1111') {
       // Get user by wallet address
       const user = await getUserByWallet(primaryWalletAddress);
       

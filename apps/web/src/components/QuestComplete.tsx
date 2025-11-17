@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
+import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 
 interface QuestCompleteProps {
   onGoHome: () => Promise<void>; // Now returns a promise that resolves when map is ready
@@ -24,10 +25,14 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   const videoRef = useRef<HTMLVideoElement>(null);
   const coinVideoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // P0-6: Use cooldown hook for consistent cooldown display across the app
+  const { timeRemaining: cooldownTime } = useQuestCooldown('voice-sync-quest', userId);
+  
   const [userStats, setUserStats] = useState({
     zo_points: tokensEarned,
     total_quests_completed: 1,
-    timeUntilNextSync: '12h : 0m'
+    timeUntilNextSync: cooldownTime || '12h : 0m' // Default fallback
   });
   
   const [leaderboard, setLeaderboard] = useState<LeaderboardPlayer[]>([]);
@@ -48,6 +53,16 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
       videoRef.current.pause();
     }
   }, []);
+
+  // P0-6: Update userStats whenever cooldown time changes
+  useEffect(() => {
+    if (cooldownTime) {
+      setUserStats(prev => ({
+        ...prev,
+        timeUntilNextSync: cooldownTime
+      }));
+    }
+  }, [cooldownTime]);
 
   // Fetch real data from API
   useEffect(() => {

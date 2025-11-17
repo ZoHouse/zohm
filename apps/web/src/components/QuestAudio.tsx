@@ -5,6 +5,7 @@ import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
 import { addToQueue, processQueue, initQueueProcessing, stopQueueProcessing } from '@/lib/questQueue';
 import type { QuestCompletionData } from '@/lib/questQueue';
+import { useQuestCooldown, setQuestCooldown } from '@/hooks/useQuestCooldown';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -249,10 +250,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isVideoLockedRef = useRef(false); // Lock video from playing during game
 
-  // Check quest cooldown (12 hours for game1111)
-  // Note: Cooldown checking disabled during onboarding since this is the user's first play
-  // Cooldown only applies when playing from the quests overlay after onboarding
-  const { canPlay, timeRemaining, isChecking } = { canPlay: true, timeRemaining: '', isChecking: false };
+  // P0-6: Check quest cooldown using the atomic cooldown hook
+  // The server validates cooldowns atomically, but we check client-side for better UX
+  // Quest slug 'voice-sync-quest' matches the database entry
+  const { canPlay, timeRemaining, isChecking } = useQuestCooldown('voice-sync-quest', userId);
 
   // P0-2: Initialize offline queue processing
   useEffect(() => {
@@ -888,7 +889,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   // Prepare quest completion data
                   const completionData: QuestCompletionData = {
                     user_id: userId,
-                    quest_id: 'game-1111', // Quest slug for Game1111
+                    quest_id: 'voice-sync-quest', // Quest slug matching database
                     score,
                     location,
                     metadata: {
@@ -914,10 +915,22 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   if (response.ok) {
                     const result = await response.json();
                     console.log('✅ Quest completion recorded:', result);
+                    
+                    // P0-6: Store cooldown after successful completion for UI display
+                    if (userId && result.next_available_at) {
+                      setQuestCooldown('voice-sync-quest', userId, result.next_available_at);
+                      console.log('🔒 Cooldown set until:', result.next_available_at);
+                    }
                   } else if (response.status === 429) {
-                    // Cooldown not finished - add to queue for retry
+                    // P0-6: Cooldown active - store end time for UI and add to retry queue
                     const error = await response.json();
                     console.warn('⏳ Quest on cooldown, adding to retry queue:', error.next_available_at);
+                    
+                    // Store cooldown in localStorage for UI display
+                    if (userId && error.next_available_at) {
+                      setQuestCooldown('voice-sync-quest', userId, error.next_available_at);
+                    }
+                    
                     addToQueue(completionData);
                     processQueue(); // Try processing immediately
                   } else {
@@ -935,7 +948,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   
                   const completionData: QuestCompletionData = {
                     user_id: userId,
-                    quest_id: 'game-1111',
+                    quest_id: 'voice-sync-quest', // Quest slug matching database
                     score,
                     location,
                     metadata: {

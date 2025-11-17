@@ -32,7 +32,12 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
       <div className="fixed inset-0 bg-gradient-to-b from-[50.721%] from-transparent to-black z-[2] pointer-events-none" />
       
       {/* Home Indicator at bottom - Mobile only */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden">
+      <div 
+        className="absolute left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden"
+        style={{
+          bottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
         <div className="w-[72px] h-[5px] bg-white rounded-full" />
       </div>
       

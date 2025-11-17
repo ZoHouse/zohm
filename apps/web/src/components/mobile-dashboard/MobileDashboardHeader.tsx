@@ -46,7 +46,10 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
   return (
     <div 
       className="sticky top-0 z-50 h-20 flex items-center justify-between px-6"
-      style={{ backgroundColor: 'transparent' }}
+      style={{ 
+        backgroundColor: 'transparent',
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+      }}
     >
       {/* Zo Logo (40px) */}
       <div className="w-10 h-10">

@@ -90,7 +90,13 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[10001] bg-black overflow-y-auto scrollbar-hide">
+    <div 
+      className="fixed inset-0 z-[10001] bg-black overflow-y-auto scrollbar-hide"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
       {/* Header - Sticky at top */}
       <MobileDashboardHeader 
         userProfile={userProfile}
@@ -98,7 +104,12 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
       />
       
       {/* Scrollable Content */}
-      <div className="w-full pb-24">
+      <div 
+        className="w-full"
+        style={{
+          paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
+        }}
+      >
         {/* Profile Photo with Frame */}
         <div className="mt-3">
           <MobileProfilePhotoCard userProfile={userProfile} />

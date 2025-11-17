@@ -686,7 +686,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         </div>
 
         {/* Permission Modal - Centered bottom sheet matching mobile exactly */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto">
+        <div 
+          className="fixed left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
           <div className="bg-[#121212] rounded-t-[24px] w-full h-[254px] shadow-[0px_4px_12px_0px_rgba(18,18,18,0.16)] relative before:content-[''] before:absolute before:top-[12px] before:left-1/2 before:-translate-x-1/2 before:w-[40px] before:h-[4px] before:bg-white/20 before:rounded-[2px]">
             {/* Title - Centered exactly */}
             <h2 className="absolute top-[48px] left-1/2 -translate-x-1/2 font-rubik text-[20px] font-medium text-white text-center leading-[30px] m-0 w-[272px]">
@@ -782,7 +787,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         </div>
 
         {/* Permission Denied Modal - Centered bottom sheet matching mobile exactly */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto">
+        <div 
+          className="fixed left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
           <div className="bg-[#121212] rounded-t-[24px] w-full h-[254px] shadow-[0px_4px_12px_0px_rgba(18,18,18,0.16)] relative before:content-[''] before:absolute before:top-[12px] before:left-1/2 before:-translate-x-1/2 before:w-[40px] before:h-[4px] before:bg-white/20 before:rounded-[2px]">
             {/* Title - Centered exactly */}
             <h2 className="absolute top-[48px] left-1/2 -translate-x-1/2 font-rubik text-[20px] font-medium text-white text-center leading-[30px] m-0 w-[272px]">

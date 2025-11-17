@@ -297,7 +297,12 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
 
       {/* Mobile Overlay */}
       {isVisible && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col">
+        <div 
+          className="md:hidden fixed left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
         {/* Mobile Header */}
         <div className="px-6 py-4 border-b border-white/20">
           <div className="flex items-center justify-between">

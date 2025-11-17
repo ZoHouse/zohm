@@ -9,6 +9,12 @@ interface QuestAudioProps {
   userId?: string;
 }
 
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+  }
+}
+
 // Game1111 Component - Exact mobile app flow with video background
 function Game1111({ 
   onWin, 
@@ -188,12 +194,16 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const isRecordingRef = useRef<boolean>(false); // Track if we're actively recording
   const recordedAudioRef = useRef<Blob | null>(null); // Store recorded audio blob
   const audioUrlRef = useRef<string | null>(null); // Store audio URL for playback/download
+  const isStoppingRecognitionRef = useRef<boolean>(false); // Track if we're in the process of stopping recognition
 
   // Check quest cooldown (12 hours for game1111)
   // Note: Cooldown checking disabled during onboarding since this is the user's first play
   // Cooldown only applies when playing from the quests overlay after onboarding
   const { canPlay, timeRemaining, isChecking } = { canPlay: true, timeRemaining: '', isChecking: false };
 
+  const recognitionRef = useRef<any>(null);
+  const [transcript, setTranscript] = useState("");
+  // Initialize Web Speech API
   // Check microphone permission on mount
   useEffect(() => {
     checkMicrophonePermission();
@@ -348,12 +358,57 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     }
   }, [audioStatus]);
 
+  /**
+   * Transcribe audio file to text using the transcription API
+   */
+  const transcribeAudioFile = async (audioBlob: Blob, filename: string): Promise<{ text: string; confidence: number | null } | null> => {
+    try {
+      console.log('🎤 📝 Starting audio transcription...');
+      
+      // Create FormData with the audio file
+      const formData = new FormData();
+      formData.append('audio', audioBlob, filename);
+      
+      // Call the transcription API
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        let errorMessage = `Transcription failed: ${response.statusText}`;
+        try {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.text) {
+        return {
+          text: result.text,
+          confidence: result.confidence || null,
+        };
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error('❌ Transcription error:', error);
+      throw error;
+    }
+  };
+
   const startRecording = async () => {
     console.log('🎤 Starting voice recording - waiting 5 seconds for you to speak...');
     
     setAudioStatus('recording');
     setRecordingDuration(0);
     isRecordingRef.current = true; // Mark that we're recording
+    isStoppingRecognitionRef.current = false; // Reset stopping flag for new recording
     
     // Reset transcript ref
     transcriptRef.current = { final: '', interim: '' };
@@ -514,6 +569,21 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     
     recognition.onstart = () => {
       console.log('🎤 ✅ Speech recognition started and listening...');
+      console.log('🎤   isRecordingRef.current:', isRecordingRef.current);
+      console.log('🎤   isStoppingRecognitionRef.current:', isStoppingRecognitionRef.current);
+      
+      // If recognition started but we're supposed to be stopping, stop it again
+      if (isStoppingRecognitionRef.current || !isRecordingRef.current) {
+        console.log('🎤 ⚠️ Recognition started but we should be stopping - stopping again...');
+        isStoppingRecognitionRef.current = true; // Ensure flag is set
+        try {
+          if (speechRecognitionRef.current) {
+            speechRecognitionRef.current.stop();
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
     };
     
     recognition.onerror = (event: any) => {
@@ -530,11 +600,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     };
     
     recognition.onend = () => {
-      console.log('🎤 Speech recognition ended (might restart if still recording)');
+      console.log('🎤 ✅ onend FIRED! Speech recognition ended');
       console.log('🎤 Current transcript state:', {
         final: transcriptRef.current.final.trim() || '(empty)',
         interim: transcriptRef.current.interim.trim() || '(empty)'
       });
+      
+      // Clear the stopping flag since onend has fired
+      isStoppingRecognitionRef.current = false;
       
       // Before restarting, if we have interim results, preserve them
       // (they might become final on restart)
@@ -544,27 +617,38 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       
       // Speech recognition ended (might be early due to silence)
       // Don't change status here - wait for the 5-second timeout
-      // Just restart recognition if we're still recording
-      if (isRecordingRef.current && speechRecognitionRef.current) {
+      // Just restart recognition if we're still recording AND not stopping
+      // IMPORTANT: Check both flags to prevent race conditions
+      if (isRecordingRef.current && !isStoppingRecognitionRef.current && speechRecognitionRef.current) {
         try {
+          // Check if recognition is actually stopped before restarting
+          // Note: Web Speech API doesn't expose state directly, so we try-catch
           console.log('🎤 🔄 Restarting speech recognition to continue listening...');
           // Restart recognition to keep listening for the full 5 seconds
           speechRecognitionRef.current.start();
-        } catch (e) {
+        } catch (e: any) {
           // Recognition might already be running, ignore
-          console.log('🎤 ℹ️ Speech recognition already running or restart failed');
+          console.log('🎤 ℹ️ Speech recognition already running or restart failed:', e.message || e);
         }
+      } else {
+        console.log('🎤 ℹ️ Not restarting - recording stopped, stopping in progress, or recognition ref cleared');
+        console.log('🎤   isRecordingRef.current:', isRecordingRef.current);
+        console.log('🎤   isStoppingRecognitionRef.current:', isStoppingRecognitionRef.current);
+        console.log('🎤   speechRecognitionRef.current:', !!speechRecognitionRef.current);
       }
     };
     
     // Start speech recognition
+    // IMPORTANT: Set all handlers BEFORE starting to ensure onend can fire
     try {
+      speechRecognitionRef.current = recognition; // Set ref BEFORE starting
       recognition.start();
-      speechRecognitionRef.current = recognition;
       console.log('🎤 🎙️ Speech recognition initialized - speak now!');
       console.log('🎤 📋 Waiting for your voice input...');
+      console.log('🎤 🔍 onend handler is set and ready');
     } catch (error) {
       console.error('❌ Failed to start speech recognition:', error);
+      speechRecognitionRef.current = null; // Clear ref on error
     }
     
     // Also record audio with MediaRecorder
@@ -605,6 +689,50 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         console.log('   - Audio URL:', audioUrl);
         console.log('   - Filename:', filename);
         
+        // Get current transcript if available
+        const currentTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+        
+        // Transcribe the audio file
+        transcribeAudioFile(audioBlob, filename).then((transcription) => {
+          if (transcription) {
+            console.log('');
+            console.log('🎤 ========================================');
+            console.log('🎤 📝 AUDIO FILE TRANSCRIPTION');
+            console.log('🎤 ========================================');
+            console.log('🎤 📄 Transcribed Text:', transcription.text || '(empty)');
+            if (transcription.confidence) {
+              console.log('🎤 📊 Confidence:', (transcription.confidence * 100).toFixed(1) + '%');
+            }
+            console.log('🎤 ========================================');
+            console.log('');
+            
+            // Update the stored audio object with transcription
+            if ((window as any).lastRecordedAudio) {
+              (window as any).lastRecordedAudio.transcription = transcription.text;
+              (window as any).lastRecordedAudio.confidence = transcription.confidence;
+            }
+          }
+        }).catch((error) => {
+          console.log('🎤 ⚠️ Transcription failed:', error.message);
+          
+          // Check if it's a setup error (503 status)
+          if (error.message && error.message.includes('not configured')) {
+            console.log('');
+            console.log('🎤 ========================================');
+            console.log('🎤 🔧 TRANSCRIPTION SETUP REQUIRED');
+            console.log('🎤 ========================================');
+            console.log('🎤 To enable audio transcription:');
+            console.log('   1. Sign up at https://www.assemblyai.com/');
+            console.log('   2. Get your API key from the dashboard');
+            console.log('   3. Add ASSEMBLYAI_API_KEY to your .env file');
+            console.log('   4. Restart your dev server');
+            console.log('🎤 ========================================');
+            console.log('');
+          }
+          
+          console.log('🎤 💡 You can still access the audio file via: window.lastRecordedAudio');
+        });
+        
         // Create download link in console
         console.log('%c🎤 📥 Click here to download your audio:', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
         console.log('%cDownload Audio', 'color: #2196F3; text-decoration: underline; cursor: pointer;', {
@@ -626,15 +754,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           url: audioUrl
         });
         
-        // Get current transcript if available
-        const currentTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
-        
         // Also store in window for easy access
         (window as any).lastRecordedAudio = {
           blob: audioBlob,
           url: audioUrl,
           filename: filename,
           transcript: currentTranscript || null,
+          transcription: null, // Will be set after transcription completes
           download: () => {
             const a = document.createElement('a');
             a.href = audioUrl;
@@ -674,22 +800,38 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       setTimeout(() => {
         console.log('🎤 5 seconds elapsed - stopping recording and transcription');
         
+        // CRITICAL: Set isRecordingRef to false BEFORE stopping recognition
+        // This ensures that when onend fires, it won't try to restart
         isRecordingRef.current = false; // Mark that recording is complete
         
-          // Stop media recorder first (audio will be saved in onstop handler)
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            mediaRecorderRef.current.stop();
-          }
-          
+        // Stop media recorder first (audio will be saved in onstop handler)
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        
           // Give recognition more time to finalize any pending results
           // Wait a bit longer to ensure all final results come through
           setTimeout(() => {
             // Stop speech recognition
-            if (speechRecognitionRef.current) {
+            // IMPORTANT: Set isRecordingRef to false BEFORE stopping so onend won't restart
+            // Also check if we're already stopping to prevent multiple stops
+            if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
               try {
+                isStoppingRecognitionRef.current = true; // Set flag BEFORE stopping
+                console.log('🎤 🛑 Stopping speech recognition...');
+                console.log('🎤   isRecordingRef is set to false - onend should not restart');
                 speechRecognitionRef.current.stop();
-              } catch (e) {
-                // Recognition might have already stopped
+                console.log('🎤 ✅ stop() called - onend should fire now');
+              } catch (e: any) {
+                // Recognition might have already stopped or be in an invalid state
+                isStoppingRecognitionRef.current = false; // Reset flag on error
+                console.log('🎤 ⚠️ Error stopping recognition (might already be stopped):', e.message || e);
+              }
+            } else {
+              if (isStoppingRecognitionRef.current) {
+                console.log('🎤 ℹ️ Recognition already being stopped - skipping duplicate stop()');
+              } else {
+                console.log('🎤 ℹ️ Recognition ref is null - already cleaned up');
               }
             }
             
@@ -699,6 +841,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             }
             
             // Wait a bit more for any final results that might come after stopping
+            // Also wait for onend to fire (it should fire after stop() is called)
             setTimeout(() => {
               // Log final transcript one more time
               const finalText = transcriptRef.current.final.trim();
@@ -762,10 +905,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       }
       
       // Stop speech recognition if it was started
-      if (speechRecognitionRef.current) {
+      if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
         try {
+          isStoppingRecognitionRef.current = true;
           speechRecognitionRef.current.stop();
         } catch (e) {
+          isStoppingRecognitionRef.current = false; // Reset on error
           // Ignore
         }
       }
@@ -778,11 +923,23 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     isRecordingRef.current = false; // Mark that recording is stopped
     
     // Stop speech recognition
-    if (speechRecognitionRef.current) {
+    // Check if we're already stopping to prevent multiple stops
+    if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
       try {
+        isStoppingRecognitionRef.current = true; // Set flag BEFORE stopping
+        console.log('🎤 🛑 stopRecording() - Stopping speech recognition...');
         speechRecognitionRef.current.stop();
-      } catch (e) {
+        console.log('🎤 ✅ stop() called in stopRecording - waiting for onend to fire...');
+      } catch (e: any) {
         // Recognition might have already stopped
+        isStoppingRecognitionRef.current = false; // Reset flag on error
+        console.log('🎤 ⚠️ Error stopping recognition in stopRecording:', e.message || e);
+      }
+    } else {
+      if (isStoppingRecognitionRef.current) {
+        console.log('🎤 ℹ️ Recognition already being stopped in stopRecording - skipping duplicate stop()');
+      } else {
+        console.log('🎤 ℹ️ Recognition ref is null in stopRecording');
       }
     }
     

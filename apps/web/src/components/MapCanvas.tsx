@@ -14,6 +14,10 @@ import {
   removeClusteringLayers 
 } from '@/lib/mapClustering';
 
+// 🔇 DISABLE VERBOSE LOGGING (causing console spam)
+const VERBOSE_LOGGING = false;
+const mapLog = VERBOSE_LOGGING ? console.log : () => {};
+
 // Zo House locations with precise coordinates
 const ZO_HOUSES = [
   {
@@ -88,11 +92,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     const clustersLayer = map.current.getLayer('clusters');
     
     if (source && !clustersLayer) {
-      console.log('🗺️ GeoJSON source ready - setting up clustering layers...');
+      mapLog('🗺️ GeoJSON source ready - setting up clustering layers...');
       try {
         setupClusteringLayers(map.current);
         setupClusterClickHandlers(map.current);
-        console.log('✅ Clustering layers setup complete');
+        mapLog('✅ Clustering layers setup complete');
       } catch (error) {
         console.error('❌ Error setting up clustering layers:', error);
       }
@@ -104,13 +108,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Function to close all open popups
   const closeAllPopups = () => {
-    console.log('🔄 Closing all popups...');
+    mapLog('🔄 Closing all popups...');
     try {
       // Close all tracked popups
       activePopups.current.forEach(popup => {
         try {
           if (popup.isOpen()) {
-            console.log('Closing popup:', popup);
+            mapLog('Closing popup:', popup);
             popup.remove();
           }
         } catch (error) {
@@ -123,7 +127,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       
       // Reset current popup state
       setCurrentOpenPopup(null);
-      console.log('✅ All popups closed');
+      mapLog('✅ All popups closed');
     } catch (error) {
       console.warn('Error closing popups:', error);
     }
@@ -342,7 +346,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     
     traversalMarkerRef.current = unicornMarker;
     
-    console.log('🦄 Unicorn marker created at:', coordinates[0]);
+    mapLog('🦄 Unicorn marker created at:', coordinates[0]);
 
     // Precompute cumulative distances
     const cum: number[] = [0];
@@ -496,9 +500,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     });
     zoHouseMarkers.current = [];
 
-    console.log('🏠 Adding Zo House markers with precise coordinates...');
+    mapLog('🏠 Adding Zo House markers with precise coordinates...');
     ZO_HOUSES.forEach((house) => {
-      console.log(`📍 Adding marker for ${house.name} at [${house.lat}, ${house.lng}]`);
+      mapLog(`📍 Adding marker for ${house.name} at [${house.lat}, ${house.lng}]`);
       try {
         // Create custom PNG marker for Zo House (using proven approach)
         const markerElement = document.createElement('img');
@@ -514,7 +518,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           .setLngLat([house.lng, house.lat])
           .addTo(map.current!);
 
-        console.log(`🏠 Added PNG marker for ${house.name}`);
+        mapLog(`🏠 Added PNG marker for ${house.name}`);
 
         // Store marker reference
         zoHouseMarkers.current.push(zoMarker);
@@ -571,7 +575,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           });
         });
 
-        console.log(`✅ Added Zo House marker: ${house.name}`);
+        mapLog(`✅ Added Zo House marker: ${house.name}`);
       } catch (error) {
         console.warn('Error creating Zo House marker:', house.name, error);
       }
@@ -595,7 +599,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     // Use passed nodes prop, or fetch from database if not provided
     let nodesToDisplay = nodes;
     if (!nodesToDisplay) {
-      console.log('🦄 Loading partner nodes from database...');
+      mapLog('🦄 Loading partner nodes from database...');
       try {
         const { getNodesFromDB } = await import('@/lib/supabase');
         const fetchedNodes = await getNodesFromDB();
@@ -607,11 +611,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     }
     
     if (!nodesToDisplay || nodesToDisplay.length === 0) {
-      console.log('🦄 No partner nodes to display');
+      mapLog('🦄 No partner nodes to display');
       return;
     }
     
-    console.log(`🦄 Adding ${nodesToDisplay.length} partner node markers...`);
+    mapLog(`🦄 Adding ${nodesToDisplay.length} partner node markers...`);
     
     nodesToDisplay.forEach((node) => {
       if (!node.latitude || !node.longitude) {
@@ -634,7 +638,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           .setLngLat([node.longitude, node.latitude])
           .addTo(map.current!);
         
-        console.log(`🦄 Added marker for ${node.name}`);
+        mapLog(`🦄 Added marker for ${node.name}`);
         
         // Store marker reference
         partnerNodeMarkers.current.push(nodeMarker);
@@ -690,7 +694,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       }
     });
     
-    console.log(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
+    mapLog(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
     
     /* Legacy example code removed
       try {
@@ -761,7 +765,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           });
         });
 
-        console.log('✅ Partner node marker (legacy)');
+        mapLog('✅ Partner node marker (legacy)');
       } catch (error) {
         console.warn('Error creating partner node marker:', error);
       }
@@ -804,7 +808,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         initialPitch = 0;
         initialBearing = 0;
         initialCenter = hasUserLocation ? [userLocation.lng, userLocation.lat] : [0, 0];
-        console.log('🚀 Starting from space (will animate to:', initialCenter, ')');
+        mapLog('🚀 Starting from space (will animate to:', initialCenter, ')');
       } else if (hasUserLocation) {
         // Returning user with location: Start at street level
         // Mini maps use slightly zoomed out view for better context and visibility
@@ -818,17 +822,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         initialBearing = -30;
         }
         initialCenter = [userLocation.lng, userLocation.lat];
-        console.log('🏠 Returning user: Starting at street level:', initialCenter, isMiniMap ? '(mini map)' : '');
+        mapLog('🏠 Returning user: Starting at street level:', initialCenter, isMiniMap ? '(mini map)' : '');
       } else {
         // No location: Show space view at neutral position (zoom 0)
         initialZoom = 0;
         initialPitch = 0;
         initialBearing = 0;
         initialCenter = [0, 0]; // Neutral center, zoom 0 shows whole world
-        console.log('🌌 No location: Starting at space view (0, 0)');
+        mapLog('🌌 No location: Starting at space view (0, 0)');
       }
       
-      console.log('🗺️ Map initializing:', {
+      mapLog('🗺️ Map initializing:', {
         center: initialCenter,
         zoom: initialZoom,
         pitch: initialPitch,
@@ -837,7 +841,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         containerDimensions: { width: containerWidth, height: containerHeight }
       });
       
-      console.log('🔑 Mapbox token:', MAPBOX_TOKEN ? `${MAPBOX_TOKEN.substring(0, 20)}...` : 'MISSING!');
+      mapLog('🔑 Mapbox token:', MAPBOX_TOKEN ? `${MAPBOX_TOKEN.substring(0, 20)}...` : 'MISSING!');
       
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -849,8 +853,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         preserveDrawingBuffer: true // Helps prevent rendering issues
       });
 
-      console.log('✅ Map object created:', !!map.current);
-      console.log('🎨 Map container dimensions:', {
+      mapLog('✅ Map object created:', !!map.current);
+      mapLog('🎨 Map container dimensions:', {
         width: mapContainer.current.offsetWidth,
         height: mapContainer.current.offsetHeight,
         display: window.getComputedStyle(mapContainer.current).display
@@ -863,25 +867,25 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       });
       
       map.current.on('styledata', () => {
-        console.log('🎨 Map style loaded successfully');
+        mapLog('🎨 Map style loaded successfully');
       });
       
       map.current.on('style.load', () => {
-        console.log('🎨 Map style load event fired');
+        mapLog('🎨 Map style load event fired');
       });
       
       map.current.on('sourcedataloading', (e) => {
-        console.log('📦 Source data loading:', e.sourceId);
+        mapLog('📦 Source data loading:', e.sourceId);
       });
       
       map.current.on('sourcedata', (e) => {
         if (e.isSourceLoaded) {
-          console.log('📦 Source data loaded:', e.sourceId);
+          mapLog('📦 Source data loaded:', e.sourceId);
         }
       });
       
       map.current.on('dataloading', (e) => {
-        console.log('🔄 Map data loading...');
+        mapLog('🔄 Map data loading...');
       });
 
       // Ensure the map resizes correctly when container size changes
@@ -896,17 +900,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       window.addEventListener('resize', handleResize);
 
       // Wait for map to load before setting up features
-      console.log('📡 Attaching map load event listener...');
+      mapLog('📡 Attaching map load event listener...');
       const isAlreadyLoaded = map.current.loaded();
-      console.log('📡 Map state before load:', { loaded: isAlreadyLoaded, isMoving: map.current.isMoving() });
+      mapLog('📡 Map state before load:', { loaded: isAlreadyLoaded, isMoving: map.current.isMoving() });
       
       // Function to set up map features (called when map is loaded)
       const setupMapFeatures = () => {
-        console.log('🎉 Setting up map features...');
+        mapLog('🎉 Setting up map features...');
         if (!map.current) return;
         
         setMapLoaded(true);
-        console.log('✅ setMapLoaded(true) called');
+        mapLog('✅ setMapLoaded(true) called');
 
         // Force a resize after load to render tiles if container was hidden/absolute
         try {
@@ -965,12 +969,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                   'fill-extrusion-opacity': 0.6
                 }
               });
-              console.log('✅ 3D buildings layer added');
+              mapLog('✅ 3D buildings layer added');
             } else {
-              console.log('🏢 3D buildings not available with current map style');
+              mapLog('🏢 3D buildings not available with current map style');
             }
           } else {
-            console.log('ℹ️ 3D buildings layer already exists, skipping');
+            mapLog('ℹ️ 3D buildings layer already exists, skipping');
           }
         } catch (error) {
           console.warn('Could not add 3D buildings:', error);
@@ -983,17 +987,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
         // Get user location - use saved location first, otherwise prompt
         if (userLocation?.lat && userLocation?.lng) {
-          console.log('📍 Using saved user location:', userLocation);
-          console.log('🎬 Should animate from space?', shouldAnimateFromSpace);
+          mapLog('📍 Using saved user location:', userLocation);
+          mapLog('🎬 Should animate from space?', shouldAnimateFromSpace);
           
           // Create marker and trigger animation if needed
           createUserLocationMarker(userLocation.lat, userLocation.lng);
         } else if (!shouldAnimateFromSpace) {
           // Only prompt for location if NOT animating (returning users without location)
-          console.log('📍 No saved location, prompting user...');
+          mapLog('📍 No saved location, prompting user...');
           getUserLocation();
         } else {
-          console.log('⏭️ Animating from space - waiting for location...');
+          mapLog('⏭️ Animating from space - waiting for location...');
         }
         
         // Add Zo House markers
@@ -1020,17 +1024,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // If map is already loaded, set up features immediately
       // Otherwise, wait for load or idle event
       if (isAlreadyLoaded) {
-        console.log('⚡ Map already loaded - setting up features immediately');
+        mapLog('⚡ Map already loaded - setting up features immediately');
         setupMapFeatures();
       } else {
-        console.log('⏳ Waiting for map load event...');
+        mapLog('⏳ Waiting for map load event...');
         
         let hasSetup = false;
         
         const doSetup = (source: string) => {
           if (hasSetup) return;
           hasSetup = true;
-          console.log(`🎉 MAP LOADED (via ${source})!`);
+          mapLog(`🎉 MAP LOADED (via ${source})!`);
           setupMapFeatures();
         };
         
@@ -1063,20 +1067,20 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     // Store coordinates in window for wallet sync
     if (typeof window !== 'undefined') {
       window.userLocationCoords = { lat, lng };
-      console.log('📍 User location set:', window.userLocationCoords);
+      mapLog('📍 User location set:', window.userLocationCoords);
     }
     
     try {
       // 🚀 Animate from space to user location if requested
-      console.log('🎬 Animation check:', {
+      mapLog('🎬 Animation check:', {
         shouldAnimateFromSpace,
         hasAnimatedFromSpace: hasAnimatedFromSpace.current
       });
       
       if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
-        console.log('🚀🚀🚀 STARTING SPACE-TO-LOCATION ANIMATION 🚀🚀🚀');
-        console.log('📍 Target:', coords);
-        console.log('🎯 Duration: 8 seconds');
+        mapLog('🚀🚀🚀 STARTING SPACE-TO-LOCATION ANIMATION 🚀🚀🚀');
+        mapLog('📍 Target:', coords);
+        mapLog('🎯 Duration: 8 seconds');
         hasAnimatedFromSpace.current = true;
         
         // Wait for map to be fully ready before animating
@@ -1091,7 +1095,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           const container = map.current.getContainer();
           const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
           
-          console.log('🔍 Animation readiness:', { mapLoaded, hasValidDimensions });
+          mapLog('🔍 Animation readiness:', { mapLoaded, hasValidDimensions });
           
           if (!mapLoaded || !hasValidDimensions) {
             console.warn('⏳ Map not ready, retrying in 200ms...');
@@ -1099,7 +1103,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             return;
           }
           
-          console.log('✈️ Executing flyTo animation...');
+          mapLog('✈️ Executing flyTo animation...');
           // Mini maps use slightly zoomed out view for better visibility
           const targetZoom = isMiniMap ? (isMobile() ? 15.5 : 15) : (isMobile() ? 17.5 : 17);
           const targetPitch = isMiniMap ? 45 : (isMobile() ? 65 : 65);
@@ -1117,13 +1121,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
             }
           });
-          console.log('🎬 Animation started successfully!');
+          mapLog('🎬 Animation started successfully!');
         };
         
         // Start the animation
         startAnimation();
       } else {
-        console.log('⏭️ Skipping animation:', {
+        mapLog('⏭️ Skipping animation:', {
           shouldAnimateFromSpace,
           hasAnimatedFromSpace: hasAnimatedFromSpace.current,
           reason: !shouldAnimateFromSpace ? 'Flag not set' : 'Already animated'
@@ -1163,7 +1167,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // Store marker reference
       userLocationMarker.current = userMarker;
 
-      console.log('🦄 Added unicorn marker for user location');
+      mapLog('🦄 Added unicorn marker for user location');
 
       // Note: User location marker popup removed - no popup on click
     } catch (error) {
@@ -1181,7 +1185,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       },
       (error) => {
         console.warn('⚠️ Geolocation permission denied or unavailable:', error.message);
-        console.log('💡 To enable location: Click the location icon in your browser address bar');
+        mapLog('💡 To enable location: Click the location icon in your browser address bar');
       },
       {
         enableHighAccuracy: true,
@@ -1193,7 +1197,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Initialize map on component mount
   useEffect(() => {
-    console.log('🎬 MapCanvas component mounting/updating with props:', {
+    mapLog('🎬 MapCanvas component mounting/updating with props:', {
       shouldAnimateFromSpace,
       hasUserLocation: !!(userLocation?.lat && userLocation?.lng),
       userLocation
@@ -1227,7 +1231,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Handle animation when shouldAnimateFromSpace prop changes (race condition fix)
   useEffect(() => {
-    console.log('🎬 Animation prop effect:', {
+    mapLog('🎬 Animation prop effect:', {
       shouldAnimateFromSpace,
       hasAnimatedFromSpace: hasAnimatedFromSpace.current,
       hasMap: !!map.current,
@@ -1241,13 +1245,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
       
       if (!mapLoaded || !hasValidDimensions) {
-        console.log(`⏳ Map/marker ready but map not fully loaded (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
+        mapLog(`⏳ Map/marker ready but map not fully loaded (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
         return; // Wait for retry mechanism below
       }
       
       // If location was already obtained before animation flag was set, animate now
       const userCoords = userLocationMarker.current.getLngLat();
-      console.log('🚀 Animation flag changed - flying from space to existing location:', userCoords);
+      mapLog('🚀 Animation flag changed - flying from space to existing location:', userCoords);
       hasAnimatedFromSpace.current = true;
       
       // Add small delay to ensure map is stable
@@ -1267,9 +1271,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         });
       }, 100);
     } else if (shouldAnimateFromSpace && hasAnimatedFromSpace.current) {
-      console.log('⏭️ Animation already played this session');
+      mapLog('⏭️ Animation already played this session');
     } else if (shouldAnimateFromSpace && !userLocationMarker.current) {
-      console.log('⏳ Animation flag set but waiting for user location marker...');
+      mapLog('⏳ Animation flag set but waiting for user location marker...');
       
       // Retry every 500ms until marker is ready (max 10 seconds)
       const maxRetries = 20;
@@ -1277,7 +1281,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       
       const retryInterval = setInterval(() => {
         retryCount++;
-        console.log(`🔄 Retry ${retryCount}/${maxRetries}: Checking for user location marker...`);
+        mapLog(`🔄 Retry ${retryCount}/${maxRetries}: Checking for user location marker...`);
         
         if (userLocationMarker.current && map.current && !hasAnimatedFromSpace.current) {
           // Extra checks: ensure map is fully loaded and has valid dimensions
@@ -1286,13 +1290,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
           
           if (!mapLoaded || !hasValidDimensions) {
-            console.log(`⏳ Map not ready yet (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
+            mapLog(`⏳ Map not ready yet (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
             return; // Keep retrying
           }
           
           clearInterval(retryInterval);
           const userCoords = userLocationMarker.current.getLngLat();
-          console.log('🚀 Marker ready and map loaded - starting animation:', userCoords);
+          mapLog('🚀 Marker ready and map loaded - starting animation:', userCoords);
           hasAnimatedFromSpace.current = true;
           
           // Use setTimeout to ensure map has one more render cycle
@@ -1324,13 +1328,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
   // Add markers for events
   useEffect(() => {
-    console.log('🔄 Event markers useEffect triggered');
-    console.log('Map current:', !!map.current);
-    console.log('Map loaded:', mapLoaded);
-    console.log('Events length:', events.length);
+    mapLog('🔄 Event markers useEffect triggered');
+    mapLog('Map current:', !!map.current);
+    mapLog('Map loaded:', mapLoaded);
+    mapLog('Events length:', events.length);
     
     if (!map.current || !mapLoaded || !events.length) {
-      console.log('❌ Skipping event markers - conditions not met');
+      mapLog('❌ Skipping event markers - conditions not met');
       return;
     }
 
@@ -1345,12 +1349,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     
     const newMarkersMap = new Map<string, mapboxgl.Marker>();
 
-    console.log('📋 Processing events:', events.length);
+    mapLog('📋 Processing events:', events.length);
     events.forEach((event, index) => {
-      console.log(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
+      mapLog(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
       
       if (!event.Latitude || !event.Longitude || !map.current) {
-        console.log(`❌ Skipping event ${index + 1} - missing coordinates or map`);
+        mapLog(`❌ Skipping event ${index + 1} - missing coordinates or map`);
         return;
       }
 
@@ -1413,7 +1417,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // Handle marker click - use the single popup
         markerElement.addEventListener('click', (e) => {
           e.stopPropagation();
-          console.log('🖱️ Event marker clicked:', event['Event Name']);
+          mapLog('🖱️ Event marker clicked:', event['Event Name']);
           
           try {
             // Close all other popups first
@@ -1430,7 +1434,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               activePopups.current.add(popup);
               setCurrentOpenPopup(popup);
               
-              console.log('✅ Event popup opened for:', event['Event Name']);
+              mapLog('✅ Event popup opened for:', event['Event Name']);
               
               // Handle popup close
               popup.once('close', () => {
@@ -1459,7 +1463,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     
     // Debug: Add a test marker to see if markers work at all
     if (map.current && newMarkersMap.size === 0) {
-      console.log('🧪 Adding test marker since no events were processed');
+      mapLog('🧪 Adding test marker since no events were processed');
       const testMarker = new mapboxgl.Marker({ color: '#ff0000' })
         .setLngLat([77.634402, 12.932658]) // Zo House Bangalore
         .addTo(map.current!);
@@ -1600,7 +1604,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
     
-    console.log('🔄 Nodes changed, updating markers...');
+    mapLog('🔄 Nodes changed, updating markers...');
     addPartnerNodeMarkers();
   }, [nodes, mapLoaded]);
 

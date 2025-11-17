@@ -195,6 +195,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const recordedAudioRef = useRef<Blob | null>(null); // Store recorded audio blob
   const audioUrlRef = useRef<string | null>(null); // Store audio URL for playback/download
   const isStoppingRecognitionRef = useRef<boolean>(false); // Track if we're in the process of stopping recognition
+  const transcriptionValidatedRef = useRef<boolean>(false); // Track if transcription validation passed
+  const transcriptionTextRef = useRef<string | null>(null); // Store transcription text for validation
 
   // Check quest cooldown (12 hours for game1111)
   // Note: Cooldown checking disabled during onboarding since this is the user's first play
@@ -409,6 +411,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     setRecordingDuration(0);
     isRecordingRef.current = true; // Mark that we're recording
     isStoppingRecognitionRef.current = false; // Reset stopping flag for new recording
+    transcriptionValidatedRef.current = false; // Reset validation flag
+    transcriptionTextRef.current = null; // Reset transcription text
+    (window as any).recordingStartTime = Date.now(); // Track recording start time for timeout
     
     // Reset transcript ref
     transcriptRef.current = { final: '', interim: '' };
@@ -694,7 +699,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         
         // Transcribe the audio file
         transcribeAudioFile(audioBlob, filename).then((transcription) => {
-          if (transcription) {
+          if (transcription && transcription.text) {
+            const transcribedText = transcription.text.toLowerCase().trim();
+            transcriptionTextRef.current = transcribedText;
+            
             console.log('');
             console.log('🎤 ========================================');
             console.log('🎤 📝 AUDIO FILE TRANSCRIPTION');
@@ -703,6 +711,39 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             if (transcription.confidence) {
               console.log('🎤 📊 Confidence:', (transcription.confidence * 100).toFixed(1) + '%');
             }
+            
+            // Validate: Check if transcription contains "zo zo zo"
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = transcribedText.includes(requiredPhrase);
+            
+            console.log('🎤 🔍 Validation:', containsRequiredPhrase ? '✅ PASSED' : '❌ FAILED');
+            console.log('🎤   Required phrase:', requiredPhrase);
+            console.log('🎤   Found in text:', containsRequiredPhrase);
+            
+            if (containsRequiredPhrase) {
+              transcriptionValidatedRef.current = true;
+              console.log('🎤 ✅ Validation passed! Proceeding to success state...');
+              
+              // Transition to success state (timeout handler will also check, but this is immediate)
+              console.log('🎤 🚀 Transcription validated - transitioning to success');
+              setAudioStatus('success');
+            } else {
+              transcriptionValidatedRef.current = false;
+              console.log('🎤 ❌ Validation failed! Required phrase not found.');
+              
+              // Show error popup
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'You need to say "Zo Zo Zo" clearly.\n\n' +
+                'What was detected: "' + transcription.text + '"\n\n' +
+                'Please try again and make sure to say "Zo Zo Zo" clearly into the microphone.'
+              );
+              
+              // Reset to idle state so user can try again
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+            }
+            
             console.log('🎤 ========================================');
             console.log('');
             
@@ -710,10 +751,30 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             if ((window as any).lastRecordedAudio) {
               (window as any).lastRecordedAudio.transcription = transcription.text;
               (window as any).lastRecordedAudio.confidence = transcription.confidence;
+              (window as any).lastRecordedAudio.validated = containsRequiredPhrase;
             }
+          } else {
+            // No transcription text received
+            transcriptionValidatedRef.current = false;
+            transcriptionTextRef.current = null;
+            
+            alert(
+              '❌ Voice Authentication Failed\n\n' +
+              'Could not transcribe your audio.\n\n' +
+              'Please try again and make sure to:\n' +
+              '• Say "Zo Zo Zo" clearly\n' +
+              '• Speak close to the microphone\n' +
+              '• Reduce background noise'
+            );
+            
+            // Reset to idle state so user can try again
+            setAudioStatus('idle');
+            setRecordingDuration(0);
           }
         }).catch((error) => {
           console.log('🎤 ⚠️ Transcription failed:', error.message);
+          transcriptionValidatedRef.current = false;
+          transcriptionTextRef.current = null;
           
           // Check if it's a setup error (503 status)
           if (error.message && error.message.includes('not configured')) {
@@ -728,8 +789,29 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             console.log('   4. Restart your dev server');
             console.log('🎤 ========================================');
             console.log('');
+            
+            // Show error popup for setup issues
+            alert(
+              '❌ Voice Authentication Failed\n\n' +
+              'Transcription service is not configured.\n\n' +
+              'Please contact support or check the console for setup instructions.'
+            );
+          } else {
+            // Show error popup for other transcription failures
+            alert(
+              '❌ Voice Authentication Failed\n\n' +
+              'Could not transcribe your audio.\n\n' +
+              'Error: ' + error.message + '\n\n' +
+              'Please try again and make sure to:\n' +
+              '• Say "Zo Zo Zo" clearly\n' +
+              '• Speak close to the microphone\n' +
+              '• Reduce background noise'
+            );
           }
           
+          // Reset to idle state so user can try again
+          setAudioStatus('idle');
+          setRecordingDuration(0);
           console.log('🎤 💡 You can still access the audio file via: window.lastRecordedAudio');
         });
         
@@ -884,9 +966,62 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               };
               console.log('🎤 💡 Access transcript via: window.lastTranscript');
               
-              // Only now transition to success state after full 5 seconds
-              setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
-              setRecordingDuration(0);
+              // Wait for transcription validation before transitioning to success
+              // Transcription is happening asynchronously, so we need to poll for validation
+              const checkTranscriptionValidation = () => {
+                // If transcription has been validated and passed, proceed to success
+                if (transcriptionValidatedRef.current) {
+                  console.log('🎤 ✅ Transcription validated - proceeding to success state');
+                  setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
+                  setRecordingDuration(0);
+                  return;
+                }
+                
+                // If transcription text exists but validation failed, we're already in fail state
+                if (transcriptionTextRef.current !== null && !transcriptionValidatedRef.current) {
+                  console.log('🎤 ❌ Transcription validation failed - already in fail state');
+                  return;
+                }
+                
+                // If transcription hasn't completed yet, wait a bit more (max 30 seconds total)
+                const maxWaitTime = 30000; // 30 seconds max wait
+                const elapsed = Date.now() - (window as any).recordingStartTime || 0;
+                if (elapsed < maxWaitTime) {
+                  console.log('🎤 ⏳ Waiting for transcription to complete...');
+                  setTimeout(checkTranscriptionValidation, 1000); // Check again in 1 second
+                } else {
+                  // Timeout - transcription took too long, try fallback validation with Web Speech API transcript
+                  console.log('🎤 ⚠️ Transcription timeout - trying fallback validation with Web Speech API transcript');
+                  
+                  const fallbackText = fullTranscript.toLowerCase().trim();
+                  const requiredPhrase = 'zo zo zo';
+                  const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+                  
+                  if (containsRequiredPhrase && fallbackText) {
+                    console.log('🎤 ✅ Fallback validation passed with Web Speech API transcript');
+                    transcriptionValidatedRef.current = true;
+                    setAudioStatus('success');
+                    setRecordingDuration(0);
+                  } else {
+                    console.log('🎤 ❌ Fallback validation also failed');
+                    alert(
+                      '❌ Voice Authentication Failed\n\n' +
+                      'Could not verify that you said "Zo Zo Zo".\n\n' +
+                      'What was detected: "' + (fullTranscript || 'nothing') + '"\n\n' +
+                      'Please try again and make sure to:\n' +
+                      '• Say "Zo Zo Zo" clearly\n' +
+                      '• Speak close to the microphone\n' +
+                      '• Reduce background noise'
+                    );
+                    // Reset to idle state so user can try again
+                    setAudioStatus('idle');
+                    setRecordingDuration(0);
+                  }
+                }
+              };
+              
+              // Start checking for validation
+              setTimeout(checkTranscriptionValidation, 1000); // Give transcription 1 second to start
             }, 500); // Additional delay to capture any final results
           }, 500); // Delay to allow finalization
       }, 5000);

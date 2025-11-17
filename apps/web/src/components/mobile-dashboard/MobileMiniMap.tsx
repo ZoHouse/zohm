@@ -22,23 +22,35 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
   const [userLat, setUserLat] = useState(0);
   const [userLng, setUserLng] = useState(0);
   const [mapKey, setMapKey] = useState(0);
+  const [locationDebug, setLocationDebug] = useState('');
 
   // Get user location from localStorage
   useEffect(() => {
     const storedLat = localStorage.getItem('zo_lat');
     const storedLng = localStorage.getItem('zo_lng');
     
+    console.log('🗺️ MobileMiniMap: Checking location', { storedLat, storedLng });
+    
     if (storedLat && storedLng) {
       const lat = parseFloat(storedLat);
       const lng = parseFloat(storedLng);
+      
+      console.log('🗺️ MobileMiniMap: Parsed location', { lat, lng });
       
       if (!isNaN(lat) && !isNaN(lng)) {
         setUserLat(lat);
         setUserLng(lng);
         setHasLocation(true);
+        setLocationDebug(`✅ ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         // Force map to re-render with new location
         setMapKey(prev => prev + 1);
+        console.log('✅ MobileMiniMap: Location set!', { lat, lng });
+      } else {
+        setLocationDebug('❌ Invalid coordinates');
       }
+    } else {
+      console.log('❌ MobileMiniMap: No location in localStorage');
+      setLocationDebug('❌ No location in storage');
     }
   }, []);
 
@@ -51,20 +63,12 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
         </p>
 
         {/* Mini Map Container */}
-        <div className="relative w-full h-[240px] rounded-2xl overflow-hidden">
+        <div className="relative w-full h-[240px] rounded-2xl overflow-hidden bg-[#0A0A0A]">
           {/* MapCanvas Component */}
           {hasLocation ? (
             <div 
               key={mapKey}
-              className="absolute" 
-              style={{ 
-                top: '-30%',
-                left: 0,
-                right: 0,
-                bottom: '-30%',
-                borderRadius: '16px',
-                overflow: 'hidden',
-              }}
+              className="absolute inset-0 w-full h-full"
             >
               <MapCanvas
                 events={[]}
@@ -77,9 +81,12 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap }) => {
               />
             </div>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0A]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
               <p className="font-rubik text-[14px] text-white/60">
                 Location not available
+              </p>
+              <p className="font-rubik text-[12px] text-white/40">
+                {locationDebug || 'Checking...'}
               </p>
             </div>
           )}

@@ -32,10 +32,10 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   });
   
   // Cooldown check for game1111
+  // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(
-    userProfile?.id,
-    'game-1111',
-    12
+    'game-1111', // Quest slug
+    userProfile?.id // User ID for localStorage key
   );
   
   // Calculate time remaining
@@ -104,7 +104,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           <MobileProfilePhotoCard userProfile={userProfile} />
         </div>
         
-        {/* Quantum Sync Card */}
+        {/* Quantum Sync Card - Now with cooldown timer INSIDE */}
         <div className="mt-6">
           <MobileQuantumSyncCard 
             canPlay={canPlay}
@@ -113,15 +113,11 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                 onLaunchGame(userProfile.id);
               }
             }}
+            timeRemaining={!canPlay ? getTimeRemaining() : undefined}
           />
         </div>
         
-        {/* Cooldown Timer (only show when on cooldown) */}
-        {!canPlay && (
-          <div className="mt-6">
-            <MobileCooldownTimer timeRemaining={getTimeRemaining()} />
-          </div>
-        )}
+        {/* Removed separate cooldown timer - now shown inside the card */}
         
         {/* Stats Card */}
         <div className="mt-6">

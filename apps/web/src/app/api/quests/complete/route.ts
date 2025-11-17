@@ -59,16 +59,71 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ User verified:', { user_id });
 
+    // ============================================
+    // SECURITY: Server-Side Token Calculation
+    // ============================================
+    // NEVER trust client-side token calculation!
+    // Recalculate based on score to prevent tampering.
+    
+    let tokensEarned = 0;
+    
     // Parse rewards from quest
     const rewards = quest.rewards_breakdown || {};
-    const tokensEarned = rewards.zo_tokens || quest.reward || 0;
+    
+    // Check if this is a dynamic reward quest (game1111)
+    if (rewards.dynamic === true && score !== undefined) {
+      // Game1111 dynamic formula: Base 50 + proximity bonus (max 150)
+      // Score range: 0-9999, target: 1111
+      const distance = Math.abs(score - 1111);
+      const proximityFactor = Math.max(0, 1 - (distance / 1111));
+      tokensEarned = Math.round(50 + (proximityFactor * 150));
+      
+      console.log(`💰 Server token calculation: score=${score}, distance=${distance}, proximity=${proximityFactor.toFixed(4)}, tokens=${tokensEarned}`);
+    } else {
+      // Fixed reward quest
+      tokensEarned = rewards.zo_tokens || quest.reward || 0;
+    }
+    
+    // Validate token range for game1111
+    if (quest.slug === 'game-1111') {
+      if (tokensEarned < 50 || tokensEarned > 200) {
+        console.error('❌ Invalid token calculation:', { score, tokensEarned });
+        tokensEarned = Math.max(50, Math.min(200, tokensEarned)); // Clamp to valid range
+      }
+    }
 
     // Prepare metadata with reputation and items
     const fullMetadata = {
       ...metadata,
       reputation_delta: rewards.reputation || {},
       items_awarded: rewards.items || [],
+      server_calculated_tokens: tokensEarned, // Audit trail
+      client_submitted_tokens: metadata?.reward_zo || null, // For comparison
     };
+    
+    // ============================================
+    // ANTI-TAMPERING: Detect token manipulation attempts
+    // ============================================
+    if (metadata?.reward_zo && rewards.dynamic === true) {
+      const clientTokens = metadata.reward_zo;
+      const difference = Math.abs(clientTokens - tokensEarned);
+      
+      // Allow 1 token difference due to rounding, anything more is suspicious
+      if (difference > 1) {
+        console.warn('🚨 SECURITY ALERT: Token mismatch detected!', {
+          user_id,
+          quest_id: quest.slug,
+          score,
+          client_submitted: clientTokens,
+          server_calculated: tokensEarned,
+          difference,
+          timestamp: new Date().toISOString(),
+        });
+        
+        // TODO: Increment abuse counter for this user
+        // If abuse_count > 3, flag account for review
+      }
+    }
 
     // ============================================
     // P0-6: Atomic Quest Completion with Cooldown Check

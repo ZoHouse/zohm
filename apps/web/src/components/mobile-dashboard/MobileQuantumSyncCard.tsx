@@ -5,16 +5,18 @@ import React from 'react';
 interface MobileQuantumSyncCardProps {
   canPlay: boolean;
   onLaunchGame: () => void;
+  timeRemaining?: string; // Optional: "10h 14m 12s" format
 }
 
 const MobileQuantumSyncCard: React.FC<MobileQuantumSyncCardProps> = ({ 
   canPlay,
-  onLaunchGame 
+  onLaunchGame,
+  timeRemaining 
 }) => {
   return (
     <div 
       onClick={canPlay ? onLaunchGame : undefined}
-      className="w-[327px] h-[107px] mx-auto flex items-start justify-between"
+      className="w-[327px] h-[107px] mx-auto flex items-start justify-between relative"
       style={{
         backgroundColor: '#000000',
         backdropFilter: 'blur(32px)',
@@ -75,6 +77,25 @@ const MobileQuantumSyncCard: React.FC<MobileQuantumSyncCardProps> = ({
           <source src="/videos/mic-recording.mp4" type="video/mp4" />
         </video>
       </div>
+      
+      {/* Cooldown Overlay - Shown INSIDE card when on cooldown */}
+      {!canPlay && timeRemaining && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          borderRadius: '24px',
+        }}>
+          <div className="flex flex-col items-center gap-2">
+            <p className="font-rubik text-[14px] font-medium text-white/60 uppercase tracking-[1.4px]">
+              On Cooldown
+            </p>
+            <p className="font-rubik text-[20px] font-bold text-white tracking-[0.2px]">
+              ⏳ {timeRemaining}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

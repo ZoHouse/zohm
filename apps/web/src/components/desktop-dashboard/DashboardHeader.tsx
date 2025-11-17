@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
@@ -238,20 +237,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
             )}
           </div>
 
-          {/* Close Button */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: `1px solid rgba(255, 255, 255, 0.2)`,
-              }}
-              aria-label="Close dashboard"
-            >
-              <X size={18} style={{ color: DashboardColors.text.primary }} />
-            </button>
-          )}
+          {/* Close Button - Removed per user request */}
         </div>
       </div>
     </div>

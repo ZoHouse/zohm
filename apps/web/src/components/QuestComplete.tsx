@@ -27,7 +27,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   const [isLoading, setIsLoading] = useState(false);
   
   // P0-6: Use cooldown hook for consistent cooldown display across the app
-  const { timeRemaining: cooldownTime } = useQuestCooldown('voice-sync-quest', userId);
+  const { timeRemaining: cooldownTime } = useQuestCooldown('game-1111', userId);
   
   const [userStats, setUserStats] = useState({
     zo_points: tokensEarned,

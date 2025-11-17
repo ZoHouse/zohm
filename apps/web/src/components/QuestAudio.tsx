@@ -201,7 +201,7 @@ function Game1111({
               className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none"
             >
               0000
-            </div>
+        </div>
         
             {/* Stop Button - Moderate scaling */}
         <button
@@ -254,8 +254,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
 
   // P0-6: Check quest cooldown using the atomic cooldown hook
   // The server validates cooldowns atomically, but we check client-side for better UX
-  // Quest slug 'voice-sync-quest' matches the database entry
-  const { canPlay, timeRemaining, isChecking } = useQuestCooldown('voice-sync-quest', userId);
+  // Quest slug 'game-1111' matches the database entry
+  const { canPlay, timeRemaining, isChecking } = useQuestCooldown('game-1111', userId);
   
   // Debug: Log cooldown state
   useEffect(() => {
@@ -891,23 +891,23 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     ? localStorage.getItem('zo_city') || 'Unknown'
                     : 'Unknown';
                   
-                  console.log('📤 Sending quest completion to API...');
-                  
+                    console.log('📤 Sending quest completion to API...');
+                    
                   // Prepare quest completion data
                   const completionData: QuestCompletionData = {
                     user_id: userId,
-                    quest_id: 'voice-sync-quest', // Quest slug matching database
-                    score,
-                    location,
-                    metadata: {
-                      quest_title: 'Quantum Voice Sync',
-                      completed_via: 'webapp',
-                      game_won: hasWon,
-                      reward_zo: tokensEarned, // Include dynamic token calculation
-                      distance_from_target: distance,
-                      proximity_factor: proximityFactor,
-                      timestamp: new Date().toISOString(),
-                    },
+                    quest_id: 'game-1111', // Quest slug matching database
+                      score,
+                      location,
+                      metadata: {
+                        quest_title: 'Quantum Voice Sync',
+                        completed_via: 'webapp',
+                        game_won: hasWon,
+                        reward_zo: tokensEarned, // Include dynamic token calculation
+                        distance_from_target: distance,
+                        proximity_factor: proximityFactor,
+                        timestamp: new Date().toISOString(),
+                      },
                   };
                     
                   // Call quest completion API
@@ -925,7 +925,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     
                     // P0-6: Store cooldown after successful completion for UI display
                     if (userId && result.next_available_at) {
-                      setQuestCooldown('voice-sync-quest', userId, result.next_available_at);
+                      setQuestCooldown('game-1111', userId, result.next_available_at);
                       console.log('🔒 Cooldown set until:', result.next_available_at);
                     }
                   } else if (response.status === 429) {
@@ -936,7 +936,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     
                     // Store cooldown in localStorage for UI display
                     if (userId && error.next_available_at) {
-                      setQuestCooldown('voice-sync-quest', userId, error.next_available_at);
+                      setQuestCooldown('game-1111', userId, error.next_available_at);
                     }
                     // Note: We don't queue 429 errors because they're cooldowns, not temporary failures
                   } else {
@@ -954,7 +954,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   
                   const completionData: QuestCompletionData = {
                     user_id: userId,
-                    quest_id: 'voice-sync-quest', // Quest slug matching database
+                    quest_id: 'game-1111', // Quest slug matching database
                     score,
                     location,
                     metadata: {

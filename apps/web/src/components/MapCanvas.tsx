@@ -813,9 +813,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           initialPitch = 45; // Less tilted for mini map
           initialBearing = -20;
         } else {
-          initialZoom = isMobile() ? 17.5 : 17;
-          initialPitch = isMobile() ? 65 : 65;
-          initialBearing = -30;
+        initialZoom = isMobile() ? 17.5 : 17;
+        initialPitch = isMobile() ? 65 : 65;
+        initialBearing = -30;
         }
         initialCenter = [userLocation.lng, userLocation.lat];
         console.log('🏠 Returning user: Starting at street level:', initialCenter, isMiniMap ? '(mini map)' : '');

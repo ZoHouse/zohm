@@ -25,7 +25,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
   const userLng = userProfile?.lng || 0;
   const hasLocation = userLat !== 0 && userLng !== 0;
   const [mapKey, setMapKey] = React.useState(0);
-  
+
   // Debug logging
   React.useEffect(() => {
     console.log('🗺️ MobileMiniMap: User location from profile:', {
@@ -39,7 +39,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
   // Force remount when location changes (same as desktop)
   React.useEffect(() => {
     if (hasLocation) {
-      setMapKey(prev => prev + 1);
+        setMapKey(prev => prev + 1);
     }
   }, [userLat, userLng, hasLocation]);
 
@@ -54,25 +54,25 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
         {/* Mini Map Container */}
         <div className="relative w-full h-[240px] rounded-2xl overflow-hidden">
           {/* MapCanvas Component - No overflow positioning to keep user marker visible */}
-          <div 
-            key={mapKey}
-            className="absolute inset-0 w-full h-full"
+            <div 
+              key={mapKey}
+              className="absolute inset-0 w-full h-full"
             style={{ 
               borderRadius: '16px',
               overflow: 'hidden',
             }}
-          >
-            <MapCanvas
-              events={[]}
-              nodes={[]}
-              flyToEvent={null}
-              flyToNode={null}
-              shouldAnimateFromSpace={false}
+            >
+              <MapCanvas
+                events={[]}
+                nodes={[]}
+                flyToEvent={null}
+                flyToNode={null}
+                shouldAnimateFromSpace={false}
               userLocation={hasLocation ? { lat: userLat, lng: userLng } : null}
               isMiniMap={true}
-              className="w-full h-full"
-            />
-          </div>
+                className="w-full h-full"
+              />
+            </div>
           
           {/* Show overlay text if no location */}
           {!hasLocation && (
@@ -80,7 +80,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
               <div className="bg-black/60 px-4 py-2 rounded-lg backdrop-blur-sm">
                 <p className="font-rubik text-[12px] text-white/80">
                   Location not set
-                </p>
+              </p>
               </div>
             </div>
           )}

@@ -59,8 +59,8 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
           isChecking: false,
           nextAvailableAt: null,
         });
-        return;
-      }
+          return;
+        }
 
       try {
         const nextAvailableAt = new Date(storedCooldown);
@@ -103,10 +103,10 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
 
     // Check immediately
     checkCooldown();
-
+    
     // Update every second for countdown
     const interval = setInterval(checkCooldown, 1000);
-
+    
     return () => clearInterval(interval);
   }, [questId, userId]);
 

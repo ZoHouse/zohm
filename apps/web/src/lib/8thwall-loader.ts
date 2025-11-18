@@ -73,6 +73,8 @@ export function initializeXR8(config: XR8Config): Promise<void> {
     }
 
     try {
+      const XR8 = window.XR8;
+      
       // Configure XR8
       const xr8Config = {
         allowedDevices: config.allowedDevices || XR8.XrConfig.device().ANY,
@@ -110,7 +112,7 @@ export function initializeXR8(config: XR8Config): Promise<void> {
 export function stopXR8(): void {
   if (typeof window !== 'undefined' && window.XR8) {
     try {
-      XR8.stop();
+      window.XR8.stop();
       console.log('🛑 8th Wall XR8 stopped');
     } catch (error) {
       console.error('❌ Error stopping XR8:', error);

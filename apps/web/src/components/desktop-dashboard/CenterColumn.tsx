@@ -6,6 +6,7 @@ import { PrivyUserProfile } from '@/types/privy';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
+import DesktopLeaderboard from './DesktopLeaderboard';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('@/components/MapCanvas'), {
@@ -27,6 +28,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   const { visitedNodes } = useDashboardData();
   const [mapKey, setMapKey] = React.useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [balance, setBalance] = useState(0);
   
   // Get user location for map centering
   const userLat = userProfile?.lat || 0;
@@ -39,6 +41,27 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
     'game-1111', // Must match quest_id used in QuestAudio.tsx
     userProfile?.id // User ID for localStorage key
   );
+  
+  // Fetch user balance
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    
+    async function fetchBalance() {
+      if (!userProfile?.id) return;
+      
+      try {
+        const response = await fetch(`/api/users/${userProfile.id}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          setBalance(data.quests?.zo_points || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    }
+    
+    fetchBalance();
+  }, [userProfile?.id]);
   
   // Update time every 10ms for smooth milliseconds display
   useEffect(() => {
@@ -400,6 +423,12 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
           />
         </div>
       </div>
+
+      {/* Leaderboard */}
+      <DesktopLeaderboard 
+        userId={userProfile?.id} 
+        userBalance={balance}
+      />
     </div>
   );
 };

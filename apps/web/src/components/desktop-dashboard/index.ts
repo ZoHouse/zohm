@@ -4,6 +4,7 @@ export { default as DashboardHeader } from './DashboardHeader';
 export { default as LeftSidebar } from './LeftSidebar';
 export { default as CenterColumn } from './CenterColumn';
 export { default as RightSidebar } from './RightSidebar';
+export { default as DesktopLeaderboard } from './DesktopLeaderboard';
 
 
 

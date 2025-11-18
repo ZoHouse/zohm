@@ -172,3 +172,5 @@ WHERE created_at >= NOW() - INTERVAL '7 days'
 GROUP BY date
 ORDER BY date DESC;
 
+
+

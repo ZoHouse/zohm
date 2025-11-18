@@ -14,6 +14,12 @@ interface QuestAudioProps {
   userId?: string;
 }
 
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+  }
+}
+
 // Game1111 Component - Exact mobile app flow with video background
 function Game1111({ 
   onWin, 
@@ -252,6 +258,16 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isVideoLockedRef = useRef(false); // Lock video from playing during game
 
+  // Voice feature refs (from omkar-v1)
+  const speechRecognitionRef = useRef<any>(null); // For Web Speech API
+  const transcriptRef = useRef<{ final: string; interim: string }>({ final: '', interim: '' }); // Store transcript
+  const isRecordingRef = useRef<boolean>(false); // Track if we're actively recording
+  const recordedAudioRef = useRef<Blob | null>(null); // Store recorded audio blob
+  const audioUrlRef = useRef<string | null>(null); // Store audio URL for playback/download
+  const isStoppingRecognitionRef = useRef<boolean>(false); // Track if we're in the process of stopping recognition
+  const transcriptionValidatedRef = useRef<boolean>(false); // Track if transcription validation passed
+  const transcriptionTextRef = useRef<string | null>(null); // Store transcription text for validation
+
   // P0-6: Check quest cooldown using the atomic cooldown hook
   // The server validates cooldowns atomically, but we check client-side for better UX
   // Quest slug 'game-1111' matches the database entry
@@ -271,6 +287,24 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // Check microphone permission on mount
   useEffect(() => {
     checkMicrophonePermission();
+  }, []);
+
+  // Cleanup: Stop speech recognition and revoke audio URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+      // Clean up audio URL to prevent memory leaks
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+    };
   }, []);
 
   // DEV BYPASS: Press 'B' key to bypass permission check
@@ -404,38 +438,317 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     }
   }, [audioStatus]);
 
+  /**
+   * Transcribe audio file to text using the transcription API
+   */
+  const transcribeAudioFile = async (audioBlob: Blob, filename: string): Promise<{ text: string; confidence: number | null } | null> => {
+    try {
+      console.log('🎤 📝 Starting audio transcription...');
+      
+      // Create FormData with the audio file
+      const formData = new FormData();
+      formData.append('audio', audioBlob, filename);
+      
+      // Call the transcription API
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        let errorMessage = `Transcription failed: ${response.statusText}`;
+        let errorData: any = null;
+        try {
+          errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+        }
+        
+        // Preserve the full error message including status code for better handling
+        const fullError = new Error(errorMessage);
+        (fullError as any).status = response.status;
+        (fullError as any).errorData = errorData;
+        throw fullError;
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.text) {
+        return {
+          text: result.text,
+          confidence: result.confidence || null,
+        };
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error('❌ Transcription error:', error);
+      throw error;
+    }
+  };
+
   const startRecording = async () => {
-    // ⚡ MVP VERSION: Auto-succeed after 3 seconds for testing
-    // TODO: Implement real voice recording and API verification in production
+    // P0-6: Prevent voice recording if quest is on cooldown
+    if (!canPlay) {
+      console.warn('⏳ Quest is on cooldown - cannot start voice recording');
+      alert(`⏳ Quest on Cooldown\n\nNext available in: ${timeRemaining}\n\nPlease wait before trying again.`);
+      return;
+    }
     
-    console.log('🎤 Starting voice authentication (MVP: auto-succeeds in 3s)');
+    console.log('🎤 Starting voice recording - waiting 5 seconds for you to speak...');
     
     setAudioStatus('recording');
     setRecordingDuration(0);
+    isRecordingRef.current = true; // Mark that we're recording
+    isStoppingRecognitionRef.current = false; // Reset stopping flag for new recording
+    transcriptionValidatedRef.current = false; // Reset validation flag
+    transcriptionTextRef.current = null; // Reset transcription text
+    (window as any).recordingStartTime = Date.now(); // Track recording start time for timeout
     
-    // Simulate recording duration counter
+    // Reset transcript ref
+    transcriptRef.current = { final: '', interim: '' };
+    
+    // Clean up previous audio URL if exists
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    recordedAudioRef.current = null;
+    
+    // Check if browser supports speech recognition
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.warn('⚠️ Speech recognition not supported in this browser');
+      console.warn('   Speech recognition requires Chrome, Edge, or Safari');
+      console.warn('   Falling back to audio recording only (no transcription)');
+      // Fallback: Just record audio without transcription
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        
+        const audioChunks: Blob[] = [];
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          recordedAudioRef.current = audioBlob;
+          
+          // Create object URL for the audio
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioUrlRef.current = audioUrl;
+          
+          // Create download link
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `voice-recording-${timestamp}.webm`;
+          
+          console.log('🎤 💾 Audio file saved! (transcription not available)');
+          console.log('   - Size:', audioBlob.size, 'bytes (', (audioBlob.size / 1024).toFixed(2), 'KB)');
+          console.log('   - Format: WebM audio');
+          console.log('   - Duration: ~5 seconds');
+          console.log('   - Audio URL:', audioUrl);
+          console.log('   - Filename:', filename);
+          
+          // Store in window for easy access
+          (window as any).lastRecordedAudio = {
+            blob: audioBlob,
+            url: audioUrl,
+            filename: filename,
+            download: () => {
+              const a = document.createElement('a');
+              a.href = audioUrl;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            },
+            play: () => {
+              const audio = new Audio(audioUrl);
+              audio.play();
+            }
+          };
+          console.log('🎤 💡 Access your audio via: window.lastRecordedAudio');
+          console.log('   - window.lastRecordedAudio.download() - Download the file');
+          console.log('   - window.lastRecordedAudio.play() - Play the audio');
+          
+          stream.getTracks().forEach(track => track.stop());
+          // Don't change status here - wait for the 5-second timeout
+        };
+        
+        mediaRecorder.start();
+        
+        // Recording duration counter
     timerRef.current = setInterval(() => {
       setRecordingDuration((prev) => prev + 1);
     }, 1000);
     
-    // Auto-succeed after 3 seconds - play stone forming video
+        // Auto-stop after 5 seconds
     setTimeout(() => {
+          console.log('🎤 5 seconds elapsed - stopping recording');
+          
+          isRecordingRef.current = false; // Mark that recording is complete
+          
+          if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      console.log('✅ Voice verified (mock) - playing stone forming video');
-      setAudioStatus('success'); // Play video (stones forming), will pause at 5.9s and show game
+          
+          // Only now transition to success state after full 5 seconds
+          setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
       setRecordingDuration(0);
-    }, 3000);
-    
-    // 🚀 PRODUCTION VERSION (uncomment when API is ready):
-    /*
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Your browser does not support audio recording. Please use a modern browser.');
-        return;
+        }, 5000);
+      } catch (error: any) {
+        console.error('Failed to start recording:', error);
+        isRecordingRef.current = false;
+        setAudioStatus('idle');
       }
-
+      return;
+    }
+    
+    console.log('✅ Speech recognition is supported in this browser');
+    
+    // Initialize speech recognition
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = true; // Keep listening for the full 5 seconds
+    recognition.interimResults = true; // Show interim results
+    
+    recognition.onresult = (event: any) => {
+      console.log('🎤 📥 onresult fired! Results count:', event.results.length, 'Result index:', event.resultIndex);
+      
+      // Build interim transcript from all current results
+      let currentInterim = '';
+      let hasNewFinal = false;
+      let hasNewInterim = false;
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        const confidence = result[0].confidence;
+        
+        console.log(`🎤   Result ${i}: "${transcript}" (final: ${result.isFinal}, confidence: ${confidence})`);
+        
+        if (result.isFinal) {
+          // Final result - add to final transcript
+          transcriptRef.current.final += transcript + ' ';
+          hasNewFinal = true;
+          // Log final results immediately as they come in
+          console.log('🎤 ✅ Final phrase detected:', transcript);
+          console.log('🎤 📝 Current full transcript:', transcriptRef.current.final.trim());
+        } else {
+          // Interim result - accumulate
+          currentInterim += transcript + ' ';
+          hasNewInterim = true;
+        }
+      }
+      
+      // Update interim transcript (replace with latest, not accumulate, to avoid duplicates)
+      if (hasNewInterim) {
+        transcriptRef.current.interim = currentInterim;
+      }
+      
+      // Log interim results as they come in
+      if (transcriptRef.current.interim.trim()) {
+        console.log('🎤 Listening... (interim):', transcriptRef.current.interim.trim());
+      }
+      
+      if (!hasNewFinal && !hasNewInterim) {
+        console.log('🎤 ⚠️ onresult fired but no new results detected');
+      }
+    };
+    
+    recognition.onstart = () => {
+      console.log('🎤 ✅ Speech recognition started and listening...');
+      console.log('🎤   isRecordingRef.current:', isRecordingRef.current);
+      console.log('🎤   isStoppingRecognitionRef.current:', isStoppingRecognitionRef.current);
+      
+      // If recognition started but we're supposed to be stopping, stop it again
+      if (isStoppingRecognitionRef.current || !isRecordingRef.current) {
+        console.log('🎤 ⚠️ Recognition started but we should be stopping - stopping again...');
+        isStoppingRecognitionRef.current = true; // Ensure flag is set
+        try {
+          if (speechRecognitionRef.current) {
+            speechRecognitionRef.current.stop();
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error('❌ Speech recognition error:', event.error);
+      console.error('   Error details:', {
+        error: event.error,
+        message: event.message || 'No message'
+      });
+      
+      // If it's a no-speech error, that's okay - just log it
+      if (event.error === 'no-speech') {
+        console.log('🎤 ℹ️ No speech detected yet, continuing to listen...');
+      }
+    };
+    
+    recognition.onend = () => {
+      console.log('🎤 ✅ onend FIRED! Speech recognition ended');
+      console.log('🎤 Current transcript state:', {
+        final: transcriptRef.current.final.trim() || '(empty)',
+        interim: transcriptRef.current.interim.trim() || '(empty)'
+      });
+      
+      // Clear the stopping flag since onend has fired
+      isStoppingRecognitionRef.current = false;
+      
+      // Before restarting, if we have interim results, preserve them
+      // (they might become final on restart)
+      if (transcriptRef.current.interim.trim() && !transcriptRef.current.final.trim()) {
+        console.log('🎤 💾 Preserving interim transcript:', transcriptRef.current.interim.trim());
+      }
+      
+      // Speech recognition ended (might be early due to silence)
+      // Don't change status here - wait for the 5-second timeout
+      // Just restart recognition if we're still recording AND not stopping
+      // IMPORTANT: Check both flags to prevent race conditions
+      if (isRecordingRef.current && !isStoppingRecognitionRef.current && speechRecognitionRef.current) {
+        try {
+          // Check if recognition is actually stopped before restarting
+          // Note: Web Speech API doesn't expose state directly, so we try-catch
+          console.log('🎤 🔄 Restarting speech recognition to continue listening...');
+          // Restart recognition to keep listening for the full 5 seconds
+          speechRecognitionRef.current.start();
+        } catch (e: any) {
+          // Recognition might already be running, ignore
+          console.log('🎤 ℹ️ Speech recognition already running or restart failed:', e.message || e);
+        }
+      } else {
+        console.log('🎤 ℹ️ Not restarting - recording stopped, stopping in progress, or recognition ref cleared');
+        console.log('🎤   isRecordingRef.current:', isRecordingRef.current);
+        console.log('🎤   isStoppingRecognitionRef.current:', isStoppingRecognitionRef.current);
+        console.log('🎤   speechRecognitionRef.current:', !!speechRecognitionRef.current);
+      }
+    };
+    
+    // Start speech recognition
+    // IMPORTANT: Set all handlers BEFORE starting to ensure onend can fire
+    try {
+      speechRecognitionRef.current = recognition; // Set ref BEFORE starting
+      recognition.start();
+      console.log('🎤 🎙️ Speech recognition initialized - speak now!');
+      console.log('🎤 📋 Waiting for your voice input...');
+      console.log('🎤 🔍 onend handler is set and ready');
+    } catch (error) {
+      console.error('❌ Failed to start speech recognition:', error);
+      speechRecognitionRef.current = null; // Clear ref on error
+    }
+    
+    // Also record audio with MediaRecorder
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -453,53 +766,445 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         audioChunks.push(event.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        console.log('Audio recorded:', audioBlob.size, 'bytes');
+        recordedAudioRef.current = audioBlob;
+        
+        // Create object URL for the audio
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioUrlRef.current = audioUrl;
+        
+        // Create download link
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `voice-recording-${timestamp}.webm`;
+        
+        console.log('🎤 💾 Audio file saved!');
+        console.log('   - Size:', audioBlob.size, 'bytes (', (audioBlob.size / 1024).toFixed(2), 'KB)');
+        console.log('   - Format: WebM audio');
+        console.log('   - Duration: ~5 seconds');
+        console.log('   - Audio URL:', audioUrl);
+        console.log('   - Filename:', filename);
+        
+        // Get current transcript if available (for fallback only)
+        const currentTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+        
+        // PRIMARY: Transcribe the audio file with AssemblyAI (high accuracy)
+        // This is the primary transcription method - Web Speech API is only a fallback
+        console.log('🎤 🎯 PRIMARY: Starting AssemblyAI transcription...');
+        transcribeAudioFile(audioBlob, filename).then((transcription) => {
+          if (transcription && transcription.text) {
+            const transcribedText = transcription.text.toLowerCase().trim();
+            transcriptionTextRef.current = transcribedText;
+            
+            console.log('');
+            console.log('🎤 ========================================');
+            console.log('🎤 📝 ASSEMBLYAI TRANSCRIPTION (PRIMARY)');
+            console.log('🎤 ========================================');
+            console.log('🎤 📄 Transcribed Text:', transcription.text || '(empty)');
+            if (transcription.confidence) {
+              console.log('🎤 📊 Confidence:', (transcription.confidence * 100).toFixed(1) + '%');
+            }
+            console.log('🎤 ✅ Using AssemblyAI as primary transcription source');
+            
+            // Validate: Check if transcription contains "zo zo zo"
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = transcribedText.includes(requiredPhrase);
+            
+            console.log('🎤 🔍 Validation:', containsRequiredPhrase ? '✅ PASSED' : '❌ FAILED');
+            console.log('🎤   Required phrase:', requiredPhrase);
+            console.log('🎤   Found in text:', containsRequiredPhrase);
+            
+            if (containsRequiredPhrase) {
+              transcriptionValidatedRef.current = true;
+              console.log('🎤 ✅ AssemblyAI validation passed! Proceeding to success state...');
+              
+              // Transition to success state immediately (AssemblyAI is primary, no need to wait)
+              console.log('🎤 🚀 AssemblyAI validated - transitioning to success');
+              setAudioStatus('success');
+          } else {
+              transcriptionValidatedRef.current = false;
+              console.log('🎤 ❌ Validation failed! Required phrase not found.');
+              
+              // Show error popup
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'You need to say "Zo Zo Zo" clearly.\n\n' +
+                'What was detected: "' + transcription.text + '"\n\n' +
+                'Please try again and make sure to say "Zo Zo Zo" clearly into the microphone.'
+              );
+              
+              // Reset to idle state so user can try again
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+            }
+            
+            console.log('🎤 ========================================');
+            console.log('');
+            
+            // Update the stored audio object with transcription
+            if ((window as any).lastRecordedAudio) {
+              (window as any).lastRecordedAudio.transcription = transcription.text;
+              (window as any).lastRecordedAudio.confidence = transcription.confidence;
+              (window as any).lastRecordedAudio.validated = containsRequiredPhrase;
+            }
+          } else {
+            // No transcription text received
+            transcriptionValidatedRef.current = false;
+            transcriptionTextRef.current = null;
+            
+            alert(
+              '❌ Voice Authentication Failed\n\n' +
+              'Could not transcribe your audio.\n\n' +
+              'Please try again and make sure to:\n' +
+              '• Say "Zo Zo Zo" clearly\n' +
+              '• Speak close to the microphone\n' +
+              '• Reduce background noise'
+            );
+            
+            // Reset to idle state so user can try again
+            setAudioStatus('idle');
+            setRecordingDuration(0);
+          }
+        }).catch((error: any) => {
+          console.log('🎤 ⚠️ Transcription failed:', error.message);
+          console.log('🎤 Error status:', error.status);
+          console.log('🎤 Error data:', error.errorData);
+          
+          // Check if it's a setup error (503 status) - fall back to Web Speech API
+          const isNotConfigured = error.status === 503 || 
+            (error.message && (error.message.includes('not configured') || error.message.includes('Transcription service')));
+          
+          if (isNotConfigured) {
+            console.log('');
+            console.log('🎤 ========================================');
+            console.log('🎤 ⚠️ ASSEMBLYAI NOT CONFIGURED - FALLING BACK TO WEB SPEECH API');
+            console.log('🎤 ========================================');
+            console.log('🎤 ⚠️ AssemblyAI (primary) is not set up.');
+            console.log('🎤 🔄 Falling back to Web Speech API (secondary) for validation.');
+            console.log('🎤 💡 To use AssemblyAI: Add ASSEMBLYAI_API_KEY to .env.local and restart server');
+            console.log('');
+            console.log('🎤 To enable AssemblyAI transcription:');
+            console.log('   1. Sign up at https://www.assemblyai.com/');
+            console.log('   2. Get your API key from the dashboard');
+            console.log('   3. Add ASSEMBLYAI_API_KEY to your .env.local file');
+            console.log('   4. Restart your dev server');
+            console.log('🎤 ========================================');
+            console.log('');
+            
+            // Fallback: Use Web Speech API transcript for validation
+            const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+            const fallbackText = fallbackTranscript.toLowerCase().trim();
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            
+            if (fallbackText && containsRequiredPhrase) {
+              console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+              console.log('🎤 📝 Web Speech API (secondary) detected:', fallbackTranscript);
+              console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
+              transcriptionValidatedRef.current = true;
+              transcriptionTextRef.current = fallbackText;
+              setAudioStatus('success');
+              setRecordingDuration(0);
+              return; // Success with fallback
+            } else if (fallbackText) {
+              // Web Speech API detected something, but not the required phrase
+              console.log('🎤 ⚠️ Web Speech API detected:', fallbackTranscript);
+              console.log('🎤 ❌ But required phrase "zo zo zo" not found');
+              transcriptionValidatedRef.current = false;
+              transcriptionTextRef.current = fallbackText;
+              
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'Could not verify that you said "Zo Zo Zo".\n\n' +
+                'What was detected: "' + fallbackTranscript + '"\n\n' +
+                'Please try again and make sure to:\n' +
+                '• Say "Zo Zo Zo" clearly\n' +
+                '• Speak close to the microphone\n' +
+                '• Reduce background noise'
+              );
+              
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+              return;
+            } else {
+              // No Web Speech API transcript either
+              console.log('🎤 ❌ No Web Speech API transcript available either');
+              transcriptionValidatedRef.current = false;
+              transcriptionTextRef.current = null;
+              
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'Could not detect your voice.\n\n' +
+                'Please try again and make sure to:\n' +
+                '• Say "Zo Zo Zo" clearly\n' +
+                '• Speak close to the microphone\n' +
+                '• Reduce background noise\n\n' +
+                'Note: AssemblyAI transcription is not configured.\n' +
+                'Using browser speech recognition only.'
+              );
+              
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+              return;
+            }
+          } else {
+            // Other transcription errors - try Web Speech API fallback
+            console.log('🎤 ⚠️ AssemblyAI (primary) transcription error, trying Web Speech API (fallback)...');
+            console.log('🎤 Error details:', error.message);
+            
+            const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+            const fallbackText = fallbackTranscript.toLowerCase().trim();
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            
+            if (fallbackText && containsRequiredPhrase) {
+              console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+              console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
+              transcriptionValidatedRef.current = true;
+              transcriptionTextRef.current = fallbackText;
+              setAudioStatus('success');
+              setRecordingDuration(0);
+              return; // Success with fallback
+            }
+            
+            // Both failed
+            transcriptionValidatedRef.current = false;
+            transcriptionTextRef.current = null;
+            
+            alert(
+              '❌ Voice Authentication Failed\n\n' +
+              'Could not transcribe your audio.\n\n' +
+              'Error: ' + error.message + '\n\n' +
+              'Please try again and make sure to:\n' +
+              '• Say "Zo Zo Zo" clearly\n' +
+              '• Speak close to the microphone\n' +
+              '• Reduce background noise'
+            );
+            
+            setAudioStatus('idle');
+            setRecordingDuration(0);
+          }
+          
+          console.log('🎤 💡 You can still access the audio file via: window.lastRecordedAudio');
+        });
+        
+        // Create download link in console
+        console.log('%c🎤 📥 Click here to download your audio:', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+        console.log('%cDownload Audio', 'color: #2196F3; text-decoration: underline; cursor: pointer;', {
+          download: () => {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            console.log('✅ Audio download started!');
+          },
+          play: () => {
+            const audio = new Audio(audioUrl);
+            audio.play();
+            console.log('▶️ Playing audio...');
+          },
+          blob: audioBlob,
+          url: audioUrl
+        });
+        
+        // Also store in window for easy access
+        (window as any).lastRecordedAudio = {
+          blob: audioBlob,
+          url: audioUrl,
+          filename: filename,
+          transcript: currentTranscript || null,
+          transcription: null, // Will be set after transcription completes
+          download: () => {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          },
+          play: () => {
+            const audio = new Audio(audioUrl);
+            audio.play();
+          }
+        };
+        console.log('🎤 💡 Access your audio via: window.lastRecordedAudio');
+        console.log('   - window.lastRecordedAudio.download() - Download the file');
+        console.log('   - window.lastRecordedAudio.play() - Play the audio');
+        console.log('   - window.lastRecordedAudio.url - Get the audio URL');
+        if (currentTranscript) {
+          console.log('   - window.lastRecordedAudio.transcript - Get the transcript:', currentTranscript);
+        }
         
         stream.getTracks().forEach(track => track.stop());
-        
-        setAudioStatus('processing');
-        
-        // Upload to API and verify
-        try {
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'recording.webm');
-          
-          const response = await fetch('/api/verify-voice', {
-            method: 'POST',
-            body: formData
-          });
-          
-          const result = await response.json();
-          
-          if (result.verified) {
-            setAudioStatus('success'); // Play video (stones forming), will pause at 5.9s and show game
-          } else {
-            setAudioStatus('fail');
-          }
-        } catch (error) {
-          console.error('API verification failed:', error);
-          setAudioStatus('fail');
-        }
       };
 
       mediaRecorder.start();
-      setAudioStatus('recording');
       
+      // Recording duration counter
       timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        setRecordingDuration((prev) => {
+          const newDuration = prev + 1;
+          console.log(`🎤 Recording... ${newDuration}/5 seconds`);
+          return newDuration;
+        });
       }, 1000);
       
       // Auto-stop after 5 seconds
       setTimeout(() => {
-        if (mediaRecorder.state === 'recording') {
-          mediaRecorder.stop();
+        console.log('🎤 5 seconds elapsed - stopping recording and transcription');
+        
+        // CRITICAL: Set isRecordingRef to false BEFORE stopping recognition
+        // This ensures that when onend fires, it won't try to restart
+        isRecordingRef.current = false; // Mark that recording is complete
+        
+        // Stop media recorder first (audio will be saved in onstop handler)
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
         }
+        
+          // Give recognition more time to finalize any pending results
+          // Wait a bit longer to ensure all final results come through
+          setTimeout(() => {
+            // Stop speech recognition
+            // IMPORTANT: Set isRecordingRef to false BEFORE stopping so onend won't restart
+            // Also check if we're already stopping to prevent multiple stops
+            if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
+              try {
+                isStoppingRecognitionRef.current = true; // Set flag BEFORE stopping
+                console.log('🎤 🛑 Stopping speech recognition...');
+                console.log('🎤   isRecordingRef is set to false - onend should not restart');
+                speechRecognitionRef.current.stop();
+                console.log('🎤 ✅ stop() called - onend should fire now');
+              } catch (e: any) {
+                // Recognition might have already stopped or be in an invalid state
+                isStoppingRecognitionRef.current = false; // Reset flag on error
+                console.log('🎤 ⚠️ Error stopping recognition (might already be stopped):', e.message || e);
+              }
+            } else {
+              if (isStoppingRecognitionRef.current) {
+                console.log('🎤 ℹ️ Recognition already being stopped - skipping duplicate stop()');
+              } else {
+                console.log('🎤 ℹ️ Recognition ref is null - already cleaned up');
+              }
+            }
+            
+            // Clear timer
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            
+            // Wait a bit more for any final results that might come after stopping
+            // Also wait for onend to fire (it should fire after stop() is called)
+            setTimeout(() => {
+              // Log final transcript one more time
+              const finalText = transcriptRef.current.final.trim();
+              const interimText = transcriptRef.current.interim.trim();
+              // Use interim if we have no final results (interim might be all we got)
+              const fullTranscript = finalText || interimText;
+              
+              console.log('');
+              console.log('🎤 ========================================');
+              console.log('🎤 📊 TRANSCRIPTION RESULTS');
+              console.log('🎤 ========================================');
+              console.log('🎤 Final transcript:', finalText || '(none)');
+              console.log('🎤 Interim transcript:', interimText || '(none)');
+              console.log('🎤 Combined transcript:', fullTranscript || '(none)');
+              console.log('');
+              
+              if (fullTranscript) {
+                console.log('🎤 ✅ ✅ ✅ TRANSCRIPTION SUCCESS ✅ ✅ ✅');
+                console.log('🎤 📝 WHAT YOU SAID:', fullTranscript);
+                console.log('🎤 ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅');
+              } else {
+                console.log('🎤 ⚠️ ⚠️ ⚠️ NO SPEECH DETECTED ⚠️ ⚠️ ⚠️');
+                console.log('🎤 💡 The audio was recorded successfully');
+                console.log('🎤 💡 But speech recognition did not detect any words');
+                console.log('🎤 💡 Possible reasons:');
+                console.log('   - Speech recognition may not be working in this browser');
+                console.log('   - Microphone might not be picking up your voice clearly');
+                console.log('   - Background noise might be interfering');
+                console.log('🎤 💡 You can still access the audio file via: window.lastRecordedAudio');
+              }
+              console.log('🎤 ========================================');
+              console.log('');
+              
+              // Store transcript in window for easy access
+              (window as any).lastTranscript = {
+                final: finalText,
+                interim: interimText,
+                combined: fullTranscript,
+                timestamp: new Date().toISOString()
+              };
+              console.log('🎤 💡 Access transcript via: window.lastTranscript');
+              
+              // Wait for transcription validation before transitioning to success
+              // Transcription is happening asynchronously, so we need to poll for validation
+              const checkTranscriptionValidation = () => {
+                // If transcription has been validated and passed, proceed to success
+                if (transcriptionValidatedRef.current) {
+                  console.log('🎤 ✅ Transcription validated - proceeding to success state');
+                  setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
+                  setRecordingDuration(0);
+                  return;
+                }
+                
+                // If transcription text exists but validation failed, we're already in fail state
+                if (transcriptionTextRef.current !== null && !transcriptionValidatedRef.current) {
+                  console.log('🎤 ❌ Transcription validation failed - already in fail state');
+                  return;
+                }
+                
+                // If transcription hasn't completed yet, wait a bit more (max 30 seconds total)
+                const maxWaitTime = 30000; // 30 seconds max wait
+                const elapsed = Date.now() - (window as any).recordingStartTime || 0;
+                if (elapsed < maxWaitTime) {
+                  console.log('🎤 ⏳ Waiting for transcription to complete...');
+                  setTimeout(checkTranscriptionValidation, 1000); // Check again in 1 second
+                } else {
+                  // Timeout - AssemblyAI took too long, try fallback validation with Web Speech API transcript
+                  console.log('🎤 ⚠️ AssemblyAI (primary) transcription timeout - trying Web Speech API (fallback)');
+                  console.log('🎤 ⏱️ AssemblyAI exceeded 30s timeout, using Web Speech API as fallback');
+                  
+                  const fallbackText = fullTranscript.toLowerCase().trim();
+                  const requiredPhrase = 'zo zo zo';
+                  const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+                  
+                  if (containsRequiredPhrase && fallbackText) {
+                    console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+                    console.log('🎤 ⚠️ Note: Using Web Speech API fallback due to AssemblyAI timeout');
+                    transcriptionValidatedRef.current = true;
+                    setAudioStatus('success');
+                    setRecordingDuration(0);
+                  } else {
+                    console.log('🎤 ❌ Fallback validation also failed');
+                    alert(
+                      '❌ Voice Authentication Failed\n\n' +
+                      'Could not verify that you said "Zo Zo Zo".\n\n' +
+                      'What was detected: "' + (fullTranscript || 'nothing') + '"\n\n' +
+                      'Please try again and make sure to:\n' +
+                      '• Say "Zo Zo Zo" clearly\n' +
+                      '• Speak close to the microphone\n' +
+                      '• Reduce background noise'
+                    );
+                    // Reset to idle state so user can try again
+                    setAudioStatus('idle');
+                    setRecordingDuration(0);
+                  }
+                }
+              };
+              
+              // Start checking for validation
+              setTimeout(checkTranscriptionValidation, 1000); // Give transcription 1 second to start
+            }, 500); // Additional delay to capture any final results
+          }, 500); // Delay to allow finalization
       }, 5000);
       
     } catch (error: any) {
       console.error('Failed to start recording:', error);
+      
+      isRecordingRef.current = false; // Mark that recording failed
       
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         alert('🎤 Microphone access denied!\n\nPlease allow microphone access in your browser settings to continue with voice authentication.');
@@ -509,19 +1214,61 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         alert('Failed to access microphone. Please check your browser permissions and try again.');
       }
       
+      // Stop speech recognition if it was started
+      if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
+        try {
+          isStoppingRecognitionRef.current = true;
+          speechRecognitionRef.current.stop();
+        } catch (e) {
+          isStoppingRecognitionRef.current = false; // Reset on error
+          // Ignore
+        }
+      }
+      
       setAudioStatus('idle');
     }
-    */
   };
 
   const stopRecording = () => {
+    isRecordingRef.current = false; // Mark that recording is stopped
+    
+    // Stop speech recognition
+    // Check if we're already stopping to prevent multiple stops
+    if (speechRecognitionRef.current && !isStoppingRecognitionRef.current) {
+      try {
+        isStoppingRecognitionRef.current = true; // Set flag BEFORE stopping
+        console.log('🎤 🛑 stopRecording() - Stopping speech recognition...');
+        speechRecognitionRef.current.stop();
+        console.log('🎤 ✅ stop() called in stopRecording - waiting for onend to fire...');
+      } catch (e: any) {
+        // Recognition might have already stopped
+        isStoppingRecognitionRef.current = false; // Reset flag on error
+        console.log('🎤 ⚠️ Error stopping recognition in stopRecording:', e.message || e);
+      }
+    } else {
+      if (isStoppingRecognitionRef.current) {
+        console.log('🎤 ℹ️ Recognition already being stopped in stopRecording - skipping duplicate stop()');
+      } else {
+        console.log('🎤 ℹ️ Recognition ref is null in stopRecording');
+      }
+    }
+    
+    // Stop media recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+    }
+    
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      setRecordingDuration(0);
+    
+    // Log final transcript
+    const fullTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+    if (fullTranscript) {
+      console.log('🎤 ✅ FINAL TRANSCRIPT (what you said):', fullTranscript);
     }
+    
+    setRecordingDuration(0);
   };
 
   const getStatusText = () => {
@@ -900,7 +1647,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     
                   // Prepare quest completion data
                   const completionData: QuestCompletionData = {
-                    user_id: userId,
+                      user_id: userId,
                     quest_id: 'game-1111', // Quest slug matching database
                       score,
                       location,
@@ -1011,9 +1758,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               <>
                 <div className="absolute top-[334px] left-1/2 -translate-x-1/2 w-[240px] h-[240px]">
                   <button
-                    className="relative w-full h-full bg-transparent border-none cursor-pointer transition-all duration-200 active:scale-95 p-0 overflow-hidden rounded-full"
+                    className={`relative w-full h-full bg-transparent border-none transition-all duration-200 active:scale-95 p-0 overflow-hidden rounded-full ${
+                      canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                    }`}
                     onMouseDown={startRecording}
                     onTouchStart={startRecording}
+                    disabled={!canPlay}
+                    title={!canPlay ? `Quest on cooldown. Next available in: ${timeRemaining}` : 'Tap & say "Zo Zo Zo"'}
                   >
                     <video
                       autoPlay

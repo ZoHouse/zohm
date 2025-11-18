@@ -12,6 +12,35 @@ interface LeftSidebarProps {
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const [isCopied, setIsCopied] = React.useState(false);
+  const [balance, setBalance] = React.useState(0);
+  const userId = userProfile?.id;
+
+  // Fetch token balance
+  React.useEffect(() => {
+    if (!userId) return;
+
+    async function fetchBalance() {
+      try {
+        const response = await fetch(`/api/users/${userId}/progress`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.quests?.zo_points !== undefined) {
+            setBalance(data.quests.zo_points);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch balance:', error);
+      }
+    }
+
+    fetchBalance();
+    const intervalId = setInterval(fetchBalance, 3000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   const handleCopyWallet = () => {
     if (userProfile?.wallets?.[0]?.address) {
@@ -24,6 +53,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const cultures = userProfile?.culture?.split(',').map(c => c.trim()).filter(Boolean) || [];
   const primaryWallet = userProfile?.wallets?.[0]?.address;
   const shortWallet = primaryWallet ? `0x...${primaryWallet?.slice(-4)}` : '';
+
+  // Format balance with K suffix if over 1000
+  const formatBalance = (bal: number) => {
+    if (bal >= 1000) {
+      return `${(bal / 1000).toFixed(2)}K`;
+    }
+    return bal.toString();
+  };
 
   return (
     <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
@@ -353,7 +390,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   fontSize: '24px',
                   lineHeight: '32px',
                   color: DashboardColors.text.primary,
-                }}>11.11K</p>
+                }}>{formatBalance(balance)}</p>
                 {/* Coin with 3 gradient overlays */}
                 <div 
                   className="relative"

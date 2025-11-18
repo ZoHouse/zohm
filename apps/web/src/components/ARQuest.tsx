@@ -271,6 +271,11 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
     console.log('🎯 ARQuest: Placing 3D object...');
     setArStatus('placing');
 
+    // Get camera position for session data
+    const cameraPosition = cameraRef.current.position.clone();
+    const cameraDirection = new THREE.Vector3();
+    cameraRef.current.getWorldDirection(cameraDirection);
+
     // Use 8th Wall's hit test for accurate placement
     let placementPosition: THREE.Vector3;
     
@@ -288,9 +293,6 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
         console.log('✅ ARQuest: Using hit test position:', placementPosition);
       } else {
         // Fallback: place in front of camera
-        const cameraPosition = cameraRef.current.position.clone();
-        const cameraDirection = new THREE.Vector3();
-        cameraRef.current.getWorldDirection(cameraDirection);
         placementPosition = cameraPosition.clone().add(
           cameraDirection.multiplyScalar(1.0)
         );
@@ -298,9 +300,6 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
       }
     } else {
       // Fallback if XR8 not available
-      const cameraPosition = cameraRef.current.position.clone();
-      const cameraDirection = new THREE.Vector3();
-      cameraRef.current.getWorldDirection(cameraDirection);
       placementPosition = cameraPosition.clone().add(
         cameraDirection.multiplyScalar(1.0)
       );

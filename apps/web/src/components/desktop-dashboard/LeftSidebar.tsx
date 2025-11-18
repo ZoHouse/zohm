@@ -13,6 +13,7 @@ interface LeftSidebarProps {
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const [isCopied, setIsCopied] = React.useState(false);
   const [balance, setBalance] = React.useState(0);
+  const [vibeScore, setVibeScore] = React.useState(99); // Default 99
   const userId = userProfile?.id;
 
   // Fetch token balance
@@ -39,6 +40,34 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
     fetchBalance();
     const intervalId = setInterval(fetchBalance, 3000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
+
+  // Fetch vibe score
+  React.useEffect(() => {
+    if (!userId) return;
+
+    async function fetchVibeScore() {
+      try {
+        const response = await fetch(`/api/vibe/${userId}`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.success && data?.data?.score !== undefined) {
+            setVibeScore(data.data.score);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch vibe score:', error);
+      }
+    }
+
+    fetchVibeScore();
+    // Update vibe score every 30 seconds
+    const intervalId = setInterval(fetchVibeScore, 30000);
     return () => clearInterval(intervalId);
   }, [userId]);
 
@@ -436,7 +465,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   lineHeight: '32px',
                   color: DashboardColors.text.primary,
                   textAlign: 'right',
-                }}>99</p>
+                }}>{vibeScore}%</p>
               </div>
             </div>
           </div>

@@ -46,58 +46,150 @@ export default function CitizenCard({ onboardingStep, userId, onComplete }: Citi
 
       <QuantumSyncHeader avatarSrc={selectedAvatar || undefined} userId={userId} />
 
-      {/* Home Indicator at bottom */}
-      <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2 w-[134px] h-[5px] bg-white rounded-[100px] z-[110]" />
+      {/* Home Indicator at bottom - responsive */}
+      <div 
+        className="absolute left-1/2 -translate-x-1/2 bg-white rounded-[100px] z-[110]"
+        style={{
+          bottom: 'clamp(6px, 1vh, 12px)',
+          width: 'clamp(100px, 25vw, 150px)',
+          height: 'clamp(4px, 0.8vh, 6px)'
+        }}
+      />
 
       <div className="relative z-10 w-full h-full flex flex-col items-center">
-        {/* Circular Avatar with Glow - centered vertically */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-6">
-          {/* Avatar Circle with Glow Effect */}
-          <div className="relative w-[280px] h-[280px]">
-            {/* Glow layers */}
-            <div className="absolute inset-0 rounded-full bg-zo-accent/30 blur-[40px] animate-pulse" />
-            <div className="absolute inset-[20px] rounded-full bg-zo-accent/20 blur-[30px] animate-pulse" style={{ animationDelay: '0.5s' }} />
+        {/* Circular Avatar with Glow - centered vertically with viewport-based adjustments */}
+        <div 
+          className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center"
+          style={{
+            gap: 'clamp(12px, 3vh, 28px)'
+          }}
+        >
+          {/* Avatar Circle with Glow Effect - using viewport-based sizing */}
+          <div 
+            className="relative"
+            style={{
+              width: 'clamp(160px, 50vw, 360px)',
+              height: 'clamp(160px, 50vw, 360px)',
+              maxWidth: 'min(50vh, 360px)',
+              maxHeight: 'min(50vh, 360px)'
+            }}
+          >
+            {/* Glow layers - responsive blur */}
+            <div 
+              className="absolute inset-0 rounded-full bg-zo-accent/30 animate-pulse"
+              style={{ filter: 'blur(clamp(20px, 5vw, 50px))' }}
+            />
+            <div 
+              className="absolute rounded-full bg-zo-accent/20 animate-pulse"
+              style={{ 
+                inset: 'clamp(10px, 2.5vw, 25px)',
+                filter: 'blur(clamp(15px, 4vw, 40px))',
+                animationDelay: '0.5s'
+              }}
+            />
             
             {/* Avatar container with border */}
-            <div className="absolute inset-0 rounded-full p-[4px] bg-gradient-to-b from-zo-accent/50 to-zo-accent/20">
-              <div className="w-full h-full rounded-full overflow-hidden border-4 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <img 
-            src={selectedAvatar} 
+            <div 
+              className="absolute inset-0 rounded-full bg-gradient-to-b from-zo-accent/50 to-zo-accent/20"
+              style={{ padding: 'clamp(2px, 0.5vw, 5px)' }}
+            >
+              <div 
+                className="w-full h-full rounded-full overflow-hidden border-white/10"
+                style={{
+                  borderWidth: 'clamp(2px, 0.5vw, 4px)',
+                  boxShadow: '0 clamp(4px, 1vw, 12px) clamp(16px, 4vw, 40px) rgba(0,0,0,0.3)'
+                }}
+              >
+                <img 
+                  src={selectedAvatar} 
                   alt="Avatar"
                   className="w-full h-full object-cover"
-          />
+                />
               </div>
             </div>
-        </div>
+          </div>
 
           {/* User Info - Name and City only */}
-          <div className="flex flex-col gap-2 items-center justify-center">
-            <p className="font-rubik text-[24px] font-bold text-white leading-[28px] text-center m-0">
+          <div 
+            className="flex flex-col items-center justify-center"
+            style={{
+              gap: 'clamp(4px, 1vh, 8px)',
+              marginTop: 'clamp(8px, 2vh, 16px)'
+            }}
+          >
+            <p 
+              className="font-rubik font-bold text-white text-center m-0"
+              style={{
+                fontSize: 'clamp(18px, 4.5vw, 32px)',
+                lineHeight: 'clamp(22px, 5.5vw, 38px)',
+                paddingLeft: 'clamp(12px, 3vw, 24px)',
+                paddingRight: 'clamp(12px, 3vw, 24px)'
+              }}
+            >
               {nickname}
             </p>
-            <p className="font-rubik text-[14px] font-normal text-white/60 leading-[18px] text-center m-0">
+            <p 
+              className="font-rubik font-normal text-white/60 text-center m-0"
+              style={{
+                fontSize: 'clamp(11px, 2.75vw, 18px)',
+                lineHeight: 'clamp(14px, 3.5vw, 22px)',
+                paddingLeft: 'clamp(12px, 3vw, 24px)',
+                paddingRight: 'clamp(12px, 3vw, 24px)'
+              }}
+            >
               📍 {city}
             </p>
           </div>
         </div>
 
-        {/* Welcome Text and Button - moved down for better spacing */}
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[80px] w-[312px] flex flex-col gap-6 items-start">
-          <p className="font-['Syne'] text-[24px] font-extrabold text-white text-center leading-[28px] tracking-[0.24px] uppercase w-full m-0">
-          WELCOME TO<br />ZO WORLD
+        {/* Welcome Text and Button - responsive positioning */}
+        <div 
+          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center"
+          style={{
+            bottom: 'clamp(50px, 8vh, 120px)',
+            width: 'min(calc(100% - 2rem), 520px)',
+            gap: 'clamp(12px, 3vh, 24px)'
+          }}
+        >
+          <p 
+            className="font-['Syne'] font-extrabold text-white text-center uppercase w-full m-0"
+            style={{
+              fontSize: 'clamp(18px, 4.5vw, 32px)',
+              lineHeight: 'clamp(22px, 5.5vw, 38px)',
+              letterSpacing: 'clamp(0.15px, 0.04vw, 0.3px)',
+              paddingLeft: 'clamp(12px, 3vw, 24px)',
+              paddingRight: 'clamp(12px, 3vw, 24px)'
+            }}
+          >
+            WELCOME TO<br />ZO WORLD
           </p>
 
-        {/* Quantum Sync Button */}
-        <button
-          onClick={handleQuantumSync}
-          disabled={isLoading}
-            className="bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-full h-[56px] cursor-pointer transition-all duration-200 hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          {/* Quantum Sync Button */}
+          <button
+            onClick={handleQuantumSync}
+            disabled={isLoading}
+            className="bg-white flex items-center justify-center overflow-clip rounded-button w-full cursor-pointer transition-all duration-200 hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              gap: 'clamp(8px, 2vw, 16px)',
+              paddingLeft: 'clamp(12px, 3vw, 20px)',
+              paddingRight: 'clamp(12px, 3vw, 20px)',
+              paddingTop: 'clamp(10px, 2.5vw, 16px)',
+              paddingBottom: 'clamp(10px, 2.5vw, 16px)',
+              height: 'clamp(44px, 11vh, 64px)',
+              minHeight: '44px'
+            }}
             type="button"
-        >
-            <span className="font-rubik text-[16px] font-medium text-zo-dark leading-normal text-center">
-          {isLoading ? 'Syncing...' : 'Quantum Sync'}
+          >
+            <span 
+              className="font-rubik font-medium text-zo-dark text-center"
+              style={{
+                fontSize: 'clamp(13px, 3.25vw, 20px)',
+                lineHeight: 'normal'
+              }}
+            >
+              {isLoading ? 'Syncing...' : 'Quantum Sync'}
             </span>
-        </button>
+          </button>
         </div>
       </div>
     </div>

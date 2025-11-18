@@ -12,6 +12,64 @@ interface LeftSidebarProps {
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const [isCopied, setIsCopied] = React.useState(false);
+  const [balance, setBalance] = React.useState(0);
+  const [vibeScore, setVibeScore] = React.useState(99); // Default 99
+  const userId = userProfile?.id;
+
+  // Fetch token balance
+  React.useEffect(() => {
+    if (!userId) return;
+
+    async function fetchBalance() {
+      try {
+        const response = await fetch(`/api/users/${userId}/progress`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.quests?.zo_points !== undefined) {
+            setBalance(data.quests.zo_points);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch balance:', error);
+      }
+    }
+
+    fetchBalance();
+    const intervalId = setInterval(fetchBalance, 3000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
+
+  // Fetch vibe score
+  React.useEffect(() => {
+    if (!userId) return;
+
+    async function fetchVibeScore() {
+      try {
+        const response = await fetch(`/api/vibe/${userId}`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.success && data?.data?.score !== undefined) {
+            setVibeScore(data.data.score);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch vibe score:', error);
+      }
+    }
+
+    fetchVibeScore();
+    // Update vibe score every 30 seconds
+    const intervalId = setInterval(fetchVibeScore, 30000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   const handleCopyWallet = () => {
     if (userProfile?.wallets?.[0]?.address) {
@@ -24,6 +82,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const cultures = userProfile?.culture?.split(',').map(c => c.trim()).filter(Boolean) || [];
   const primaryWallet = userProfile?.wallets?.[0]?.address;
   const shortWallet = primaryWallet ? `0x...${primaryWallet?.slice(-4)}` : '';
+
+  // Format balance with K suffix if over 1000
+  const formatBalance = (bal: number) => {
+    if (bal >= 1000) {
+      return `${(bal / 1000).toFixed(2)}K`;
+    }
+    return bal.toString();
+  };
 
   return (
     <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
@@ -353,7 +419,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   fontSize: '24px',
                   lineHeight: '32px',
                   color: DashboardColors.text.primary,
-                }}>11.11K</p>
+                }}>{formatBalance(balance)}</p>
                 {/* Coin with 3 gradient overlays */}
                 <div 
                   className="relative"
@@ -399,7 +465,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   lineHeight: '32px',
                   color: DashboardColors.text.primary,
                   textAlign: 'right',
-                }}>99</p>
+                }}>{vibeScore}%</p>
               </div>
             </div>
           </div>
@@ -425,76 +491,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             lineHeight: 'normal',
           }}>Request Connection</p>
         </button>
-      </div>
-
-      {/* Offer Section */}
-      <div 
-        className="flex flex-col border border-solid"
-        style={{
-          backdropFilter: `blur(${DashboardBlur.medium})`,
-          WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
-          backgroundColor: DashboardColors.background.primary,
-          borderColor: DashboardColors.border.primary,
-          borderRadius: DashboardRadius.lg,
-          padding: DashboardSpacing.xl,
-          gap: DashboardSpacing.xl,
-        }}
-      >
-        <div className="flex flex-col" style={{ gap: DashboardSpacing.sm }}>
-          <p style={{
-            fontFamily: DashboardTypography.fontFamily.primary,
-            fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-            fontSize: DashboardTypography.size.bodyMedium.fontSize,
-            lineHeight: '32px',
-            letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-            color: DashboardColors.text.primary,
-          }}>I would like to offer</p>
-          <p style={{
-            fontFamily: DashboardTypography.fontFamily.primary,
-            fontWeight: DashboardTypography.size.small.fontWeight,
-            fontSize: DashboardTypography.size.small.fontSize,
-            lineHeight: DashboardTypography.size.small.lineHeight,
-            letterSpacing: DashboardTypography.size.small.letterSpacing,
-            color: DashboardColors.text.secondary,
-          }}>
-            {userProfile?.bio || 'Deep understanding of Web3 and product development to create seamless, gamified platforms that empower decentralized communities.'}
-          </p>
-        </div>
-      </div>
-
-      {/* Help Section */}
-      <div 
-        className="flex flex-col border border-solid"
-        style={{
-          backdropFilter: `blur(${DashboardBlur.medium})`,
-          WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
-          backgroundColor: DashboardColors.background.primary,
-          borderColor: DashboardColors.border.primary,
-          borderRadius: DashboardRadius.lg,
-          padding: DashboardSpacing.xl,
-          gap: DashboardSpacing.xl,
-        }}
-      >
-        <div className="flex flex-col" style={{ gap: DashboardSpacing.sm }}>
-          <p style={{
-            fontFamily: DashboardTypography.fontFamily.primary,
-            fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-            fontSize: DashboardTypography.size.bodyMedium.fontSize,
-            lineHeight: '32px',
-            letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-            color: DashboardColors.text.primary,
-          }}>I would like to get help in</p>
-          <p style={{
-            fontFamily: DashboardTypography.fontFamily.primary,
-            fontWeight: DashboardTypography.size.small.fontWeight,
-            fontSize: DashboardTypography.size.small.fontSize,
-            lineHeight: DashboardTypography.size.small.lineHeight,
-            letterSpacing: DashboardTypography.size.small.letterSpacing,
-            color: DashboardColors.text.secondary,
-          }}>
-            {'Branding and product design to refine Wall.app\'s identity and user experience. Expertise in crafting cohesive narratives and user-centric designs to stand out and drive adoption.'}
-          </p>
-        </div>
       </div>
 
       {/* Founder NFTs */}

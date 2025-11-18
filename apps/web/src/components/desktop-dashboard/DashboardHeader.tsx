@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
@@ -10,13 +9,37 @@ interface DashboardHeaderProps {
   onClose?: () => void;
 }
 
+// Get initial avatar synchronously to prevent flash
+function getInitialAvatar(): string {
+  if (typeof window !== 'undefined') {
+    const storedAvatar = localStorage.getItem('zo_avatar');
+    if (storedAvatar) {
+      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      return storedAvatar;
+    }
+  }
+  console.log('🎨 No avatar in localStorage, using default');
+  return '/quest-audio-assets/avatar.png';
+}
+
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
   const { userProfile, isFounder } = usePrivyUser();
   const { login, logout, authenticated } = usePrivy();
   const [balance, setBalance] = useState(0);
+  const [avatar, setAvatar] = useState(getInitialAvatar);
   const [showMenu, setShowMenu] = useState(false);
   const userId = userProfile?.id;
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Update avatar when userProfile loads from API (but only if different)
+  useEffect(() => {
+    if (userProfile?.pfp && userProfile.pfp !== avatar) {
+      console.log('🎨 Updating avatar from API:', userProfile.pfp);
+      setAvatar(userProfile.pfp);
+      // Also update localStorage for next time
+      localStorage.setItem('zo_avatar', userProfile.pfp);
+    }
+  }, [userProfile?.pfp, avatar]);
 
   // Fetch token balance
   useEffect(() => {
@@ -119,7 +142,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
               }}
             >
               <img 
-                src={userProfile?.pfp || '/quest-audio-assets/avatar.png'} 
+                src={avatar} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
               />
@@ -238,20 +261,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
             )}
           </div>
 
-          {/* Close Button */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: `1px solid rgba(255, 255, 255, 0.2)`,
-              }}
-              aria-label="Close dashboard"
-            >
-              <X size={18} style={{ color: DashboardColors.text.primary }} />
-            </button>
-          )}
+          {/* Close Button - Removed per user request */}
         </div>
       </div>
     </div>

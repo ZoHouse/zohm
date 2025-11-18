@@ -95,10 +95,10 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
   const localGmtOffset = getLocalGmtOffset();
 
   return (
-    <div className="absolute top-4 sm:top-10 left-1/2 transform -translate-x-1/2 z-20 text-center max-w-xl px-4">
+    <div className="absolute top-[15px] md:top-4 left-4 sm:left-8 md:left-1/2 md:transform md:-translate-x-1/2 z-20 text-left md:text-center max-w-xl px-4">
       <div className="bg-white/20 backdrop-blur-md border border-white/40 rounded-xl shadow-lg px-3 py-2 sm:px-4 sm:py-2.5">
         {/* City Name & Time */}
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+        <div className="flex items-center justify-start md:justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
           <h1 className="text-base sm:text-xl font-bold text-black">{city}</h1>
           <div className="flex items-center gap-0.5 text-[10px] sm:text-xs text-black/90">
             <span>☀️</span>

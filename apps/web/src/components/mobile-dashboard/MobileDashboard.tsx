@@ -9,6 +9,7 @@ import MobileQuantumSyncCard from './MobileQuantumSyncCard';
 import MobileCooldownTimer from './MobileCooldownTimer';
 import MobileStatsCard from './MobileStatsCard';
 import MobileLeaderboard from './MobileLeaderboard';
+import MobileMiniMap from './MobileMiniMap';
 
 interface MobileDashboardProps {
   isVisible: boolean;
@@ -31,10 +32,10 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   });
   
   // Cooldown check for game1111
+  // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(
-    userProfile?.id,
-    'game-1111',
-    12
+    'game-1111', // Quest slug
+    userProfile?.id // User ID for localStorage key
   );
   
   // Calculate time remaining
@@ -89,7 +90,13 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[10001] bg-black overflow-y-auto scrollbar-hide">
+    <div 
+      className="fixed inset-0 z-[10001] bg-black overflow-y-auto scrollbar-hide"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
       {/* Header - Sticky at top */}
       <MobileDashboardHeader 
         userProfile={userProfile}
@@ -97,13 +104,18 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
       />
       
       {/* Scrollable Content */}
-      <div className="w-full pb-24">
+      <div 
+        className="w-full"
+        style={{
+          paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
+        }}
+      >
         {/* Profile Photo with Frame */}
         <div className="mt-3">
           <MobileProfilePhotoCard userProfile={userProfile} />
         </div>
         
-        {/* Quantum Sync Card */}
+        {/* Quantum Sync Card - Now with cooldown timer INSIDE */}
         <div className="mt-6">
           <MobileQuantumSyncCard 
             canPlay={canPlay}
@@ -112,15 +124,11 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                 onLaunchGame(userProfile.id);
               }
             }}
+            timeRemaining={!canPlay ? getTimeRemaining() : undefined}
           />
         </div>
         
-        {/* Cooldown Timer (only show when on cooldown) */}
-        {!canPlay && (
-          <div className="mt-6">
-            <MobileCooldownTimer timeRemaining={getTimeRemaining()} />
-          </div>
-        )}
+        {/* Removed separate cooldown timer - now shown inside the card */}
         
         {/* Stats Card */}
         <div className="mt-6">
@@ -135,6 +143,9 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
             milestones={[3, 7, 11]}
           />
         </div>
+        
+        {/* Mini Map */}
+        <MobileMiniMap onOpenMap={onClose} userProfile={userProfile} />
         
         {/* Leaderboard */}
         <MobileLeaderboard 

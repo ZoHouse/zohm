@@ -1,124 +1,152 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
 /**
- * Hook to check if a quest is available based on cooldown
- * Automatically refreshes every minute to update countdown
+ * P0-6 Enhancement: Client-Side Cooldown UI State Management
+ * 
+ * This hook manages the UI state for quest cooldowns. It works in conjunction
+ * with the server-side atomic validation (complete_quest_atomic function).
+ * 
+ * Purpose:
+ * - Show cooldown status in UI before user attempts to play
+ * - Display countdown timer for better UX
+ * - Store cooldown state in localStorage for persistence across page reloads
+ * 
+ * Note: This is CLIENT-SIDE ONLY for UX. The actual security validation
+ * happens server-side in the atomic database function.
  */
-export function useQuestCooldown(
-  userId: string | undefined, 
-  questSlug: string, 
-  cooldownHours: number
-) {
-  const [canPlay, setCanPlay] = useState(true);
-  const [timeRemaining, setTimeRemaining] = useState<string>('Available now');
-  const [isChecking, setIsChecking] = useState(true);
-  const [nextAvailableAt, setNextAvailableAt] = useState<Date | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Force refresh on window focus (when user returns from game)
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('🔄 Window focused, forcing cooldown refresh');
-      setRefreshTrigger(prev => prev + 1);
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+import { useState, useEffect } from 'react';
 
+const COOLDOWN_KEY_PREFIX = 'quest_cooldown_';
+
+export interface QuestCooldownState {
+  canPlay: boolean;
+  timeRemaining: string;
+  isChecking: boolean;
+  nextAvailableAt: string | null;
+}
+
+export function useQuestCooldown(questId: string, userId?: string): QuestCooldownState {
+  const [cooldownState, setCooldownState] = useState<QuestCooldownState>({
+    canPlay: true,
+    timeRemaining: '',
+    isChecking: true,
+    nextAvailableAt: null,
+  });
+
+  // Check cooldown on mount and set up interval
   useEffect(() => {
-    // If no user, allow play (guest mode)
-    if (!userId) {
-      setCanPlay(true);
-      setTimeRemaining('Available now');
-      setIsChecking(false);
+    if (!userId || !questId) {
+      setCooldownState({
+        canPlay: true,
+        timeRemaining: '',
+        isChecking: false,
+        nextAvailableAt: null,
+      });
       return;
     }
 
-    const checkCooldown = async () => {
+    const checkCooldown = () => {
+      const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
+      const storedCooldown = localStorage.getItem(storageKey);
+
+      if (!storedCooldown) {
+        // No cooldown stored
+        setCooldownState({
+          canPlay: true,
+          timeRemaining: '',
+          isChecking: false,
+          nextAvailableAt: null,
+        });
+        return;
+      }
+
       try {
-        console.log('🔍 Checking cooldown for quest:', questSlug);
-        
-        // Get the last completion directly from completed_quests
-        const { data, error } = await supabase
-          .from('completed_quests')
-          .select('completed_at')
-          .eq('user_id', userId)
-          .eq('quest_id', questSlug)
-          .order('completed_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.warn('⚠️ Error checking quest cooldown:', error.message);
-          setCanPlay(true);
-          setTimeRemaining('Available now');
-          setNextAvailableAt(null);
-          setIsChecking(false);
-          return;
-        }
-
-        if (!data) {
-          // No previous completion found - user can play
-          console.log('✅ No previous completion, quest available');
-          setCanPlay(true);
-          setTimeRemaining('Available now');
-          setNextAvailableAt(null);
-          setIsChecking(false);
-          return;
-        }
-
-        // Calculate time since last completion
-        const lastCompletedAt = new Date(data.completed_at);
+        const nextAvailableAt = new Date(storedCooldown);
         const now = new Date();
-        const hoursSinceLastCompletion = (now.getTime() - lastCompletedAt.getTime()) / (1000 * 60 * 60);
 
-        console.log('⏰ Last completed:', lastCompletedAt, 'Hours since:', hoursSinceLastCompletion);
-
-        if (hoursSinceLastCompletion >= cooldownHours) {
-          // Cooldown expired - user can play
-          console.log('✅ Cooldown expired, quest available');
-          setCanPlay(true);
-          setTimeRemaining('Available now');
-          setNextAvailableAt(null);
+        if (now >= nextAvailableAt) {
+          // Cooldown expired
+          localStorage.removeItem(storageKey);
+          setCooldownState({
+            canPlay: true,
+            timeRemaining: '',
+            isChecking: false,
+            nextAvailableAt: null,
+          });
         } else {
-          // Still on cooldown
-          const nextAvailable = new Date(lastCompletedAt.getTime() + cooldownHours * 60 * 60 * 1000);
-          console.log('⏳ On cooldown, next available:', nextAvailable);
-          setCanPlay(false);
-          setNextAvailableAt(nextAvailable);
-          
-          const diffMs = nextAvailable.getTime() - now.getTime();
-          const hours = Math.floor(diffMs / (1000 * 60 * 60));
-          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-          setTimeRemaining(`${hours}h : ${minutes}m`);
+          // Cooldown still active
+          const remainingMs = nextAvailableAt.getTime() - now.getTime();
+          const timeString = formatTimeRemaining(remainingMs);
+
+          setCooldownState({
+            canPlay: false,
+            timeRemaining: timeString,
+            isChecking: false,
+            nextAvailableAt: storedCooldown,
+          });
         }
-        
-        setIsChecking(false);
       } catch (error) {
-        console.error('Error checking quest cooldown:', error);
-        // On error, allow play (fail open)
-        setCanPlay(true);
-        setTimeRemaining('Available now');
-        setIsChecking(false);
+        console.error('Error parsing cooldown timestamp:', error);
+        localStorage.removeItem(storageKey);
+        setCooldownState({
+          canPlay: true,
+          timeRemaining: '',
+          isChecking: false,
+          nextAvailableAt: null,
+        });
       }
     };
 
-    // Initial check
+    // Check immediately
     checkCooldown();
     
-    // Refresh every 10 seconds for faster updates
-    const interval = setInterval(checkCooldown, 10000);
+    // Update every second for countdown
+    const interval = setInterval(checkCooldown, 1000);
     
     return () => clearInterval(interval);
-  }, [userId, questSlug, cooldownHours, refreshTrigger]);
+  }, [questId, userId]);
 
-  return { 
-    canPlay, 
-    timeRemaining, 
-    isChecking,
-    nextAvailableAt
-  };
+  return cooldownState;
 }
 
+/**
+ * Set cooldown end time in localStorage
+ * Call this when receiving a 429 response from the API
+ */
+export function setQuestCooldown(questId: string, userId: string, nextAvailableAt: string) {
+  const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
+  localStorage.setItem(storageKey, nextAvailableAt);
+  console.log(`🔒 Cooldown set for ${questId} until:`, nextAvailableAt);
+}
+
+/**
+ * Clear cooldown (useful for testing or when quest completes successfully)
+ */
+export function clearQuestCooldown(questId: string, userId: string) {
+  const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
+  localStorage.removeItem(storageKey);
+  console.log(`✅ Cooldown cleared for ${questId}`);
+}
+
+/**
+ * Format milliseconds into human-readable time string
+ * Examples:
+ * - 11h 59m 30s
+ * - 59m 30s
+ * - 30s
+ */
+function formatTimeRemaining(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    const remainingSeconds = seconds % 60;
+    return `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+  } else if (minutes > 0) {
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}

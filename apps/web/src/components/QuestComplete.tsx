@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
+import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 
 interface QuestCompleteProps {
   onGoHome: () => Promise<void>; // Now returns a promise that resolves when map is ready
@@ -24,10 +25,14 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   const videoRef = useRef<HTMLVideoElement>(null);
   const coinVideoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // P0-6: Use cooldown hook for consistent cooldown display across the app
+  const { timeRemaining: cooldownTime } = useQuestCooldown('game-1111', userId);
+  
   const [userStats, setUserStats] = useState({
     zo_points: tokensEarned,
     total_quests_completed: 1,
-    timeUntilNextSync: '12h : 0m'
+    timeUntilNextSync: cooldownTime || '12h : 0m' // Default fallback
   });
   
   const [leaderboard, setLeaderboard] = useState<LeaderboardPlayer[]>([]);
@@ -48,6 +53,16 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
       videoRef.current.pause();
     }
   }, []);
+
+  // P0-6: Update userStats whenever cooldown time changes
+  useEffect(() => {
+    if (cooldownTime) {
+      setUserStats(prev => ({
+        ...prev,
+        timeUntilNextSync: cooldownTime
+      }));
+    }
+  }, [cooldownTime]);
 
   // Fetch real data from API
   useEffect(() => {
@@ -155,7 +170,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-start bg-black w-screen h-screen overflow-hidden">
       {/* Pure black background for both mobile and desktop */}
-      
+
       {/* Centered content container - responsive */}
       <div className="relative z-10 w-full max-w-[360px] md:max-w-[500px] lg:max-w-[600px] h-full flex flex-col items-center">
         

@@ -14,6 +14,7 @@ import MapViewToggle from '@/components/MapViewToggle';
 import StatsPill from '@/components/StatsPill';
 import QuantumSyncHeader from '@/components/QuantumSyncHeader';
 import QuestAudio from '@/components/QuestAudio';
+import QuestComplete from '@/components/QuestComplete';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
 
@@ -72,13 +73,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   shouldAnimateFromSpace = false,
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(true);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [closePopupsFn, setClosePopupsFn] = useState<(() => void) | null>(null);
   
   // Game1111 state
   const [showGame1111, setShowGame1111] = useState(false);
   const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
+  const [showQuestComplete, setShowQuestComplete] = useState(false);
+  const [questScore, setQuestScore] = useState(0);
+  const [questTokens, setQuestTokens] = useState(0);
 
   const handleLaunchGame = (userId: string) => {
     console.log('🎮 Launching game1111 for user:', userId);
@@ -93,6 +97,17 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     console.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
+    setQuestScore(score);
+    setQuestTokens(tokensEarned);
+    // Show quest complete page with leaderboard
+    setShowQuestComplete(true);
+  };
+
+  const handleQuestCompleteGoHome = async (): Promise<void> => {
+    console.log('🏠 Going home from quest complete');
+    setShowQuestComplete(false);
+    // Open dashboard after viewing quest results
+    setIsDashboardOpen(true);
   };
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
@@ -111,6 +126,18 @@ const DesktopView: React.FC<DesktopViewProps> = ({
     onMapReady(map, closeAllPopups);
     console.log('Desktop Map is ready!');
   };
+
+  // 🎨 Show quest complete page after finishing quest
+  if (showQuestComplete) {
+    return (
+      <QuestComplete 
+        onGoHome={handleQuestCompleteGoHome}
+        userId={userId}
+        score={questScore}
+        tokensEarned={questTokens}
+      />
+    );
+  }
 
   // 🎨 Show full-page dashboard when open, otherwise show map view
   if (isDashboardOpen) {
@@ -175,25 +202,29 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         />
       </div>
 
-      {/* Right-side Overlays */}
-      <EventsOverlay 
-        isVisible={activeSection === 'events'} 
-        events={events}
-        onEventClick={onEventClick}
-        closeMapPopups={closePopupsFn}
-      />
-      <NodesOverlay 
-        isVisible={activeSection === 'nodes'}
-        nodes={nodes}
-        allNodes={allNodes}
-        onNodeClick={onNodeClick}
-        closeMapPopups={closePopupsFn}
-      />
-      <QuestsOverlay 
-        isVisible={activeSection === 'quests'} 
-        onClose={() => setActiveSection('events')}
-        onLaunchGame={handleLaunchGame}
-      />
+      {/* Right-side Overlays - Hidden when game is active */}
+      {!showGame1111 && (
+        <>
+          <EventsOverlay 
+            isVisible={activeSection === 'events'} 
+            events={events}
+            onEventClick={onEventClick}
+            closeMapPopups={closePopupsFn}
+          />
+          <NodesOverlay 
+            isVisible={activeSection === 'nodes'}
+            nodes={nodes}
+            allNodes={allNodes}
+            onNodeClick={onNodeClick}
+            closeMapPopups={closePopupsFn}
+          />
+          <QuestsOverlay 
+            isVisible={activeSection === 'quests'} 
+            onClose={() => setActiveSection('events')}
+            onLaunchGame={handleLaunchGame}
+          />
+        </>
+      )}
 
       {/* Wallet Overlay - rendered at root level */}
       <WalletOverlay 
@@ -201,14 +232,16 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         onClose={() => setIsWalletOpen(false)}
       />
 
-      {/* Bottom Navigation - DESKTOP */}
-      <div className="hidden md:block">
-        <NavBar 
-          onSectionChange={handleSectionChange}
-          activeSection={activeSection}
-          onDashboardClick={() => setIsDashboardOpen(true)}
-        />
-      </div>
+      {/* Bottom Navigation - DESKTOP - Hidden when game is active */}
+      {!showGame1111 && (
+        <div className="hidden md:block">
+          <NavBar 
+            onSectionChange={handleSectionChange}
+            activeSection={activeSection}
+            onDashboardClick={() => setIsDashboardOpen(true)}
+          />
+        </div>
+      )}
       
       {/* Game1111 Full-Screen Experience - Independent of overlays */}
       {showGame1111 && (

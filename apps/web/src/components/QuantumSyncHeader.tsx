@@ -31,6 +31,23 @@ async function fetchUserProgress(userId: string) {
  * QuantumSyncHeader - Now fetches user progress to show real token balance
  * Automatically refreshes balance every 3 seconds to stay in sync
  */
+// Get initial avatar synchronously to prevent flash
+function getInitialAvatar(avatarSrc?: string): string {
+  if (avatarSrc) {
+    console.log('🎨 Using avatar from props:', avatarSrc);
+    return avatarSrc;
+  }
+  if (typeof window !== 'undefined') {
+    const storedAvatar = localStorage.getItem('zo_avatar');
+    if (storedAvatar) {
+      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      return storedAvatar;
+    }
+  }
+  console.log('🎨 No avatar found, using default');
+  return '/quest-audio-assets/avatar.png';
+}
+
 export default function QuantumSyncHeader({
   withoutProfile = false,
   avatarSrc,
@@ -42,18 +59,18 @@ export default function QuantumSyncHeader({
   userId?: string;
   refreshInterval?: number; // milliseconds between balance refreshes
 }) {
-  const [avatar, setAvatar] = useState(avatarSrc || '/quest-audio-assets/avatar.png');
+  const [avatar, setAvatar] = useState(() => getInitialAvatar(avatarSrc));
   const [balance, setBalance] = useState(0);
 
+  // Update avatar if avatarSrc prop changes
   useEffect(() => {
-    // Get selected avatar from localStorage if not provided
-    if (!avatarSrc && typeof window !== 'undefined') {
-      const selectedAvatar = localStorage.getItem('zo_avatar');
-      if (selectedAvatar) {
-        setAvatar(selectedAvatar);
-      }
+    if (avatarSrc && avatarSrc !== avatar) {
+      console.log('🎨 Updating avatar from props:', avatarSrc);
+      setAvatar(avatarSrc);
+      // Also update localStorage for next time
+      localStorage.setItem('zo_avatar', avatarSrc);
     }
-  }, [avatarSrc]);
+  }, [avatarSrc, avatar]);
 
   // Fetch and refresh balance and avatar periodically
   useEffect(() => {
@@ -65,9 +82,12 @@ export default function QuantumSyncHeader({
       if (progress?.quests?.zo_points !== undefined) {
           setBalance(progress.quests.zo_points);
         }
-      // Update avatar from API if available
-      if (progress?.user?.pfp) {
+      // Update avatar from API if available and different
+      if (progress?.user?.pfp && progress.user.pfp !== avatar) {
+        console.log('🎨 Updating avatar from API:', progress.user.pfp);
         setAvatar(progress.user.pfp);
+        // Also update localStorage for next time
+        localStorage.setItem('zo_avatar', progress.user.pfp);
       }
     }
 
@@ -85,47 +105,44 @@ export default function QuantumSyncHeader({
 
   return (
     <div className="quantum-sync-header">
-      {/* Zo Logo - 20% smaller: 40px → 32px */}
+      {/* Zo Logo */}
       <div className="quantum-sync-header__logo">
         <img
           src="/quest-audio-assets/zo-logo.png"
           alt="Zo"
-          width="32"
-          height="32"
+          width="40"
+          height="40"
         />
       </div>
       
       {!withoutProfile && (
-        /* Profile Container - 20% smaller */
+        /* Profile Container */
         <div className="quantum-sync-header__profile">
-          {/* Avatar - 20% smaller: 32px → 26px */}
+          {/* Avatar */}
           <div className="profile-avatar">
             <img
               src={avatar}
               alt="Avatar"
-              width="26"
-              height="26"
+              width="36"
+              height="36"
             />
           </div>
           
-          {/* Tags Container - 20% smaller */}
+          {/* Tags Container */}
           <div className="profile-tokens">
             <span>{balance}</span>
-            {/* Coin Icon - 20% smaller: 16px → 13px */}
+            {/* Coin Video */}
             <div className="coin-icon">
-              <img
-                src="/quest-audio-assets/coin-1.png"
-                alt="Coin"
-                width="13"
-                height="13"
-              />
-              <img
-                src="/quest-audio-assets/coin-2.png"
-                alt=""
-                width="13"
-                height="13"
-                className="coin-overlay"
-              />
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                width="18"
+                height="18"
+              >
+                <source src="/videos/zo-coin.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
@@ -134,24 +151,25 @@ export default function QuantumSyncHeader({
         /* Header Container */
         .quantum-sync-header {
           position: absolute;
-          top: 52px;
+          top: 16px;
           left: 0;
           right: 0;
-          height: 80px;
+          height: 60px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0 24px;
+          padding: 0 8px 0 24px;
           z-index: 100;
         }
 
-        /* Zo Logo - 20% smaller: 40px → 32px */
+        /* Zo Logo */
         .quantum-sync-header__logo {
-          width: 32px;
-          height: 32px;
+          width: 40px;
+          height: 40px;
           cursor: pointer;
           overflow: hidden;
           border-radius: 4px;
+          visibility: hidden;
         }
 
         .quantum-sync-header__logo img {
@@ -160,12 +178,12 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Profile Container - 20% smaller padding: 8px → 6px */
+        /* Profile Container */
         .quantum-sync-header__profile {
           display: flex;
           align-items: center;
-          gap: 3px;
-          padding: 6px;
+          gap: 4px;
+          padding: 8px;
           background: rgba(18, 18, 18, 0.2);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -174,10 +192,10 @@ export default function QuantumSyncHeader({
           cursor: pointer;
         }
 
-        /* Avatar - 20% smaller: 32px → 26px */
+        /* Avatar */
         .profile-avatar {
-          width: 26px;
-          height: 26px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           overflow: hidden;
         }
@@ -188,39 +206,35 @@ export default function QuantumSyncHeader({
           object-fit: cover;
         }
 
-        /* Tags Container - 20% smaller */
+        /* Tags Container */
         .profile-tokens {
           display: flex;
           align-items: center;
-          gap: 3px;
+          gap: 4px;
           background: rgba(255, 255, 255, 0.06);
           border-radius: 100px;
-          padding: 3px 6px;
+          padding: 4px 8px;
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 10px;
+          font-size: 13px;
           font-weight: 400;
-          line-height: 14px;
+          line-height: 16px;
           letter-spacing: 0.1px;
           color: white;
         }
 
-        /* Coin Icon - 20% smaller: 16px → 13px */
+        /* Coin Icon */
         .coin-icon {
           position: relative;
-          width: 13px;
-          height: 13px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          overflow: hidden;
         }
 
-        .coin-icon img {
-          position: absolute;
-          inset: 0;
+        .coin-icon video {
           width: 100%;
           height: 100%;
           object-fit: cover;
-        }
-
-        .coin-overlay {
-          z-index: 1;
         }
       `}</style>
     </div>

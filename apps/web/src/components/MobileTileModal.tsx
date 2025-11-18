@@ -25,7 +25,11 @@ const MobileTileModal: React.FC<MobileTileModalProps> = ({ isVisible, onClose, o
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden"
+          className="fixed left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
         >
           {/* Handle bar */}
           <div className="flex justify-center pt-3 pb-2">
@@ -52,7 +56,12 @@ const MobileTileModal: React.FC<MobileTileModalProps> = ({ isVisible, onClose, o
           </div>
 
           {/* Unicorn Close Button at bottom */}
-          <div className="flex justify-center py-6">
+          <div 
+            className="flex justify-center py-6"
+            style={{
+              paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+            }}
+          >
             <motion.button
               onClick={onClose}
               whileHover={{ scale: 1.1 }}

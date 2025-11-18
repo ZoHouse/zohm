@@ -32,7 +32,12 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
       <div className="fixed inset-0 bg-gradient-to-b from-[50.721%] from-transparent to-black z-[2] pointer-events-none" />
       
       {/* Home Indicator at bottom - Mobile only */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden">
+      <div 
+        className="absolute left-1/2 -translate-x-1/2 h-[24px] w-[360px] flex items-center justify-center z-10 md:hidden"
+        style={{
+          bottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
         <div className="w-[72px] h-[5px] bg-white rounded-full" />
       </div>
       
@@ -63,19 +68,19 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
         {/* Main CTA Button - Mobile: fixed, Desktop: responsive */}
         <button
           onClick={handleButtonPress}
-          className="absolute top-[600px] md:top-[68vh] left-1/2 -translate-x-1/2 bg-black border-2 border-white/20 flex items-center justify-center overflow-clip px-5 py-4 rounded-button w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-[#1a1a1a] hover:border-white/40 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98]"
+          className="absolute top-[600px] md:top-[calc(50vh+240px)] left-1/2 -translate-x-1/2 bg-black border-2 border-white/20 flex items-center justify-center overflow-clip px-5 py-4 rounded-button w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-[#1a1a1a] hover:border-white/40 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98]"
           type="button"
         >
           <span className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-white leading-normal">Tune into Zo World</span>
         </button>
 
         {/* "or login with" text - Mobile: fixed, Desktop: responsive */}
-        <p className="absolute top-[680px] md:top-[78vh] left-1/2 -translate-x-1/2 font-rubik text-[16px] md:text-[18px] font-normal text-white/44 leading-[24px] tracking-[0.16px] text-center m-0">
+        <p className="absolute top-[680px] md:top-[calc(50vh+328px)] left-1/2 -translate-x-1/2 font-rubik text-[16px] md:text-[18px] font-normal text-white/44 leading-[24px] tracking-[0.16px] text-center m-0">
           or login with
         </p>
 
         {/* Email and Wallet Buttons - Mobile: fixed, Desktop: responsive */}
-        <div className="absolute top-[704px] md:top-[82vh] left-1/2 -translate-x-1/2 flex gap-4 w-[312px] md:w-[400px] justify-center">
+        <div className="absolute top-[704px] md:top-[calc(50vh+364px)] left-1/2 -translate-x-1/2 flex gap-4 w-[312px] md:w-[400px] justify-center">
           <button
             onClick={onConnect}
             className="flex items-center gap-1 md:gap-2 justify-center overflow-clip px-4 py-[18px] rounded-button h-[56px] md:h-[64px] w-[132px] md:w-[180px] cursor-pointer transition-all duration-300 hover:bg-white/10 hover:border hover:border-white/20 active:scale-[0.98]"

@@ -55,3 +55,5 @@ export default function MapCanvasLazy(props: MapCanvasProps) {
   return <MapCanvas {...props} />;
 }
 
+
+

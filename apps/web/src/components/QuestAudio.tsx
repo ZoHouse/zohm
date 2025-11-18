@@ -3,6 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
+import { addToQueue, processQueue, initQueueProcessing, stopQueueProcessing } from '@/lib/questQueue';
+import type { QuestCompletionData } from '@/lib/questQueue';
+import { useQuestCooldown, setQuestCooldown } from '@/hooks/useQuestCooldown';
+// Load debug utils for browser console
+import '@/lib/questQueueDebug';
 
 interface QuestAudioProps {
   onComplete: (score: number, tokensEarned: number) => void;
@@ -31,12 +36,18 @@ function Game1111({
   canPlay: boolean;
   timeRemaining: string;
 }) {
-  const [counter, setCounter] = useState(0);
+  // P0-3: Use ref instead of state for counter (performance optimization)
+  const counterRef = useRef(0);
+  const counterDisplayRef = useRef<HTMLDivElement>(null);
   const [isRunning, setIsRunning] = useState(true);
   const [hasWon, setHasWon] = useState(false);
   const [showResultVideo, setShowResultVideo] = useState(false);
   const resultVideoRef = useRef<HTMLVideoElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const rafIdRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<number>(0);
+  // P0-5: Double-click protection guard
+  const isSubmittingRef = useRef(false);
   
   // Detect mobile/desktop on mount
   useEffect(() => {
@@ -46,15 +57,37 @@ function Game1111({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // P0-3: Replace setInterval with requestAnimationFrame for smooth 60fps
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     // Only run counter if can play and is running
     if (isRunning && canPlay) {
-      interval = setInterval(() => {
-        setCounter((prev) => (prev + 1) % 10000);
-      }, 1);
+      const updateCounter = (timestamp: number) => {
+        // Update counter every 1ms (same as before, but without React re-renders)
+        if (timestamp - lastUpdateRef.current >= 1) {
+          counterRef.current = (counterRef.current + 1) % 10000;
+          
+          // Direct DOM update (no React re-render)
+          if (counterDisplayRef.current) {
+            counterDisplayRef.current.textContent = counterRef.current.toString().padStart(4, '0');
+          }
+          
+          lastUpdateRef.current = timestamp;
+        }
+        
+        // Continue animation loop
+        rafIdRef.current = requestAnimationFrame(updateCounter);
+      };
+      
+      // Start the animation loop
+      rafIdRef.current = requestAnimationFrame(updateCounter);
     }
-    return () => clearInterval(interval);
+    
+    return () => {
+      // Cleanup: cancel animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
   }, [isRunning, canPlay]);
 
   // Play result video when user stops (win or loss)
@@ -65,9 +98,39 @@ function Game1111({
     }
   }, [showResultVideo, hasWon]);
 
+  // P0-4: Tab visibility detection (anti-cheat)
+  // Automatically pause the game when tab becomes hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isRunning) {
+        console.log('👁️ Tab hidden - pausing game (anti-cheat)');
+        setIsRunning(false);
+        
+        // Show a message to user that game was paused
+        console.warn('⚠️ Game paused due to tab switch');
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isRunning]);
+
   const handleStop = () => {
+    // P0-5: Double-click protection - prevent multiple submissions
+    if (isSubmittingRef.current) {
+      console.warn('⚠️ Submission already in progress, ignoring click');
+      return;
+    }
+    
+    isSubmittingRef.current = true;
     setIsRunning(false);
-    const won = counter === 1111;
+    
+    // P0-3: Read from counterRef instead of state
+    const finalScore = counterRef.current;
+    const won = finalScore === 1111;
     setHasWon(won);
     
     // Show result video (success or fail)
@@ -75,7 +138,9 @@ function Game1111({
     
     // Always navigate to quest complete after 2 seconds
     setTimeout(() => {
-      onWin(counter, won); // Pass score and win status
+      onWin(finalScore, won); // Pass score and win status
+      // Reset guard after submission completes
+      isSubmittingRef.current = false;
     }, 2000);
   };
 
@@ -123,44 +188,47 @@ function Game1111({
           {/* QUANTUM SYNC Logo - Moderate scaling for desktop */}
           <div className="absolute top-[156px] md:top-[15vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-20">
             <div className="w-[320px] md:w-[400px] lg:w-[480px] h-[80px] md:h-[100px] lg:h-[120px] flex items-center justify-center">
-              <img
-                src="/quest-audio-assets/quantum-sync-logo.png"
-                alt="QUANTUM SYNC"
+          <img
+            src="/quest-audio-assets/quantum-sync-logo.png"
+            alt="QUANTUM SYNC"
                 className="w-full h-full object-contain"
-              />
-            </div>
+          />
+        </div>
             <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-[rgba(255,255,255,0.44)] text-center leading-[20px] md:leading-[22px] lg:leading-[24px] m-0 tracking-[0.16px]">
-              {hasWon ? 'success!' : 'in progress'}
-            </p>
-          </div>
+          {hasWon ? 'success!' : 'in progress'}
+        </p>
+      </div>
 
           {/* Game Counter and Button - Responsive positioning, centered */}
           <div className="absolute top-[420px] md:top-[45vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-10">
-            {/* Counter - More moderate scaling for desktop */}
-            <div className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none">
-              {counter.toString().padStart(4, '0')}
-            </div>
-            
-            {/* Stop Button - Moderate scaling */}
-            <button
-              onClick={handleStop}
-              disabled={!isRunning || !canPlay}
-              className={`px-5 py-4 md:px-7 md:py-5 lg:px-8 lg:py-5 font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
-                canPlay 
-                  ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
-                  : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
-              }`}
+            {/* Counter - More moderate scaling for desktop, P0-3: Direct DOM updates via ref */}
+            <div 
+              ref={counterDisplayRef}
+              className="font-rubik font-bold text-[48px] md:text-[56px] lg:text-[64px] bg-gradient-to-b from-[#95916E] to-[#5B5944] bg-clip-text text-transparent tracking-[8px] md:tracking-[10px] lg:tracking-[12px] drop-shadow-[0_4px_20px_rgba(149,145,110,0.4)] leading-none"
             >
-              {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
-            </button>
-            
+              0000
+        </div>
+        
+            {/* Stop Button - Moderate scaling */}
+        <button
+          onClick={handleStop}
+          disabled={!isRunning || !canPlay}
+              className={`px-5 py-4 md:px-7 md:py-5 lg:px-8 lg:py-5 font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-semibold border-none rounded-xl cursor-pointer transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
+            canPlay 
+              ? 'bg-white text-black hover:bg-zo-accent hover:shadow-[0_4px_20px_rgba(207,255,80,0.4)]'
+              : 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          {!canPlay ? `On Cooldown` : (isRunning ? 'Stop at 1111' : 'Try Again')}
+        </button>
+        
             {/* Win/Try again message - Moderate scaling */}
-            {!isRunning && (
+        {!isRunning && (
               <p className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-normal text-white text-center m-0">
-                {hasWon ? 'Congratulations! You won!' : 'Try again!'}
-              </p>
-            )}
-          </div>
+            {hasWon ? 'Congratulations! You won!' : 'Try again!'}
+          </p>
+        )}
+      </div>
 
           {/* Bottom Text - Responsive positioning */}
           <div className="absolute bottom-[56px] md:bottom-[8vh] left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 z-20">
@@ -189,6 +257,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isVideoLockedRef = useRef(false); // Lock video from playing during game
+
+  // Voice feature refs (from omkar-v1)
   const speechRecognitionRef = useRef<any>(null); // For Web Speech API
   const transcriptRef = useRef<{ final: string; interim: string }>({ final: '', interim: '' }); // Store transcript
   const isRecordingRef = useRef<boolean>(false); // Track if we're actively recording
@@ -198,14 +268,22 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   const transcriptionValidatedRef = useRef<boolean>(false); // Track if transcription validation passed
   const transcriptionTextRef = useRef<string | null>(null); // Store transcription text for validation
 
-  // Check quest cooldown (12 hours for game1111)
-  // Note: Cooldown checking disabled during onboarding since this is the user's first play
-  // Cooldown only applies when playing from the quests overlay after onboarding
-  const { canPlay, timeRemaining, isChecking } = { canPlay: true, timeRemaining: '', isChecking: false };
+  // P0-6: Check quest cooldown using the atomic cooldown hook
+  // The server validates cooldowns atomically, but we check client-side for better UX
+  // Quest slug 'game-1111' matches the database entry
+  const { canPlay, timeRemaining, isChecking } = useQuestCooldown('game-1111', userId);
 
-  const recognitionRef = useRef<any>(null);
-  const [transcript, setTranscript] = useState("");
-  // Initialize Web Speech API
+  // P0-2: Initialize offline queue processing
+  useEffect(() => {
+    console.log('🔄 Initializing quest queue processing...');
+    initQueueProcessing();
+    
+    return () => {
+      console.log('🛑 Stopping quest queue processing...');
+      stopQueueProcessing();
+    };
+  }, []);
+
   // Check microphone permission on mount
   useEffect(() => {
     checkMicrophonePermission();
@@ -379,13 +457,19 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       
       if (!response.ok) {
         let errorMessage = `Transcription failed: ${response.statusText}`;
+        let errorData: any = null;
         try {
-          const error = await response.json();
-          errorMessage = error.error || error.message || errorMessage;
+          errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (e) {
           // If response is not JSON, use status text
         }
-        throw new Error(errorMessage);
+        
+        // Preserve the full error message including status code for better handling
+        const fullError = new Error(errorMessage);
+        (fullError as any).status = response.status;
+        (fullError as any).errorData = errorData;
+        throw fullError;
       }
       
       const result = await response.json();
@@ -405,6 +489,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   };
 
   const startRecording = async () => {
+    // P0-6: Prevent voice recording if quest is on cooldown
+    if (!canPlay) {
+      console.warn('⏳ Quest is on cooldown - cannot start voice recording');
+      alert(`⏳ Quest on Cooldown\n\nNext available in: ${timeRemaining}\n\nPlease wait before trying again.`);
+      return;
+    }
+    
     console.log('🎤 Starting voice recording - waiting 5 seconds for you to speak...');
     
     setAudioStatus('recording');
@@ -491,12 +582,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         mediaRecorder.start();
         
         // Recording duration counter
-        timerRef.current = setInterval(() => {
-          setRecordingDuration((prev) => prev + 1);
-        }, 1000);
-        
+    timerRef.current = setInterval(() => {
+      setRecordingDuration((prev) => prev + 1);
+    }, 1000);
+    
         // Auto-stop after 5 seconds
-        setTimeout(() => {
+    setTimeout(() => {
           console.log('🎤 5 seconds elapsed - stopping recording');
           
           isRecordingRef.current = false; // Mark that recording is complete
@@ -504,13 +595,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           if (mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
           }
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
           
           // Only now transition to success state after full 5 seconds
           setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
-          setRecordingDuration(0);
+      setRecordingDuration(0);
         }, 5000);
       } catch (error: any) {
         console.error('Failed to start recording:', error);
@@ -669,12 +760,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
-      
+
       const audioChunks: Blob[] = [];
       mediaRecorder.ondataavailable = (event) => {
         audioChunks.push(event.data);
       };
-      
+
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         recordedAudioRef.current = audioBlob;
@@ -694,10 +785,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         console.log('   - Audio URL:', audioUrl);
         console.log('   - Filename:', filename);
         
-        // Get current transcript if available
+        // Get current transcript if available (for fallback only)
         const currentTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
         
-        // Transcribe the audio file
+        // PRIMARY: Transcribe the audio file with AssemblyAI (high accuracy)
+        // This is the primary transcription method - Web Speech API is only a fallback
+        console.log('🎤 🎯 PRIMARY: Starting AssemblyAI transcription...');
         transcribeAudioFile(audioBlob, filename).then((transcription) => {
           if (transcription && transcription.text) {
             const transcribedText = transcription.text.toLowerCase().trim();
@@ -705,12 +798,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             
             console.log('');
             console.log('🎤 ========================================');
-            console.log('🎤 📝 AUDIO FILE TRANSCRIPTION');
+            console.log('🎤 📝 ASSEMBLYAI TRANSCRIPTION (PRIMARY)');
             console.log('🎤 ========================================');
             console.log('🎤 📄 Transcribed Text:', transcription.text || '(empty)');
             if (transcription.confidence) {
               console.log('🎤 📊 Confidence:', (transcription.confidence * 100).toFixed(1) + '%');
             }
+            console.log('🎤 ✅ Using AssemblyAI as primary transcription source');
             
             // Validate: Check if transcription contains "zo zo zo"
             const requiredPhrase = 'zo zo zo';
@@ -722,12 +816,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             
             if (containsRequiredPhrase) {
               transcriptionValidatedRef.current = true;
-              console.log('🎤 ✅ Validation passed! Proceeding to success state...');
+              console.log('🎤 ✅ AssemblyAI validation passed! Proceeding to success state...');
               
-              // Transition to success state (timeout handler will also check, but this is immediate)
-              console.log('🎤 🚀 Transcription validated - transitioning to success');
+              // Transition to success state immediately (AssemblyAI is primary, no need to wait)
+              console.log('🎤 🚀 AssemblyAI validated - transitioning to success');
               setAudioStatus('success');
-            } else {
+          } else {
               transcriptionValidatedRef.current = false;
               console.log('🎤 ❌ Validation failed! Required phrase not found.');
               
@@ -771,33 +865,112 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             setAudioStatus('idle');
             setRecordingDuration(0);
           }
-        }).catch((error) => {
+        }).catch((error: any) => {
           console.log('🎤 ⚠️ Transcription failed:', error.message);
-          transcriptionValidatedRef.current = false;
-          transcriptionTextRef.current = null;
+          console.log('🎤 Error status:', error.status);
+          console.log('🎤 Error data:', error.errorData);
           
-          // Check if it's a setup error (503 status)
-          if (error.message && error.message.includes('not configured')) {
+          // Check if it's a setup error (503 status) - fall back to Web Speech API
+          const isNotConfigured = error.status === 503 || 
+            (error.message && (error.message.includes('not configured') || error.message.includes('Transcription service')));
+          
+          if (isNotConfigured) {
             console.log('');
             console.log('🎤 ========================================');
-            console.log('🎤 🔧 TRANSCRIPTION SETUP REQUIRED');
+            console.log('🎤 ⚠️ ASSEMBLYAI NOT CONFIGURED - FALLING BACK TO WEB SPEECH API');
             console.log('🎤 ========================================');
-            console.log('🎤 To enable audio transcription:');
+            console.log('🎤 ⚠️ AssemblyAI (primary) is not set up.');
+            console.log('🎤 🔄 Falling back to Web Speech API (secondary) for validation.');
+            console.log('🎤 💡 To use AssemblyAI: Add ASSEMBLYAI_API_KEY to .env.local and restart server');
+            console.log('');
+            console.log('🎤 To enable AssemblyAI transcription:');
             console.log('   1. Sign up at https://www.assemblyai.com/');
             console.log('   2. Get your API key from the dashboard');
-            console.log('   3. Add ASSEMBLYAI_API_KEY to your .env file');
+            console.log('   3. Add ASSEMBLYAI_API_KEY to your .env.local file');
             console.log('   4. Restart your dev server');
             console.log('🎤 ========================================');
             console.log('');
             
-            // Show error popup for setup issues
-            alert(
-              '❌ Voice Authentication Failed\n\n' +
-              'Transcription service is not configured.\n\n' +
-              'Please contact support or check the console for setup instructions.'
-            );
+            // Fallback: Use Web Speech API transcript for validation
+            const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+            const fallbackText = fallbackTranscript.toLowerCase().trim();
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            
+            if (fallbackText && containsRequiredPhrase) {
+              console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+              console.log('🎤 📝 Web Speech API (secondary) detected:', fallbackTranscript);
+              console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
+              transcriptionValidatedRef.current = true;
+              transcriptionTextRef.current = fallbackText;
+              setAudioStatus('success');
+              setRecordingDuration(0);
+              return; // Success with fallback
+            } else if (fallbackText) {
+              // Web Speech API detected something, but not the required phrase
+              console.log('🎤 ⚠️ Web Speech API detected:', fallbackTranscript);
+              console.log('🎤 ❌ But required phrase "zo zo zo" not found');
+              transcriptionValidatedRef.current = false;
+              transcriptionTextRef.current = fallbackText;
+              
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'Could not verify that you said "Zo Zo Zo".\n\n' +
+                'What was detected: "' + fallbackTranscript + '"\n\n' +
+                'Please try again and make sure to:\n' +
+                '• Say "Zo Zo Zo" clearly\n' +
+                '• Speak close to the microphone\n' +
+                '• Reduce background noise'
+              );
+              
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+              return;
+            } else {
+              // No Web Speech API transcript either
+              console.log('🎤 ❌ No Web Speech API transcript available either');
+              transcriptionValidatedRef.current = false;
+              transcriptionTextRef.current = null;
+              
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'Could not detect your voice.\n\n' +
+                'Please try again and make sure to:\n' +
+                '• Say "Zo Zo Zo" clearly\n' +
+                '• Speak close to the microphone\n' +
+                '• Reduce background noise\n\n' +
+                'Note: AssemblyAI transcription is not configured.\n' +
+                'Using browser speech recognition only.'
+              );
+              
+              setAudioStatus('idle');
+              setRecordingDuration(0);
+              return;
+            }
           } else {
-            // Show error popup for other transcription failures
+            // Other transcription errors - try Web Speech API fallback
+            console.log('🎤 ⚠️ AssemblyAI (primary) transcription error, trying Web Speech API (fallback)...');
+            console.log('🎤 Error details:', error.message);
+            
+            const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
+            const fallbackText = fallbackTranscript.toLowerCase().trim();
+            const requiredPhrase = 'zo zo zo';
+            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            
+            if (fallbackText && containsRequiredPhrase) {
+              console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+              console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
+              transcriptionValidatedRef.current = true;
+              transcriptionTextRef.current = fallbackText;
+              setAudioStatus('success');
+              setRecordingDuration(0);
+              return; // Success with fallback
+            }
+            
+            // Both failed
+            transcriptionValidatedRef.current = false;
+            transcriptionTextRef.current = null;
+            
             alert(
               '❌ Voice Authentication Failed\n\n' +
               'Could not transcribe your audio.\n\n' +
@@ -807,11 +980,11 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               '• Speak close to the microphone\n' +
               '• Reduce background noise'
             );
+            
+            setAudioStatus('idle');
+            setRecordingDuration(0);
           }
           
-          // Reset to idle state so user can try again
-          setAudioStatus('idle');
-          setRecordingDuration(0);
           console.log('🎤 💡 You can still access the audio file via: window.lastRecordedAudio');
         });
         
@@ -866,7 +1039,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         
         stream.getTracks().forEach(track => track.stop());
       };
-      
+
       mediaRecorder.start();
       
       // Recording duration counter
@@ -990,15 +1163,17 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   console.log('🎤 ⏳ Waiting for transcription to complete...');
                   setTimeout(checkTranscriptionValidation, 1000); // Check again in 1 second
                 } else {
-                  // Timeout - transcription took too long, try fallback validation with Web Speech API transcript
-                  console.log('🎤 ⚠️ Transcription timeout - trying fallback validation with Web Speech API transcript');
+                  // Timeout - AssemblyAI took too long, try fallback validation with Web Speech API transcript
+                  console.log('🎤 ⚠️ AssemblyAI (primary) transcription timeout - trying Web Speech API (fallback)');
+                  console.log('🎤 ⏱️ AssemblyAI exceeded 30s timeout, using Web Speech API as fallback');
                   
                   const fallbackText = fullTranscript.toLowerCase().trim();
                   const requiredPhrase = 'zo zo zo';
                   const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
                   
                   if (containsRequiredPhrase && fallbackText) {
-                    console.log('🎤 ✅ Fallback validation passed with Web Speech API transcript');
+                    console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+                    console.log('🎤 ⚠️ Note: Using Web Speech API fallback due to AssemblyAI timeout');
                     transcriptionValidatedRef.current = true;
                     setAudioStatus('success');
                     setRecordingDuration(0);
@@ -1083,9 +1258,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       mediaRecorderRef.current.stop();
     }
     
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     
     // Log final transcript
     const fullTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
@@ -1258,7 +1433,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         </div>
 
         {/* Permission Modal - Centered bottom sheet matching mobile exactly */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto">
+        <div 
+          className="fixed left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
           <div className="bg-[#121212] rounded-t-[24px] w-full h-[254px] shadow-[0px_4px_12px_0px_rgba(18,18,18,0.16)] relative before:content-[''] before:absolute before:top-[12px] before:left-1/2 before:-translate-x-1/2 before:w-[40px] before:h-[4px] before:bg-white/20 before:rounded-[2px]">
             {/* Title - Centered exactly */}
             <h2 className="absolute top-[48px] left-1/2 -translate-x-1/2 font-rubik text-[20px] font-medium text-white text-center leading-[30px] m-0 w-[272px]">
@@ -1354,7 +1534,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         </div>
 
         {/* Permission Denied Modal - Centered bottom sheet matching mobile exactly */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto">
+        <div 
+          className="fixed left-1/2 -translate-x-1/2 w-full max-w-[360px] z-[200] flex items-end justify-center animate-slideUp pointer-events-auto"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
           <div className="bg-[#121212] rounded-t-[24px] w-full h-[254px] shadow-[0px_4px_12px_0px_rgba(18,18,18,0.16)] relative before:content-[''] before:absolute before:top-[12px] before:left-1/2 before:-translate-x-1/2 before:w-[40px] before:h-[4px] before:bg-white/20 before:rounded-[2px]">
             {/* Title - Centered exactly */}
             <h2 className="absolute top-[48px] left-1/2 -translate-x-1/2 font-rubik text-[20px] font-medium text-white text-center leading-[30px] m-0 w-[272px]">
@@ -1450,7 +1635,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               
               // Record quest completion via API if user is logged in (non-blocking)
               if (userId) {
-                // Fire-and-forget API call - don't block UI transition
+                // Fire-and-forget API call with offline queue support
                 (async () => {
                 try {
                   // Get location from localStorage
@@ -1460,15 +1645,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   
                     console.log('📤 Sending quest completion to API...');
                     
-                  // Call quest completion API
-                  const response = await fetch('/api/quests/complete', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
+                  // Prepare quest completion data
+                  const completionData: QuestCompletionData = {
                       user_id: userId,
-                      quest_id: 'game-1111', // Quest slug for Game1111
+                    quest_id: 'game-1111', // Quest slug matching database
                       score,
                       location,
                       metadata: {
@@ -1480,21 +1660,68 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                         proximity_factor: proximityFactor,
                         timestamp: new Date().toISOString(),
                       },
-                    }),
+                  };
+                    
+                  // Call quest completion API
+                  const response = await fetch('/api/quests/complete', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(completionData),
                   });
                   
                   if (response.ok) {
                     const result = await response.json();
                     console.log('✅ Quest completion recorded:', result);
+                    
+                    // P0-6: Store cooldown after successful completion for UI display
+                    if (userId && result.next_available_at) {
+                      setQuestCooldown('game-1111', userId, result.next_available_at);
+                      console.log('🔒 Cooldown set until:', result.next_available_at);
+                    }
                   } else if (response.status === 429) {
-                    // Cooldown not finished
+                    // P0-6: Cooldown active - store end time for UI
+                    // DO NOT add to queue - this is an intentional cooldown, not a failure
                     const error = await response.json();
-                    console.warn('⏳ Quest on cooldown:', error.next_available_at);
+                    console.warn('⏳ Quest on cooldown (not retrying):', error.next_available_at);
+                    
+                    // Store cooldown in localStorage for UI display
+                    if (userId && error.next_available_at) {
+                      setQuestCooldown('game-1111', userId, error.next_available_at);
+                    }
+                    // Note: We don't queue 429 errors because they're cooldowns, not temporary failures
                   } else {
-                    console.error('❌ Error recording quest completion:', await response.text());
+                    // Other error (5xx, 4xx non-cooldown) - add to queue for retry
+                    console.error('❌ Error recording quest completion, adding to retry queue:', await response.text());
+                    addToQueue(completionData);
+                    processQueue(); // Try processing immediately
                   }
                 } catch (error) {
-                  console.error('❌ Exception recording quest completion:', error);
+                  // Network error - add to queue for offline retry
+                  console.error('❌ Network error, adding to offline queue:', error);
+                  const location = typeof window !== 'undefined' 
+                    ? localStorage.getItem('zo_city') || 'Unknown'
+                    : 'Unknown';
+                  
+                  const completionData: QuestCompletionData = {
+                    user_id: userId,
+                    quest_id: 'game-1111', // Quest slug matching database
+                    score,
+                    location,
+                    metadata: {
+                      quest_title: 'Quantum Voice Sync',
+                      completed_via: 'webapp',
+                      game_won: hasWon,
+                      reward_zo: tokensEarned,
+                      distance_from_target: distance,
+                      proximity_factor: proximityFactor,
+                      timestamp: new Date().toISOString(),
+                    },
+                  };
+                  
+                  addToQueue(completionData);
+                  // Will be retried automatically by the queue processor
                 }
                 })();
               }
@@ -1531,9 +1758,13 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               <>
                 <div className="absolute top-[334px] left-1/2 -translate-x-1/2 w-[240px] h-[240px]">
                   <button
-                    className="relative w-full h-full bg-transparent border-none cursor-pointer transition-all duration-200 active:scale-95 p-0 overflow-hidden rounded-full"
+                    className={`relative w-full h-full bg-transparent border-none transition-all duration-200 active:scale-95 p-0 overflow-hidden rounded-full ${
+                      canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                    }`}
                     onMouseDown={startRecording}
                     onTouchStart={startRecording}
+                    disabled={!canPlay}
+                    title={!canPlay ? `Quest on cooldown. Next available in: ${timeRemaining}` : 'Tap & say "Zo Zo Zo"'}
                   >
                     <video
                       autoPlay
@@ -1627,4 +1858,3 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     </div>
   );
 }
-

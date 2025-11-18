@@ -34,10 +34,10 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   const hasLocation = userLat !== 0 && userLng !== 0;
   
   // game1111 quest cooldown (12 hours)
+  // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(
-    userProfile?.id,
     'game-1111', // Must match quest_id used in QuestAudio.tsx
-    12 // 12-hour cooldown
+    userProfile?.id // User ID for localStorage key
   );
   
   // Update time every 10ms for smooth milliseconds display
@@ -297,6 +297,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 flyToNode={null}
                 shouldAnimateFromSpace={false}
                 userLocation={{ lat: userLat, lng: userLng }}
+                isMiniMap={true}
                 className="w-full h-full"
               />
             </div>

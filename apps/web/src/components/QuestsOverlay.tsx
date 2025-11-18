@@ -85,7 +85,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
       return;
     }
     
-    // Special handling for game-1111 quest
+    // Special handling for game-1111 quest (Game1111)
     if (quest.slug === 'game-1111') {
       // Get user by wallet address
       const user = await getUserByWallet(primaryWalletAddress);
@@ -290,14 +290,19 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
     <>
       {/* Desktop Overlay */}
       {isVisible && (
-        <GlowCard className="hidden md:flex fixed top-10 right-5 bottom-10 w-[380px] z-[10001] flex-col">
+        <GlowCard className="hidden md:flex fixed top-[100px] right-5 bottom-10 w-[380px] z-[10001] flex-col">
           {content}
         </GlowCard>
       )}
 
       {/* Mobile Overlay */}
       {isVisible && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col">
+        <div 
+          className="md:hidden fixed left-0 right-0 h-1/2 bg-white/20 backdrop-blur-md border-t border-white/40 rounded-t-3xl shadow-2xl z-[10001] overflow-hidden flex flex-col"
+          style={{
+            bottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
         {/* Mobile Header */}
         <div className="px-6 py-4 border-b border-white/20">
           <div className="flex items-center justify-between">

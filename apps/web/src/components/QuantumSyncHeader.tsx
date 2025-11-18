@@ -31,6 +31,23 @@ async function fetchUserProgress(userId: string) {
  * QuantumSyncHeader - Now fetches user progress to show real token balance
  * Automatically refreshes balance every 3 seconds to stay in sync
  */
+// Get initial avatar synchronously to prevent flash
+function getInitialAvatar(avatarSrc?: string): string {
+  if (avatarSrc) {
+    console.log('🎨 Using avatar from props:', avatarSrc);
+    return avatarSrc;
+  }
+  if (typeof window !== 'undefined') {
+    const storedAvatar = localStorage.getItem('zo_avatar');
+    if (storedAvatar) {
+      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      return storedAvatar;
+    }
+  }
+  console.log('🎨 No avatar found, using default');
+  return '/quest-audio-assets/avatar.png';
+}
+
 export default function QuantumSyncHeader({
   withoutProfile = false,
   avatarSrc,
@@ -42,18 +59,18 @@ export default function QuantumSyncHeader({
   userId?: string;
   refreshInterval?: number; // milliseconds between balance refreshes
 }) {
-  const [avatar, setAvatar] = useState(avatarSrc || '/quest-audio-assets/avatar.png');
+  const [avatar, setAvatar] = useState(() => getInitialAvatar(avatarSrc));
   const [balance, setBalance] = useState(0);
 
+  // Update avatar if avatarSrc prop changes
   useEffect(() => {
-    // Get selected avatar from localStorage if not provided
-    if (!avatarSrc && typeof window !== 'undefined') {
-      const selectedAvatar = localStorage.getItem('zo_avatar');
-      if (selectedAvatar) {
-        setAvatar(selectedAvatar);
-      }
+    if (avatarSrc && avatarSrc !== avatar) {
+      console.log('🎨 Updating avatar from props:', avatarSrc);
+      setAvatar(avatarSrc);
+      // Also update localStorage for next time
+      localStorage.setItem('zo_avatar', avatarSrc);
     }
-  }, [avatarSrc]);
+  }, [avatarSrc, avatar]);
 
   // Fetch and refresh balance and avatar periodically
   useEffect(() => {
@@ -65,9 +82,12 @@ export default function QuantumSyncHeader({
       if (progress?.quests?.zo_points !== undefined) {
           setBalance(progress.quests.zo_points);
         }
-      // Update avatar from API if available
-      if (progress?.user?.pfp) {
+      // Update avatar from API if available and different
+      if (progress?.user?.pfp && progress.user.pfp !== avatar) {
+        console.log('🎨 Updating avatar from API:', progress.user.pfp);
         setAvatar(progress.user.pfp);
+        // Also update localStorage for next time
+        localStorage.setItem('zo_avatar', progress.user.pfp);
       }
     }
 

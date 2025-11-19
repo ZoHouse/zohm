@@ -62,7 +62,11 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
 
     fetchBalance();
   }, [userProfile?.id]);
-  
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> b1a120a (fix: merge conflicts  error)
   // Update time every 10ms for smooth milliseconds display
   useEffect(() => {
     const interval = setInterval(() => {
@@ -70,27 +74,27 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
     }, 10);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Calculate countdown
   const getCountdown = () => {
     if (canPlay || !nextAvailableAt) {
       return { hours: 0, minutes: 0, seconds: 0, milliseconds: 0, isAvailable: true };
     }
-    
+
     const now = currentTime;
     const target = new Date(nextAvailableAt).getTime();
     const diff = Math.max(0, target - now);
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     const milliseconds = Math.floor((diff % 1000) / 10); // Show centiseconds (2 digits)
-    
+
     return { hours, minutes, seconds, milliseconds, isAvailable: false };
   };
-  
+
   const countdown = getCountdown();
-  
+
   // Handle game launch
   const handleGameClick = () => {
     if (countdown.isAvailable && userProfile?.id && onLaunchGame) {
@@ -100,18 +104,18 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
       console.log('⏳ Game on cooldown, cannot launch yet');
     }
   };
-  
+
   // Force remount when location changes
   React.useEffect(() => {
     if (hasLocation) {
       setMapKey(prev => prev + 1);
     }
   }, [userLat, userLng, hasLocation]);
-  
+
   return (
     <div className="flex flex-col flex-1" style={{ gap: DashboardSpacing.xl }}>
       {/* Quantum Sync / game1111 Timer Container */}
-      <div 
+      <div
         onClick={handleGameClick}
         className="flex items-center justify-between border border-solid cursor-pointer hover:opacity-90 transition-opacity"
         style={{
@@ -139,7 +143,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 color: DashboardColors.text.primary,
                 whiteSpace: 'nowrap',
               }}>QUANTUM SYNC</p>
-              
+
               <p style={{
                 fontFamily: DashboardTypography.fontFamily.display,
                 fontWeight: DashboardTypography.fontWeight.extraBold,
@@ -150,7 +154,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 textTransform: 'uppercase',
               }}>ZO</p>
             </div>
-            <div 
+            <div
               className="overflow-hidden"
               style={{
                 width: '112px',
@@ -158,7 +162,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 borderRadius: DashboardRadius.md,
               }}
             >
-              <video 
+              <video
                 autoPlay
                 loop
                 muted
@@ -183,7 +187,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 color: DashboardColors.text.primary,
                 whiteSpace: 'nowrap',
               }}>QUANTUM SYNC</p>
-              
+
               <div className="flex items-baseline" style={{ gap: '6px' }}>
                 <span style={{
                   fontFamily: 'monospace',
@@ -244,7 +248,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 </span>
               </div>
             </div>
-            <div 
+            <div
               className="overflow-hidden animate-pulse"
               style={{
                 width: '112px',
@@ -252,7 +256,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
                 borderRadius: DashboardRadius.md,
               }}
             >
-              <video 
+              <video
                 autoPlay
                 loop
                 muted
@@ -268,7 +272,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
       </div>
 
       {/* Travel Section */}
-      <div 
+      <div
         className="flex flex-col border border-solid"
         style={{
           backdropFilter: `blur(${DashboardBlur.medium})`,
@@ -291,7 +295,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
         }}>MAP</p>
 
         {/* Mini Map View */}
-        <div 
+        <div
           className="relative w-full"
           style={{
             height: '360px',
@@ -301,15 +305,15 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
         >
           {/* MapCanvas Component */}
           {hasLocation ? (
-            <div 
+            <div
               key={mapKey}
-              className="absolute" 
-              style={{ 
+              className="absolute"
+              style={{
                 top: '-30%',
                 left: 0,
                 right: 0,
                 bottom: '-30%',
-                borderRadius: DashboardRadius.lg, 
+                borderRadius: DashboardRadius.lg,
                 overflow: 'hidden',
               }}
             >
@@ -367,7 +371,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
       </div>
 
       {/* Open Your Own ZO NODE CTA */}
-      <div 
+      <div
         className="flex items-start justify-between border border-solid"
         style={{
           backdropFilter: `blur(${DashboardBlur.medium})`,
@@ -408,7 +412,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
             }}>NODE</p>
           </div>
         </div>
-        <div 
+        <div
           className="overflow-hidden"
           style={{
             width: '112px',
@@ -416,17 +420,17 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
             borderRadius: DashboardRadius.md,
           }}
         >
-          <img 
-            src="/Zo House Isometric latest.png" 
-            alt="ZO NODE" 
+          <img
+            src="/Zo House Isometric latest.png"
+            alt="ZO NODE"
             className="w-full h-full object-cover"
           />
         </div>
       </div>
 
       {/* Leaderboard */}
-      <DesktopLeaderboard 
-        userId={userProfile?.id} 
+      <DesktopLeaderboard
+        userId={userProfile?.id}
         userBalance={balance}
       />
     </div>

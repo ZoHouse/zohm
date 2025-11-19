@@ -46,9 +46,6 @@ export default function CitizenCard({ onboardingStep, userId, onComplete }: Citi
 
       <QuantumSyncHeader avatarSrc={selectedAvatar || undefined} userId={userId} />
 
-      {/* Home Indicator at bottom */}
-      <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2 w-[134px] h-[5px] bg-white rounded-[100px] z-[110]" />
-
       <div className="relative z-10 w-full h-full flex flex-col items-center">
         {/* Circular Avatar with Glow - centered vertically */}
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-6">

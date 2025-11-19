@@ -33,7 +33,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.quests?.zo_points !== undefined) {
@@ -60,7 +60,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.success && data?.data?.score !== undefined) {
@@ -109,14 +109,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
   const handleSaveBio = async () => {
     if (!userId) return;
-    
+
     try {
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bio: bioText }),
       });
-      
+
       if (response.ok) {
         setIsEditingBio(false);
       } else {
@@ -131,7 +131,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
     if (!selectedCultures.includes(culture) && userId) {
       const newCultures = [...selectedCultures, culture];
       setSelectedCultures(newCultures);
-      
+
       // Save to Supabase
       try {
         const response = await fetch(`/api/users/${userId}`, {
@@ -139,7 +139,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ culture: newCultures.join(', ') }),
         });
-        
+
         if (!response.ok) {
           console.error('Failed to update cultures');
           // Revert on error
@@ -156,10 +156,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
   const handleRemoveCulture = async (culture: string) => {
     if (!userId) return;
-    
+
     const newCultures = selectedCultures.filter(c => c !== culture);
     setSelectedCultures(newCultures);
-    
+
     // Save to Supabase
     try {
       const response = await fetch(`/api/users/${userId}`, {
@@ -167,7 +167,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ culture: newCultures.join(', ') }),
       });
-      
+
       if (!response.ok) {
         console.error('Failed to update cultures');
         // Revert on error
@@ -208,7 +208,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
       `}</style>
       <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
       {/* Profile Card */}
-      <div 
+      <div
         className="flex flex-col border border-solid"
         style={{
           backdropFilter: `blur(${DashboardBlur.medium})`,
@@ -221,6 +221,30 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         }}
       >
         {/* Founder + Citizen IDs */}
+        <div className="flex items-center justify-between w-full">
+          <div
+            className="flex items-center px-1 py-1"
+            style={{
+              gap: DashboardSpacing.xs,
+              borderRadius: DashboardRadius.pill,
+            }}
+          >
+            <p style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontWeight: DashboardTypography.fontWeight.medium,
+              fontSize: DashboardTypography.size.smallMedium.fontSize,
+              lineHeight: DashboardTypography.size.smallMedium.lineHeight,
+              color: DashboardColors.text.quaternary,
+            }}>Founder</p>
+            <p style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontWeight: DashboardTypography.fontWeight.medium,
+              fontSize: DashboardTypography.size.smallMedium.fontSize,
+              lineHeight: DashboardTypography.size.smallMedium.lineHeight,
+              color: DashboardColors.text.primary,
+            }}>#1413</p>
+          </div>
+          <div
         <div className="flex items-center justify-center w-full">
           <div
             className="flex items-center px-1 py-1"
@@ -249,9 +273,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         {/* Zo Passport Card */}
         <div className="flex flex-col items-center justify-center" style={{ gap: DashboardSpacing.md }}>
           <ZoPassport />
-          
+
           {/* View Passport Button */}
-          <Link 
+          <Link
             href="/zopassport"
             className="px-6 py-2.5 rounded-lg transition-all hover:opacity-90 text-center border border-white/10"
             style={{
@@ -379,10 +403,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           {/* Wallet + Social Links */}
           <div className="flex items-start justify-between w-full">
             {/* Wallet Button */}
-            <button 
+            <button
               onClick={handleCopyWallet}
               className="flex items-center border border-solid px-3 py-2 hover:opacity-80 transition-opacity"
-              style={{ 
+              style={{
                 gap: DashboardSpacing.sm,
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 borderColor: 'rgba(255, 255, 255, 0.16)',
@@ -407,9 +431,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             {/* Social Icons */}
             <div className="flex items-center" style={{ gap: DashboardSpacing.sm }}>
               {/* X/Twitter */}
-              <button 
+              <button
                 className="flex items-center justify-center border border-solid hover:opacity-80 transition-opacity"
-                style={{ 
+                style={{
                   width: '40px',
                   height: '40px',
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -421,11 +445,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   <img src={DashboardAssets.icons.xTwitter} alt="X" className="w-full h-full object-contain" />
             </div>
               </button>
-              
+
               {/* Telegram */}
-              <button 
+              <button
                 className="flex items-center justify-center border border-solid hover:opacity-80 transition-opacity"
-                style={{ 
+                style={{
                   width: '40px',
                   height: '40px',
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -454,8 +478,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 const icon = getCultureIcon(culture);
                 const displayName = getCultureDisplayName(culture);
                 return (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="flex items-center border border-solid group hover:border-red-500/50 transition-colors"
                     style={{
                       gap: DashboardSpacing.xs,
@@ -484,7 +508,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   </div>
                 );
               })}
-              
+
               {/* Add Culture Button */}
               <button
                 onClick={() => setShowCultureDropdown(!showCultureDropdown)}
@@ -502,7 +526,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
             {/* Dropdown Menu */}
             {showCultureDropdown && (
-              <div 
+              <div
                 className="absolute top-full left-0 mt-2 w-full border border-solid z-50 scrollbar-hide"
                 style={{
                   backgroundColor: 'rgba(18, 18, 18, 0.98)',
@@ -518,7 +542,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 }}
               >
                 {/* Header */}
-                <div 
+                <div
                   className="sticky top-0 flex items-center border-b border-solid"
                   style={{
                     padding: `${DashboardSpacing.md} ${DashboardSpacing.lg}`,
@@ -566,7 +590,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                       );
                     })
                   ) : (
-                    <div 
+                    <div
                       className="flex items-center justify-center"
                       style={{ padding: `${DashboardSpacing.xl} ${DashboardSpacing.lg}` }}
                     >
@@ -602,7 +626,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   color: DashboardColors.text.primary,
                 }}>{formatBalance(balance)}</p>
                 {/* Coin with 3 gradient overlays */}
-                <div 
+                <div
                   className="relative"
                   style={{
                     width: '24px',
@@ -611,19 +635,19 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                     overflow: 'hidden',
                   }}
                 >
-                  <img 
+                  <img
                     src={DashboardAssets.statIcons.coin1}
-                    alt="" 
+                    alt=""
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <img 
+                  <img
                     src={DashboardAssets.statIcons.coin2}
-                    alt="" 
+                    alt=""
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <img 
+                  <img
                     src={DashboardAssets.statIcons.coin3}
-                    alt="" 
+                    alt=""
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
@@ -653,7 +677,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         </div>
 
         {/* Request Connection Button */}
-        <button 
+        <button
           className="flex items-center justify-center hover:opacity-90 transition-opacity"
           style={{
             gap: DashboardSpacing.xs,
@@ -675,7 +699,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
       </div>
 
       {/* Founder NFTs */}
-      <div 
+      <div
         className="flex flex-col border border-solid"
         style={{
           backdropFilter: `blur(${DashboardBlur.medium})`,
@@ -696,11 +720,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           color: DashboardColors.text.tertiary,
           textTransform: 'uppercase',
         }}>FOUNDER NFTs</p>
-        
+
         <div className="flex flex-col" style={{ gap: DashboardSpacing.md }}>
           {/* NFT 1 */}
           <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-            <div 
+            <div
               className="overflow-hidden"
               style={{
                 width: '80px',
@@ -709,9 +733,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 flexShrink: 0,
               }}
             >
-              <img 
-                src="/dashboard-assets/430-1.png" 
-                alt="NFT #411" 
+              <img
+                src="/dashboard-assets/430-1.png"
+                alt="NFT #411"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -727,7 +751,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
           {/* NFT 2 */}
           <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-            <div 
+            <div
               className="overflow-hidden"
               style={{
                 width: '80px',
@@ -736,9 +760,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 flexShrink: 0,
               }}
             >
-              <img 
-                src="/dashboard-assets/430-2.png" 
-                alt="NFT #831" 
+              <img
+                src="/dashboard-assets/430-2.png"
+                alt="NFT #831"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -754,7 +778,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
           {/* NFT 3 */}
           <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-            <div 
+            <div
               className="overflow-hidden"
               style={{
                 width: '80px',
@@ -763,9 +787,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 flexShrink: 0,
               }}
             >
-              <img 
-                src="/dashboard-assets/430-3.png" 
-                alt="NFT #420" 
+              <img
+                src="/dashboard-assets/430-3.png"
+                alt="NFT #420"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -795,9 +819,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           borderRadius: DashboardRadius.lg,
         }}
       >
-        <img 
-          src="/zomafia.png" 
-          alt="Zo Mafia" 
+        <img
+          src="/zomafia.png"
+          alt="Zo Mafia"
           className="w-full h-auto object-cover"
         />
       </Link>

@@ -59,10 +59,11 @@ const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [
       
       {/* Main Body: 3 Column Layout */}
         <div 
-          className="flex items-start justify-between overflow-y-auto flex-1"
+          className="flex items-start overflow-x-auto overflow-y-auto flex-1 min-h-0"
           style={{
             gap: DashboardSpacing.xl,
             padding: DashboardSpacing.xl,
+            minWidth: 'min-content',
           }}
         >
         {/* Left Sidebar */}

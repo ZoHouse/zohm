@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Copy, Check } from 'lucide-react';
 import { getCultureDisplayName, getCultureIcon } from '@/lib/cultures';
 import { PrivyUserProfile } from '@/types/privy';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
+import ZoPassport from './ZoPassport';
 
 interface LeftSidebarProps {
   userProfile: PrivyUserProfile | null;
@@ -154,72 +156,35 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           </div>
         </div>
 
-        {/* Profile Photo with Animated GIF Frame */}
-        <div className="flex flex-col items-center justify-center w-[312px]" style={{ gap: DashboardSpacing.sm }}>
-          <div 
-            className="relative"
+        {/* Zo Passport Card */}
+        <div className="flex flex-col items-center justify-center" style={{ gap: DashboardSpacing.md }}>
+          <ZoPassport />
+          
+          {/* View Passport Button */}
+          <Link 
+            href="/zopassport"
+            className="px-6 py-2.5 rounded-lg transition-all hover:opacity-90 text-center border border-white/10"
             style={{
-              width: '355px',
-              height: '355px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: `blur(${DashboardBlur.medium})`,
+              WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
             }}
           >
-            {/* Animated GIF Frame (transparent) */}
-            <img 
-              src="/Profileacrd.gif"
-              alt="Profile Frame" 
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            />
-            
-            {/* Profile Photo - Absolutely positioned inside frame */}
-            <div
-              className="absolute overflow-hidden"
-              style={{
-                width: '181px',
-                height: '175px',
-                left: 'calc(50% + 0.5px)',
-                top: '61px',
-                transform: 'translateX(-50%)',
-                borderRadius: '8px',
-                backgroundColor: 'transparent',
-              }}
-            >
-            <img 
-                src={userProfile?.pfp || DashboardAssets.profile.photo}
-              alt="Profile" 
-                className="w-full h-full"
-                style={{
-                  objectFit: 'contain',
-                  backgroundColor: 'transparent',
-                }}
-            />
-            </div>
-          </div>
+            <span style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontSize: DashboardTypography.size.small.fontSize,
+              fontWeight: DashboardTypography.fontWeight.medium,
+              color: DashboardColors.text.primary,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              View Passport
+            </span>
+          </Link>
         </div>
 
         {/* User Info */}
         <div className="flex flex-col w-full" style={{ gap: DashboardSpacing.xl }}>
-          {/* Name + Verified Badge */}
-          <div className="flex items-center justify-center" style={{ gap: DashboardSpacing.md }}>
-            <p style={{
-              fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.fontWeight.medium,
-              fontSize: '32px',
-              lineHeight: '44px',
-              color: DashboardColors.text.primary,
-              textAlign: 'center',
-            }}>
-              {userProfile?.name || 'Anonymous'}
-            </p>
-            {/* Verified Badge */}
-            <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
-              <img 
-                src={DashboardAssets.profile.badge}
-                alt="Verified" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </div>
-
           {/* Bio */}
           <div className="flex items-center justify-center" style={{ gap: DashboardSpacing.sm }}>
             <p style={{
@@ -491,7 +456,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             lineHeight: 'normal',
           }}>Request Connection</p>
         </button>
-      </div>
+        </div>
 
       {/* Founder NFTs */}
       <div 

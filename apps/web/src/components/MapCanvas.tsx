@@ -18,30 +18,41 @@ import {
 const VERBOSE_LOGGING = false;
 const mapLog = VERBOSE_LOGGING ? console.log : () => {};
 
+// 🎨 MAP STYLE CONFIGURATION
+// Change this to test different Mapbox styles:
+const MAP_STYLE = 'mapbox://styles/mapbox/navigation-night-v1';
+
+/* 🗺️ AVAILABLE STYLES - Copy/paste to test:
+ * 
+ * Dark Themes:
+ * 'mapbox://styles/mapbox/dark-v11'                    // Dark (current) - Best for dark UI
+ * 'mapbox://styles/mapbox/navigation-night-v1'          // Navigation Dark - Optimized for driving
+ * 
+ * Light Themes:
+ * 'mapbox://styles/mapbox/light-v11'                   // Light - Clean minimal
+ * 'mapbox://styles/mapbox/streets-v12'                 // Streets - Default Google Maps style
+ * 'mapbox://styles/mapbox/navigation-day-v1'            // Navigation Light - Optimized for driving
+ * 
+ * Satellite:
+ * 'mapbox://styles/mapbox/satellite-v9'                // Satellite - Real satellite imagery
+ * 'mapbox://styles/mapbox/satellite-streets-v12'       // Satellite + Streets - Hybrid view
+ * 
+ * Outdoor/Terrain:
+ * 'mapbox://styles/mapbox/outdoors-v12'                // Outdoors - Terrain + hiking trails
+ * 
+ * Modern/Standard:
+ * 'mapbox://styles/mapbox/standard'                    // Standard - New Mapbox 3D style
+ */
+
+// 🌍 MAP PROJECTION CONFIGURATION
+// 'globe' = 3D Earth sphere (zoom out to see the full globe!)
+// 'mercator' = Traditional flat map
+const MAP_PROJECTION: 'globe' | 'mercator' = 'globe';
+
 // Zo House locations with precise coordinates
-const ZO_HOUSES = [
-  {
-    name: "Zo House SF",
-    lat: 37.7817309,
-    lng: -122.401198,
-    address: "300 4th St, San Francisco, CA 94107, United States",
-    description: "Zo House San Francisco - The original crypto hub"
-  },
-  {
-    name: "Zo House Koramangala",
-    lat: 12.933043207450986,
-    lng: 77.63463845876512,
-    address: "S-1, P-2, Anaa Infra's Signature Towers, Nirguna Mandir Layout, Cauvery Colony, S.T. Bed, 1st Block Koramangala, Bengaluru, Karnataka 560095, India",
-    description: "Zo House Bangalore - Innovation center in India's Silicon Valley"
-  },
-  {
-    name: "Zo House Whitefield",
-    lat: 12.972625067533576,
-    lng: 77.74648576165846,
-    address: "Outer Circle, Dodsworth Layout, Whitefield, Bengaluru, Karnataka, India", 
-    description: "Zo House Whitefield - Expanding the ecosystem"
-  }
-];
+// ❌ REMOVED: All nodes now managed in database via partner_nodes table
+// Previously hardcoded Zo Houses (SF, Koramangala, Whitefield) should be added to database
+// const ZO_HOUSES = [...];
 
 interface MapCanvasProps {
   events: ParsedEvent[];
@@ -63,8 +74,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   const [mapLoaded, setMapLoaded] = useState(false);
   const activePopups = useRef<Set<mapboxgl.Popup>>(new Set());
   const hasAnimatedFromSpace = useRef(false);
-  const zoHouseMarkers = useRef<mapboxgl.Marker[]>([]);
-  const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]);
+  const partnerNodeMarkers = useRef<mapboxgl.Marker[]>([]); // All nodes (including Zo Houses) managed here
   const userLocationMarker = useRef<mapboxgl.Marker | null>(null); // 🦄 User location unicorn marker
   const resizeHandlerRef = useRef<(() => void) | undefined>(undefined);
   const currentRouteSourceId = useRef<string>('user-to-destination-route');
@@ -487,100 +497,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   };
 
   // Add Zo House markers with custom animated icon
-  const addZoHouseMarkers = () => {
-    if (!map.current) return;
-
-    // Clear any existing Zo House markers
-    zoHouseMarkers.current.forEach(marker => {
-      try {
-        marker.remove();
-      } catch (error) {
-        console.warn('Error removing existing marker:', error);
-      }
-    });
-    zoHouseMarkers.current = [];
-
-    mapLog('🏠 Adding Zo House markers with precise coordinates...');
-    ZO_HOUSES.forEach((house) => {
-      mapLog(`📍 Adding marker for ${house.name} at [${house.lat}, ${house.lng}]`);
-      try {
-        // Create custom PNG marker for Zo House (using proven approach)
-        const markerElement = document.createElement('img');
-        markerElement.src = '/Zo_flexing_white.png';
-        markerElement.style.width = '50px';
-        markerElement.style.height = '50px';
-        markerElement.style.borderRadius = '50%';
-        markerElement.style.cursor = 'pointer';
-        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-        markerElement.title = house.name;
-
-        const zoMarker = new mapboxgl.Marker(markerElement)
-          .setLngLat([house.lng, house.lat])
-          .addTo(map.current!);
-
-        mapLog(`🏠 Added PNG marker for ${house.name}`);
-
-        // Store marker reference
-        zoHouseMarkers.current.push(zoMarker);
-
-        // Create popup content for Zo House
-        const zoPopupContent = `
-          <div style="padding: 0;">
-            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${house.name}</h3>
-            <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${house.address}</p>
-            <div style="display: flex; gap: 8px;">
-              <button onclick="window.open('https://zo.house', '_blank')" class="glow-popup-button secondary" style="flex: 1;">Visit</button>
-              <button onclick="window.showRouteTo(${house.lng}, ${house.lat})" class="glow-popup-button" style="flex: 1;">Directions</button>
-            </div>
-          </div>
-        `;
-
-        const zoPopup = new mapboxgl.Popup({
-          className: 'node-popup-clean',
-          closeButton: false,
-          closeOnClick: true,
-          offset: [0, -45],
-          maxWidth: '280px',
-          anchor: 'bottom'
-        }).setHTML(zoPopupContent);
-
-        zoMarker.setPopup(zoPopup);
-
-        // Handle marker click
-        markerElement.addEventListener('click', () => {
-          // Ensure previous popups are closed via central mechanism
-          closeAllPopups();
-          if (currentOpenPopup && currentOpenPopup !== zoPopup) {
-            try {
-              currentOpenPopup.remove();
-              activePopups.current.delete(currentOpenPopup);
-            } catch (error) {
-              console.warn('Error removing popup:', error);
-            }
-          }
-          // Open the popup anchored to this marker
-          try {
-            zoMarker.togglePopup();
-          } catch (error) {
-            console.warn('Error opening Zo House popup:', error);
-          }
-          setCurrentOpenPopup(zoPopup);
-          activePopups.current.add(zoPopup);
-          
-          zoPopup.on('close', () => {
-            if (currentOpenPopup === zoPopup) {
-              setCurrentOpenPopup(null);
-            }
-            activePopups.current.delete(zoPopup);
-          });
-        });
-
-        mapLog(`✅ Added Zo House marker: ${house.name}`);
-      } catch (error) {
-        console.warn('Error creating Zo House marker:', house.name, error);
-      }
-    });
-  };
+  // ❌ REMOVED: addZoHouseMarkers() - All nodes now managed via addPartnerNodeMarkers()
+  // Zo Houses should be added to partner_nodes table in database
 
   // 🦄 Add partner node markers (Unicorn: all use Zo logo)
   const addPartnerNodeMarkers = async () => {
@@ -849,7 +767,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         zoom: initialZoom,
         pitch: initialPitch,
         bearing: initialBearing,
-        style: 'mapbox://styles/mapbox/streets-v12', // Changed from 'standard' to reliable streets style
+        style: MAP_STYLE, // 🎨 Uses MAP_STYLE constant from top of file
+        projection: MAP_PROJECTION, // 🌍 'globe' or 'mercator' - set at top of file
         preserveDrawingBuffer: true // Helps prevent rendering issues
       });
 
@@ -1000,9 +919,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           mapLog('⏭️ Animating from space - waiting for location...');
         }
         
-        // Add Zo House markers
-        addZoHouseMarkers();
-        // Note: Partner node markers are added via useEffect when nodes prop is available
+        // Note: All node markers (including Zo Houses) are added via useEffect when nodes prop is available
+        // No hardcoded markers - everything managed from database
 
         // Expose directions helper on window for popup buttons
         try {
@@ -1609,10 +1527,40 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   }, [nodes, mapLoaded]);
 
   return (
-    <div 
-      ref={mapContainer} 
-      className={className || "w-full h-full"}
-      style={{ minHeight: '100vh' }}
-    />
+    <div className="relative w-full h-full" style={{ minHeight: '100vh' }}>
+      {/* ✨ Star field background */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundColor: '#0a0e27',
+          backgroundImage: `
+            radial-gradient(2px 2px at 20px 30px, white, transparent),
+            radial-gradient(2px 2px at 60px 70px, white, transparent),
+            radial-gradient(1px 1px at 50px 50px, white, transparent),
+            radial-gradient(1px 1px at 130px 80px, white, transparent),
+            radial-gradient(2px 2px at 90px 10px, white, transparent),
+            radial-gradient(1px 1px at 10px 90px, white, transparent),
+            radial-gradient(1px 1px at 110px 30px, white, transparent),
+            radial-gradient(2px 2px at 150px 120px, white, transparent),
+            radial-gradient(1px 1px at 40px 110px, white, transparent),
+            radial-gradient(1px 1px at 170px 40px, white, transparent)
+          `,
+          backgroundSize: '200px 200px',
+          backgroundRepeat: 'repeat',
+          opacity: 0.6
+        }}
+      />
+      
+      {/* 🗺️ Map container */}
+      <div 
+        ref={mapContainer} 
+        className={className || "w-full h-full"}
+        style={{ 
+          minHeight: '100vh',
+          position: 'relative',
+          zIndex: 1
+        }}
+      />
+    </div>
   );
 } 

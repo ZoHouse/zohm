@@ -6,6 +6,7 @@ import { PrivyUserProfile } from '@/types/privy';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
+import DesktopLeaderboard from './DesktopLeaderboard';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('@/components/MapCanvas'), {
@@ -400,6 +401,12 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
           />
         </div>
       </div>
+
+      {/* Leaderboard */}
+      <DesktopLeaderboard 
+        userId={userProfile?.user_id} 
+        userBalance={userProfile?.zo_balance || 0}
+      />
     </div>
   );
 };

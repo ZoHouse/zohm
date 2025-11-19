@@ -219,7 +219,7 @@ Join me: https://zohm.world
             >
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Rubik, sans-serif' }}>
-                  {userProfile?.zo_balance?.toLocaleString() || '200'}
+                  {userProfile?.zo_balance?.toLocaleString() || '0'}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
@@ -511,7 +511,7 @@ Join me: https://zohm.world
                         isFounder: (userProfile?.founder_nfts_count || 0) > 0,
                       }}
                       completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.location ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
                         total: 10,
                       }}
                     />

@@ -29,6 +29,7 @@ export interface UserRecord {
   lng: number | null;
   role: 'Founder' | 'Member' | 'Citizen';
   founder_nfts_count: number;
+  zo_balance: number;  // User's ZO token balance
   calendar_url: string | null;
   main_quest_url: string | null;
   side_quest_url: string | null;

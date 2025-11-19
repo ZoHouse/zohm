@@ -13,7 +13,7 @@
 
 [Website](https://zo.xyz) • [Documentation](./Docs/README.md) • [Protocol Lore](./lore/zo_protocol_lore.md)
 
-<img src="./apps/web/public/readme-screenshots/01-landing-page.png" width="100%" alt="Zo World Landing Page" />
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.21 PM.png" width="100%" alt="Zo World Dashboard" />
 
 </div>
 
@@ -38,20 +38,12 @@ Within Zo World, every action is a signal. Every signal affects the field. The f
 - Glassmorphism design with smooth animations
 - Mobile-responsive with seamless navigation
 
-<div align="center">
-<img src="./apps/web/public/dashboard-assets/profile-photo.png" width="200" alt="Zo Passport">
-</div>
-
 ### 🗺️ **Interactive Node Map**
 - **3D Mapbox-powered visualization** of global Zo Nodes
 - Real-time location tracking and node discovery
 - Physical spaces as programmable reality portals
 - **Zostel Network integration** - 50+ locations across India
 - Node resonance and presence tracking
-
-<div align="center">
-<img src="./apps/web/public/dashboard-assets/map-3d-main.jpg" width="700" alt="Interactive 3D Node Map" />
-</div>
 
 ### 🎮 **Quest System - Reality Programs**
 - **Structured quests** that generate life signals
@@ -74,11 +66,6 @@ Within Zo World, every action is a signal. Every signal affects the field. The f
 - Integrated with Zostel network (50+ nodes)
 - Each node amplifies the field and creates opportunities
 
-<div align="center">
-<img src="./apps/web/public/dashboard-assets/zo-house-blr.jpg" width="400" alt="Zo House Bangalore" />
-<img src="./apps/web/public/dashboard-assets/zo-house-sf.jpg" width="400" alt="Zo House San Francisco" />
-</div>
-
 ### 🎨 **Culture System**
 - Declare your cultures: Design, Food, Science & Tech, and more
 - Culture-based matching and community formation
@@ -98,29 +85,20 @@ Within Zo World, every action is a signal. Every signal affects the field. The f
 
 <div align="center">
 
-### Landing Page
-<img src="./apps/web/public/readme-screenshots/01-landing-page.png" width="800" alt="Landing Page" />
+### Dashboard Overview
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.21 PM.png" width="900" alt="Zo World Dashboard" />
 
-### Interactive 3D Map
-<img src="./apps/web/public/dashboard-assets/map-3d-main.jpg" width="800" alt="3D Node Map" />
+### Zo Passport - Digital Identity
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.29 PM.png" width="900" alt="Zo Passport" />
 
-### Zo Houses
-<table>
-  <tr>
-    <td><img src="./apps/web/public/dashboard-assets/zo-house-blr.jpg" width="400" alt="Zo House Bangalore" /></td>
-    <td><img src="./apps/web/public/dashboard-assets/zo-house-sf.jpg" width="400" alt="Zo House San Francisco" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Zo House Bangalore</b></td>
-    <td align="center"><b>Zo House San Francisco</b></td>
-  </tr>
-</table>
+### Passport Details & Progression
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.42 PM.png" width="900" alt="Passport Details" />
 
-### Quest Interface
-<img src="./apps/web/public/dashboard-assets/main-quest-wallapp.jpg" width="800" alt="Quest System" />
+### Interactive 3D Node Map
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.30.25 PM.png" width="900" alt="3D Node Map" />
 
-### Community Events
-<img src="./apps/web/public/dashboard-assets/community-demo-day.jpg" width="800" alt="Community Events" />
+### Quest System & Leaderboard
+<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.30.29 PM.png" width="900" alt="Quest System" />
 
 </div>
 

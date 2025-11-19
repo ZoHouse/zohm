@@ -1,23 +1,55 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { ZoPassport, ZoPassportTest } from '@/components/desktop-dashboard';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 
 export default function ZoPassportPage() {
+  const router = useRouter();
   const { userProfile, isLoading } = usePrivyUser();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [balance, setBalance] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalCardRef = useRef<HTMLDivElement>(null);
+  const userId = userProfile?.id;
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
+
+  // Fetch token balance with polling
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchBalance() {
+      try {
+        const response = await fetch(`/api/users/${userId}/progress`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.quests?.zo_points !== undefined) {
+            setBalance(data.quests.zo_points);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch balance:', error);
+      }
+    }
+
+    fetchBalance();
+    const intervalId = setInterval(fetchBalance, 3000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   // Culture/interests data with image stickers
   const availableCultures = [
@@ -153,6 +185,19 @@ Join me: https://zohm.world
       `}</style>
       
       <div className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-white/10 text-white/70 hover:text-white group"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>Back</span>
+        </button>
+
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Zo Passport</h1>
@@ -188,9 +233,9 @@ Join me: https://zohm.world
               <div className="space-y-1">
                 <InfoRow icon="✏️" label="Full Name" value={userProfile?.name || "..."} />
                 <InfoRow icon="👤" label="Short Bio" value={userProfile?.bio || "..."} />
-                <InfoRow icon="🎂" label="Born on" value="Aug 3, 1991" />
-                <InfoRow icon="🎭" label="Gender" value="Male" />
-                <InfoRow icon="📍" label="Location" value={userProfile?.location || "..."} />
+                <InfoRow icon="🎂" label="Born on" value={userProfile?.birthdate ? new Date(userProfile.birthdate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "..."} />
+                <InfoRow icon="🎭" label="Body Type" value={userProfile?.body_type ? (userProfile.body_type.charAt(0).toUpperCase() + userProfile.body_type.slice(1)) : "..."} />
+                <InfoRow icon="📍" label="Location" value={userProfile?.city || "..."} />
               </div>
             </div>
 
@@ -219,7 +264,7 @@ Join me: https://zohm.world
             >
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Rubik, sans-serif' }}>
-                  {userProfile?.zo_balance?.toLocaleString() || '200'}
+                  {balance?.toLocaleString() || '0'}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
@@ -511,7 +556,7 @@ Join me: https://zohm.world
                         isFounder: (userProfile?.founder_nfts_count || 0) > 0,
                       }}
                       completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.location ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
                         total: 10,
                       }}
                     />

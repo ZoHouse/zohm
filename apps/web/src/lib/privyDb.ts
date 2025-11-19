@@ -21,12 +21,15 @@ export interface UserRecord {
   culture: string | null;
   city: string | null;
   email: string | null;
+  phone: string | null;
+  birthdate: string | null;  // Date string in ISO format
   x_handle: string | null;
   x_connected: boolean;
   lat: number | null;
   lng: number | null;
   role: 'Founder' | 'Member' | 'Citizen';
   founder_nfts_count: number;
+  zo_balance: number;  // User's ZO token balance
   calendar_url: string | null;
   main_quest_url: string | null;
   side_quest_url: string | null;

@@ -1,8 +1,11 @@
 # API Contracts - Core Endpoints (v1)
 
 **Project**: Zo World Map (ZOHM)  
-**Last Updated**: 2025-11-13  
+**Last Updated**: 2025-11-19  
 **Purpose**: Contract definitions for AI and human developers
+
+> **📖 For detailed API documentation with examples, see [API_ENDPOINTS.md](./API_ENDPOINTS.md)**  
+> This file provides machine-readable contracts for validation and testing.
 
 ---
 

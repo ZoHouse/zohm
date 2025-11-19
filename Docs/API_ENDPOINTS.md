@@ -1,8 +1,11 @@
 # API Endpoints Reference
 
 **Project**: Zo World Map (ZOHM) WebApp  
-**Last Updated**: November 13, 2025  
+**Last Updated**: November 19, 2025  
 **Base URL**: `/api/`
+
+> **🤖 For machine-readable contracts, see [API_CONTRACTS.md](./API_CONTRACTS.md)**  
+> This file provides detailed examples and usage patterns.
 
 ---
 

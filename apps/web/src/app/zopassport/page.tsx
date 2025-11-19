@@ -10,14 +10,43 @@ export default function ZoPassportPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [balance, setBalance] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalCardRef = useRef<HTMLDivElement>(null);
+  const userId = userProfile?.id;
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
+
+  // Fetch token balance with polling
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchBalance() {
+      try {
+        const response = await fetch(`/api/users/${userId}/progress`, {
+          cache: 'no-cache',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.quests?.zo_points !== undefined) {
+            setBalance(data.quests.zo_points);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch balance:', error);
+      }
+    }
+
+    fetchBalance();
+    const intervalId = setInterval(fetchBalance, 3000);
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   // Culture/interests data with image stickers
   const availableCultures = [
@@ -219,7 +248,7 @@ Join me: https://zohm.world
             >
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-white" style={{ fontFamily: 'Rubik, sans-serif' }}>
-                  {userProfile?.zo_balance?.toLocaleString() || '0'}
+                  {balance?.toLocaleString() || '0'}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>

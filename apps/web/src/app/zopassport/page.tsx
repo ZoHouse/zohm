@@ -18,10 +18,10 @@ export default function ZoPassportPage() {
   const modalCardRef = useRef<HTMLDivElement>(null);
   const userId = userProfile?.id;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   // Fetch token balance with polling
@@ -84,9 +84,9 @@ export default function ZoPassportPage() {
 
   const handlePostOnX = async () => {
     if (!modalCardRef.current) return;
-    
+
     setIsGenerating(true);
-    
+
     try {
       // Load html2canvas from CDN
       if (!(window as any).html2canvas) {
@@ -98,9 +98,9 @@ export default function ZoPassportPage() {
           document.head.appendChild(script);
         });
       }
-      
+
       const html2canvas = (window as any).html2canvas;
-      
+
       const canvas = await html2canvas(modalCardRef.current, {
         backgroundColor: '#000000',
         scale: 2,
@@ -108,18 +108,18 @@ export default function ZoPassportPage() {
         width: 1200,
         height: 675,
       });
-      
+
       // Download the card
       canvas.toBlob((blob: Blob | null) => {
         if (!blob) return;
-        
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
-        
+
         // Then open X with pre-filled text after a short delay
         setTimeout(() => {
           const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
@@ -132,7 +132,7 @@ Join me: https://zohm.world
 
           const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
           window.open(twitterUrl, '_blank', 'width=550,height=420');
-          
+
           // Close modal and show instruction
           setIsModalOpen(false);
           setTimeout(() => {
@@ -167,7 +167,7 @@ Join me: https://zohm.world
         body {
           overflow: hidden;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
@@ -183,7 +183,7 @@ Join me: https://zohm.world
           background: rgba(255, 255, 255, 0.3);
         }
       `}</style>
-      
+
       <div className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12">
         {/* Back Button */}
         <button
@@ -209,12 +209,12 @@ Join me: https://zohm.world
           {/* Left: Passport Card + Declaration Button */}
           <div className="flex flex-col gap-6 items-center lg:items-start order-1">
             <ZoPassport />
-            
+
             {/* Declaration Button */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="w-[234px] px-6 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group border border-white/10"
-              style={{ 
+              style={{
                 fontFamily: 'Rubik, sans-serif',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
@@ -252,9 +252,9 @@ Join me: https://zohm.world
           {/* Right: For the Culture */}
           <div className="order-2 lg:order-3">
             <h3 className="text-lg font-medium text-white mb-4">For the Culture</h3>
-            
+
             {/* $Zo Balance with Coin Animation */}
-            <div 
+            <div
               className="rounded-lg p-4 border border-white/10 mb-4"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -271,14 +271,14 @@ Join me: https://zohm.world
                     $Zo
                   </span>
                   {/* Coin Video Animation */}
-                  <div 
+                  <div
                     className="overflow-hidden rounded-lg"
                     style={{
                       width: '48px',
                       height: '48px',
                     }}
                   >
-                    <video 
+                    <video
                       autoPlay
                       loop
                       muted
@@ -292,10 +292,10 @@ Join me: https://zohm.world
                 </div>
               </div>
             </div>
-            
+
             {/* Selected Cultures with Dropdown */}
-            <div 
-              className="rounded-lg p-4 border border-white/10" 
+            <div
+              className="rounded-lg p-4 border border-white/10"
               ref={dropdownRef}
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -310,7 +310,7 @@ Join me: https://zohm.world
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors flex items-center gap-1 border border-white/10"
-                  style={{ 
+                  style={{
                     fontFamily: 'Rubik, sans-serif',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
@@ -340,8 +340,8 @@ Join me: https://zohm.world
                         }}
                       >
                         <span className="flex items-center gap-1.5">
-                          <img 
-                            src={culture.image} 
+                          <img
+                            src={culture.image}
                             alt={culture.name}
                             className="w-4 h-4 object-contain"
                           />
@@ -358,7 +358,7 @@ Join me: https://zohm.world
                     ))
                 )}
               </div>
-              
+
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="mt-3 pt-3 border-t border-white/10">
@@ -383,8 +383,8 @@ Join me: https://zohm.world
                             }}
                           >
                             <span className="flex items-center gap-2">
-                              <img 
-                                src={culture.image} 
+                              <img
+                                src={culture.image}
                                 alt={culture.name}
                                 className="w-5 h-5 object-contain"
                               />
@@ -406,7 +406,7 @@ Join me: https://zohm.world
 
         {/* Progression Flow Section */}
         <div className="mt-12 md:mt-16">
-          <div 
+          <div
             className="rounded-lg p-8 md:p-12 border overflow-x-auto"
             style={{
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -419,7 +419,7 @@ Join me: https://zohm.world
               Your Journey in Zo World
             </h2>
             <p className="text-gray-400 text-center mb-8 md:mb-12">Evolve from Citizen to Founder</p>
-            
+
             {/* Progression Path */}
             <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap md:flex-nowrap">
               {/* Stage 1: Citizen */}
@@ -453,9 +453,9 @@ Join me: https://zohm.world
                   <div className="text-center">
                     <p className="text-xs text-gray-400 mb-2">Complete your journey by:</p>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -464,7 +464,7 @@ Join me: https://zohm.world
                     >
                       Participate in Zo World
                     </div>
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -473,7 +473,7 @@ Join me: https://zohm.world
                     >
                       Complete Quests
                     </div>
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -529,10 +529,10 @@ Join me: https://zohm.world
             </button>
 
             {/* Declaration Card - Designed for 1200x675 (16:9) */}
-            <div 
+            <div
               ref={modalCardRef}
               className="relative w-[1200px] h-[675px] mx-auto border border-white/10"
-              style={{ 
+              style={{
                 background: 'rgba(0, 0, 0, 0.6)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
@@ -584,7 +584,7 @@ Join me: https://zohm.world
                     </p>
                     <div className="flex flex-wrap justify-center gap-3">
                       {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
-                        <span 
+                        <span
                           key={word}
                           className="px-4 py-2 text-white font-bold text-sm rounded-full border"
                           style={{
@@ -624,7 +624,7 @@ Join me: https://zohm.world
                 onClick={handlePostOnX}
                 disabled={isGenerating}
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
-                style={{ 
+                style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',
@@ -642,7 +642,7 @@ Join me: https://zohm.world
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/10"
-                style={{ 
+                style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',

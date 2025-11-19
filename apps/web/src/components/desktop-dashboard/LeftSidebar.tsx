@@ -297,28 +297,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
         {/* User Info */}
         <div className="flex flex-col w-full" style={{ gap: DashboardSpacing.xl }}>
-          {/* Name + Verified Badge */}
-          <div className="flex items-center justify-center" style={{ gap: DashboardSpacing.md }}>
-            <p style={{
-              fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.fontWeight.medium,
-              fontSize: '32px',
-              lineHeight: '44px',
-              color: DashboardColors.text.primary,
-              textAlign: 'center',
-            }}>
-              {userProfile?.name || 'Anonymous'}
-            </p>
-            {/* Verified Badge */}
-            <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
-              <img 
-                src={DashboardAssets.profile.badge}
-                alt="Verified" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </div>
-
           {/* Bio */}
           <div className="flex flex-col items-center justify-center" style={{ gap: DashboardSpacing.sm }}>
             {isEditingBio ? (

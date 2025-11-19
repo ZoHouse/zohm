@@ -13,8 +13,6 @@
 
 [Website](https://zo.xyz) • [Documentation](./Docs/README.md) • [Protocol Lore](./lore/zo_protocol_lore.md)
 
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.21 PM.png" width="100%" alt="Zo World Dashboard" />
-
 </div>
 
 ---
@@ -27,80 +25,107 @@ It's not a brand, not a community product, and not a traditional network. **It's
 
 Within Zo World, every action is a signal. Every signal affects the field. The field responds with new opportunities, interactions, and narrative shifts. This recursive loop forms the basis of our **Life Design Simulation Engine** that guides people toward aligned timelines.
 
+<div align="center">
+<img src="./apps/web/public/Readmescreenshots/dashboardss.png" width="100%" alt="Zo World Dashboard" />
+<p><em>The Zo World Dashboard - Your command center for reality design</em></p>
+</div>
+
 ---
 
 ## ✨ Core Features
 
-### 🎫 **Zo Passport - Your Digital Identity**
-- Dynamic identity system with progression from **Citizen** to **Founder**
-- Real-time profile completion tracking
+### 🎫 Zo Passport - Digital Identity System
+Dynamic identity with progression from **Citizen** to **Founder**. Track your completion, declare your timeline, and showcase your evolution.
+
+<div align="center">
+<img src="./apps/web/public/Readmescreenshots/Zopassportss.png" width="800" alt="Zo Passport" />
+</div>
+
+**Features:**
+- Real-time profile completion tracking (10 fields)
 - Social declaration system for timeline commitment
 - Glassmorphism design with smooth animations
-- Mobile-responsive with seamless navigation
-
-### 🗺️ **Interactive Node Map**
-- **3D Mapbox-powered visualization** of global Zo Nodes
-- Real-time location tracking and node discovery
-- Physical spaces as programmable reality portals
-- **Zostel Network integration** - 50+ locations across India
-- Node resonance and presence tracking
-
-### 🎮 **Quest System - Reality Programs**
-- **Structured quests** that generate life signals
-- Quest proofs with blockchain verification
-- Token rewards ($ZO) for completion
-- Quest categories: Social, Creative, Physical, Digital
-- Real-time progress tracking and leaderboards
-
-### 📊 **Vibe Score - Reality Alignment Metric**
-- **Real-time alignment percentage** (0-100%)
-- Computed from multidimensional signals
-- Factors: Node presence, Quest completion, Social connections, Creative output
-- Explainable and auditable scoring algorithm
-- Dynamic updates based on citizen behavior
-
-### 🏠 **Zo Houses & Nodes**
-- **Physical infrastructure** as cultural routers
-- Zo House Bangalore - Flagship location
-- Zo House San Francisco - West Coast hub
-- Integrated with Zostel network (50+ nodes)
-- Each node amplifies the field and creates opportunities
-
-### 🎨 **Culture System**
-- Declare your cultures: Design, Food, Science & Tech, and more
-- Culture-based matching and community formation
-- Cultural sticker collection system
-- Real-time culture feed and interactions
-
-### 🎤 **Quantum Sync - Voice Quest**
-- Audio-based reality tuning experience
-- Real-time voice analysis with AssemblyAI
-- Gamified voice quest with token rewards
-- Beautiful mobile-first interface
-- Biometric authentication via Privy
+- Mobile-responsive interface
+- Progression visualization from Citizen to Founder
 
 ---
 
-## 📸 Screenshots
+### 📊 Vibe Score - Reality Alignment Metric
+Your real-time alignment percentage computed from multidimensional life signals.
 
 <div align="center">
-
-### Dashboard Overview
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.21 PM.png" width="900" alt="Zo World Dashboard" />
-
-### Zo Passport - Digital Identity
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.29 PM.png" width="900" alt="Zo Passport" />
-
-### Passport Details & Progression
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.29.42 PM.png" width="900" alt="Passport Details" />
-
-### Interactive 3D Node Map
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.30.25 PM.png" width="900" alt="3D Node Map" />
-
-### Quest System & Leaderboard
-<img src="./apps/web/public/Readmescreenshots/Screenshot 2025-11-19 at 8.30.29 PM.png" width="900" alt="Quest System" />
-
+<img src="./apps/web/public/Readmescreenshots/Repuatationss.png" width="800" alt="Vibe Score System" />
 </div>
+
+**How it works:**
+- **Real-time computation** (0-100% alignment)
+- Factors: Node presence, Quest completion, Social connections, Creative output
+- Explainable and auditable algorithm
+- Dynamic updates based on your behavior
+- Leaderboard rankings
+
+---
+
+### 🗺️ Interactive Node Map
+3D visualization of global Zo Nodes - physical spaces as programmable reality portals.
+
+<div align="center">
+<img src="./apps/web/public/Readmescreenshots/Mapnodesss.png" width="800" alt="Node Map" />
+</div>
+
+**Capabilities:**
+- **3D Mapbox-powered visualization** of all nodes
+- Real-time location tracking and discovery
+- **Zostel Network integration** - 50+ locations across India
+- Node resonance and presence tracking
+- Physical spaces that amplify the field
+
+---
+
+### 🎮 Quest System - Reality Programs
+Structured quests that generate meaningful life signals and earn token rewards.
+
+<div align="center">
+<img src="./apps/web/public/Readmescreenshots/mapquestsss.png" width="800" alt="Quest System" />
+</div>
+
+**Quest Types:**
+- **Social**: Community connections and events
+- **Creative**: Content creation and sharing
+- **Physical**: Location-based and node presence
+- **Digital**: On-chain and verification-based
+
+**Rewards:**
+- Token rewards ($ZO) for completion
+- Blockchain verification and proofs
+- Real-time progress tracking
+- Leaderboard rankings
+
+---
+
+### 🏠 Zo Houses & Nodes
+Physical infrastructure as cultural routers connecting the network.
+
+**Locations:**
+- 🇮🇳 **Zo House Bangalore** - Flagship location
+- 🇺🇸 **Zo House San Francisco** - West Coast hub
+- 🏨 **Zostel Network** - 50+ partner hostels across India
+- 🌍 **Community Nodes** - User-created locations worldwide
+
+---
+
+### 🎨 Additional Systems
+
+**Culture System**
+- Declare your cultures: Design, Food, Science & Tech, and more
+- Culture-based matching and community formation
+- Real-time culture feed and interactions
+
+**Quantum Sync - Voice Quest**
+- Audio-based reality tuning experience
+- Real-time voice analysis with AssemblyAI
+- Gamified voice quest with token rewards
+- Mobile-first interface with biometric auth
 
 ---
 
@@ -116,8 +141,8 @@ zohm/
 │   ├── api/              # Database migrations and API utilities
 │   ├── contracts/        # Smart contracts (ERC-20 tokens)
 │   ├── sdk/              # Shared TypeScript SDK and types
-│   └── shared/           # Shared utilities across packages
-├── Docs/                 # Complete project documentation
+│   └── shared/           # Shared utilities
+├── Docs/                 # Complete documentation
 ├── lore/                 # Protocol lore and ontology
 └── scripts/              # Database and automation scripts
 ```
@@ -140,43 +165,33 @@ zohm/
 ### Prerequisites
 
 - **Node.js** >= 18.0.0
-- **pnpm** >= 8.0.0 (recommended package manager)
+- **pnpm** >= 8.0.0
 - **Git**
 
-### Installation
+### Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ZoHouse/zohm.git
-   cd zohm
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/ZoHouse/zohm.git
+cd zohm
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+# Install dependencies
+pnpm install
 
-3. **Set up environment variables**
-   ```bash
-   cd apps/web
-   cp .env.example .env.local
-   # Edit .env.local with your API keys
-   ```
+# Set up environment variables
+cd apps/web
+cp .env.example .env.local
+# Edit .env.local with your API keys
 
-4. **Run the development server**
-   ```bash
-   cd apps/web
-   pnpm dev
-   ```
+# Run the development server
+pnpm dev
 
-5. **Open the app**
-   ```
-   Navigate to http://localhost:3000
-   ```
+# Open http://localhost:3000
+```
 
 ### Environment Variables
 
-Required environment variables (add to `apps/web/.env.local`):
+Required variables (add to `apps/web/.env.local`):
 
 ```bash
 # Supabase
@@ -199,47 +214,24 @@ ASSEMBLYAI_API_KEY=your_assemblyai_key
 OPENAI_API_KEY=your_openai_key
 ```
 
-See [Docs/DEVELOPMENT_SETUP.md](./Docs/DEVELOPMENT_SETUP.md) for detailed setup instructions.
+See [Docs/DEVELOPMENT_SETUP.md](./Docs/DEVELOPMENT_SETUP.md) for detailed setup.
 
 ---
 
-## 📖 Documentation
+## 🎮 The Reality Engine
 
-Comprehensive documentation is available in the `Docs/` directory:
-
-- **[START_HERE.md](./Docs/START_HERE.md)** - Begin here for onboarding
-- **[PROJECT_RULES.md](./Docs/PROJECT_RULES.md)** - 25 foundational principles
-- **[ARCHITECTURE.md](./Docs/ARCHITECTURE.md)** - System architecture deep dive
-- **[DATABASE_SCHEMA.md](./Docs/DATABASE_SCHEMA.md)** - Complete database schema
-- **[API_CONTRACTS.md](./Docs/API_CONTRACTS.md)** - API endpoint documentation
-- **[QUESTS_SYSTEM.md](./Docs/QUESTS_SYSTEM.md)** - Quest mechanics and implementation
-- **[VIBE_SCORE.md](./Docs/VIBE_SCORE.md)** - Vibe Score computation algorithm
-- **[ZO_PASSPORT_FOUNDER_VS_CITIZEN.md](./Docs/ZO_PASSPORT_FOUNDER_VS_CITIZEN.md)** - Passport progression system
-
-### Protocol Lore
-
-Understanding the **philosophy and ontology** behind Zo World:
-
-- **[zo_protocol_lore.md](./lore/zo_protocol_lore.md)** - Complete protocol lore v1.0
-
----
-
-## 🎮 Key Systems
-
-### 1️⃣ Reality Engine
-
-The invisible architect behind Zo World. It operates through a simple but powerful loop:
+The invisible architect behind Zo World operates through a powerful loop:
 
 ```
 Observe → Model → Simulate → Reinforce
 ```
 
-- **Observe**: Captures citizen behavior and signals
-- **Model**: Computes alignment and vibe score
-- **Simulate**: Generates next quest and opportunities
-- **Reinforce**: Rewards progress and strengthens the field
+1. **Observe**: Captures citizen behavior and signals
+2. **Model**: Computes alignment and vibe score
+3. **Simulate**: Generates next quest and opportunities
+4. **Reinforce**: Rewards progress and strengthens the field
 
-### 2️⃣ Signal System
+### Signal System
 
 Every interaction generates a signal:
 
@@ -250,35 +242,36 @@ Every interaction generates a signal:
 - `creation_shared` - Creative output
 - `social_connection` - Social interactions
 
-Signals flow through the pipeline:
+**Signal Pipeline:**
 ```
 Raw Data → Signals → State → Narrative
 ```
 
-### 3️⃣ Identity System
+### Identity Progression
 
-Dynamic identity progression:
+- **Citizen** (Entry level): Basic quests, map exploration, culture declaration
+- **Founder** (Advanced): Full access, token rewards, node creation, governance
 
-- **Citizen** (Entry level)
-  - Access to basic quests
-  - Map exploration
-  - Culture declaration
-  - Community events
+---
 
-- **Founder** (Advanced level)
-  - Full quest access
-  - Token rewards
-  - Node creation rights
-  - Governance participation
+## 📖 Documentation
 
-### 4️⃣ Node Network
+Comprehensive documentation in the `Docs/` directory:
 
-Physical locations as reality portals:
+**Core Documentation:**
+- [START_HERE.md](./Docs/START_HERE.md) - Onboarding guide
+- [PROJECT_RULES.md](./Docs/PROJECT_RULES.md) - 25 foundational principles
+- [ARCHITECTURE.md](./Docs/ARCHITECTURE.md) - System architecture
+- [DATABASE_SCHEMA.md](./Docs/DATABASE_SCHEMA.md) - Database schema
 
-- **Zo Houses**: Flagship hubs (BLR, SF)
-- **Zostel Nodes**: 50+ hostels across India
-- **Community Nodes**: User-created locations
-- Each node has resonance score and active quests
+**System Docs:**
+- [QUESTS_SYSTEM.md](./Docs/QUESTS_SYSTEM.md) - Quest mechanics
+- [VIBE_SCORE.md](./Docs/VIBE_SCORE.md) - Vibe Score algorithm
+- [ZO_PASSPORT_FOUNDER_VS_CITIZEN.md](./Docs/ZO_PASSPORT_FOUNDER_VS_CITIZEN.md) - Passport progression
+- [API_CONTRACTS.md](./Docs/API_CONTRACTS.md) - API documentation
+
+**Philosophy:**
+- [zo_protocol_lore.md](./lore/zo_protocol_lore.md) - Complete protocol lore v1.0
 
 ---
 
@@ -286,121 +279,86 @@ Physical locations as reality portals:
 
 ### Available Scripts
 
-From the repository root:
-
 ```bash
-# Development
 pnpm dev              # Start web dev server
 pnpm build            # Build for production
 pnpm start            # Start production server
 pnpm lint             # Run linter
-
-# Clean install
-pnpm clean:install    # Remove node_modules and reinstall
+pnpm clean:install    # Clean reinstall
 ```
 
 ### Database Migrations
 
 ```bash
-# Run a new migration
 cd packages/api
 node scripts/run-migration.js <migration-file.sql>
-
-# Rollback a migration
 node scripts/run-migration.js <migration-file_ROLLBACK.sql>
 ```
 
-See [packages/api/migrations/](./packages/api/migrations/) for all migrations.
-
-### Adding a Node
+### Node Management
 
 ```bash
-# Interactive node creation
-node scripts/add-node.mjs
-
-# List all nodes
-node scripts/list-nodes.mjs
-
-# Delete a node
-node scripts/delete-node.mjs
+node scripts/add-node.mjs     # Create node
+node scripts/list-nodes.mjs   # List all nodes
+node scripts/delete-node.mjs  # Delete node
 ```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Before contributing, please:
+Before contributing:
 
-1. Read [Docs/PROJECT_RULES.md](./Docs/PROJECT_RULES.md) - 25 foundational principles
-2. Review [Docs/cursorrule.md](./Docs/cursorrule.md) - AI pair-coding guidelines
-3. Check [Docs/CONSTRAINTS.md](./Docs/CONSTRAINTS.md) - Editing constraints
-
-### Contribution Workflow
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Follow the laundry list process**:
-   - Create `Docs/LAUNDRY/YYYYMMDD-<slug>-LAUNDRY.md`
-   - For large changes, create a work order in `Docs/WORK_ORDERS/`
-4. **Make your changes** (follow safe editing zones)
-5. **Run tests**: `pnpm test`
-6. **Generate receipt**: `python scripts/generate_receipt.py`
-7. **Commit changes**: `git commit -m "feat: your amazing feature"`
-8. **Push to branch**: `git push origin feature/amazing-feature`
-9. **Open a Pull Request**
+1. Read [PROJECT_RULES.md](./Docs/PROJECT_RULES.md) - 25 foundational principles
+2. Review [cursorrule.md](./Docs/cursorrule.md) - AI pair-coding guidelines
+3. Check [CONSTRAINTS.md](./Docs/CONSTRAINTS.md) - Editing constraints
 
 ### Safe Editing Zones
 
-✅ **You MAY edit**:
-- `apps/web/src/components/**`
-- `apps/web/src/hooks/**`
-- `packages/sdk/**`
-- `docs/**`
-- `tests/**`
+✅ **Safe to edit:** `components/**, hooks/**, sdk/**, docs/**, tests/**`
 
-⚠️ **Requires human review**:
-- `apps/web/src/app/api/**`
-- `packages/api/migrations/**`
-- `.github/workflows/**`
+⚠️ **Requires review:** `api/**, migrations/**, workflows/**`
 
-🚫 **Never touch**:
-- `.env` files
-- `package.json` dependencies
-- `packages/contracts/**`
+🚫 **Never touch:** `.env files, package.json, contracts/**`
+
+### Workflow
+
+1. Fork and create feature branch
+2. Create laundry list in `Docs/LAUNDRY/`
+3. Make changes, run tests
+4. Generate receipt: `python scripts/generate_receipt.py`
+5. Commit and open PR
 
 ---
 
 ## 📊 Project Status
 
-### Current Version: `v1.0.0`
+**Current Version:** `v1.0.0`
 
 ### Recent Updates
 
 - ✅ Zo Passport production ready
 - ✅ Declaration modal with social sharing
-- ✅ Mobile dashboard with passport integration
+- ✅ Mobile dashboard integration
 - ✅ User profile API endpoints
-- ✅ Founder ID display improvements
 - ✅ Zo Mafia community card
-- ✅ Phone and birthdate schema support
 
 ### Roadmap
 
-- [ ] **Narrative Engine v2** - AI-powered story generation
-- [ ] **AR Quest System** - Mobile AR experiences via 8th Wall
-- [ ] **Token Economics v2** - Advanced tokenomics and staking
-- [ ] **Governance System** - Founder-led decision making
-- [ ] **Mobile Native App** - iOS and Android applications
-- [ ] **Wearable Integration** - Smart glasses and AR devices
-- [ ] **Multi-chain Support** - Ethereum, Solana, Polygon
+- [ ] Narrative Engine v2 - AI-powered story generation
+- [ ] AR Quest System - Mobile AR via 8th Wall
+- [ ] Token Economics v2 - Advanced tokenomics
+- [ ] Governance System - Founder-led decisions
+- [ ] Mobile Native App - iOS and Android
+- [ ] Wearable Integration - Smart glasses and AR
 
-See [Docs/P0_TASKS_PHASE_2.md](./Docs/P0_TASKS_PHASE_2.md) for detailed roadmap.
+See [P0_TASKS_PHASE_2.md](./Docs/P0_TASKS_PHASE_2.md) for detailed roadmap.
 
 ---
 
 ## 🌟 The Six Core Systems
 
-Every feature must strengthen at least one:
+Every feature strengthens at least one:
 
 1. **Vibe Score** - Real-time alignment percentage
 2. **Quests** - Interaction primitives that generate signals
@@ -413,31 +371,12 @@ Every feature must strengthen at least one:
 
 ## 🔐 Security
 
-- All secrets must be stored in environment variables
-- Never commit `.env` files
+- All secrets in environment variables
 - API routes use Privy authentication
 - Database uses Row Level Security (RLS)
-- Smart contracts are audited before deployment
+- Smart contracts audited before deployment
 
-Found a security issue? Please email: **security@zohouse.com**
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-Built with ❤️ by the Zo World team and community
-
-- **Zo House Bangalore** - Flagship location and testing ground
-- **Zo House San Francisco** - West Coast operations
-- **Zostel Network** - 50+ partner nodes across India
-- **Early Citizens** - Beta testers and co-creators
-- **Open Source Community** - For the amazing tools and libraries
+**Security issues?** Email: security@zohouse.com
 
 ---
 
@@ -458,6 +397,24 @@ Built with ❤️ by the Zo World team and community
 > *"Every interaction must produce a signal. Every signal must strengthen the engine."*
 
 > *"Zo World must feel alive. Build for the future, not the past. Protect the vibe. Keep magic alive."*
+
+---
+
+## 📜 License
+
+MIT License - see [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the Zo World team and community
+
+- **Zo House Bangalore** - Flagship location
+- **Zo House San Francisco** - West Coast hub
+- **Zostel Network** - 50+ partner nodes
+- **Early Citizens** - Beta testers and co-creators
+- **Open Source Community** - Amazing tools and libraries
 
 ---
 

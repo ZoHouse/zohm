@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { ZoPassport, ZoPassportTest } from '@/components/desktop-dashboard';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 
 export default function ZoPassportPage() {
+  const router = useRouter();
   const { userProfile, isLoading } = usePrivyUser();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -182,6 +185,19 @@ Join me: https://zohm.world
       `}</style>
       
       <div className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-white/10 text-white/70 hover:text-white group"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>Back</span>
+        </button>
+
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Zo Passport</h1>

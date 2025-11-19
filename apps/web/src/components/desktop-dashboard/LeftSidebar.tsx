@@ -802,6 +802,27 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           </div>
         </div>
       </div>
+
+      {/* Zo Mafia Card */}
+      <Link
+        href="https://zo.xyz/@mafia"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-col border border-solid overflow-hidden transition-all hover:opacity-90 cursor-pointer"
+        style={{
+          backdropFilter: `blur(${DashboardBlur.medium})`,
+          WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
+          backgroundColor: DashboardColors.background.primary,
+          borderColor: DashboardColors.border.primary,
+          borderRadius: DashboardRadius.lg,
+        }}
+      >
+        <img 
+          src="/zomafia.png" 
+          alt="Zo Mafia" 
+          className="w-full h-auto object-cover"
+        />
+      </Link>
     </div>
     </>
   );

@@ -29,46 +29,39 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   const [mapKey, setMapKey] = React.useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [balance, setBalance] = useState(0);
-  const userId = userProfile?.id;
-  
+
   // Get user location for map centering
   const userLat = userProfile?.lat || 0;
   const userLng = userProfile?.lng || 0;
   const hasLocation = userLat !== 0 && userLng !== 0;
 
-  // Fetch token balance with polling
-  useEffect(() => {
-    if (!userId) return;
-
-    async function fetchBalance() {
-      try {
-        const response = await fetch(`/api/users/${userId}/progress`, {
-          cache: 'no-cache',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.quests?.zo_points !== undefined) {
-            setBalance(data.quests.zo_points);
-          }
-        }
-      } catch (error) {
-        console.warn('Could not fetch balance:', error);
-      }
-    }
-
-    fetchBalance();
-    const intervalId = setInterval(fetchBalance, 3000);
-    return () => clearInterval(intervalId);
-  }, [userId]);
-  
   // game1111 quest cooldown (12 hours)
   // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(
     'game-1111', // Must match quest_id used in QuestAudio.tsx
     userProfile?.id // User ID for localStorage key
   );
+
+  // Fetch user balance
+  useEffect(() => {
+    if (!userProfile?.id) return;
+
+    async function fetchBalance() {
+      if (!userProfile?.id) return;
+
+      try {
+        const response = await fetch(`/api/users/${userProfile.id}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          setBalance(data.quests?.zo_points || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    }
+
+    fetchBalance();
+  }, [userProfile?.id]);
   
   // Update time every 10ms for smooth milliseconds display
   useEffect(() => {

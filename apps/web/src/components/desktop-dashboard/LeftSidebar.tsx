@@ -221,32 +221,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         }}
       >
         {/* Founder + Citizen IDs */}
-        <div className="flex items-center justify-between w-full">
-          <div 
+        <div className="flex items-center justify-center w-full">
+          <div
             className="flex items-center px-1 py-1"
-            style={{ 
-              gap: DashboardSpacing.xs,
-              borderRadius: DashboardRadius.pill,
-            }}
-          >
-            <p style={{
-              fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.fontWeight.medium,
-              fontSize: DashboardTypography.size.smallMedium.fontSize,
-              lineHeight: DashboardTypography.size.smallMedium.lineHeight,
-              color: DashboardColors.text.quaternary,
-            }}>Founder</p>
-            <p style={{
-              fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.fontWeight.medium,
-              fontSize: DashboardTypography.size.smallMedium.fontSize,
-              lineHeight: DashboardTypography.size.smallMedium.lineHeight,
-              color: DashboardColors.text.primary,
-            }}>#1413</p>
-          </div>
-          <div 
-            className="flex items-center px-1 py-1"
-            style={{ 
+            style={{
               gap: DashboardSpacing.xs,
               borderRadius: DashboardRadius.pill,
             }}

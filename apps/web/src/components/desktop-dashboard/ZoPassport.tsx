@@ -29,16 +29,16 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
 
     // Define which fields count toward completion
     const profileFields = [
-      userProfile.name,           // Display name
-      userProfile.bio,            // Bio
-      userProfile.pfp,            // Avatar/Profile picture
-      userProfile.body_type,      // Body type (for avatar generation)
-      userProfile.culture,        // Culture/interests
-      userProfile.city,           // Location
-      userProfile.primary_wallet, // Has connected wallet
-      userProfile.x_handle,       // X/Twitter handle
-      userProfile.email,          // Email
-      userProfile.phone,          // Phone number
+      userProfile.name,             // Display name
+      userProfile.bio,              // Bio
+      userProfile.pfp,              // Avatar/Profile picture
+      userProfile.body_type,        // Body type (for avatar generation)
+      userProfile.culture,          // Culture/interests
+      userProfile.city,             // Location / city
+      userProfile.primary_wallet,   // Has connected wallet
+      userProfile.email,            // Email connected
+      userProfile.calendar_url,     // Calendar link
+      userProfile.main_quest_url,   // Main quest link
     ];
 
     const completedFields = profileFields.filter(field => {

@@ -190,7 +190,7 @@ Join me: https://zohm.world
                 <InfoRow icon="👤" label="Short Bio" value={userProfile?.bio || "..."} />
                 <InfoRow icon="🎂" label="Born on" value="Aug 3, 1991" />
                 <InfoRow icon="🎭" label="Gender" value="Male" />
-                <InfoRow icon="📍" label="Location" value={userProfile?.location || "..."} />
+                <InfoRow icon="📍" label="Location" value={userProfile?.city || "..."} />
               </div>
             </div>
 

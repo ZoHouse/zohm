@@ -21,6 +21,8 @@ export interface UserRecord {
   culture: string | null;
   city: string | null;
   email: string | null;
+  phone: string | null;
+  birthdate: string | null;  // Date string in ISO format
   x_handle: string | null;
   x_connected: boolean;
   lat: number | null;

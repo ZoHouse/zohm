@@ -188,7 +188,7 @@ Join me: https://zohm.world
               <div className="space-y-1">
                 <InfoRow icon="✏️" label="Full Name" value={userProfile?.name || "..."} />
                 <InfoRow icon="👤" label="Short Bio" value={userProfile?.bio || "..."} />
-                <InfoRow icon="🎂" label="Born on" value="..." />
+                <InfoRow icon="🎂" label="Born on" value={userProfile?.birthdate ? new Date(userProfile.birthdate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "..."} />
                 <InfoRow icon="🎭" label="Body Type" value={userProfile?.body_type ? (userProfile.body_type.charAt(0).toUpperCase() + userProfile.body_type.slice(1)) : "..."} />
                 <InfoRow icon="📍" label="Location" value={userProfile?.city || "..."} />
               </div>
@@ -199,7 +199,7 @@ Join me: https://zohm.world
               <h3 className="text-lg font-medium text-white mb-4">Communication</h3>
               <div className="space-y-1">
                 <InfoRow icon="📧" label="Email" value={userProfile?.email || "..."} />
-                <InfoRow icon="📱" label="Phone" value="..." />
+                <InfoRow icon="📱" label="Phone" value={userProfile?.phone || "..."} />
               </div>
             </div>
           </div>

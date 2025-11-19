@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePrivyUser } from '@/hooks/usePrivyUser';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
+import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
+import { ZoPassport } from '@/components/desktop-dashboard';
 import MobileDashboardHeader from './MobileDashboardHeader';
-import MobileProfilePhotoCard from './MobileProfilePhotoCard';
 import MobileQuantumSyncCard from './MobileQuantumSyncCard';
 import MobileCooldownTimer from './MobileCooldownTimer';
 import MobileStatsCard from './MobileStatsCard';
@@ -110,9 +112,31 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
         }}
       >
-        {/* Profile Photo with Frame */}
-        <div className="mt-3">
-          <MobileProfilePhotoCard userProfile={userProfile} />
+        {/* Zo Passport Card */}
+        <div className="mt-3 flex flex-col items-center justify-center" style={{ gap: DashboardSpacing.md }}>
+          <ZoPassport />
+          
+          {/* View Passport Button */}
+          <Link 
+            href="/zopassport"
+            className="px-6 py-2.5 rounded-lg transition-all hover:opacity-90 text-center border border-white/10"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: `blur(${DashboardBlur.medium})`,
+              WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
+            }}
+          >
+            <span style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontSize: DashboardTypography.size.small.fontSize,
+              fontWeight: DashboardTypography.fontWeight.medium,
+              color: DashboardColors.text.primary,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              View Passport
+            </span>
+          </Link>
         </div>
         
         {/* Quantum Sync Card - Now with cooldown timer INSIDE */}

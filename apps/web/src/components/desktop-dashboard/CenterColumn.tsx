@@ -404,7 +404,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
 
       {/* Leaderboard */}
       <DesktopLeaderboard 
-        userId={userProfile?.user_id} 
+        userId={userProfile?.id} 
         userBalance={userProfile?.zo_balance || 0}
       />
     </div>

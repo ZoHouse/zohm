@@ -188,8 +188,8 @@ Join me: https://zohm.world
               <div className="space-y-1">
                 <InfoRow icon="✏️" label="Full Name" value={userProfile?.name || "..."} />
                 <InfoRow icon="👤" label="Short Bio" value={userProfile?.bio || "..."} />
-                <InfoRow icon="🎂" label="Born on" value="Aug 3, 1991" />
-                <InfoRow icon="🎭" label="Gender" value="Male" />
+                <InfoRow icon="🎂" label="Born on" value="..." />
+                <InfoRow icon="🎭" label="Body Type" value={userProfile?.body_type ? (userProfile.body_type.charAt(0).toUpperCase() + userProfile.body_type.slice(1)) : "..."} />
                 <InfoRow icon="📍" label="Location" value={userProfile?.city || "..."} />
               </div>
             </div>

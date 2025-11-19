@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Copy, Check } from 'lucide-react';
-import { getCultureDisplayName, getCultureIcon } from '@/lib/cultures';
+import { Plus, X, Pencil } from 'lucide-react';
+import { getCultureDisplayName, getCultureIcon, getAllCultures } from '@/lib/cultures';
 import { PrivyUserProfile } from '@/types/privy';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 import ZoPassport from './ZoPassport';
@@ -13,9 +13,14 @@ interface LeftSidebarProps {
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
-  const [isCopied, setIsCopied] = React.useState(false);
   const [balance, setBalance] = React.useState(0);
   const [vibeScore, setVibeScore] = React.useState(99); // Default 99
+  const [selectedCultures, setSelectedCultures] = React.useState<string[]>([]);
+  const [showCultureDropdown, setShowCultureDropdown] = React.useState(false);
+  const [isEditingBio, setIsEditingBio] = React.useState(false);
+  const [bioText, setBioText] = React.useState('');
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const bioTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const userId = userProfile?.id;
 
   // Fetch token balance
@@ -73,15 +78,116 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
     return () => clearInterval(intervalId);
   }, [userId]);
 
-  const handleCopyWallet = () => {
-    if (userProfile?.wallets?.[0]?.address) {
-      navigator.clipboard.writeText(userProfile.wallets[0].address);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+  // Initialize selected cultures from user profile
+  React.useEffect(() => {
+    if (userProfile?.culture) {
+      const cultures = userProfile.culture.split(',').map(c => c.trim()).filter(Boolean);
+      setSelectedCultures(cultures);
+    }
+  }, [userProfile?.culture]);
+
+  // Initialize bio from user profile
+  React.useEffect(() => {
+    if (userProfile?.bio) {
+      setBioText(userProfile.bio);
+    }
+  }, [userProfile?.bio]);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCultureDropdown(false);
+      }
+    }
+
+    if (showCultureDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCultureDropdown]);
+
+  const handleSaveBio = async () => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: bioText }),
+      });
+      
+      if (response.ok) {
+        setIsEditingBio(false);
+      } else {
+        console.error('Failed to update bio');
+      }
+    } catch (error) {
+      console.error('Error updating bio:', error);
     }
   };
 
-  const cultures = userProfile?.culture?.split(',').map(c => c.trim()).filter(Boolean) || [];
+  const handleAddCulture = async (culture: string) => {
+    if (!selectedCultures.includes(culture) && userId) {
+      const newCultures = [...selectedCultures, culture];
+      setSelectedCultures(newCultures);
+      
+      // Save to Supabase
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ culture: newCultures.join(', ') }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to update cultures');
+          // Revert on error
+          setSelectedCultures(selectedCultures);
+        }
+      } catch (error) {
+        console.error('Error updating cultures:', error);
+        // Revert on error
+        setSelectedCultures(selectedCultures);
+      }
+    }
+    // Don't close dropdown - allow multiple selections
+  };
+
+  const handleRemoveCulture = async (culture: string) => {
+    if (!userId) return;
+    
+    const newCultures = selectedCultures.filter(c => c !== culture);
+    setSelectedCultures(newCultures);
+    
+    // Save to Supabase
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ culture: newCultures.join(', ') }),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to update cultures');
+        // Revert on error
+        setSelectedCultures(selectedCultures);
+      }
+    } catch (error) {
+      console.error('Error updating cultures:', error);
+      // Revert on error
+      setSelectedCultures(selectedCultures);
+    }
+  };
+
+  const availableCultures = getAllCultures().filter(c => !selectedCultures.includes(c));
+
+  const handleCopyWallet = () => {
+    if (userProfile?.wallets?.[0]?.address) {
+      navigator.clipboard.writeText(userProfile.wallets[0].address);
+    }
+  };
+
   const primaryWallet = userProfile?.wallets?.[0]?.address;
   const shortWallet = primaryWallet ? `0x...${primaryWallet?.slice(-4)}` : '';
 
@@ -94,7 +200,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   };
 
   return (
-    <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
+    <>
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
       {/* Profile Card */}
       <div 
         className="flex flex-col border border-solid"
@@ -185,19 +297,127 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
 
         {/* User Info */}
         <div className="flex flex-col w-full" style={{ gap: DashboardSpacing.xl }}>
-          {/* Bio */}
-          <div className="flex items-center justify-center" style={{ gap: DashboardSpacing.sm }}>
+          {/* Name + Verified Badge */}
+          <div className="flex items-center justify-center" style={{ gap: DashboardSpacing.md }}>
             <p style={{
               fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.size.small.fontWeight,
-              fontSize: DashboardTypography.size.small.fontSize,
-              lineHeight: DashboardTypography.size.small.lineHeight,
-              letterSpacing: DashboardTypography.size.small.letterSpacing,
-              color: 'rgba(255, 255, 255, 0.44)',
+              fontWeight: DashboardTypography.fontWeight.medium,
+              fontSize: '32px',
+              lineHeight: '44px',
+              color: DashboardColors.text.primary,
               textAlign: 'center',
             }}>
-              {userProfile?.bio || 'Deep understanding of Web3 and product development to create seamless, gamified platforms that empower decentralized communities.'}
+              {userProfile?.name || 'Anonymous'}
             </p>
+            {/* Verified Badge */}
+            <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+              <img 
+                src={DashboardAssets.profile.badge}
+                alt="Verified" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="flex flex-col items-center justify-center" style={{ gap: DashboardSpacing.sm }}>
+            {isEditingBio ? (
+              <div className="w-full flex flex-col" style={{ gap: DashboardSpacing.sm }}>
+                <textarea
+                  ref={bioTextareaRef}
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  maxLength={200}
+                  className="w-full resize-none border border-solid focus:outline-none focus:border-white/40 transition-colors"
+                  style={{
+                    fontFamily: DashboardTypography.fontFamily.primary,
+                    fontWeight: DashboardTypography.size.small.fontWeight,
+                    fontSize: DashboardTypography.size.small.fontSize,
+                    lineHeight: DashboardTypography.size.small.lineHeight,
+                    letterSpacing: DashboardTypography.size.small.letterSpacing,
+                    color: DashboardColors.text.primary,
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderColor: 'rgba(255, 255, 255, 0.16)',
+                    borderRadius: DashboardRadius.sm,
+                    padding: DashboardSpacing.md,
+                    minHeight: '80px',
+                  }}
+                />
+                <div className="flex items-center justify-end" style={{ gap: DashboardSpacing.sm }}>
+                  <button
+                    onClick={() => {
+                      setIsEditingBio(false);
+                      // Revert to original bio on cancel
+                      setBioText(userProfile?.bio || '');
+                    }}
+                    className="px-3 py-1 hover:opacity-80 transition-opacity"
+                    style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
+                      fontSize: '12px',
+                      color: DashboardColors.text.secondary,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveBio}
+                    className="px-3 py-1 hover:opacity-90 transition-opacity"
+                    style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
+                      fontSize: '12px',
+                      fontWeight: DashboardTypography.fontWeight.medium,
+                      color: '#111111',
+                      backgroundColor: '#ffffff',
+                      borderRadius: DashboardRadius.sm,
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setIsEditingBio(true);
+                  setTimeout(() => bioTextareaRef.current?.focus(), 0);
+                }}
+                className="group flex items-center justify-center hover:opacity-80 transition-opacity w-full"
+                style={{ gap: DashboardSpacing.xs }}
+              >
+                {bioText ? (
+                  <p style={{
+                    fontFamily: DashboardTypography.fontFamily.primary,
+                    fontWeight: DashboardTypography.size.small.fontWeight,
+                    fontSize: DashboardTypography.size.small.fontSize,
+                    lineHeight: DashboardTypography.size.small.lineHeight,
+                    letterSpacing: DashboardTypography.size.small.letterSpacing,
+                    color: 'rgba(255, 255, 255, 0.44)',
+                    textAlign: 'center',
+                  }}>
+                    {bioText}
+                  </p>
+                ) : (
+                  <div className="flex items-center" style={{ gap: DashboardSpacing.xs }}>
+                    <Pencil size={14} style={{ color: 'rgba(255, 255, 255, 0.44)' }} />
+                    <p style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
+                      fontWeight: DashboardTypography.size.small.fontWeight,
+                      fontSize: DashboardTypography.size.small.fontSize,
+                      lineHeight: DashboardTypography.size.small.lineHeight,
+                      letterSpacing: DashboardTypography.size.small.letterSpacing,
+                      color: 'rgba(255, 255, 255, 0.44)',
+                      fontStyle: 'italic',
+                    }}>
+                      Click here to add your bio
+                    </p>
+                  </div>
+                )}
+                {bioText && (
+                  <Pencil size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'rgba(255, 255, 255, 0.44)' }} />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Wallet + Social Links */}
@@ -265,7 +485,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           </div>
 
           {/* Cultures */}
-          <div className="flex flex-col" style={{ gap: DashboardSpacing.sm }}>
+          <div className="flex flex-col relative" style={{ gap: DashboardSpacing.sm }} ref={dropdownRef}>
             <p style={{
               fontFamily: DashboardTypography.fontFamily.primary,
               fontWeight: DashboardTypography.size.captionMedium.fontWeight,
@@ -274,13 +494,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               color: DashboardColors.text.tertiary,
             }}>Cultures</p>
             <div className="flex flex-wrap" style={{ gap: DashboardSpacing.sm }}>
-              {cultures.length > 0 ? cultures.map((culture, idx) => {
+              {selectedCultures.map((culture, idx) => {
                 const icon = getCultureIcon(culture);
                 const displayName = getCultureDisplayName(culture);
                 return (
                   <div 
                     key={idx} 
-                    className="flex items-center border border-solid"
+                    className="flex items-center border border-solid group hover:border-red-500/50 transition-colors"
                     style={{
                       gap: DashboardSpacing.xs,
                       height: '36px',
@@ -298,73 +518,113 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                       letterSpacing: DashboardTypography.size.caption.letterSpacing,
                       color: DashboardColors.text.primary,
                     }}>{displayName}</p>
+                    <button
+                      onClick={() => handleRemoveCulture(culture)}
+                      className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                      style={{ color: DashboardColors.text.secondary }}
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
                 );
-              }) : (
-                <>
-                  <div 
-                    className="flex items-center border border-solid"
-                    style={{
-                      gap: DashboardSpacing.xs,
-                      height: '36px',
-                      padding: `${DashboardSpacing.sm} ${DashboardSpacing.md}`,
-                      borderColor: DashboardColors.border.secondary,
-                      borderRadius: DashboardRadius.pill,
-                    }}
-                  >
-                    <img src={DashboardAssets.culture.food} alt="Food" className="w-4 h-4 object-contain" />
-                    <p style={{
-                      fontFamily: DashboardTypography.fontFamily.primary,
-                      fontWeight: DashboardTypography.size.caption.fontWeight,
-                      fontSize: DashboardTypography.size.caption.fontSize,
-                      lineHeight: DashboardTypography.size.caption.lineHeight,
-                      letterSpacing: DashboardTypography.size.caption.letterSpacing,
-                      color: DashboardColors.text.primary,
-                    }}>Food</p>
-                  </div>
-                  <div 
-                    className="flex items-center border border-solid"
-                    style={{
-                      gap: DashboardSpacing.xs,
-                      height: '36px',
-                      padding: `${DashboardSpacing.sm} ${DashboardSpacing.md}`,
-                      borderColor: DashboardColors.border.secondary,
-                      borderRadius: DashboardRadius.pill,
-                    }}
-                  >
-                    <img src={DashboardAssets.culture.tech} alt="Tech" className="w-4 h-4 object-contain" />
-                    <p style={{
-                      fontFamily: DashboardTypography.fontFamily.primary,
-                      fontWeight: DashboardTypography.size.caption.fontWeight,
-                      fontSize: DashboardTypography.size.caption.fontSize,
-                      lineHeight: DashboardTypography.size.caption.lineHeight,
-                      letterSpacing: DashboardTypography.size.caption.letterSpacing,
-                      color: DashboardColors.text.primary,
-                    }}>Tech</p>
-                  </div>
-                  <div 
-                    className="flex items-center border border-solid"
-                    style={{
-                      gap: DashboardSpacing.xs,
-                      height: '36px',
-                      padding: `${DashboardSpacing.sm} ${DashboardSpacing.md}`,
-                      borderColor: DashboardColors.border.secondary,
-                      borderRadius: DashboardRadius.pill,
-                    }}
-                  >
-                    <img src={DashboardAssets.culture.design} alt="Design" className="w-4 h-4 object-contain" />
-                    <p style={{
-                      fontFamily: DashboardTypography.fontFamily.primary,
-                      fontWeight: DashboardTypography.size.caption.fontWeight,
-                      fontSize: DashboardTypography.size.caption.fontSize,
-                      lineHeight: DashboardTypography.size.caption.lineHeight,
-                      letterSpacing: DashboardTypography.size.caption.letterSpacing,
-                      color: DashboardColors.text.primary,
-                    }}>Design</p>
-                  </div>
-                </>
-              )}
+              })}
+              
+              {/* Add Culture Button */}
+              <button
+                onClick={() => setShowCultureDropdown(!showCultureDropdown)}
+                className="flex items-center justify-center border border-dashed hover:border-solid hover:bg-white/5 transition-all"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderColor: DashboardColors.border.secondary,
+                  borderRadius: DashboardRadius.pill,
+                }}
+              >
+                <Plus size={16} style={{ color: DashboardColors.text.secondary }} />
+              </button>
             </div>
+
+            {/* Dropdown Menu */}
+            {showCultureDropdown && (
+              <div 
+                className="absolute top-full left-0 mt-2 w-full border border-solid z-50 scrollbar-hide"
+                style={{
+                  backgroundColor: 'rgba(18, 18, 18, 0.98)',
+                  backdropFilter: `blur(${DashboardBlur.medium})`,
+                  WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: DashboardRadius.lg,
+                  maxHeight: '320px',
+                  overflowY: 'auto',
+                  boxShadow: '0px 12px 32px rgba(0, 0, 0, 0.8)',
+                  scrollbarWidth: 'none', // Firefox
+                  msOverflowStyle: 'none', // IE/Edge
+                }}
+              >
+                {/* Header */}
+                <div 
+                  className="sticky top-0 flex items-center border-b border-solid"
+                  style={{
+                    padding: `${DashboardSpacing.md} ${DashboardSpacing.lg}`,
+                    backgroundColor: 'rgba(18, 18, 18, 0.98)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <p style={{
+                    fontFamily: DashboardTypography.fontFamily.primary,
+                    fontWeight: DashboardTypography.fontWeight.medium,
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    color: DashboardColors.text.tertiary,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}>Select Cultures</p>
+                </div>
+
+                {/* Culture List */}
+                <div className="py-1">
+                  {availableCultures.length > 0 ? (
+                    availableCultures.map((culture) => {
+                      const icon = getCultureIcon(culture);
+                      const displayName = getCultureDisplayName(culture);
+                      return (
+                        <button
+                          key={culture}
+                          onClick={() => handleAddCulture(culture)}
+                          className="w-full flex items-center hover:bg-white/10 active:bg-white/15 transition-colors"
+                          style={{
+                            gap: DashboardSpacing.md,
+                            padding: `${DashboardSpacing.md} ${DashboardSpacing.lg}`,
+                          }}
+                        >
+                          <img src={icon} alt={displayName} className="w-6 h-6 object-contain flex-shrink-0" />
+                          <p style={{
+                            fontFamily: DashboardTypography.fontFamily.primary,
+                            fontWeight: DashboardTypography.fontWeight.medium,
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            color: DashboardColors.text.primary,
+                            textAlign: 'left',
+                          }}>{displayName}</p>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{ padding: `${DashboardSpacing.xl} ${DashboardSpacing.lg}` }}
+                    >
+                      <p style={{
+                        fontFamily: DashboardTypography.fontFamily.primary,
+                        fontSize: '14px',
+                        color: DashboardColors.text.secondary,
+                        fontStyle: 'italic',
+                      }}>All cultures selected</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Stats: $Zo + Vibe Score */}
@@ -456,7 +716,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
             lineHeight: 'normal',
           }}>Request Connection</p>
         </button>
-        </div>
+      </div>
 
       {/* Founder NFTs */}
       <div 
@@ -565,6 +825,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

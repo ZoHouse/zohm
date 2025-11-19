@@ -34,7 +34,7 @@ export default function ZoPassportPage() {
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.quests?.zo_points !== undefined) {
@@ -244,7 +244,13 @@ Join me: https://zohm.world
               <h3 className="text-lg font-medium text-white mb-4">Communication</h3>
               <div className="space-y-1">
                 <InfoRow icon="📧" label="Email" value={userProfile?.email || "..."} />
-                <InfoRow icon="📱" label="Phone" value={userProfile?.phone || "..."} />
+                <InfoRow
+                  icon="📱"
+                  label="Phone"
+                  value={userProfile?.primary_wallet?.address
+                    ? `${userProfile.primary_wallet.address.slice(0, 6)}...${userProfile.primary_wallet.address.slice(-4)}`
+                    : "..."}
+                />
               </div>
             </div>
           </div>

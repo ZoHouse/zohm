@@ -6,18 +6,18 @@ import ZoPassportTest from './ZoPassportTest';
 
 /**
  * ZoPassport - Fully wired Zo Passport component
- * 
+ *
  * This component automatically fetches and displays:
  * - User avatar (from profile or fallback)
  * - User name (from profile)
  * - Founder status (based on founder_nfts_count)
  * - Profile completion progress
- * 
+ *
  * Usage:
  * ```tsx
  * <ZoPassport />
  * ```
- * 
+ *
  * No props needed - completely self-contained!
  */
 const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {

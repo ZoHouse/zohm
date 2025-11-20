@@ -1858,4 +1858,3 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     </div>
   );
 }
-

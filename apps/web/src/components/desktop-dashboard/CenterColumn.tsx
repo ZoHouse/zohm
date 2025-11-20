@@ -62,11 +62,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
 
     fetchBalance();
   }, [userProfile?.id]);
-<<<<<<< HEAD
 
-=======
-
->>>>>>> b1a120a (fix: merge conflicts  error)
   // Update time every 10ms for smooth milliseconds display
   useEffect(() => {
     const interval = setInterval(() => {

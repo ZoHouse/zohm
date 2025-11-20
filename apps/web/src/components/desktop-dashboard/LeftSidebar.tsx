@@ -223,8 +223,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         {/* Founder + Citizen IDs */}
         <div className="flex items-center justify-center w-full">
           <div
-        <div className="flex items-center justify-center w-full">
-          <div
             className="flex items-center px-1 py-1"
             style={{
               gap: DashboardSpacing.xs,

@@ -54,13 +54,13 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
 
   // Get timezone for the city (fallback to UTC)
   const cityTimezone = CITY_TIMEZONES[city] || 'UTC';
-  
+
   // Get city description
   const cityDescription = CITY_DESCRIPTIONS[city] || `Welcome to ${city}`;
 
   // Get time in city timezone
-  const cityTime = currentTime.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
+  const cityTime = currentTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
     minute: '2-digit',
     hour12: false,
     timeZone: cityTimezone
@@ -79,10 +79,10 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
   };
 
   // Local time (user's browser timezone)
-  const localTime = currentTime.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
+  const localTime = currentTime.toLocaleTimeString('en-US', {
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: false 
+    hour12: false
   });
 
   const getLocalGmtOffset = () => {
@@ -95,7 +95,7 @@ export default function CityInfoCard({ city }: CityInfoCardProps) {
   const localGmtOffset = getLocalGmtOffset();
 
   return (
-    <div className="absolute top-[15px] md:top-4 left-4 sm:left-8 md:left-1/2 md:transform md:-translate-x-1/2 z-20 text-left md:text-center max-w-xl px-4">
+    <div className="absolute top-5 md:top-4 left-4 sm:left-8 md:left-1/2 md:transform md:-translate-x-1/2 z-20 text-left md:text-center max-w-xl px-4">
       <div className="bg-white/20 backdrop-blur-md border border-white/40 rounded-xl shadow-lg px-3 py-2 sm:px-4 sm:py-2.5">
         {/* City Name & Time */}
         <div className="flex items-center justify-start md:justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">

@@ -206,7 +206,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           display: none;
         }
       `}</style>
-      <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
+    <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
       {/* Profile Card */}
       <div 
         className="flex flex-col border border-solid"
@@ -222,9 +222,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
       >
         {/* Founder + Citizen IDs */}
         <div className="flex items-center justify-center w-full">
-          <div
+          <div 
             className="flex items-center px-1 py-1"
-            style={{
+            style={{ 
               gap: DashboardSpacing.xs,
               borderRadius: DashboardRadius.pill,
             }}
@@ -287,12 +287,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   maxLength={200}
                   className="w-full resize-none border border-solid focus:outline-none focus:border-white/40 transition-colors"
                   style={{
-                    fontFamily: DashboardTypography.fontFamily.primary,
+              fontFamily: DashboardTypography.fontFamily.primary,
                     fontWeight: DashboardTypography.size.small.fontWeight,
                     fontSize: DashboardTypography.size.small.fontSize,
                     lineHeight: DashboardTypography.size.small.lineHeight,
                     letterSpacing: DashboardTypography.size.small.letterSpacing,
-                    color: DashboardColors.text.primary,
+              color: DashboardColors.text.primary,
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     borderColor: 'rgba(255, 255, 255, 0.16)',
                     borderRadius: DashboardRadius.sm,
@@ -330,8 +330,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                   >
                     Save
                   </button>
-                </div>
-              </div>
+            </div>
+          </div>
             ) : (
               <button
                 onClick={() => {
@@ -342,15 +342,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 style={{ gap: DashboardSpacing.xs }}
               >
                 {bioText ? (
-                  <p style={{
-                    fontFamily: DashboardTypography.fontFamily.primary,
-                    fontWeight: DashboardTypography.size.small.fontWeight,
-                    fontSize: DashboardTypography.size.small.fontSize,
-                    lineHeight: DashboardTypography.size.small.lineHeight,
-                    letterSpacing: DashboardTypography.size.small.letterSpacing,
-                    color: 'rgba(255, 255, 255, 0.44)',
-                    textAlign: 'center',
-                  }}>
+            <p style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontWeight: DashboardTypography.size.small.fontWeight,
+              fontSize: DashboardTypography.size.small.fontSize,
+              lineHeight: DashboardTypography.size.small.lineHeight,
+              letterSpacing: DashboardTypography.size.small.letterSpacing,
+              color: 'rgba(255, 255, 255, 0.44)',
+              textAlign: 'center',
+            }}>
                     {bioText}
                   </p>
                 ) : (
@@ -489,20 +489,20 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               <button
                 onClick={() => setShowCultureDropdown(!showCultureDropdown)}
                 className="flex items-center justify-center border border-dashed hover:border-solid hover:bg-white/5 transition-all"
-                style={{
+                    style={{
                   width: '36px',
-                  height: '36px',
-                  borderColor: DashboardColors.border.secondary,
-                  borderRadius: DashboardRadius.pill,
-                }}
-              >
+                      height: '36px',
+                      borderColor: DashboardColors.border.secondary,
+                      borderRadius: DashboardRadius.pill,
+                    }}
+                  >
                 <Plus size={16} style={{ color: DashboardColors.text.secondary }} />
               </button>
-            </div>
+                  </div>
 
             {/* Dropdown Menu */}
             {showCultureDropdown && (
-              <div 
+                  <div 
                 className="absolute top-full left-0 mt-2 w-full border border-solid z-50 scrollbar-hide"
                 style={{
                   backgroundColor: 'rgba(18, 18, 18, 0.98)',
@@ -520,14 +520,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 {/* Header */}
                 <div 
                   className="sticky top-0 flex items-center border-b border-solid"
-                  style={{
+                    style={{
                     padding: `${DashboardSpacing.md} ${DashboardSpacing.lg}`,
                     backgroundColor: 'rgba(18, 18, 18, 0.98)',
                     borderColor: 'rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <p style={{
-                    fontFamily: DashboardTypography.fontFamily.primary,
+                    }}
+                  >
+                    <p style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
                     fontWeight: DashboardTypography.fontWeight.medium,
                     fontSize: '12px',
                     lineHeight: '16px',
@@ -535,7 +535,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}>Select Cultures</p>
-                </div>
+                  </div>
 
                 {/* Culture List */}
                 <div className="py-1">
@@ -548,18 +548,18 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                           key={culture}
                           onClick={() => handleAddCulture(culture)}
                           className="w-full flex items-center hover:bg-white/10 active:bg-white/15 transition-colors"
-                          style={{
+                    style={{
                             gap: DashboardSpacing.md,
                             padding: `${DashboardSpacing.md} ${DashboardSpacing.lg}`,
-                          }}
-                        >
+                    }}
+                  >
                           <img src={icon} alt={displayName} className="w-6 h-6 object-contain flex-shrink-0" />
-                          <p style={{
-                            fontFamily: DashboardTypography.fontFamily.primary,
+                    <p style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
                             fontWeight: DashboardTypography.fontWeight.medium,
                             fontSize: '14px',
                             lineHeight: '20px',
-                            color: DashboardColors.text.primary,
+                      color: DashboardColors.text.primary,
                             textAlign: 'left',
                           }}>{displayName}</p>
                         </button>
@@ -576,9 +576,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                         color: DashboardColors.text.secondary,
                         fontStyle: 'italic',
                       }}>All cultures selected</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+              )}
+            </div>
               </div>
             )}
           </div>

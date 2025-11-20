@@ -29,12 +29,12 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   const [mapKey, setMapKey] = React.useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [balance, setBalance] = useState(0);
-
+  
   // Get user location for map centering
   const userLat = userProfile?.lat || 0;
   const userLng = userProfile?.lng || 0;
   const hasLocation = userLat !== 0 && userLng !== 0;
-
+  
   // game1111 quest cooldown (12 hours)
   // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(

@@ -106,3 +106,5 @@ RAISE NOTICE '✅ Migration completed';
 -- DROP INDEX IF EXISTS idx_events_metadata;
 -- DROP INDEX IF EXISTS idx_nodes_metadata;
 
+
+

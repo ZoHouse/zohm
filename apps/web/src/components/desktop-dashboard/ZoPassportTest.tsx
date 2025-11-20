@@ -96,7 +96,7 @@ const ZoPassportTest: React.FC<ZoPassportTestProps> = ({ profile, completion, cl
       </div>
 
       {/* Avatar - Absolutely positioned in center */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-10px' }}>
         <div className="w-[120px] h-[120px] rounded-full overflow-hidden">
           <img 
             src={avatar} 
@@ -107,18 +107,42 @@ const ZoPassportTest: React.FC<ZoPassportTestProps> = ({ profile, completion, cl
 
         {/* Founder Badge */}
         {isFounder && (
-          <div className="absolute bottom-[84px] right-[60px]">
+          <div className="absolute" style={{ bottom: '84px', right: '60px' }}>
             <FounderBadge />
           </div>
         )}
       </div>
 
       {/* Text Container - Absolutely positioned at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-center flex flex-col gap-1">
-        <p className={`text-xl font-bold truncate ${textColor}`}>
+      <div 
+        className="absolute left-0 right-0 text-center flex flex-col gap-1" 
+        style={{ 
+          bottom: '16px',
+          paddingLeft: '16px',
+          paddingRight: '16px'
+        }}
+      >
+        <p 
+          className={`font-bold truncate ${textColor}`}
+          style={{ 
+            fontSize: '18px',
+            lineHeight: '24px',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
           {name}
         </p>
-        <p className={`text-xs opacity-70 uppercase tracking-wider ${textColor}`}>
+        <p 
+          className={`opacity-70 uppercase tracking-wider ${textColor}`}
+          style={{ 
+            fontSize: '10px',
+            lineHeight: '14px',
+            letterSpacing: '0.05em'
+          }}
+        >
           {isFounder ? "Founder of Zo World" : "Citizen of Zo World"}
         </p>
       </div>

@@ -17,6 +17,11 @@ export {
   hasZoIdentity,
   getZoTokens,
 } from './sync';
+export {
+  generateAvatar,
+  getAvatarStatus,
+  pollAvatarStatus,
+} from './avatar';
 export type {
   ZoAuthOTPRequest,
   ZoAuthOTPVerifyRequest,

@@ -505,112 +505,133 @@ Join me: ${shareUrl}
 
       {/* Declaration Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative max-w-[1300px] w-full">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-black hover:bg-gray-200 transition-colors z-10 shadow-lg"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full flex flex-col items-center">
+            {/* Close Button Wrapper to position relative to the scaled card */}
+            <div className="relative w-full max-w-[1200px]" style={{ height: 0 }}>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute -top-12 right-0 md:-right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-black hover:bg-gray-200 transition-colors z-10 shadow-lg"
+              >
+                ✕
+              </button>
+            </div>
 
-            {/* Declaration Card - Designed for 1200x675 (16:9) */}
+            {/* Scalable Container */}
             <div
-              ref={modalCardRef}
-              className="relative w-[1200px] h-[675px] mx-auto border border-white/10"
+              className="relative w-full flex justify-center origin-top"
               style={{
-                background: 'rgba(0, 0, 0, 0.6)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                height: Math.min(675, (typeof window !== 'undefined' ? window.innerWidth - 32 : 1200) * (675 / 1200)),
               }}
             >
-              {/* Decorative Grid Overlay */}
-              <div className="absolute inset-0 opacity-5" style={{
-                backgroundImage: 'linear-gradient(0deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                backgroundSize: '40px 40px'
-              }}></div>
+              <div
+                style={{
+                  transform: `scale(${typeof window !== 'undefined' ? Math.min(1, (window.innerWidth - 32) / 1200) : 1})`,
+                  transformOrigin: 'top center',
+                  width: '1200px',
+                  height: '675px',
+                  position: 'absolute',
+                  top: 0,
+                }}
+              >
+                {/* Declaration Card - Fixed 1200x675 Layout */}
+                <div
+                  ref={modalCardRef}
+                  className="relative w-full h-full border border-white/10 overflow-hidden flex"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(40px)',
+                    WebkitBackdropFilter: 'blur(40px)',
+                  }}
+                >
+                  {/* Decorative Grid Overlay */}
+                  <div className="absolute inset-0 opacity-5" style={{
+                    backgroundImage: 'linear-gradient(0deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px'
+                  }}></div>
 
-              {/* Main Content */}
-              <div className="relative h-full flex">
-                {/* Left Side: Passport */}
-                <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10">
-                  <div style={{ transform: 'scale(1.3)' }}>
-                    <ZoPassportTest
-                      profile={{
-                        avatar: userProfile?.pfp || "/images/rank1.jpeg",
-                        name: userProfile?.name || "New Citizen",
-                        isFounder: (userProfile?.founder_nfts_count || 0) > 0,
-                      }}
-                      completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
-                        total: 10,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Right Side: Declaration Text */}
-                <div className="flex-1 flex flex-col items-center justify-center p-16">
-                  {/* Zo Logo/Symbol */}
-                  <div className="mb-8">
-                    <div className="text-7xl font-black text-white tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                      Zo Zo
-                    </div>
-                  </div>
-
-                  {/* Declaration Headline */}
-                  <h1 className="text-5xl font-black text-white mb-8 text-center leading-tight">
-                    I Declare Myself a<br />Citizen of Zo World
-                  </h1>
-
-                  {/* Declaration Statement */}
-                  <div className="space-y-4 max-w-[500px]">
-                    <p className="text-xl text-gray-300 text-center leading-relaxed">
-                      I commit to living with
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
-                        <span
-                          key={word}
-                          className="px-4 py-2 text-white font-bold text-sm rounded-full border"
-                          style={{
-                            fontFamily: 'Rubik, sans-serif',
-                            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
+                  {/* Main Content */}
+                  <div className="relative h-full flex w-full">
+                    {/* Left Side: Passport */}
+                    <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10 shrink-0">
+                      <div style={{ transform: 'scale(1.3)' }}>
+                        <ZoPassportTest
+                          profile={{
+                            avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                            name: userProfile?.name || "New Citizen",
+                            isFounder: (userProfile?.founder_nfts_count || 0) > 0,
                           }}
-                        >
-                          {word}
-                        </span>
-                      ))}
+                          completion={{
+                            done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                            total: 10,
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Date & Signature */}
-                  <div className="mt-12 text-center space-y-3">
-                    <p className="text-gray-500 text-sm">{currentDate}</p>
-                    <div className="h-px w-48 mx-auto bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
-                    <p className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
-                      Signed by {userProfile?.name || "New Citizen"}
-                    </p>
-                  </div>
+                    {/* Right Side: Declaration Text */}
+                    <div className="flex-1 flex flex-col items-center justify-center p-16 text-center">
+                      {/* Zo Logo/Symbol */}
+                      <div className="mb-8">
+                        <div className="text-7xl font-black text-white tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                          Zo Zo
+                        </div>
+                      </div>
 
-                  {/* Footer */}
-                  <div className="absolute bottom-8 right-8">
-                    <p className="text-gray-600 text-xs">zohm.world</p>
+                      {/* Declaration Headline */}
+                      <h1 className="text-5xl font-black text-white mb-8 text-center leading-tight">
+                        I Declare Myself a<br />Citizen of Zo World
+                      </h1>
+
+                      {/* Declaration Statement */}
+                      <div className="space-y-4 max-w-[500px]">
+                        <p className="text-xl text-gray-300 text-center leading-relaxed">
+                          I commit to living with
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-3">
+                          {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
+                            <span
+                              key={word}
+                              className="px-4 py-2 text-white font-bold text-sm rounded-full border"
+                              style={{
+                                fontFamily: 'Rubik, sans-serif',
+                                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                                borderColor: 'rgba(255, 255, 255, 0.3)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                              }}
+                            >
+                              {word}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Date & Signature */}
+                      <div className="mt-12 text-center space-y-3">
+                        <p className="text-gray-500 text-sm">{currentDate}</p>
+                        <div className="h-px w-48 mx-auto bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
+                        <p className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
+                          Signed by {userProfile?.name || "New Citizen"}
+                        </p>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="absolute bottom-8 right-8">
+                        <p className="text-gray-600 text-xs">zohm.world</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 flex justify-center gap-4">
+            <div className="mt-6 flex flex-col md:flex-row justify-center gap-4 w-full max-w-[500px]">
               <button
                 onClick={handlePostOnX}
                 disabled={isGenerating}
-                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
+                className="w-full px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
                 style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',
@@ -628,7 +649,7 @@ Join me: ${shareUrl}
               </button>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/10"
+                className="w-full px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/10"
                 style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',

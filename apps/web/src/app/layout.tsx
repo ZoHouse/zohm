@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'apple-mobile-web-app-title': 'Zo Zo Zo',
     'application-name': 'Zo Zo Zo',
-    'msapplication-TileColor': '#000000',
     'msapplication-config': '/browserconfig.xml',
   },
+  metadataBase: new URL('https://zohm.world'),
 };
 
 export const viewport: Viewport = {
@@ -69,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body 
+      <body
         className={`${comicNeue.variable} ${abrilFatface.variable} paper-ui antialiased bg-black text-white`}
         suppressHydrationWarning
       >

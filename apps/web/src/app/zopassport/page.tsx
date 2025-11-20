@@ -104,7 +104,7 @@ export default function ZoPassportPage() {
 
       // Then open X with the share link
       setTimeout(() => {
-        const shareUrl = `https://zohm.world/share/${userId}`;
+        const shareUrl = `${window.location.origin}/share/${userId}`;
         const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
 
 I commit to AGENCY, ALIGNMENT, CREATIVITY & SYMMETRY.

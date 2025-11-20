@@ -55,22 +55,39 @@ export async function generateMetadata(
 }
 
 export default async function SharePage({ params }: Props) {
-    // Redirect to the main passport page or home
-    // For now, we can redirect to the main site, or show a simple "Redirecting..." message
-    // Ideally, this page could also show the passport and a "Join Zo World" button.
+    const { userId } = await params;
+
+    // Fetch user data for display
+    const { data: user } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+    const name = user?.name || 'A Citizen';
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
-            <div className="max-w-md text-center space-y-6">
-                <h1 className="text-2xl font-bold">Redirecting to Zo World...</h1>
-                <p className="text-gray-400">
-                    If you are not redirected automatically, <a href="https://zohm.world" className="text-white underline">click here</a>.
-                </p>
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `window.location.href = "https://zohm.world"`,
-                    }}
-                />
+            <div className="max-w-4xl w-full text-center space-y-8">
+                {/* Display the passport card image */}
+                <div className="w-full max-w-[1200px] mx-auto">
+                    <img
+                        src={`/api/og?userId=${userId}`}
+                        alt={`${name}'s Zo Passport Declaration`}
+                        className="w-full h-auto rounded-lg shadow-2xl"
+                    />
+                </div>
+
+                {/* CTA Button */}
+                <div className="space-y-4">
+                    <h2 className="text-2xl font-bold">Join {name} in Zo World</h2>
+                    <a
+                        href="/"
+                        className="inline-block px-8 py-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                        Declare Your Citizenship
+                    </a>
+                </div>
             </div>
         </div>
     );

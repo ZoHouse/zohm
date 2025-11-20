@@ -88,58 +88,40 @@ export default function ZoPassportPage() {
     setIsGenerating(true);
 
     try {
-      // Load html2canvas from CDN
-      if (!(window as any).html2canvas) {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
+      // Fetch the server-generated OG image
+      const response = await fetch(`/api/og?userId=${userId}`);
+      if (!response.ok) throw new Error('Failed to generate image');
 
-      const html2canvas = (window as any).html2canvas;
-
-      const canvas = await html2canvas(modalCardRef.current, {
-        backgroundColor: '#000000',
-        scale: 2,
-        logging: false,
-        width: 1200,
-        height: 675,
-      });
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
 
       // Download the card
-      canvas.toBlob((blob: Blob | null) => {
-        if (!blob) return;
+      const link = document.createElement('a');
+      link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-
-        // Then open X with pre-filled text after a short delay
-        setTimeout(() => {
-          const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
+      // Then open X with the share link
+      setTimeout(() => {
+        const shareUrl = `https://zohm.world/share/${userId}`;
+        const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
 
 I commit to AGENCY, ALIGNMENT, CREATIVITY & SYMMETRY.
 
-Join me: https://zohm.world
+Join me: ${shareUrl}
 
 #ZoWorld #ZoProtocol #LifeDesign`;
 
-          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-          window.open(twitterUrl, '_blank', 'width=550,height=420');
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
 
-          // Close modal and show instruction
-          setIsModalOpen(false);
-          setTimeout(() => {
-            alert('✅ Card downloaded!\n\n📎 Now click the image button in X and attach the downloaded image before posting.');
-          }, 1000);
-        }, 500);
-      });
+        // Close modal and show instruction
+        setIsModalOpen(false);
+        setTimeout(() => {
+          alert('✅ Card downloaded!\n\nWe also opened Twitter with your declaration link. The link will show your passport card automatically!');
+        }, 1000);
+      }, 500);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate card. Please try again.');
@@ -376,11 +358,10 @@ Join me: https://zohm.world
                           <button
                             key={culture.id}
                             onClick={() => toggleCulture(culture.id)}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-all text-sm border ${
-                              isSelected
-                                ? 'text-white border-white/30'
-                                : 'text-gray-400 hover:text-white border-white/5 hover:border-white/10'
-                            }`}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-all text-sm border ${isSelected
+                              ? 'text-white border-white/30'
+                              : 'text-gray-400 hover:text-white border-white/5 hover:border-white/10'
+                              }`}
                             style={{
                               fontFamily: 'Rubik, sans-serif',
                               backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
@@ -580,7 +561,7 @@ Join me: https://zohm.world
 
                   {/* Declaration Headline */}
                   <h1 className="text-5xl font-black text-white mb-8 text-center leading-tight">
-                    I Declare Myself a<br/>Citizen of Zo World
+                    I Declare Myself a<br />Citizen of Zo World
                   </h1>
 
                   {/* Declaration Statement */}

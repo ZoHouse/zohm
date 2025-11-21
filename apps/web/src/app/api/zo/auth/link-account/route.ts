@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
     const supabase = supabaseAdmin;
 
     // 1. Verify user exists in Supabase

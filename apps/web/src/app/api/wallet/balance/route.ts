@@ -21,6 +21,13 @@ const RPC_URLS: Record<number, string> = {
 
 export async function GET(req: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+    
     const supabase = supabaseAdmin;
     
     // 1. Get authenticated user

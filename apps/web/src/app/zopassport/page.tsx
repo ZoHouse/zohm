@@ -421,10 +421,10 @@ Join me: https://zohm.world
             <p className="text-gray-400 text-center mb-8 md:mb-12">Evolve from Citizen to Founder</p>
             
             {/* Progression Path */}
-            <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap md:flex-nowrap">
+            <div className="flex items-start justify-center gap-6 md:gap-12 flex-wrap md:flex-nowrap min-h-[400px]">
               {/* Stage 1: Citizen */}
-              <div className="flex-shrink-0">
-                <div className="text-center mb-4">
+              <div className="flex-shrink-0 flex flex-col items-center" style={{ width: '240px' }}>
+                <div className="text-center mb-6">
                   <span className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white border mb-2"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -435,7 +435,7 @@ Join me: https://zohm.world
                   </span>
                   <p className="text-xs text-gray-500">Your starting point</p>
                 </div>
-                <div style={{ transform: 'scale(0.85)' }}>
+                <div className="flex items-center justify-center">
                   <ZoPassportComponent
                     profile={{
                       avatar: "/images/rank2.jpeg",
@@ -443,16 +443,15 @@ Join me: https://zohm.world
                       isFounder: false,
                     }}
                     completion={{ done: 3, total: 10 }}
-                    className="w-full"
                   />
                 </div>
               </div>
 
               {/* Progression Steps */}
-              <div className="flex flex-col items-center gap-4 px-4 md:px-8 flex-shrink-0">
-                <div className="space-y-3 max-w-[280px]">
+              <div className="flex flex-col items-center justify-center gap-4 px-4 md:px-8 flex-shrink-0">
+                <div className="space-y-4 max-w-[280px]">
                   <div className="text-center">
-                    <p className="text-xs text-gray-400 mb-2">Complete your journey by:</p>
+                    <p className="text-sm text-gray-400 mb-4">Complete your journey by:</p>
                   </div>
                   
                   <div className="space-y-2">
@@ -488,8 +487,8 @@ Join me: https://zohm.world
               </div>
 
               {/* Stage 2: Founder */}
-              <div className="flex-shrink-0">
-                <div className="text-center mb-4">
+              <div className="flex-shrink-0 flex flex-col items-center" style={{ width: '240px' }}>
+                <div className="text-center mb-6">
                   <span className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white border mb-2"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -501,7 +500,7 @@ Join me: https://zohm.world
                   </span>
                   <p className="text-xs text-gray-400">Elite status unlocked</p>
                 </div>
-                <div style={{ transform: 'scale(0.85)' }}>
+                <div className="flex items-center justify-center">
                   <ZoPassportComponent
                     profile={{
                       avatar: "/images/rank1.jpeg",
@@ -509,7 +508,6 @@ Join me: https://zohm.world
                       isFounder: true,
                     }}
                     completion={{ done: 9, total: 10 }}
-                    className="w-full"
                   />
                 </div>
               </div>

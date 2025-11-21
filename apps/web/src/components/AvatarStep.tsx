@@ -9,7 +9,7 @@ interface AvatarStepProps {
 }
 
 export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
-  const { authenticated, userProfile, user: privyUser } = useZoAuth();
+  const { authenticated, userProfile, user: privyUser, reloadProfile } = useZoAuth();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -131,7 +131,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
           setIsGenerating(false);
           setIsPolling(false);
           
-          // Save to Supabase
+          // Save to Supabase and reload profile
           try {
             const { updateUserProfile } = await import('@/lib/privyDb');
             await updateUserProfile(userId, {
@@ -139,6 +139,10 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
               body_type: bodyType
             });
             console.log('✅ Saved avatar to Supabase');
+            
+            // Reload profile to update in-memory state with new avatar
+            await reloadProfile();
+            console.log('✅ Profile reloaded with new avatar');
           } catch (dbErr) {
             console.warn('⚠️ Failed to save to Supabase, but continuing', dbErr);
           }

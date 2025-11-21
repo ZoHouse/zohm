@@ -4,6 +4,13 @@ import React, { useMemo } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
 import ZoPassportComponent from './ZoPassportComponent';
 
+import { PrivyUserProfile } from '@/types/privy';
+
+interface ZoPassportProps {
+  className?: string;
+  userProfile?: PrivyUserProfile | null;
+}
+
 /**
  * ZoPassport - Fully wired Zo Passport component
  * 
@@ -16,12 +23,36 @@ import ZoPassportComponent from './ZoPassportComponent';
  * Usage:
  * ```tsx
  * <ZoPassport />
+ * // OR with pre-loaded profile
+ * <ZoPassport userProfile={profile} />
  * ```
- * 
- * No props needed - completely self-contained!
  */
-const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
-  const { userProfile, isLoading, isFounder } = useZoAuth();
+const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUserProfile }) => {
+  const { userProfile: authUserProfile, isLoading: authLoading } = useZoAuth();
+
+  // Use prop profile for other fields if provided, but avatar always comes from auth (reactive)
+  const userProfile = propUserProfile !== undefined ? propUserProfile : authUserProfile;
+  const isLoading = propUserProfile !== undefined ? false : authLoading;
+
+  // Calculate founder status
+  const isFounder = useMemo(() => {
+    if (!userProfile) return false;
+
+    const isFounderRole = userProfile.role === 'Founder';
+    const hasFounderNfts = (userProfile.founder_nfts_count ?? 0) > 0;
+    const isZoFounder = userProfile.zo_membership?.toLowerCase() === 'founder';
+
+    console.log('🔍 [ZoPassport] Founder check:', {
+      role: userProfile.role,
+      nfts: userProfile.founder_nfts_count,
+      membership: userProfile.zo_membership,
+      isFounderRole,
+      hasFounderNfts,
+      isZoFounder
+    });
+
+    return isFounderRole || hasFounderNfts || isZoFounder;
+  }, [userProfile]);
 
   // Calculate profile completion
   const completion = useMemo(() => {
@@ -56,15 +87,43 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
   }, [userProfile]);
 
   // Extract display data
+  // 🔑 CRITICAL: Always use authUserProfile for avatar (reactive, updates automatically)
+  // Use propUserProfile only for other fields if needed, but avatar must come from auth hook
   const profile = useMemo(() => {
-    if (!userProfile) return undefined;
+    // Always prefer auth profile for avatar (it's reactive and updates)
+    const profileForAvatar = authUserProfile || userProfile;
+    const profileForName = userProfile || authUserProfile;
+
+    if (!profileForAvatar && !profileForName) return undefined;
+
+    // 🔍 DEEP DEBUG: Log what avatar we're using
+    console.log('🎨 [ZoPassport] Rendering with avatar:', {
+      pfp: profileForAvatar?.pfp || 'NULL',
+      hasPfp: !!profileForAvatar?.pfp,
+      willShow: profileForAvatar?.pfp || '/images/rank1.jpeg (FALLBACK)',
+      source: authUserProfile ? 'authUserProfile (REACTIVE)' : 'propUserProfile (STATIC)',
+      authPfp: authUserProfile?.pfp || 'NULL',
+      propPfp: propUserProfile?.pfp || 'NULL',
+    });
+
+    // Get avatar from various sources, prioritizing reactive auth profile
+    let avatar = authUserProfile?.pfp || profileForAvatar?.pfp;
+
+    // Fallback to localStorage if available (matches DashboardHeader behavior)
+    if (!avatar && typeof window !== 'undefined') {
+      const storedAvatar = localStorage.getItem('zo_avatar');
+      if (storedAvatar) {
+        console.log('🎨 [ZoPassport] Using cached avatar from localStorage');
+        avatar = storedAvatar;
+      }
+    }
 
     return {
-      avatar: userProfile.pfp || undefined,
-      name: userProfile.name || undefined,
+      avatar: avatar || undefined,
+      name: profileForName?.name || undefined,
       isFounder,
     };
-  }, [userProfile, isFounder]);
+  }, [authUserProfile, userProfile, isFounder, propUserProfile]);
 
   // Loading state
   if (isLoading) {
@@ -80,11 +139,17 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
 
   // Render passport
   return (
-    <ZoPassportComponent
-      profile={profile}
-      completion={completion}
-      className={className}
-    />
+    <div className="relative">
+      <ZoPassportComponent
+        profile={profile}
+        completion={completion}
+        className={className}
+      />
+      {/* Debug Info - Temporary */}
+      <div className="absolute top-0 left-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none max-w-[200px] break-words">
+        R:{userProfile?.role} N:{userProfile?.founder_nfts_count} M:{userProfile?.zo_membership}
+      </div>
+    </div>
   );
 };
 

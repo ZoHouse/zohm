@@ -429,8 +429,15 @@ export default function Home() {
     const checkQuestAvailability = async () => {
       // Only check for returning users (completed onboarding)
       if (!privyAuthenticated || !privyOnboardingComplete || !privyUserProfile?.id) {
+        console.log('🔍 [QuestCooldown] Skipping check:', {
+          authenticated: privyAuthenticated,
+          onboardingComplete: privyOnboardingComplete,
+          hasUserId: !!privyUserProfile?.id
+        });
         return;
       }
+      
+      console.log('🔍 [QuestCooldown] Checking quest availability for returning user:', privyUserProfile.id);
       
       try {
         const { canUserCompleteQuest } = await import('@/lib/questService');
@@ -440,12 +447,19 @@ export default function Home() {
           12 // 12-hour cooldown
         );
         
+        console.log('🔍 [QuestCooldown] Check result:', {
+          canComplete: result.canComplete,
+          nextAvailableAt: result.nextAvailableAt,
+          lastCompletedAt: result.lastCompletedAt
+        });
+        
         setQuestAvailableForReturningUser(result.canComplete);
         
         if (result.canComplete) {
-          console.log('🎮 Quest available for returning user');
+          console.log('🎮 Quest available - showing quest screen');
+        } else {
+          console.log('⏳ Quest on cooldown - redirecting to dashboard');
         }
-        // Silently redirect to dashboard if on cooldown (no log needed)
       } catch (error) {
         console.error('❌ Error checking quest availability:', error);
         // On error, assume quest not available (safer)
@@ -720,12 +734,11 @@ export default function Home() {
       await reloadProfile();
     }
     
-    // 🔄 Reset quest availability for returning users (quest just completed, now on cooldown)
-    if (privyOnboardingComplete) {
-      console.log('🔄 Resetting quest availability (quest on cooldown now)');
-      setQuestAvailableForReturningUser(false);
-      setOnboardingStep(null); // Reset quest step
-    }
+    // 🔄 ALWAYS reset quest availability after completion (quest now on cooldown)
+    // This applies to ALL users (first-time and returning) after quest completion
+    console.log('🔄 Quest completed - setting cooldown state');
+    setQuestAvailableForReturningUser(false);
+    setOnboardingStep(null); // Reset quest step
     
     // 🚀 Start transition preparation (use unified auth user ID)
     await prepareTransition(userId, onboardingLocation, reloadProfile);

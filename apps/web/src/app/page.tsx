@@ -69,21 +69,18 @@ export default function Home() {
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
   
-  // ZO Phone Authentication
+  // ZO Authentication
   const { 
     authenticated,
-    userProfile: privyUserProfile, // Keep name for compatibility
-    hasCompletedOnboarding: privyOnboardingComplete,
-    isLoading: privyLoading,
-    user: privyUser,
-    login: privyLogin,
-    ready: privyReady,
+    userProfile,
+    hasCompletedOnboarding: onboardingComplete,
+    isLoading: isLoadingProfile,
+    user,
+    login,
+    ready,
     reloadProfile,
     authMethod
   } = useZoAuth();
-  
-  // Authenticated state
-  const privyAuthenticated = authenticated;
 
   // 🚀 Onboarding transition coordinator (prevents race conditions)
   const {
@@ -96,8 +93,8 @@ export default function Home() {
 
   // Get user's home location for distance calculations (before any conditional returns)
   // Priority: onboarding location (immediate) > profile location (persisted)
-  const userHomeLat = onboardingLocation?.lat || privyUserProfile?.lat || null;
-  const userHomeLng = onboardingLocation?.lng || privyUserProfile?.lng || null;
+  const userHomeLat = onboardingLocation?.lat || userProfile?.lat || null;
+  const userHomeLng = onboardingLocation?.lng || userProfile?.lng || null;
 
   // Local radius in kilometers
   const LOCAL_RADIUS_KM = 100;
@@ -106,8 +103,8 @@ export default function Home() {
   useEffect(() => {
     if (animationFlagSet) return; // Only run once
     
-    const hasLocation = !!(privyUserProfile?.lat && privyUserProfile?.lng);
-    if (privyOnboardingComplete && hasLocation && !shouldAnimateFromSpace) {
+    const hasLocation = !!(userProfile?.lat && userProfile?.lng);
+    if (onboardingComplete && hasLocation && !shouldAnimateFromSpace) {
       console.log('🚀 Setting animation flag for returning user (mount)');
       setShouldAnimateFromSpace(true);
       setAnimationFlagSet(true);
@@ -183,35 +180,35 @@ export default function Home() {
     };
 
     initApp();
-  }, [privyReady, privyAuthenticated, privyOnboardingComplete, privyLoading]);
-  // ⚠️ REMOVED privyUserProfile from deps to prevent re-triggers during profile loading
+  }, [ready, authenticated, onboardingComplete, isLoading]);
+  // ⚠️ REMOVED userProfile from deps to prevent re-triggers during profile loading
 
   // 🔒 Keep profile status in sync - if profile exists, status is 'exists'
   // This runs whenever the profile or onboarding flag changes
   useEffect(() => {
     if (
-      privyReady && 
-      privyAuthenticated && 
-      privyUserProfile
+      ready && 
+      authenticated && 
+      userProfile
     ) {
       // Profile exists in database → status is 'exists'
       // User routing will be handled by shouldShowOnboarding check
       const newStatus = 'exists';
       
       if (userProfileStatus !== newStatus) {
-        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus} (onboarding: ${privyOnboardingComplete})`);
+        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus} (onboarding: ${onboardingComplete})`);
         setUserProfileStatus(newStatus);
       }
     }
-  }, [privyReady, privyAuthenticated, privyUserProfile, privyOnboardingComplete, userProfileStatus]);
+  }, [ready, authenticated, userProfile, onboardingComplete, userProfileStatus]);
 
   // Skip loading screen when Privy is ready for returning users
   useEffect(() => {
-    if (privyReady && privyAuthenticated && userProfileStatus === 'exists' && isLoading) {
+    if (ready && authenticated && userProfileStatus === 'exists' && isLoading) {
       console.log('⚡ Privy ready with existing profile, skipping loading screen');
       setIsLoading(false);
     }
-  }, [privyReady, privyAuthenticated, userProfileStatus, isLoading]);
+  }, [ready, authenticated, userProfileStatus, isLoading]);
 
   // Load map data (events and nodes) only after onboarding is complete
   useEffect(() => {
@@ -305,29 +302,30 @@ export default function Home() {
   // 🐛 DEBUG: Log current state for debugging
   useEffect(() => {
     console.log('🎯 App State:', {
-      authenticated: privyAuthenticated,
+      authenticated: authenticated,
       authMethod,
-      privyLoading,
-      privyReady,
+      isLoadingProfile,
+      isLoadingMap: isLoading,
+      ready,
       onboardingStep,
       userProfileStatus,
-      privyOnboardingComplete,
-      hasProfile: !!privyUserProfile,
-      profileName: privyUserProfile?.name,
-      profileId: privyUserProfile?.id
+      onboardingComplete,
+      hasProfile: !!userProfile,
+      profileName: userProfile?.name,
+      profileId: userProfile?.id
     });
-  }, [privyAuthenticated, authMethod, privyLoading, privyReady, onboardingStep, userProfileStatus, privyOnboardingComplete, privyUserProfile]);
+  }, [authenticated, authMethod, isLoadingProfile, isLoading, ready, onboardingStep, userProfileStatus, onboardingComplete, userProfile]);
 
   // Effect to check user profile when authenticated (Privy or ZO)
   useEffect(() => {
     // Only run once when status is null
-    if (privyAuthenticated && !privyLoading && userProfileStatus === null) {
+    if (authenticated && !isLoadingProfile && userProfileStatus === null) {
       console.log('🔍 User authenticated, checking profile...', {
         authMethod,
-        hasProfile: !!privyUserProfile,
-        onboardingComplete: privyOnboardingComplete,
-        profileName: privyUserProfile?.name,
-        profileId: privyUserProfile?.id
+        hasProfile: !!userProfile,
+        onboardingComplete: onboardingComplete,
+        profileName: userProfile?.name,
+        profileId: userProfile?.id
       });
       
       // Set a maximum wait time of 5 seconds for profile to load
@@ -337,10 +335,10 @@ export default function Home() {
       const checkUserProfile = () => {
         attempts++;
         
-        if (privyUserProfile) {
+        if (userProfile) {
           // Profile exists in database - set status to 'exists'
           // User will be routed to onboarding if onboarding_completed === false
-          console.log('✅ Profile exists:', privyUserProfile.name, '(onboarding_completed:', privyOnboardingComplete, ')');
+          console.log('✅ Profile exists:', userProfile.name, '(onboarding_completed:', onboardingComplete, ')');
           setUserProfileStatus('exists');
         } else if (attempts >= maxAttempts) {
           // Timeout: assume profile doesn't exist after 5 seconds
@@ -357,67 +355,67 @@ export default function Home() {
       const timeoutId = setTimeout(checkUserProfile, 500);
       return () => clearTimeout(timeoutId);
     }
-  }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
+  }, [authenticated, isLoadingProfile, onboardingComplete, userProfile, userProfileStatus]);
 
   // Also check when profile loads (for ZO users)
   useEffect(() => {
     console.log('🔍 [ProfileStatus] Effect triggered:', {
       authenticated,
       authMethod,
-      hasProfile: !!privyUserProfile,
+      hasProfile: !!userProfile,
       currentStatus: userProfileStatus,
-      profileName: privyUserProfile?.name
+      profileName: userProfile?.name
     });
 
-    if (authenticated && privyUserProfile && userProfileStatus === null) {
+    if (authenticated && userProfile && userProfileStatus === null) {
       console.log('🔍 Profile loaded, checking status...', {
         authMethod,
-        name: privyUserProfile.name,
-        id: privyUserProfile.id,
-        onboardingComplete: privyOnboardingComplete
+        name: userProfile.name,
+        id: userProfile.id,
+        onboardingComplete: onboardingComplete
       });
       // If profile exists in database, status is 'exists' regardless of onboarding_completed
       // This is because user might be from another ZO app
       const newStatus = 'exists';
-      console.log(`✅ Setting userProfileStatus to: ${newStatus} (onboarding_completed: ${privyOnboardingComplete})`);
+      console.log(`✅ Setting userProfileStatus to: ${newStatus} (onboarding_completed: ${onboardingComplete})`);
       setUserProfileStatus(newStatus);
     }
-  }, [authenticated, privyUserProfile, privyOnboardingComplete, userProfileStatus, authMethod]);
+  }, [authenticated, userProfile, onboardingComplete, userProfileStatus, authMethod]);
 
   // Set default map view mode based on whether user has location
   useEffect(() => {
-    if (userProfileStatus === 'exists' && privyUserProfile) {
-      const hasLocation = !!privyUserProfile.lat && !!privyUserProfile.lng;
+    if (userProfileStatus === 'exists' && userProfile) {
+      const hasLocation = !!userProfile.lat && !!userProfile.lng;
       const defaultMode = hasLocation ? 'local' : 'global';
       
       console.log(`🗺️ Setting default map mode to ${defaultMode} (has location: ${hasLocation})`);
       setMapViewMode(defaultMode);
     }
-  }, [userProfileStatus, privyUserProfile]);
+  }, [userProfileStatus, userProfile]);
 
   // Enable space animation for NEW users after completing onboarding
   // (Returning users get the flag computed in shouldTriggerAnimation useMemo)
   useEffect(() => {
-    const hasLocation = !!(privyUserProfile?.lat && privyUserProfile?.lng);
+    const hasLocation = !!(userProfile?.lat && userProfile?.lng);
     
     console.log('🎬 Animation effect check (new users):', {
-      privyOnboardingComplete,
+      onboardingComplete,
       userProfileStatus,
       hasUserLocation: hasLocation,
       currentAnimationFlag: shouldAnimateFromSpace,
-      shouldTrigger: privyOnboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation
+      shouldTrigger: onboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation
     });
     
     // Set flag for new users who just completed onboarding
     // Returning users get flag computed synchronously in useMemo
-    if (privyOnboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation) {
+    if (onboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation) {
       console.log('🚀 Enabling space-to-location animation (new user post-onboarding)');
       setShouldAnimateFromSpace(true);
       setAnimationFlagSet(true);
     } else if (!shouldAnimateFromSpace && !hasLocation) {
       console.log('⏭️ No location available for animation');
     }
-  }, [privyOnboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
+  }, [onboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
 
   // DISABLED: No longer tracking quest availability for returning users
   // Returning users always go to dashboard
@@ -433,15 +431,15 @@ export default function Home() {
       authenticated,
       authMethod,
       userProfileStatus,
-      hasProfile: !!privyUserProfile,
-      hasLocation: !!(privyUserProfile?.lat && privyUserProfile?.lng),
-      lat: privyUserProfile?.lat,
-      lng: privyUserProfile?.lng,
-      onboardingComplete: privyOnboardingComplete,
+      hasProfile: !!userProfile,
+      hasLocation: !!(userProfile?.lat && userProfile?.lng),
+      lat: userProfile?.lat,
+      lng: userProfile?.lng,
+      onboardingComplete: onboardingComplete,
     });
 
     // Only check after user is authenticated and profile exists
-    if (!authenticated || userProfileStatus !== 'exists' || !privyUserProfile) {
+    if (!authenticated || userProfileStatus !== 'exists' || !userProfile) {
       console.log('⏭️ [LocationModal] Skipping - not ready yet');
       return;
     }
@@ -465,11 +463,11 @@ export default function Home() {
     }, 2000); // 2 second delay to let dashboard load
     
     return () => clearTimeout(timeoutId);
-  }, [authenticated, userProfileStatus, privyUserProfile, authMethod, privyOnboardingComplete]);
+  }, [authenticated, userProfileStatus, userProfile, authMethod, onboardingComplete]);
 
   // Handle location granted from modal
   const handleLocationGranted = async (lat: number, lng: number) => {
-    if (!privyUserProfile?.id) {
+    if (!userProfile?.id) {
       console.error('❌ No user profile ID to save location');
       return;
     }
@@ -477,7 +475,7 @@ export default function Home() {
     console.log('💾 Saving location to database:', { lat, lng });
     try {
       const { updateUserProfile } = await import('@/lib/privyDb');
-      await updateUserProfile(privyUserProfile.id, {
+      await updateUserProfile(userProfile.id, {
         lat,
         lng,
       });
@@ -497,10 +495,10 @@ export default function Home() {
 
   // Auto-save location from MapCanvas to user profile (for returning users without location)
   useEffect(() => {
-    if (userProfileStatus !== 'exists' || !privyUserProfile?.id || !privyUserProfile) return;
+    if (userProfileStatus !== 'exists' || !userProfile?.id || !userProfile) return;
     
     // Only do this for returning users who don't have location yet
-    if (privyUserProfile.lat && privyUserProfile.lng) return;
+    if (userProfile.lat && userProfile.lng) return;
     
     const checkAndSaveLocation = async () => {
       if (typeof window === 'undefined') return;
@@ -511,7 +509,7 @@ export default function Home() {
       console.log('💾 Saving MapCanvas location for returning user...');
       try {
         const { updateUserProfile } = await import('@/lib/privyDb');
-        await updateUserProfile(privyUserProfile.id, {
+        await updateUserProfile(userProfile.id, {
           lat: windowCoords.lat,
           lng: windowCoords.lng,
         });
@@ -528,7 +526,7 @@ export default function Home() {
     
     const timeoutId = setTimeout(checkAndSaveLocation, 3000);
     return () => clearTimeout(timeoutId);
-  }, [userProfileStatus, privyUserProfile, reloadProfile]);
+  }, [userProfileStatus, userProfile, reloadProfile]);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -574,19 +572,19 @@ export default function Home() {
   // Handle red pill click - now uses Privy login
   const handleRedPillClick = async () => {
     console.log('🔴 Red pill clicked! Opening Privy login...');
-    privyLogin();
+    login();
   };
 
   // Debug Privy state when dashboard is opened
   useEffect(() => {
     if (isDashboardOpen) {
       console.log('🔍 Dashboard opened - Privy state:', {
-        authenticated: privyAuthenticated,
-        hasProfile: !!privyUserProfile,
-        onboardingComplete: privyOnboardingComplete
+        authenticated: authenticated,
+        hasProfile: !!userProfile,
+        onboardingComplete: onboardingComplete
       });
     }
-  }, [isDashboardOpen, privyAuthenticated, privyUserProfile, privyOnboardingComplete]);
+  }, [isDashboardOpen, authenticated, userProfile, onboardingComplete]);
 
   // 🎯 Handle transition completion atomically (moved to useEffect to avoid render loop)
   useEffect(() => {
@@ -655,81 +653,96 @@ export default function Home() {
   // Handle QuestComplete - go to dashboard after onboarding
   // Returns a promise that resolves when the map is ready to show dashboard
   const handleQuestCompleteGoHome = async (): Promise<void> => {
-    console.log('🎉 Quest complete! Going home...');
-    const userId = privyUserProfile?.id || privyUser?.id;
-    console.log('🔍 Starting transition with:', { 
-      userId, 
-      authMethod,
-      hasLocation: !!onboardingLocation,
-      location: onboardingLocation 
-    });
+    // 🚧 CRITICAL: Set transition flag FIRST to block all routing during async operations
+    // This prevents race conditions where routing checks happen before state updates complete
+    setIsTransitioningFromOnboarding(true);
     
-    // ✅ Mark onboarding as complete (user now becomes Type 3: Returning User)
-    // This only applies to first-time users (Type 1 & 2)
-    if (userId && !privyOnboardingComplete) {
-      console.log('✅ Marking onboarding as complete for user:', userId);
-      const { updateUserProfile } = await import('@/lib/privyDb');
-      await updateUserProfile(userId, {
-        onboarding_completed: true
+    try {
+      console.log('🎉 Quest complete! Going home...');
+      const userId = userProfile?.id || user?.id;
+      console.log('🔍 Starting transition with:', { 
+        userId, 
+        authMethod,
+        hasLocation: !!onboardingLocation,
+        location: onboardingLocation 
       });
-      console.log('✅ User is now a returning user (Type 3)');
       
-      // Reload profile to update state
-      await reloadProfile();
-    }
-    
-    // 🔄 Quest completed - reset quest step
-    console.log('🔄 Quest completed');
-    setOnboardingStep(null); // Reset quest step
-    
-    // 🚀 Start transition preparation (use unified auth user ID)
-    await prepareTransition(userId, onboardingLocation, reloadProfile);
-    
-    console.log('✅ prepareTransition completed, waiting for ready state...');
-    
-    // Wait for transition to reach 'ready' state AND map data to be applied
-    return new Promise<void>((resolve) => {
-      let attempts = 0;
-      const maxAttempts = 100; // 10 seconds max
-      
-      const checkReady = () => {
-        attempts++;
-        console.log(`🔍 Check ${attempts}: transitionPhase=${transitionPhase}, hasData=${!!transitionData}, events=${events.length}, nodes=${nodes.length}`);
+      // ✅ Mark onboarding as complete (user now becomes Type 3: Returning User)
+      // This only applies to first-time users (Type 1 & 2)
+      if (userId && !onboardingComplete) {
+        console.log('✅ Marking onboarding as complete for user:', userId);
+        const { updateUserProfile } = await import('@/lib/privyDb');
+        await updateUserProfile(userId, {
+          onboarding_completed: true
+        });
+        console.log('✅ User is now a returning user (Type 3)');
         
-        if (transitionPhase === 'ready' && transitionData && events.length > 0 && nodes.length > 0) {
-          console.log('✅ Map is ready - opening dashboard for new user');
-          // Open dashboard immediately after onboarding
-          setIsDashboardOpen(true);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          console.warn('⚠️ Timeout waiting for map ready, opening dashboard anyway');
-          setIsDashboardOpen(true);
-          resolve();
-        } else {
-          // Check again in 100ms
-          setTimeout(checkReady, 100);
-        }
-      };
+        // Reload profile to update state
+        await reloadProfile();
+      }
       
-      // Start checking after a small delay to let state propagate
-      setTimeout(checkReady, 100);
-    });
+      // 🔄 Quest completed - reset quest step
+      console.log('🔄 Quest completed');
+      setOnboardingStep(null); // Reset quest step
+      
+      // 🚀 Start transition preparation (use unified auth user ID)
+      await prepareTransition(userId, onboardingLocation, reloadProfile);
+      
+      console.log('✅ prepareTransition completed, waiting for ready state...');
+      
+      // Wait for transition to reach 'ready' state AND map data to be applied
+      return new Promise<void>((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 100; // 10 seconds max
+        
+        const checkReady = () => {
+          attempts++;
+          console.log(`🔍 Check ${attempts}: transitionPhase=${transitionPhase}, hasData=${!!transitionData}, events=${events.length}, nodes=${nodes.length}`);
+          
+          if (transitionPhase === 'ready' && transitionData && events.length > 0 && nodes.length > 0) {
+            console.log('✅ Map is ready - opening dashboard for new user');
+            // Open dashboard immediately after onboarding
+            setIsDashboardOpen(true);
+            resolve();
+          } else if (attempts >= maxAttempts) {
+            console.warn('⚠️ Timeout waiting for map ready, opening dashboard anyway');
+            setIsDashboardOpen(true);
+            resolve();
+          } else {
+            // Check again in 100ms
+            setTimeout(checkReady, 100);
+          }
+        };
+        
+        // Start checking after a small delay to let state propagate
+        setTimeout(checkReady, 100);
+      });
+    } catch (error) {
+      console.error('❌ Error during quest completion:', error);
+      // Don't prevent user from proceeding - they can retry
+      throw error;
+    } finally {
+      // 🚧 CRITICAL: Always clear transition flag (even on error)
+      // This ensures user isn't stuck on loading screen if something fails
+      console.log('🏁 Clearing transition flag');
+      setIsTransitioningFromOnboarding(false);
+    }
   };
 
   // 🎯 Memoize onboarding screens BEFORE any early returns (Rules of Hooks requirement)
   // Show onboarding when:
   // 1. New user (no profile) - userProfileStatus === 'not_exists'
   // 2. Existing ZO user from another app - profile exists but onboarding_completed === false
-  const shouldShowOnboarding = privyAuthenticated && !privyOnboardingComplete;
+  const shouldShowOnboarding = authenticated && !onboardingComplete;
   
   // Determine if this is a new user (no profile) or existing user from another app
   const isNewUser = userProfileStatus === 'not_exists';
   
   // Cross-app user detection: Has profile data (name, email, avatar) but hasn't completed THIS app's onboarding
-  const isExistingUserFromAnotherApp = privyUserProfile && 
-    !privyOnboardingComplete && 
+  const isExistingUserFromAnotherApp = userProfile && 
+    !onboardingComplete && 
     userProfileStatus !== 'not_exists' && 
-    (privyUserProfile.name || privyUserProfile.email || privyUserProfile.pfp);
+    (userProfile.name || userProfile.email || userProfile.pfp);
   
   const onboardingScreen = useMemo(() => {
     if (!shouldShowOnboarding) return null;
@@ -739,7 +752,7 @@ export default function Home() {
       isNewUser,
       isExistingUserFromAnotherApp,
       onboardingStep,
-      userId: privyUserProfile?.id || privyUser?.id
+      userId: userProfile?.id || user?.id
     });
     
     // Show different screens based on onboarding step
@@ -747,7 +760,7 @@ export default function Home() {
       return (
         <QuestAudio 
           onComplete={handleQuestAudioComplete} 
-          userId={privyUserProfile?.id || privyUser?.id}
+          userId={userProfile?.id || user?.id}
         />
       );
     }
@@ -756,7 +769,7 @@ export default function Home() {
       return (
         <QuestComplete 
           onGoHome={handleQuestCompleteGoHome} 
-          userId={privyUserProfile?.id || privyUser?.id}
+          userId={userProfile?.id || user?.id}
           score={questScore}
           tokensEarned={questTokens}
         />
@@ -770,14 +783,14 @@ export default function Home() {
     if (isExistingUserFromAnotherApp) {
       console.log('✅ Existing ZO user from another app - skipping to voice quest');
       console.log('📋 User already has profile:', {
-        name: privyUserProfile?.name,
-        email: privyUserProfile?.email,
-        phone: privyUserProfile?.phone
+        name: userProfile?.name,
+        email: userProfile?.email,
+        phone: userProfile?.phone
       });
       return (
         <QuestAudio 
           onComplete={handleQuestAudioComplete} 
-          userId={privyUserProfile?.id || privyUser?.id}
+          userId={userProfile?.id || user?.id}
         />
       );
     }
@@ -787,10 +800,10 @@ export default function Home() {
     return (
       <Onboarding2 
         onComplete={handleOnboardingComplete}
-        userId={privyUserProfile?.id || privyUser?.id}
+        userId={userProfile?.id || user?.id}
       />
     );
-  }, [shouldShowOnboarding, isNewUser, isExistingUserFromAnotherApp, onboardingStep, privyUserProfile?.id, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
+  }, [shouldShowOnboarding, isNewUser, isExistingUserFromAnotherApp, onboardingStep, userProfile?.id, user?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
   
   // 🔄 Returning User: ALWAYS show dashboard (no quest screens)
   // Returning users go straight to dashboard - no cooldown checks, no quest screens
@@ -800,8 +813,22 @@ export default function Home() {
     return null; // null = show main dashboard
   }, []);
   
+  // 🚧 CRITICAL: Check transition flag FIRST (before any other routing)
+  // This prevents race conditions during quest completion by blocking all routing
+  // until database updates and state reloads are complete
+  if (isTransitioningFromOnboarding) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+          <p className="text-white text-lg">Preparing your world...</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Show loading screen while Privy initializes
-  if (!privyReady && !isTransitioningFromOnboarding) {
+  if (!ready && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -813,20 +840,20 @@ export default function Home() {
   }
 
   // Show LandingPage if not authenticated
-  if (!privyAuthenticated) {
-    return <LandingPage onConnect={privyLogin} />;
+  if (!authenticated) {
+    return <LandingPage onConnect={login} />;
   }
 
   // Show loading screen while determining profile status (ONLY when authenticated)
   // This prevents flashing during wallet setup
   // Also wait for profile to load if we're still loading
-  if (privyAuthenticated && (userProfileStatus === null || privyLoading) && !isTransitioningFromOnboarding) {
+  if (authenticated && (userProfileStatus === null || isLoadingProfile) && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
           <p className="text-white text-lg">
-            {privyLoading ? 'Loading your profile...' : 'Setting up your profile...'}
+            {isLoadingProfile ? 'Loading your profile...' : 'Setting up your profile...'}
           </p>
         </div>
       </div>
@@ -871,7 +898,7 @@ export default function Home() {
   }
 
   // Get user's city from profile
-  const userCity = privyUserProfile?.city || null;
+  const userCity = userProfile?.city || null;
 
   // 🔍 DEBUG: Log render decision
   console.log('🎬 Render Decision:', {
@@ -904,7 +931,7 @@ export default function Home() {
         console.log('📍 Location obtained:', { latitude, longitude });
 
         // Update user profile with location
-        const userId = privyUserProfile?.id || privyUser?.id;
+        const userId = userProfile?.id || user?.id;
         if (userId) {
           const { updateUserProfile } = await import('@/lib/privyDb');
           await updateUserProfile(userId, {
@@ -956,7 +983,7 @@ export default function Home() {
           <LocationPermissionModal
             onLocationGranted={handleLocationGranted}
             onClose={() => setShowLocationModal(false)}
-            userProfile={privyUserProfile}
+            userProfile={userProfile}
           />
         )}
         
@@ -969,7 +996,7 @@ export default function Home() {
           questCount={questCount}
           userCity={userCity}
           userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
-          userId={privyUserProfile?.id || privyUser?.id}
+          userId={userProfile?.id || user?.id}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -993,7 +1020,7 @@ export default function Home() {
         <LocationPermissionModal
           onLocationGranted={handleLocationGranted}
           onClose={() => setShowLocationModal(false)}
-          userProfile={privyUserProfile}
+          userProfile={userProfile}
         />
       )}
       
@@ -1006,7 +1033,7 @@ export default function Home() {
         questCount={questCount}
         userCity={userCity}
         userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
-        userId={privyUserProfile?.id || privyUser?.id}
+        userId={userProfile?.id || user?.id}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}

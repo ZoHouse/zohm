@@ -73,7 +73,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ServiceWorkerRegistration />
-        {children}
+          {children}
       </body>
     </html>
   );

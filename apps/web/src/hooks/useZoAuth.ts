@@ -37,7 +37,7 @@ export function useZoAuth() {
     try {
       const zoUserId = getZoUserId();
       console.log('🔍 [ZoAuth] ZO user ID from localStorage:', zoUserId);
-      
+
       if (!zoUserId) {
         console.log('⚠️ [ZoAuth] No ZO session found');
         setUserProfile(null);
@@ -46,22 +46,22 @@ export function useZoAuth() {
       }
 
       console.log('🔐 [ZoAuth] Loading profile for:', zoUserId);
-      
+
       // Try direct lookup by id first
       let profile = await getFullUserProfile(zoUserId);
       console.log('🔐 [ZoAuth] Direct lookup result:', profile ? 'Found' : 'Not found');
-      
+
       // If not found, try API lookup by zo_user_id
       if (!profile) {
         try {
           console.log('🔐 [ZoAuth] Trying API lookup by zo_user_id...');
           const response = await fetch(`/api/users/by-zo-id/${zoUserId}`);
           console.log('🔐 [ZoAuth] API response status:', response.status);
-          
+
           if (response.ok) {
             const userByZoId = await response.json();
             console.log('🔐 [ZoAuth] API response data:', userByZoId);
-            
+
             if (userByZoId?.id) {
               profile = await getFullUserProfile(userByZoId.id);
               console.log('🔐 [ZoAuth] Profile loaded via API:', profile ? 'Found' : 'Not found');
@@ -80,6 +80,14 @@ export function useZoAuth() {
           phone: profile.phone,
           onboarding_completed: profile.onboarding_completed
         });
+
+        // 🔍 DEEP DEBUG: Log avatar data
+        console.log('📸 [ZoAuth] Avatar in loaded profile:', {
+          pfp: profile.pfp || 'NULL',
+          hasPfp: !!profile.pfp,
+          pfpLength: profile.pfp?.length || 0,
+        });
+
         setUserProfile(profile);
       } else {
         console.warn('⚠️ [ZoAuth] Session exists but profile not found:', zoUserId);
@@ -124,8 +132,18 @@ export function useZoAuth() {
       }
     };
 
+    const handleLoginSuccess = (e: Event) => {
+      console.log('🔐 [ZoAuth] Login success event detected, reloading...');
+      loadUserProfile();
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('zoLoginSuccess', handleLoginSuccess);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('zoLoginSuccess', handleLoginSuccess);
+    };
   }, [loadUserProfile]);
 
   // ============================================
@@ -146,7 +164,7 @@ export function useZoAuth() {
       email: userProfile.email,
       phone: userProfile.phone,
     } : null,
-    
+
     // Auth state
     authenticated,
     ready: !isLoading, // Ready when not loading
@@ -154,7 +172,7 @@ export function useZoAuth() {
     error,
     hasCompletedOnboarding,
     isFounder,
-    
+
     // Actions
     logout,
     login: () => {
@@ -163,7 +181,7 @@ export function useZoAuth() {
     },
     reloadProfile: loadUserProfile,
     refreshProfile: loadUserProfile,
-    
+
     // Metadata
     authMethod: authenticated ? ('zo' as const) : null,
   };

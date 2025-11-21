@@ -69,9 +69,13 @@ export async function syncZoProfileToSupabase(
     console.log('📸 [syncZoProfile] Avatar data from ZO API:', {
       hasAvatar: !!profile.avatar,
       avatarImage: profile.avatar?.image || 'null',
+      avatarImageLength: profile.avatar?.image?.length || 0,
       avatarStatus: profile.avatar?.status || 'null',
       pfpImage: profile.pfp_image || 'null',
+      pfpImageLength: profile.pfp_image?.length || 0,
       willUse: profile.avatar?.image || profile.pfp_image || 'FALLBACK!',
+      avatarImageIsValid: profile.avatar?.image && profile.avatar.image.trim().length > 0 && (profile.avatar.image.startsWith('http') || profile.avatar.image.startsWith('https')),
+      pfpImageIsValid: profile.pfp_image && profile.pfp_image.trim().length > 0 && (profile.pfp_image.startsWith('http') || profile.pfp_image.startsWith('https')),
     });
 
     // 2. Transform ZO profile to Supabase format
@@ -124,11 +128,27 @@ export async function syncZoProfileToSupabase(
       // Note: If ZO API doesn't have a valid avatar URL, pfp field is NOT included in updateData
       // This means existing pfp in Supabase is preserved (not overwritten)
       ...(() => {
+        // Priority: avatar.image (generated) > pfp_image (profile pic)
         const zoAvatarUrl = profile.avatar?.image || profile.pfp_image;
-        if (zoAvatarUrl && zoAvatarUrl.trim().length > 0 && zoAvatarUrl.startsWith('http')) {
+        
+        // Validate URL: must be non-empty and start with http/https
+        const isValidUrl = zoAvatarUrl && 
+          zoAvatarUrl.trim().length > 0 && 
+          (zoAvatarUrl.startsWith('http://') || zoAvatarUrl.startsWith('https://'));
+        
+        if (isValidUrl) {
+          console.log('✅ [syncZoProfile] Using avatar from ZO API:', zoAvatarUrl);
           return { pfp: zoAvatarUrl };
+        } else {
+          console.log('⚠️ [syncZoProfile] No valid avatar URL in ZO API:', {
+            avatarImage: profile.avatar?.image || 'null',
+            pfpImage: profile.pfp_image || 'null',
+            reason: !zoAvatarUrl ? 'no URL' : 
+                    zoAvatarUrl.trim().length === 0 ? 'empty string' : 
+                    'invalid format (must start with http/https)'
+          });
+          return {};
         }
-        return {};
       })(),
       
       // Cultures (JSONB array)

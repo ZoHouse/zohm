@@ -20,7 +20,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
-  
+
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Reset state when modal opens/closes
@@ -103,7 +103,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
             error: data.error || data.message,
           });
         }
-        
+
         // Show user-friendly error message
         const errorMessage = data.error || data.message || data.details || `Failed to send OTP (${response.status})`;
         throw new Error(errorMessage);
@@ -160,9 +160,20 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
       if (data.userId) {
         localStorage.setItem('zo_user_id', data.userId);
         if (data.tokens?.access) {
+          // Store as zo_access_token to match AvatarStep expectations
+          localStorage.setItem('zo_access_token', data.tokens.access);
+          // Also store as zo_token for backward compatibility
           localStorage.setItem('zo_token', data.tokens.access);
         }
         console.log('✅ ZO session stored:', data.userId);
+
+        // Dispatch login success event for other components to pick up
+        if (typeof window !== 'undefined') {
+          console.log('📢 Dispatching zoLoginSuccess event');
+          window.dispatchEvent(new CustomEvent('zoLoginSuccess', {
+            detail: { userId: data.userId }
+          }));
+        }
       }
 
       if (onSuccess) {

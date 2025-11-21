@@ -35,9 +35,16 @@ The Zo platform consists of multiple interconnected APIs:
 - **Zo Comms API**: Real-time communications (chat, threads)
 
 **Base URLs:**
-- Zo API: `process.env.EXPO_PUBLIC_ZO_API_BASE_URL`
+- Zo API: `https://api.io.zo.xyz` (confirmed working)
 - Zostel API: `process.env.EXPO_PUBLIC_ZOSTEL_API_BASE_URL`
 - Zo Comms API: Same as Zo API (different namespace)
+
+**Required Headers (ALL requests):**
+- `client-key`: Platform-specific client key
+- `client-device-id`: Randomly generated per session
+- `client-device-secret`: Randomly generated per session
+- `Content-Type: application/json`
+- `Accept: application/json`
 
 **Total Endpoints Documented:** 60+ endpoints across 10 categories
 
@@ -59,9 +66,12 @@ enum ApiServer {
 
 ```bash
 # Environment Variables
-EXPO_PUBLIC_ZO_API_BASE_URL=https://api.zo.xyz
+EXPO_PUBLIC_ZO_API_BASE_URL=https://api.io.zo.xyz
+ZO_API_BASE_URL=https://api.io.zo.xyz
 EXPO_PUBLIC_ZOSTEL_API_BASE_URL=https://api.zostel.com
 ```
+
+**⚠️ Important**: Base URL is `https://api.io.zo.xyz` (not `https://api.zo.xyz`)
 
 ### HTTP Methods
 
@@ -80,27 +90,29 @@ enum HttpMethod {
 
 ### Headers Required
 
-All authenticated requests must include:
+All ZO API requests must include these **three required headers**:
 
 ```typescript
 {
   // Standard Headers
   "Content-Type": "application/json",
   "Accept": "application/json",
-  "Platform": "ios" | "android",
   
-  // Zo API Authentication
-  "client-key": string,           // Platform-specific client key
-  "client-device-id": string,      // Device identifier from auth
-  "client-device-secret": string,  // Device secret from auth
-  "Authorization": "Bearer <token>",
+  // REQUIRED: These 3 headers must be sent with EVERY request
+  "client-key": string,              // Platform-specific client key (e.g., "1482d843137574f36f74" for web)
+  "client-device-id": string,        // Randomly generated device identifier (per session)
+  "client-device-secret": string,    // Randomly generated device secret (per session)
   
-  // Zostel API Authentication (alternative)
-  "client-app-id": string,         // Zostel client ID
-  "client-user-id": string,        // User ID from Zostel auth
-  "Authorization": "Bearer <token>"
+  // Optional: For authenticated requests
+  "Authorization": "Bearer <token>", // JWT access token (after login)
 }
 ```
+
+**⚠️ Critical Notes:**
+- **NO `Platform` header** - Not required per official API spec
+- **Device credentials** (`client-device-id` and `client-device-secret`) are **randomly generated per session**
+- These three headers (`client-key`, `client-device-id`, `client-device-secret`) **must be sent with EVERY request**
+- Device credentials can be generated randomly on first request, then reused for the session
 
 ### Environment Variables for Auth
 
@@ -118,21 +130,36 @@ EXPO_PUBLIC_ZOSTEL_CLIENT_ID=<zostel_client_id>
 ### Authentication Flow
 
 ```
-1. Request OTP
-   POST /api/v1/auth/login/mobile/otp/
-   { mobile_country_code, mobile_number, message_channel }
+1. Generate Device Credentials (per session)
+   - Generate random client-device-id
+   - Generate random client-device-secret
+   - Store in localStorage (client-side) or session (server-side)
+
+2. Request OTP
+   POST https://api.io.zo.xyz/api/v1/auth/login/mobile/otp/
+   Headers:
+     - client-key: <your_client_key>
+     - client-device-id: <randomly_generated>
+     - client-device-secret: <randomly_generated>
+     - Content-Type: application/json
+   Body: { mobile_country_code, mobile_number, message_channel: "" }
    
-2. Login with OTP
-   POST /api/v1/auth/login/mobile/
-   { mobile_country_code, mobile_number, otp }
+3. Login with OTP
+   POST https://api.io.zo.xyz/api/v1/auth/login/mobile/
+   Headers: (same as step 2)
+   Body: { mobile_country_code, mobile_number, otp }
    → Returns: { token, device_id, device_secret, user }
    
-3. Store Credentials
+4. Store Credentials
    - Save token for Authorization header
-   - Save device_id and device_secret for subsequent requests
+   - Save device_id and device_secret from API response (optional - can keep using generated ones)
    
-4. Make Authenticated Requests
-   Include all headers in subsequent API calls
+5. Make Authenticated Requests
+   Include these headers in EVERY request:
+     - client-key
+     - client-device-id (from step 1 or step 3 response)
+     - client-device-secret (from step 1 or step 3 response)
+     - Authorization: Bearer <token> (for authenticated endpoints)
 ```
 
 ---

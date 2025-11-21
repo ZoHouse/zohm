@@ -7,8 +7,9 @@ import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
+import LocationPermissionModal from '@/components/LocationPermissionModal';
 import { pingSupabase, PartnerNodeRecord, getQuests } from '@/lib/supabase';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useOnboardingTransition } from '@/hooks/useOnboardingTransition';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
@@ -41,7 +42,11 @@ export default function Home() {
   const [shouldAnimateFromSpace, setShouldAnimateFromSpace] = useState(false);
   const [animationFlagSet, setAnimationFlagSet] = useState(false); // Track if we've set the flag
 
-  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(null);
+  const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(() => {
+    // Log initial state
+    console.log('🎬 [ProfileStatus] Initial state: null');
+    return null;
+  });
   
   // Onboarding flow state
   const [onboardingStep, setOnboardingStep] = useState<'profile' | 'voice' | 'complete' | null>(null);
@@ -52,6 +57,9 @@ export default function Home() {
   // Flag to ensure smooth transition from onboarding (prevents loading screen flash)
   const [isTransitioningFromOnboarding, setIsTransitioningFromOnboarding] = useState(false);
   
+  // Location permission modal state
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  
   // 🔒 Race condition fix: Prevent multiple profile status updates during Privy auth
   const hasSetProfileStatus = useRef(false);
   
@@ -61,17 +69,21 @@ export default function Home() {
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
   
-  // Privy authentication
+  // Unified authentication (Privy + ZO)
   const { 
-    authenticated: privyAuthenticated,
+    authenticated,
     userProfile: privyUserProfile,
     hasCompletedOnboarding: privyOnboardingComplete,
     isLoading: privyLoading,
-    privyUser,
+    user: privyUser,
     login: privyLogin,
-    privyReady,
-    reloadProfile
-  } = usePrivyUser();
+    ready: privyReady,
+    reloadProfile,
+    authMethod
+  } = useUnifiedAuth();
+  
+  // Use unified authenticated state (supports both Privy and ZO)
+  const privyAuthenticated = authenticated;
 
   // 🚀 Onboarding transition coordinator (prevents race conditions)
   const {
@@ -174,18 +186,20 @@ export default function Home() {
   }, [privyReady, privyAuthenticated, privyOnboardingComplete, privyLoading]);
   // ⚠️ REMOVED privyUserProfile from deps to prevent re-triggers during profile loading
 
-  // 🔒 Keep profile status in sync with privyOnboardingComplete
-  // This runs whenever the onboarding flag changes (e.g. after completing onboarding)
+  // 🔒 Keep profile status in sync - if profile exists, status is 'exists'
+  // This runs whenever the profile or onboarding flag changes
   useEffect(() => {
     if (
       privyReady && 
       privyAuthenticated && 
       privyUserProfile
     ) {
-      const newStatus = privyOnboardingComplete ? 'exists' : 'not_exists';
+      // Profile exists in database → status is 'exists'
+      // User routing will be handled by shouldShowOnboarding check
+      const newStatus = 'exists';
       
       if (userProfileStatus !== newStatus) {
-        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus}`);
+        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus} (onboarding: ${privyOnboardingComplete})`);
         setUserProfileStatus(newStatus);
       }
     }
@@ -291,38 +305,74 @@ export default function Home() {
   // 🐛 DEBUG: Log current state for debugging
   useEffect(() => {
     console.log('🎯 App State:', {
-      privyAuthenticated,
+      authenticated: privyAuthenticated,
+      authMethod,
       privyLoading,
       privyReady,
       onboardingStep,
       userProfileStatus,
       privyOnboardingComplete,
       hasProfile: !!privyUserProfile,
-      profileName: privyUserProfile?.name
+      profileName: privyUserProfile?.name,
+      profileId: privyUserProfile?.id
     });
-  }, [privyAuthenticated, privyLoading, privyReady, onboardingStep, userProfileStatus, privyOnboardingComplete, privyUserProfile]);
+  }, [privyAuthenticated, authMethod, privyLoading, privyReady, onboardingStep, userProfileStatus, privyOnboardingComplete, privyUserProfile]);
 
-  // Effect to check user profile when Privy authenticates
+  // Effect to check user profile when authenticated (Privy or ZO)
   useEffect(() => {
     // Only run once when status is null
     if (privyAuthenticated && !privyLoading && userProfileStatus === null) {
-      console.log('🔍 Privy authenticated, checking profile...');
+      console.log('🔍 User authenticated, checking profile...', {
+        authMethod,
+        hasProfile: !!privyUserProfile,
+        onboardingComplete: privyOnboardingComplete,
+        profileName: privyUserProfile?.name,
+        profileId: privyUserProfile?.id
+      });
       
       const checkUserProfile = () => {
-        if (privyOnboardingComplete && privyUserProfile) {
-          console.log('✅ Profile complete:', privyUserProfile.name);
+        if (privyUserProfile) {
+          // Profile exists in database - set status to 'exists'
+          // User will be routed to onboarding if onboarding_completed === false
+          console.log('✅ Profile exists:', privyUserProfile.name, '(onboarding_completed:', privyOnboardingComplete, ')');
           setUserProfileStatus('exists');
         } else {
-          console.log('📝 Onboarding required');
-          setUserProfileStatus('not_exists');
+          // No profile yet - wait a bit for it to load
+          console.log('⏳ Profile loading, waiting...');
+          // Don't set status yet - let it load
         }
       };
 
       // Use timeout to prevent rapid updates
-      const timeoutId = setTimeout(checkUserProfile, 100);
+      const timeoutId = setTimeout(checkUserProfile, 500);
       return () => clearTimeout(timeoutId);
     }
   }, [privyAuthenticated, privyLoading, privyOnboardingComplete, privyUserProfile, userProfileStatus]);
+
+  // Also check when profile loads (for ZO users)
+  useEffect(() => {
+    console.log('🔍 [ProfileStatus] Effect triggered:', {
+      authenticated,
+      authMethod,
+      hasProfile: !!privyUserProfile,
+      currentStatus: userProfileStatus,
+      profileName: privyUserProfile?.name
+    });
+
+    if (authenticated && privyUserProfile && userProfileStatus === null) {
+      console.log('🔍 Profile loaded, checking status...', {
+        authMethod,
+        name: privyUserProfile.name,
+        id: privyUserProfile.id,
+        onboardingComplete: privyOnboardingComplete
+      });
+      // If profile exists in database, status is 'exists' regardless of onboarding_completed
+      // This is because user might be from another ZO app
+      const newStatus = 'exists';
+      console.log(`✅ Setting userProfileStatus to: ${newStatus} (onboarding_completed: ${privyOnboardingComplete})`);
+      setUserProfileStatus(newStatus);
+    }
+  }, [authenticated, privyUserProfile, privyOnboardingComplete, userProfileStatus, authMethod]);
 
   // Set default map view mode based on whether user has location
   useEffect(() => {
@@ -359,9 +409,127 @@ export default function Home() {
     }
   }, [privyOnboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
 
+  // 🔄 Returning User Quest Availability Check
+  // State to track if returning user has quest available (cooldown expired)
+  // MUST be declared before location modal useEffect (which uses it in dependencies)
+  const [questAvailableForReturningUser, setQuestAvailableForReturningUser] = useState<boolean | null>(null);
+  
+  // Check quest availability for returning users (Type 3)
+  useEffect(() => {
+    const checkQuestAvailability = async () => {
+      // Only check for returning users (completed onboarding)
+      if (!privyAuthenticated || !privyOnboardingComplete || !privyUserProfile?.id) {
+        return;
+      }
+      
+      try {
+        const { canUserCompleteQuest } = await import('@/lib/questService');
+        const result = await canUserCompleteQuest(
+          privyUserProfile.id,
+          'game-1111', // Voice quest slug
+          12 // 12-hour cooldown
+        );
+        
+        setQuestAvailableForReturningUser(result.canComplete);
+        
+        if (result.canComplete) {
+          console.log('🎮 Quest available for returning user');
+        }
+        // Silently redirect to dashboard if on cooldown (no log needed)
+      } catch (error) {
+        console.error('❌ Error checking quest availability:', error);
+        // On error, assume quest not available (safer)
+        setQuestAvailableForReturningUser(false);
+      }
+    };
+    
+    checkQuestAvailability();
+  }, [privyAuthenticated, privyOnboardingComplete, privyUserProfile?.id]);
+
+  // Check if we should show location permission modal
+  // 📍 ALWAYS ask for current location on new session (hard refresh)
+  // ⚠️ EXCEPT for returning users when quest is on cooldown (they go straight to dashboard)
+  useEffect(() => {
+    console.log('🔍 [LocationModal] Checking conditions:', {
+      authenticated,
+      authMethod,
+      userProfileStatus,
+      hasProfile: !!privyUserProfile,
+      hasLocation: !!(privyUserProfile?.lat && privyUserProfile?.lng),
+      lat: privyUserProfile?.lat,
+      lng: privyUserProfile?.lng,
+      onboardingComplete: privyOnboardingComplete,
+      questAvailable: questAvailableForReturningUser,
+    });
+
+    // Only check after user is authenticated and profile exists
+    if (!authenticated || userProfileStatus !== 'exists' || !privyUserProfile) {
+      console.log('⏭️ [LocationModal] Skipping - not ready yet');
+      return;
+    }
+    
+    // Don't ask if we've already asked this session (prevents asking on every state change)
+    if (typeof window !== 'undefined' && sessionStorage.getItem('location_permission_asked')) {
+      console.log('⏭️ [LocationModal] Already asked for location this session');
+      return;
+    }
+    
+    // 🔄 Skip location modal for returning users when quest is on cooldown
+    // They should go straight to dashboard silently
+    if (privyOnboardingComplete && questAvailableForReturningUser === false) {
+      // Mark as asked so we don't ask again this session
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('location_permission_asked', 'true');
+      }
+      return;
+    }
+    
+    // Show modal after a short delay (let dashboard load first)
+    // Note: This will ask EVERY new session (hard refresh) to update current location
+    console.log('📍 [LocationModal] Asking for current location - showing permission modal in 2s');
+    const timeoutId = setTimeout(() => {
+      console.log('✅ [LocationModal] Showing location modal NOW');
+      setShowLocationModal(true);
+      // Mark as asked for this session
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('location_permission_asked', 'true');
+      }
+    }, 2000); // 2 second delay to let dashboard load
+    
+    return () => clearTimeout(timeoutId);
+  }, [authenticated, userProfileStatus, privyUserProfile, authMethod, privyOnboardingComplete, questAvailableForReturningUser]);
+
+  // Handle location granted from modal
+  const handleLocationGranted = async (lat: number, lng: number) => {
+    if (!privyUserProfile?.id) {
+      console.error('❌ No user profile ID to save location');
+      return;
+    }
+
+    console.log('💾 Saving location to database:', { lat, lng });
+    try {
+      const { updateUserProfile } = await import('@/lib/privyDb');
+      await updateUserProfile(privyUserProfile.id, {
+        lat,
+        lng,
+      });
+      
+      console.log('✅ Location saved to database');
+      
+      // Reload profile to update derived values
+      await reloadProfile();
+      console.log('🔄 Profile reloaded with new location');
+      
+      // Update map view mode to local now that we have location
+      setMapViewMode('local');
+    } catch (error) {
+      console.error('❌ Failed to save location:', error);
+    }
+  };
+
   // Auto-save location from MapCanvas to user profile (for returning users without location)
   useEffect(() => {
-    if (userProfileStatus !== 'exists' || !privyUser?.id || !privyUserProfile) return;
+    if (userProfileStatus !== 'exists' || !privyUserProfile?.id || !privyUserProfile) return;
     
     // Only do this for returning users who don't have location yet
     if (privyUserProfile.lat && privyUserProfile.lng) return;
@@ -375,7 +543,7 @@ export default function Home() {
       console.log('💾 Saving MapCanvas location for returning user...');
       try {
         const { updateUserProfile } = await import('@/lib/privyDb');
-        await updateUserProfile(privyUser.id, {
+        await updateUserProfile(privyUserProfile.id, {
           lat: windowCoords.lat,
           lng: windowCoords.lng,
         });
@@ -392,7 +560,7 @@ export default function Home() {
     
     const timeoutId = setTimeout(checkAndSaveLocation, 3000);
     return () => clearTimeout(timeoutId);
-  }, [userProfileStatus, privyUser, privyUserProfile]);
+  }, [userProfileStatus, privyUserProfile, reloadProfile]);
 
   const handleSectionChange = (section: 'events' | 'nodes' | 'quests') => {
     setActiveSection(section);
@@ -519,15 +687,38 @@ export default function Home() {
   // Handle QuestComplete - go to dashboard after onboarding
   // Returns a promise that resolves when the map is ready to show dashboard
   const handleQuestCompleteGoHome = async (): Promise<void> => {
-    console.log('🎉 Full onboarding flow complete!');
+    console.log('🎉 Quest complete! Going home...');
+    const userId = privyUserProfile?.id || privyUser?.id;
     console.log('🔍 Starting transition with:', { 
-      userId: privyUser?.id, 
+      userId, 
+      authMethod,
       hasLocation: !!onboardingLocation,
       location: onboardingLocation 
     });
     
-    // 🚀 Start transition preparation
-    await prepareTransition(privyUser?.id, onboardingLocation, reloadProfile);
+    // ✅ Mark onboarding as complete (user now becomes Type 3: Returning User)
+    // This only applies to first-time users (Type 1 & 2)
+    if (userId && !privyOnboardingComplete) {
+      console.log('✅ Marking onboarding as complete for user:', userId);
+      const { updateUserProfile } = await import('@/lib/privyDb');
+      await updateUserProfile(userId, {
+        onboarding_completed: true
+      });
+      console.log('✅ User is now a returning user (Type 3)');
+      
+      // Reload profile to update state
+      await reloadProfile();
+    }
+    
+    // 🔄 Reset quest availability for returning users (quest just completed, now on cooldown)
+    if (privyOnboardingComplete) {
+      console.log('🔄 Resetting quest availability (quest on cooldown now)');
+      setQuestAvailableForReturningUser(false);
+      setOnboardingStep(null); // Reset quest step
+    }
+    
+    // 🚀 Start transition preparation (use unified auth user ID)
+    await prepareTransition(userId, onboardingLocation, reloadProfile);
     
     console.log('✅ prepareTransition completed, waiting for ready state...');
     
@@ -561,18 +752,37 @@ export default function Home() {
   };
 
   // 🎯 Memoize onboarding screens BEFORE any early returns (Rules of Hooks requirement)
-  // Show onboarding when user hasn't completed profile
-  const shouldShowOnboarding = privyAuthenticated && userProfileStatus === 'not_exists';
+  // Show onboarding when:
+  // 1. New user (no profile) - userProfileStatus === 'not_exists'
+  // 2. Existing ZO user from another app - profile exists but onboarding_completed === false
+  const shouldShowOnboarding = privyAuthenticated && !privyOnboardingComplete;
+  
+  // Determine if this is a new user (no profile) or existing user from another app
+  const isNewUser = userProfileStatus === 'not_exists';
+  
+  // Cross-app user detection: Has profile data (name, email, avatar) but hasn't completed THIS app's onboarding
+  const isExistingUserFromAnotherApp = privyUserProfile && 
+    !privyOnboardingComplete && 
+    userProfileStatus !== 'not_exists' && 
+    (privyUserProfile.name || privyUserProfile.email || privyUserProfile.pfp);
   
   const onboardingScreen = useMemo(() => {
     if (!shouldShowOnboarding) return null;
+    
+    console.log('🎯 Onboarding Screen Decision:', {
+      shouldShowOnboarding,
+      isNewUser,
+      isExistingUserFromAnotherApp,
+      onboardingStep,
+      userId: privyUserProfile?.id || privyUser?.id
+    });
     
     // Show different screens based on onboarding step
     if (onboardingStep === 'voice') {
       return (
         <QuestAudio 
           onComplete={handleQuestAudioComplete} 
-          userId={privyUser?.id}
+          userId={privyUserProfile?.id || privyUser?.id}
         />
       );
     }
@@ -581,21 +791,95 @@ export default function Home() {
       return (
         <QuestComplete 
           onGoHome={handleQuestCompleteGoHome} 
-          userId={privyUser?.id}
+          userId={privyUserProfile?.id || privyUser?.id}
           score={questScore}
           tokensEarned={questTokens}
         />
       );
     }
     
-    // Default: Show Onboarding2 (nickname → portal → avatar)
+    // 🌐 Existing user from another ZO app:
+    // - Already has name, avatar, email, phone from ZO API
+    // - Just needs to complete THIS app's onboarding (voice quest)
+    // - Skip Onboarding2 and go straight to QuestAudio
+    if (isExistingUserFromAnotherApp) {
+      console.log('✅ Existing ZO user from another app - skipping to voice quest');
+      console.log('📋 User already has profile:', {
+        name: privyUserProfile?.name,
+        email: privyUserProfile?.email,
+        phone: privyUserProfile?.phone
+      });
+      return (
+        <QuestAudio 
+          onComplete={handleQuestAudioComplete} 
+          userId={privyUserProfile?.id || privyUser?.id}
+        />
+      );
+    }
+    
+    // New user: Show full Onboarding2 (nickname → portal → avatar)
+    console.log('✅ New ZO user - showing full onboarding');
     return (
       <Onboarding2 
         onComplete={handleOnboardingComplete}
-        userId={privyUser?.id}
+        userId={privyUserProfile?.id || privyUser?.id}
       />
     );
-  }, [shouldShowOnboarding, onboardingStep, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
+  }, [shouldShowOnboarding, isNewUser, isExistingUserFromAnotherApp, onboardingStep, privyUserProfile?.id, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
+  
+  // 🔄 Returning User Quest Screen (Type 3)
+  // Show quest if returning user has quest available (cooldown expired)
+  const returningUserQuestScreen = useMemo(() => {
+    // Only for returning users (completed onboarding)
+    if (!privyAuthenticated || !privyOnboardingComplete) return null;
+    
+    // Still checking quest availability
+    if (questAvailableForReturningUser === null) {
+      return (
+        <div className="fixed inset-0 bg-black flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
+            <p className="text-white text-lg">Checking quest availability...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Quest available - show quest screen
+    if (questAvailableForReturningUser) {
+      // Handle different quest steps
+      if (onboardingStep === 'voice') {
+        return (
+          <QuestAudio 
+            onComplete={handleQuestAudioComplete} 
+            userId={privyUserProfile?.id || privyUser?.id}
+          />
+        );
+      }
+      
+      if (onboardingStep === 'complete') {
+        return (
+          <QuestComplete 
+            onGoHome={handleQuestCompleteGoHome} 
+            userId={privyUserProfile?.id || privyUser?.id}
+            score={questScore}
+            tokensEarned={questTokens}
+          />
+        );
+      }
+      
+      // Default: Show voice quest
+      return (
+        <QuestAudio 
+          onComplete={handleQuestAudioComplete} 
+          userId={privyUserProfile?.id || privyUser?.id}
+        />
+      );
+    }
+    
+    // Quest on cooldown - silently go to dashboard (return null to show main app)
+    return null;
+  }, [privyAuthenticated, privyOnboardingComplete, questAvailableForReturningUser, onboardingStep, privyUserProfile?.id, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome]);
   
   // Show loading screen while Privy initializes
   if (!privyReady && !isTransitioningFromOnboarding) {
@@ -616,12 +900,15 @@ export default function Home() {
 
   // Show loading screen while determining profile status (ONLY when authenticated)
   // This prevents flashing during wallet setup
-  if (privyAuthenticated && userProfileStatus === null && !isTransitioningFromOnboarding) {
+  // Also wait for profile to load if we're still loading
+  if (privyAuthenticated && (userProfileStatus === null || privyLoading) && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
           <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-          <p className="text-white text-lg">Setting up your profile...</p>
+          <p className="text-white text-lg">
+            {privyLoading ? 'Loading your profile...' : 'Setting up your profile...'}
+          </p>
         </div>
       </div>
     );
@@ -630,8 +917,14 @@ export default function Home() {
   // 🎬 Transition screen removed - coin collection video in QuestComplete is our only loading screen
   // The video stays visible until the map is ready (handled by Promise.all in QuestComplete)
   
+  // 1️⃣ Show onboarding for new users (Type 1) or cross-app users (Type 2)
   if (onboardingScreen) {
     return onboardingScreen;
+  }
+  
+  // 2️⃣ Show quest for returning users (Type 3) if available (cooldown expired)
+  if (returningUserQuestScreen) {
+    return returningUserQuestScreen;
   }
 
   // Only render main app if user has completed onboarding
@@ -692,9 +985,10 @@ export default function Home() {
         console.log('📍 Location obtained:', { latitude, longitude });
 
         // Update user profile with location
-        if (privyUser?.id) {
+        const userId = privyUserProfile?.id || privyUser?.id;
+        if (userId) {
           const { updateUserProfile } = await import('@/lib/privyDb');
-          await updateUserProfile(privyUser.id, {
+          await updateUserProfile(userId, {
             lat: latitude,
             lng: longitude,
           });
@@ -738,6 +1032,15 @@ export default function Home() {
   if (isMobile) {
     return (
       <>
+        {/* Location Permission Modal */}
+        {showLocationModal && (
+          <LocationPermissionModal
+            onLocationGranted={handleLocationGranted}
+            onClose={() => setShowLocationModal(false)}
+            userProfile={privyUserProfile}
+          />
+        )}
+        
         <MobileView
           events={displayedEvents}
           nodes={displayedNodes}
@@ -747,7 +1050,7 @@ export default function Home() {
           questCount={questCount}
           userCity={userCity}
           userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
-          userId={privyUser?.id}
+          userId={privyUserProfile?.id || privyUser?.id}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -766,6 +1069,15 @@ export default function Home() {
 
   return (
     <>
+      {/* Location Permission Modal */}
+      {showLocationModal && (
+        <LocationPermissionModal
+          onLocationGranted={handleLocationGranted}
+          onClose={() => setShowLocationModal(false)}
+          userProfile={privyUserProfile}
+        />
+      )}
+      
       <DesktopView
         events={displayedEvents}
         nodes={displayedNodes}
@@ -775,7 +1087,7 @@ export default function Home() {
         questCount={questCount}
         userCity={userCity}
         userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
-        userId={privyUser?.id}
+        userId={privyUserProfile?.id || privyUser?.id}
         onMapReady={handleMapReady}
         flyToEvent={flyToEvent}
         flyToNode={flyToNode}

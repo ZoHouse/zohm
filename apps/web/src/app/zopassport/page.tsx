@@ -3,12 +3,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { ZoPassport } from '@/components/desktop-dashboard';
+import { ZoPassport, ZoPassportComponent } from '@/components/desktop-dashboard';
 import { useZoAuth } from '@/hooks/useZoAuth';
 
 export default function ZoPassportPage() {
   const router = useRouter();
-  const { userProfile, isLoading, authMethod } = useZoAuth();
+  const { userProfile, isLoading, authMethod, isFounder } = useZoAuth();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -436,7 +436,13 @@ Join me: https://zohm.world
                   <p className="text-xs text-gray-500">Your starting point</p>
                 </div>
                 <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassport
+                  <ZoPassportComponent
+                    profile={{
+                      avatar: "/images/rank2.jpeg",
+                      name: "New Citizen",
+                      isFounder: false,
+                    }}
+                    completion={{ done: 3, total: 10 }}
                     className="w-full"
                   />
                 </div>
@@ -496,7 +502,13 @@ Join me: https://zohm.world
                   <p className="text-xs text-gray-400">Elite status unlocked</p>
                 </div>
                 <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassport
+                  <ZoPassportComponent
+                    profile={{
+                      avatar: "/images/rank1.jpeg",
+                      name: "Founder",
+                      isFounder: true,
+                    }}
+                    completion={{ done: 9, total: 10 }}
                     className="w-full"
                   />
                 </div>
@@ -538,10 +550,20 @@ Join me: https://zohm.world
               <div className="relative h-full flex">
                 {/* Left Side: Passport */}
                 <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10">
-                  <div style={{ transform: 'scale(1.3)' }}>
-                    <ZoPassport
-                      className="w-full"
-                    />
+                  <div className="flex items-center justify-center">
+                    <div style={{ transform: 'scale(1.4)', transformOrigin: 'center' }}>
+                      <ZoPassportComponent
+                        profile={{
+                          avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                          name: userProfile?.name || "New Citizen",
+                          isFounder: isFounder,
+                        }}
+                        completion={{
+                          done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                          total: 10,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 

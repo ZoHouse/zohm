@@ -29,11 +29,10 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
     if (!userProfile) return { done: 0, total: 10 };
 
     // Define which fields count toward completion
-    // Support both ZO and Privy field names
     const profileFields = [
       userProfile.name,                              // Display name
-      userProfile.bio || userProfile.zo_bio,         // Bio (ZO or Privy)
-      userProfile.pfp || userProfile.zo_avatar_url,  // Avatar (ZO or Privy)
+      userProfile.bio,                               // Bio
+      userProfile.pfp,                               // Avatar
       userProfile.body_type,                         // Body type (for avatar generation)
       userProfile.culture,                           // Culture/interests
       userProfile.city,                              // Location / city
@@ -77,8 +76,7 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
     if (!userProfile) return undefined;
 
     return {
-      // Priority: ZO avatar → Privy pfp → undefined (fallback)
-      avatar: userProfile.zo_avatar_url || userProfile.pfp || userProfile.avatar || undefined,
+      avatar: userProfile.pfp || undefined,
       name: userProfile.name || undefined,
       isFounder,
     };

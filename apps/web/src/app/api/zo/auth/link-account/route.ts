@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           tokens.access,
           bodyType as 'bro' | 'bae'
         );
-        avatarTaskId = avatarResult.task_id;
+        avatarTaskId = avatarResult.task_id ?? null;
       } catch (avatarError: any) {
         console.error('Failed to generate avatar:', avatarError);
         // Don't fail the whole request - avatar can be generated later

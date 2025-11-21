@@ -8,7 +8,7 @@ interface LocationPermissionModalProps {
   onClose: () => void;
   userProfile?: {
     id: string;
-    name?: string;
+    name?: string | null;
   } | null;
 }
 

@@ -189,7 +189,6 @@ export async function POST(request: NextRequest) {
         zo_legacy_token_valid_till: valid_till,
         zo_client_key: client_key,
         zo_device_info: device_info || {},
-        zo_roles: user.roles || [],
         zo_membership: user.membership,
         name: `${user.first_name} ${user.last_name}`.trim() || user.first_name,
         updated_at: new Date().toISOString(),
@@ -220,7 +219,6 @@ export async function POST(request: NextRequest) {
         zo_legacy_token_valid_till: valid_till,
         zo_client_key: client_key,
         zo_device_info: device_info || {},
-        zo_roles: user.roles || [],
         zo_membership: user.membership,
       }
     ).then((syncResult) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { upsertUserFromPrivy } from '@/lib/privyDb';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import type { FormEvent } from 'react';
@@ -79,7 +79,7 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
 }
 
 export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
-  const { authenticated, userProfile, user: privyUser } = useUnifiedAuth();
+  const { authenticated, userProfile, user: privyUser } = useZoAuth();
   
   const [nickname, setNickname] = useState('');
   const [city, setCity] = useState('');

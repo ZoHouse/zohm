@@ -1,6 +1,6 @@
 'use client';
 
-import { usePrivy } from '@privy-io/react-auth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { useState } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 
@@ -11,10 +11,10 @@ interface CitizenCardProps {
 }
 
 export default function CitizenCard({ onboardingStep, userId, onComplete }: CitizenCardProps) {
-  const { user: privyUser, authenticated } = usePrivy();
+  const { authenticated, user } = useZoAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!authenticated || !privyUser) return null;
+  if (!authenticated || !user) return null;
 
   // Get user's nickname, avatar, and city from localStorage
   const nickname = localStorage.getItem('zo_nickname') || 'samurai.zo';

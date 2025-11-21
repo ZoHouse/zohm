@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Comic_Neue, Abril_Fatface } from "next/font/google";
 import "./globals.css";
-import { PrivyProvider } from "@/providers/PrivyProvider";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const comicNeue = Comic_Neue({
@@ -74,9 +73,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ServiceWorkerRegistration />
-        <PrivyProvider>
-          {children}
-        </PrivyProvider>
+        {children}
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 
 /**
  * ZoPassport - Fully wired Zo Passport component
@@ -22,7 +22,7 @@ import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
  * No props needed - completely self-contained!
  */
 const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
-  const { userProfile, isLoading } = useUnifiedAuth();
+  const { userProfile, isLoading } = useZoAuth();
 
   // Calculate profile completion
   const completion = useMemo(() => {

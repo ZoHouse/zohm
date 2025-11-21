@@ -4,11 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ZoPassport } from '@/components/desktop-dashboard';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 
 export default function ZoPassportPage() {
   const router = useRouter();
-  const { userProfile, isLoading, authMethod } = useUnifiedAuth();
+  const { userProfile, isLoading, authMethod } = useZoAuth();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);

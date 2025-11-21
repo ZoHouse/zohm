@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { updateUserProfile } from '@/lib/privyDb';
 
 interface AvatarStepProps {
@@ -9,7 +9,7 @@ interface AvatarStepProps {
 }
 
 export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
-  const { authenticated, userProfile, user: privyUser } = useUnifiedAuth();
+  const { authenticated, userProfile, user: privyUser } = useZoAuth();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);

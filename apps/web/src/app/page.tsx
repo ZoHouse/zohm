@@ -9,7 +9,7 @@ import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
 import LocationPermissionModal from '@/components/LocationPermissionModal';
 import { pingSupabase, PartnerNodeRecord, getQuests } from '@/lib/supabase';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useOnboardingTransition } from '@/hooks/useOnboardingTransition';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
@@ -69,10 +69,10 @@ export default function Home() {
   // Hooks
   const { isMobile, isReady: isMobileReady } = useIsMobile();
   
-  // Unified authentication (Privy + ZO)
+  // ZO Phone Authentication
   const { 
     authenticated,
-    userProfile: privyUserProfile,
+    userProfile: privyUserProfile, // Keep name for compatibility
     hasCompletedOnboarding: privyOnboardingComplete,
     isLoading: privyLoading,
     user: privyUser,
@@ -80,9 +80,9 @@ export default function Home() {
     ready: privyReady,
     reloadProfile,
     authMethod
-  } = useUnifiedAuth();
+  } = useZoAuth();
   
-  // Use unified authenticated state (supports both Privy and ZO)
+  // Authenticated state
   const privyAuthenticated = authenticated;
 
   // 🚀 Onboarding transition coordinator (prevents race conditions)
@@ -330,20 +330,30 @@ export default function Home() {
         profileId: privyUserProfile?.id
       });
       
+      // Set a maximum wait time of 5 seconds for profile to load
+      let attempts = 0;
+      const maxAttempts = 10; // 10 attempts x 500ms = 5 seconds
+      
       const checkUserProfile = () => {
+        attempts++;
+        
         if (privyUserProfile) {
           // Profile exists in database - set status to 'exists'
           // User will be routed to onboarding if onboarding_completed === false
           console.log('✅ Profile exists:', privyUserProfile.name, '(onboarding_completed:', privyOnboardingComplete, ')');
           setUserProfileStatus('exists');
+        } else if (attempts >= maxAttempts) {
+          // Timeout: assume profile doesn't exist after 5 seconds
+          console.warn('⚠️ Profile loading timeout - assuming new user (no profile in DB)');
+          setUserProfileStatus('not_exists');
         } else {
-          // No profile yet - wait a bit for it to load
-          console.log('⏳ Profile loading, waiting...');
-          // Don't set status yet - let it load
+          // Keep waiting - schedule another check
+          console.log(`⏳ Profile loading, waiting... (attempt ${attempts}/${maxAttempts})`);
+          setTimeout(checkUserProfile, 500);
         }
       };
 
-      // Use timeout to prevent rapid updates
+      // Start checking after 500ms
       const timeoutId = setTimeout(checkUserProfile, 500);
       return () => clearTimeout(timeoutId);
     }

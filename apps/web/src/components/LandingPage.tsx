@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PhoneLoginModal from './PhoneLoginModal';
-import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 
 interface LandingPageProps {
   onConnect: () => void; // Keep for Email/Wallet buttons
@@ -11,7 +11,7 @@ interface LandingPageProps {
 
 export default function LandingPage({ onConnect }: LandingPageProps) {
   const router = useRouter();
-  const { reloadProfile } = useUnifiedAuth();
+  const { reloadProfile } = useZoAuth();
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
 

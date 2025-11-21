@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/lib/zo-api/auth';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
 import { generateAvatar } from '@/lib/zo-api/avatar';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
 
     // 1. Verify user exists in Supabase
     const { data: existingUser, error: userError } = await supabase

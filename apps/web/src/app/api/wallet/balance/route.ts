@@ -2,7 +2,7 @@
 // Fetch ZO token balance from user's primary wallet
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { ethers } from 'ethers';
 
 // ZO Token Configuration
@@ -21,7 +21,7 @@ const RPC_URLS: Record<number, string> = {
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
     
     // 1. Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -150,7 +150,14 @@ async function getTokenBalance(
 // POST: Force refresh balance (bypass cache)
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+    
+    const supabase = supabaseAdmin;
     
     // 1. Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

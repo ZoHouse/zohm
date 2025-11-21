@@ -439,8 +439,6 @@ Join me: https://zohm.world
                   <ZoPassport
                     className="w-full"
                   />
-                    completion={{ done: 3, total: 10 }}
-                  />
                 </div>
               </div>
 

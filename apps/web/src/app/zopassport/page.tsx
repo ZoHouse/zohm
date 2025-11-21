@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { ZoPassport, ZoPassportTest } from '@/components/desktop-dashboard';
+import { ZoPassport } from '@/components/desktop-dashboard';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 export default function ZoPassportPage() {
@@ -436,12 +436,9 @@ Join me: https://zohm.world
                   <p className="text-xs text-gray-500">Your starting point</p>
                 </div>
                 <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassportTest
-                    profile={{
-                      avatar: "/images/rank2.jpeg",
-                      name: "New Citizen",
-                      isFounder: false,
-                    }}
+                  <ZoPassport
+                    className="w-full"
+                  />
                     completion={{ done: 3, total: 10 }}
                   />
                 </div>
@@ -501,13 +498,8 @@ Join me: https://zohm.world
                   <p className="text-xs text-gray-400">Elite status unlocked</p>
                 </div>
                 <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassportTest
-                    profile={{
-                      avatar: "/images/rank1.jpeg",
-                      name: "Founder",
-                      isFounder: true,
-                    }}
-                    completion={{ done: 9, total: 10 }}
+                  <ZoPassport
+                    className="w-full"
                   />
                 </div>
               </div>
@@ -549,16 +541,8 @@ Join me: https://zohm.world
                 {/* Left Side: Passport */}
                 <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10">
                   <div style={{ transform: 'scale(1.3)' }}>
-                    <ZoPassportTest
-                      profile={{
-                        avatar: userProfile?.zo_avatar_url || userProfile?.pfp || userProfile?.avatar || "/images/rank1.jpeg",
-                        name: userProfile?.name || "New Citizen",
-                        isFounder: userProfile?.zo_membership === 'founder' || userProfile?.role === 'Founder' || (userProfile?.founder_nfts_count || 0) > 0,
-                      }}
-                      completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio || userProfile?.zo_bio ? 1 : 0) + (userProfile?.pfp || userProfile?.zo_avatar_url ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
-                        total: 10,
-                      }}
+                    <ZoPassport
+                      className="w-full"
                     />
                   </div>
                 </div>

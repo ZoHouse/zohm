@@ -64,9 +64,11 @@ interface MapCanvasProps {
   shouldAnimateFromSpace?: boolean;
   userLocation?: { lat: number; lng: number } | null; // Saved user location from profile
   isMiniMap?: boolean; // Indicates this is a mini map view (adjusts zoom/pitch for better visibility)
+  userId?: string; // User ID for saving location to profile
+  onLocationSaved?: (lat: number, lng: number) => void; // Callback when location is saved
 }
 
-export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false, userLocation, isMiniMap = false }: MapCanvasProps) {
+export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyToNode, className, shouldAnimateFromSpace = false, userLocation, isMiniMap = false, userId, onLocationSaved }: MapCanvasProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentOpenPopup, setCurrentOpenPopup] = useState<mapboxgl.Popup | null>(null);
@@ -1094,12 +1096,40 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   };
 
   // Get user location with proper error handling (prompt for permission)
-  const getUserLocation = () => {
+  const getUserLocation = async () => {
     if (!navigator.geolocation || !map.current) return;
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        createUserLocationMarker(position.coords.latitude, position.coords.longitude);
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        console.log('📍 Got user location:', { lat, lng });
+        createUserLocationMarker(lat, lng);
+        
+        // Save to database if userId is provided
+        if (userId) {
+          try {
+            console.log('💾 Saving location to database for user:', userId);
+            const response = await fetch(`/api/users/${userId}/location`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lat, lng })
+            });
+            
+            if (response.ok) {
+              console.log('✅ Location saved to database');
+              // Call callback if provided
+              if (onLocationSaved) {
+                onLocationSaved(lat, lng);
+              }
+            } else {
+              console.error('❌ Failed to save location:', await response.text());
+            }
+          } catch (error) {
+            console.error('❌ Error saving location:', error);
+          }
+        }
       },
       (error) => {
         console.warn('⚠️ Geolocation permission denied or unavailable:', error.message);
@@ -1561,6 +1591,91 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           zIndex: 1
         }}
       />
+
+      {/* 📍 Location Prompt Overlay (only show if no location) */}
+      {!userLocation?.lat && !userLocation?.lng && (
+        <div
+          style={{
+            position: 'absolute',
+            top: isMiniMap ? '45%' : '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 10,
+            textAlign: 'center',
+            background: 'rgba(18, 18, 18, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            padding: isMiniMap ? '18px 28px 20px' : '40px 48px',
+            borderRadius: isMiniMap ? '16px' : '20px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+            maxWidth: isMiniMap ? '260px' : '380px',
+          }}
+        >
+          <div style={{ 
+            fontSize: isMiniMap ? '32px' : '56px', 
+            marginBottom: isMiniMap ? '8px' : '20px',
+            filter: 'drop-shadow(0 4px 12px rgba(255, 255, 255, 0.1))'
+          }}>
+            📍
+          </div>
+          <h3 style={{ 
+            color: '#FFFFFF', 
+            fontSize: isMiniMap ? '14px' : '20px', 
+            fontWeight: '700',
+            letterSpacing: '-0.02em',
+            marginBottom: isMiniMap ? '6px' : '12px',
+            fontFamily: "'Space Grotesk', -apple-system, sans-serif",
+            lineHeight: '1.2'
+          }}>
+            Enable Location to Explore
+          </h3>
+          {!isMiniMap && (
+            <p style={{ 
+              color: 'rgba(255, 255, 255, 0.5)', 
+              fontSize: '13px',
+              marginBottom: '28px',
+              lineHeight: '1.5',
+              fontFamily: "'Rubik', -apple-system, sans-serif",
+              fontWeight: '400'
+            }}>
+              Discover local nodes, events, and<br />citizens near you
+            </p>
+          )}
+          <button
+            onClick={() => {
+              console.log('📍 Manual location request triggered');
+              getUserLocation();
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              color: '#FFFFFF',
+              padding: isMiniMap ? '10px 24px' : '14px 28px',
+              borderRadius: isMiniMap ? '8px' : '10px',
+              border: 'none',
+              fontSize: isMiniMap ? '12px' : '14px',
+              fontWeight: '600',
+              letterSpacing: '0.02em',
+              cursor: 'pointer',
+              fontFamily: "'Space Grotesk', -apple-system, sans-serif",
+              boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+              transition: 'all 0.2s ease',
+              width: '100%',
+              marginTop: isMiniMap ? '12px' : '0',
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)';
+              (e.target as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(139, 92, 246, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
+              (e.target as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            Enable Location
+          </button>
+        </div>
+      )}
     </div>
   );
 } 

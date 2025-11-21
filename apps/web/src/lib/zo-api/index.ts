@@ -1,7 +1,7 @@
 // apps/web/src/lib/zo-api/index.ts
 // Central export for ZO API functions
 
-export { zoApiClient, getZoAuthHeaders, getZoDeviceHeaders } from './client';
+export { zoApiClient, getZoAuthHeaders, getDeviceCredentials, updateDeviceCredentials, setRequestUserId } from './client';
 export {
   sendOTP,
   verifyOTP,

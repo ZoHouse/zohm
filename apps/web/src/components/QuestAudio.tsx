@@ -308,16 +308,22 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   }, []);
 
   // DEV BYPASS: Press 'B' key to bypass permission check
+  // DEV BYPASS: Press 'C' key to complete quest instantly (for testing)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'b' || e.key === 'B') {
         console.log('🚀 DEV BYPASS: Forcing granted state');
         setPermissionState('granted');
       }
+      if (e.key === 'c' || e.key === 'C') {
+        console.log('🚀 DEV BYPASS: Completing quest instantly');
+        console.log('   Score: 1000, Tokens: 100');
+        onComplete(1000, 100);
+      }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [onComplete]);
 
   const checkMicrophonePermission = async () => {
     try {
@@ -692,6 +698,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       // If it's a no-speech error, that's okay - just log it
       if (event.error === 'no-speech') {
         console.log('🎤 ℹ️ No speech detected yet, continuing to listen...');
+        return;
+      }
+      
+      // Handle network error (common in Chrome Web Speech API)
+      if (event.error === 'network') {
+        console.error('🌐 Network error - Speech recognition requires internet connection');
+        console.error('💡 TIP: Press C key to complete quest for testing');
+        console.error('💡 Or check your internet connection and try again');
       }
     };
     
@@ -1614,6 +1628,21 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       )}
 
       <QuantumSyncHeader userId={userId} />
+
+      {/* DEV: Complete Quest Button */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={() => {
+            console.log('🚀 DEV BYPASS: Completing quest instantly');
+            console.log('   Score: 1000, Tokens: 100');
+            onComplete(1000, 100);
+          }}
+          className="fixed bottom-4 right-4 z-[99999] px-4 py-2 bg-green-500 text-white font-rubik text-[12px] font-bold rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-600 shadow-lg"
+          title="DEV: Complete quest instantly (or press C key)"
+        >
+          ✅ COMPLETE QUEST (C)
+        </button>
+      )}
 
       {/* Game1111 renders full-screen, outside constrained container */}
         {audioStatus === 'game1111' ? (

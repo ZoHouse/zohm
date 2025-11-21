@@ -27,11 +27,12 @@ export async function generateAvatar(
       body_type: bodyType,
     };
 
+    const headers = await getZoAuthHeaders(accessToken);
     const response = await zoApiClient.post<ZoAvatarGenerateResponse>(
       '/api/v1/avatar/generate/',
       payload,
       {
-        headers: getZoAuthHeaders(accessToken),
+        headers,
       }
     );
 
@@ -65,10 +66,11 @@ export async function getAvatarStatus(
   error?: string;
 }> {
   try {
+    const headers = await getZoAuthHeaders(accessToken);
     const response = await zoApiClient.get<ZoAvatarStatusResponse>(
       `/api/v1/avatar/status/${taskId}/`,
       {
-        headers: getZoAuthHeaders(accessToken),
+        headers,
       }
     );
 

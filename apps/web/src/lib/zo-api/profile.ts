@@ -7,20 +7,46 @@ import type { ZoProfileResponse, ZoProfileUpdatePayload, ZoErrorResponse } from 
 /**
  * Fetch user profile from ZO API
  * Requires valid access token
+ * @param accessToken - ZO API access token
+ * @param userId - Optional: Supabase user ID (for fetching device credentials from DB)
+ * @param deviceCredentials - Optional: Device credentials from verify-otp response (preferred)
  */
 export async function getProfile(
-  accessToken: string
+  accessToken: string,
+  userId?: string,
+  deviceCredentials?: { deviceId: string; deviceSecret: string }
 ): Promise<{
   success: boolean;
   profile?: ZoProfileResponse;
   error?: string;
 }> {
   try {
+    const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
+    
+    // Log device credentials being used (for debugging)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 getProfile using device credentials:', {
+        deviceId: headers['client-device-id'],
+        deviceSecret: headers['client-device-secret']?.substring(0, 10) + '...',
+        fromAuthData: !!deviceCredentials,
+      });
+    }
+    
+    // Pass device credentials in metadata so interceptor can use them if headers aren't set
+    const config: any = {
+      headers,
+      metadata: {
+        userId,
+        ...(deviceCredentials && {
+          deviceId: deviceCredentials.deviceId,
+          deviceSecret: deviceCredentials.deviceSecret,
+        }),
+      },
+    };
+    
     const response = await zoApiClient.get<ZoProfileResponse>(
       '/api/v1/profile/me/',
-      {
-        headers: getZoAuthHeaders(accessToken),
-      }
+      config
     );
 
     return {
@@ -41,21 +67,26 @@ export async function getProfile(
 /**
  * Update user profile on ZO API
  * Partial updates supported
+ * @param accessToken - ZO API access token
+ * @param updates - Profile fields to update
+ * @param userId - Optional: Supabase user ID (for fetching device credentials from DB)
  */
 export async function updateProfile(
   accessToken: string,
-  updates: ZoProfileUpdatePayload
+  updates: ZoProfileUpdatePayload,
+  userId?: string
 ): Promise<{
   success: boolean;
   profile?: ZoProfileResponse;
   error?: string;
 }> {
   try {
+    const headers = await getZoAuthHeaders(accessToken, userId);
     const response = await zoApiClient.patch<ZoProfileResponse>(
       '/api/v1/profile/me/',
       updates,
       {
-        headers: getZoAuthHeaders(accessToken),
+        headers,
       }
     );
 

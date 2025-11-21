@@ -54,11 +54,21 @@ export interface ZoUser {
   };
 }
 
+// Actual ZO API response structure (from verify-otp)
 export interface ZoAuthResponse {
-  user: ZoUser;
-  tokens: ZoAuthTokens;
+  token: string;  // Same as access_token (legacy field)
+  valid_till: string;  // Same as access_token_expiry (legacy field)
+  access_token: string;
+  access_token_expiry: string;
+  refresh_token: string;
+  refresh_token_expiry: string;
+  client_key: string;
   device_id: string;
   device_secret: string;
+  device_info: Record<string, any>;
+  user: ZoUser;
+  // Legacy tokens object (for backward compatibility)
+  tokens?: ZoAuthTokens;
 }
 
 export interface ZoProfileResponse {

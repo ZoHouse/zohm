@@ -68,42 +68,39 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
                 flyToEvent={null}
                 flyToNode={null}
                 shouldAnimateFromSpace={false}
-              userLocation={hasLocation ? { lat: userLat, lng: userLng } : null}
-              isMiniMap={true}
+                userLocation={hasLocation ? { lat: userLat, lng: userLng } : null}
+                isMiniMap={true}
                 className="w-full h-full"
+                userId={userProfile?.id}
+                onLocationSaved={(lat, lng) => {
+                  console.log('✅ Location saved! Reloading page to show map with location...');
+                  // Reload the page to update the profile with the new location
+                  window.location.reload();
+                }}
               />
             </div>
           
-          {/* Show overlay text if no location */}
-          {!hasLocation && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 500 }}>
-              <div className="bg-black/60 px-4 py-2 rounded-lg backdrop-blur-sm">
-                <p className="font-rubik text-[12px] text-white/80">
-                  Location not set
-              </p>
-              </div>
+          {/* Overlay - Enter Map Button (only show when user has location) */}
+          {hasLocation && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
+              <button
+                onClick={onOpenMap}
+                className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200 active:scale-95"
+                style={{
+                  backgroundColor: 'rgba(18, 18, 18, 0.3)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  borderColor: 'rgba(255, 255, 255, 0.16)',
+                  borderRadius: '999px',
+                  padding: '12px 24px',
+                }}
+              >
+                <p className="font-rubik text-[14px] font-medium leading-[16px] tracking-[1.4px] text-white uppercase">
+                  Enter Map
+                </p>
+              </button>
             </div>
           )}
-
-          {/* Overlay - Enter Map Button */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
-            <button
-              onClick={onOpenMap}
-              className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200 active:scale-95"
-              style={{
-                backgroundColor: 'rgba(18, 18, 18, 0.3)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                borderColor: 'rgba(255, 255, 255, 0.16)',
-                borderRadius: '999px',
-                padding: '12px 24px',
-              }}
-            >
-              <p className="font-rubik text-[14px] font-medium leading-[16px] tracking-[1.4px] text-white uppercase">
-                Enter Map
-              </p>
-            </button>
-          </div>
         </div>
       </div>
     </div>

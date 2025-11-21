@@ -162,6 +162,11 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         nodes={nodes}
         shouldAnimateFromSpace={shouldAnimateFromSpace}
         userLocation={userLocation}
+        userId={userId}
+        onLocationSaved={(lat, lng) => {
+          console.log('✅ Location saved from full map! Reloading...');
+          window.location.reload();
+        }}
       />
 
       {/* User Balance and Avatar Header */}

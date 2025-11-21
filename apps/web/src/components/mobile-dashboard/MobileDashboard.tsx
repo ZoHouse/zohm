@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
 import { ZoPassport } from '@/components/desktop-dashboard';
@@ -24,7 +24,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   onClose,
   onLaunchGame 
 }) => {
-  const { userProfile, isLoading } = usePrivyUser();
+  const { userProfile, isLoading } = useUnifiedAuth();
   const [balance, setBalance] = useState(0);
   const [stats, setStats] = useState({
     quantum_syncs: 0,

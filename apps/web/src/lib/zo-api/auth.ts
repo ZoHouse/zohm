@@ -1,13 +1,18 @@
 // apps/web/src/lib/zo-api/auth.ts
 // ZO API authentication functions (phone OTP)
 
-import { zoApiClient } from './client';
+import { zoApiClient, getDeviceCredentials } from './client';
 import type {
   ZoAuthOTPRequest,
   ZoAuthOTPVerifyRequest,
   ZoAuthResponse,
   ZoErrorResponse,
 } from './types';
+
+// Helper to get device credentials (for logging)
+async function getOrCreateDeviceCredentials() {
+  return await getDeviceCredentials();
+}
 
 /**
  * Send OTP to phone number
@@ -17,29 +22,83 @@ export async function sendOTP(
   countryCode: string,
   phoneNumber: string
 ): Promise<{ success: boolean; message: string }> {
+  const endpoint = '/api/v1/auth/login/mobile/otp/';
+  const baseURL = zoApiClient.defaults.baseURL;
+  const fullURL = `${baseURL}${endpoint}`;
+  const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB;
+  
   try {
     const payload: ZoAuthOTPRequest = {
       mobile_country_code: countryCode,
       mobile_number: phoneNumber,
       message_channel: '', // Empty string as per ZO API spec
     };
+    
+    // Get device credentials for logging (server-side safe)
+    let deviceId: string | undefined;
+    let deviceSecret: string | undefined;
+    try {
+      const creds = await getOrCreateDeviceCredentials();
+      deviceId = creds.deviceId;
+      deviceSecret = creds.deviceSecret;
+    } catch (credError) {
+      console.warn('⚠️ Failed to get device credentials for logging:', credError);
+      // Continue anyway - credentials are set by interceptor
+    }
+    
+    // Log request details only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📤 ZO API Request:', {
+        endpoint,
+        fullURL,
+        payload: JSON.stringify(payload),
+      });
+    }
 
+    // Make request - headers are set by interceptor (client-key, client-device-id, client-device-secret)
     const response = await zoApiClient.post(
-      '/api/v1/auth/login/mobile/otp/',
+      endpoint,
       payload
     );
 
-    return {
-      success: true,
-      message: response.data.message || 'OTP sent successfully',
-    };
-  } catch (error: any) {
-    console.error('Failed to send OTP:', error.response?.data || error);
-    
-    const errorData = error.response?.data as ZoErrorResponse;
+    // Check if response indicates success (2xx status codes)
+    if (response.status >= 200 && response.status < 300) {
+      // Success - log only in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ ZO API Response:', {
+          status: response.status,
+          data: response.data,
+        });
+      }
+      
+      return {
+        success: true,
+        message: response.data?.message || response.data?.success || 'OTP sent successfully',
+      };
+    }
+
+    // If status is not 2xx, treat as error
+    console.error('❌ ZO API returned non-2xx status:', response.status);
     return {
       success: false,
-      message: errorData?.detail || errorData?.message || 'Failed to send OTP',
+      message: response.data?.message || response.data?.error || `Unexpected status: ${response.status}`,
+    };
+  } catch (error: any) {
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ ZO API Error:', {
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data,
+      });
+    }
+    
+    const errorData = error.response?.data as ZoErrorResponse;
+    const errorMessage = errorData?.detail || errorData?.message || errorData?.error || error.message || 'Failed to send OTP';
+    
+    return {
+      success: false,
+      message: errorMessage,
     };
   }
 }
@@ -65,22 +124,105 @@ export async function verifyOTP(
       otp,
     };
 
-    const response = await zoApiClient.post<ZoAuthResponse>(
-      '/api/v1/auth/login/mobile/otp/verify/',
+    const response = await zoApiClient.post(
+      '/api/v1/auth/login/mobile/',
       payload
     );
 
+    // Parse response data if it's a string (axios sometimes returns strings)
+    let responseData: ZoAuthResponse;
+    if (typeof response.data === 'string') {
+      try {
+        responseData = JSON.parse(response.data);
+        console.log('✅ Parsed string response to JSON');
+      } catch (parseError) {
+        console.error('❌ Failed to parse response data:', parseError);
+        return {
+          success: false,
+          error: 'Invalid response format from authentication service',
+        };
+      }
+    } else {
+      responseData = response.data as ZoAuthResponse;
+    }
+
+    // Log the response for debugging
+    console.log('✅ ZO API Verify OTP Response (parsed):', {
+      status: response.status,
+      hasUser: !!responseData?.user,
+      hasAccessToken: !!responseData?.access_token,
+      hasRefreshToken: !!responseData?.refresh_token,
+      hasDeviceId: !!responseData?.device_id,
+      hasDeviceSecret: !!responseData?.device_secret,
+    });
+
+    // Validate response structure - check for required fields
+    // Actual ZO API response has: access_token, refresh_token, user, device_id, device_secret at root level
+    if (!responseData) {
+      console.error('❌ No data in response:', response);
+      return {
+        success: false,
+        error: 'No data in response from authentication service',
+      };
+    }
+
+    // Check if response has user and access_token (required fields)
+    if (!responseData.user || !responseData.access_token) {
+      console.error('❌ Missing required fields in response:', {
+        hasUser: !!responseData.user,
+        hasAccessToken: !!responseData.access_token,
+        hasRefreshToken: !!responseData.refresh_token,
+        hasDeviceId: !!responseData.device_id,
+        hasDeviceSecret: !!responseData.device_secret,
+        data: responseData,
+      });
+      return {
+        success: false,
+        error: 'Invalid response structure from authentication service',
+      };
+    }
+
+    // device_id and device_secret are returned in the response
+    if (!responseData.device_id || !responseData.device_secret) {
+      console.warn('⚠️ Device credentials not in response, will need to handle this');
+    }
+
     return {
       success: true,
-      data: response.data,
+      data: responseData,
     };
   } catch (error: any) {
-    console.error('Failed to verify OTP:', error.response?.data || error);
+    console.error('❌ Failed to verify OTP:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
     
-    const errorData = error.response?.data as ZoErrorResponse;
+    // ZO API can return errors in different formats
+    const errorData = error.response?.data;
+    let errorMessage = 'Invalid OTP';
+    
+    if (errorData) {
+      // Format 1: { success: false, errors: [...] }
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        errorMessage = errorData.errors[0] || 'Invalid OTP';
+      }
+      // Format 2: { detail: "...", message: "..." }
+      else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      }
+      else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+      // Format 3: { error: "..." }
+      else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+    }
+    
     return {
       success: false,
-      error: errorData?.detail || errorData?.message || 'Invalid OTP',
+      error: errorMessage,
     };
   }
 }

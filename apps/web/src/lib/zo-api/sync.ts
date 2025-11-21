@@ -1,7 +1,7 @@
 // apps/web/src/lib/zo-api/sync.ts
 // Sync ZO profile data to Supabase
 
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { getProfile } from './profile';
 import type { ZoProfileResponse } from './types';
 
@@ -24,18 +24,30 @@ export async function syncZoProfileToSupabase(
     zo_refresh_token_expiry: string;
     device_id: string;
     device_secret: string;
+    // Additional fields from verify-otp response
+    zo_legacy_token?: string;
+    zo_legacy_token_valid_till?: string;
+    zo_client_key?: string;
+    zo_device_info?: Record<string, any>;
+    zo_roles?: string[];
+    zo_membership?: string;  // 'founder' | 'citizen' | 'none'
   }
 ): Promise<{
   success: boolean;
   error?: string;
 }> {
   try {
-    const supabase = createClient();
-
     // 1. Fetch profile from ZO API
-    const { success, profile, error } = await getProfile(accessToken);
+    // Use device credentials from authData if available (from verify-otp response)
+    // This ensures we use the exact credentials that were validated by ZO API
+    const deviceCredentials = authData?.device_id && authData?.device_secret
+      ? { deviceId: authData.device_id, deviceSecret: authData.device_secret }
+      : undefined;
+    
+    const { success, profile, error } = await getProfile(accessToken, userId, deviceCredentials);
     
     if (!success || !profile) {
+      console.error('❌ Failed to fetch ZO profile:', error);
       return {
         success: false,
         error: error || 'Failed to fetch ZO profile',
@@ -54,6 +66,25 @@ export async function syncZoProfileToSupabase(
         zo_refresh_token_expiry: authData.zo_refresh_token_expiry,
         zo_device_id: authData.device_id,
         zo_device_secret: authData.device_secret,
+        // Additional fields from verify-otp response
+        ...(authData.zo_legacy_token && {
+          zo_legacy_token: authData.zo_legacy_token,
+        }),
+        ...(authData.zo_legacy_token_valid_till && {
+          zo_legacy_token_valid_till: authData.zo_legacy_token_valid_till,
+        }),
+        ...(authData.zo_client_key && {
+          zo_client_key: authData.zo_client_key,
+        }),
+        ...(authData.zo_device_info && {
+          zo_device_info: authData.zo_device_info,
+        }),
+        ...(authData.zo_roles && {
+          zo_roles: authData.zo_roles,
+        }),
+        ...(authData.zo_membership && {
+          zo_membership: authData.zo_membership,
+        }),
       }),
 
       // Profile fields (from ZO API)
@@ -70,15 +101,19 @@ export async function syncZoProfileToSupabase(
       // Body type (for avatar)
       body_type: profile.body_type,
       
-      // Location
+      // Location (city only - don't override browser location)
+      // Note: lat/lng should come from browser geolocation, not ZO API
+      // ZO home_location is stored separately as zo_home_location for reference
       city: profile.place_name,
       ...(profile.home_location && {
-        lat: profile.home_location.lat,
-        lng: profile.home_location.lng,
+        zo_home_location: profile.home_location,  // Store as JSONB for reference
       }),
       
-      // Founder status
-      membership: profile.membership,
+      // ZO Membership (store as-is, separate from role column)
+      // Note: membership comes from profile response, not authData
+      ...(profile.membership && {
+        zo_membership: profile.membership,  // 'founder' | 'citizen' | 'none'
+      }),
       founder_nfts_count: profile.founder_tokens?.length || 0,
       
       // Wallet
@@ -97,10 +132,17 @@ export async function syncZoProfileToSupabase(
       .eq('id', userId);
 
     if (updateError) {
-      console.error('Failed to sync to Supabase:', updateError);
+      console.error('❌ Failed to sync to Supabase:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        userId,
+      });
       return {
         success: false,
-        error: updateError.message,
+        error: updateError.message || 'Failed to update user profile',
       };
     }
 
@@ -142,8 +184,6 @@ export async function syncZoProfileToSupabase(
  */
 export async function hasZoIdentity(userId: string): Promise<boolean> {
   try {
-    const supabase = createClient();
-    
     const { data } = await supabase
       .from('users')
       .select('zo_user_id')
@@ -165,8 +205,6 @@ export async function getZoTokens(userId: string): Promise<{
   accessExpiry?: string;
 } | null> {
   try {
-    const supabase = createClient();
-    
     const { data } = await supabase
       .from('users')
       .select('zo_token, zo_refresh_token, zo_token_expiry')

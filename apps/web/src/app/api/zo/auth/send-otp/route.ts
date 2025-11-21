@@ -21,19 +21,28 @@ export async function POST(request: NextRequest) {
     const result = await sendOTP(countryCode, phoneNumber);
 
     if (!result.success) {
+      // Only log actual errors (not in production unless critical)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ OTP send failed:', result.message);
+      }
+      
+      // Return error response
       return NextResponse.json(
         { error: result.message },
         { status: 400 }
       );
     }
 
+    // Success - return success response
     return NextResponse.json({
       success: true,
-      message: result.message,
+      message: result.message || 'OTP sent successfully',
     });
-
   } catch (error: any) {
-    console.error('Error in /api/zo/auth/send-otp:', error);
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/zo/auth/send-otp:', error?.message);
+    }
     return NextResponse.json(
       { error: 'Failed to send OTP' },
       { status: 500 }

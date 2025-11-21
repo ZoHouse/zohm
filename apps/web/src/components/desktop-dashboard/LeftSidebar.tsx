@@ -242,7 +242,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
               fontSize: DashboardTypography.size.smallMedium.fontSize,
               lineHeight: DashboardTypography.size.smallMedium.lineHeight,
               color: DashboardColors.text.primary,
-            }}>#35235</p>
+            }}>
+              #{userProfile?.zo_pid || userProfile?.id?.slice(0, 5) || '35235'}
+            </p>
           </div>
         </div>
 

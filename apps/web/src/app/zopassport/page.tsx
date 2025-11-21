@@ -4,11 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ZoPassport, ZoPassportTest } from '@/components/desktop-dashboard';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 export default function ZoPassportPage() {
   const router = useRouter();
-  const { userProfile, isLoading } = usePrivyUser();
+  const { userProfile, isLoading, authMethod } = useUnifiedAuth();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -232,7 +232,7 @@ Join me: https://zohm.world
               <h3 className="text-lg font-medium text-white mb-4">General Information</h3>
               <div className="space-y-1">
                 <InfoRow icon="✏️" label="Full Name" value={userProfile?.name || "..."} />
-                <InfoRow icon="👤" label="Short Bio" value={userProfile?.bio || "..."} />
+                <InfoRow icon="👤" label="Short Bio" value={userProfile?.zo_bio || userProfile?.bio || "..."} />
                 <InfoRow icon="🎂" label="Born on" value={userProfile?.birthdate ? new Date(userProfile.birthdate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "..."} />
                 <InfoRow icon="🎭" label="Body Type" value={userProfile?.body_type ? (userProfile.body_type.charAt(0).toUpperCase() + userProfile.body_type.slice(1)) : "..."} />
                 <InfoRow icon="📍" label="Location" value={userProfile?.city || "..."} />
@@ -551,12 +551,12 @@ Join me: https://zohm.world
                   <div style={{ transform: 'scale(1.3)' }}>
                     <ZoPassportTest
                       profile={{
-                        avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                        avatar: userProfile?.zo_avatar_url || userProfile?.pfp || userProfile?.avatar || "/images/rank1.jpeg",
                         name: userProfile?.name || "New Citizen",
-                        isFounder: (userProfile?.founder_nfts_count || 0) > 0,
+                        isFounder: userProfile?.zo_membership === 'founder' || userProfile?.role === 'Founder' || (userProfile?.founder_nfts_count || 0) > 0,
                       }}
                       completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio || userProfile?.zo_bio ? 1 : 0) + (userProfile?.pfp || userProfile?.zo_avatar_url ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
                         total: 10,
                       }}
                     />

@@ -201,9 +201,11 @@ export async function POST(request: NextRequest) {
       console.log('✅ ZO auth data saved to Supabase');
     }
 
-    // STEP 3: Sync full profile in background (non-blocking)
-    // Don't await this - let it happen in background to speed up response
-    syncZoProfileToSupabase(
+    // STEP 3: Sync full profile (BLOCKING - ensures avatar is saved)
+    // This fetches the latest profile from ZO API and syncs all fields to Supabase
+    // Including: avatar.image, cultures, founder_tokens, etc.
+    console.log('🔄 Syncing full profile from ZO API...');
+    const syncResult = await syncZoProfileToSupabase(
       targetUserId,
       access_token,
       {
@@ -221,15 +223,14 @@ export async function POST(request: NextRequest) {
         zo_device_info: device_info || {},
         zo_membership: user.membership,
       }
-    ).then((syncResult) => {
-      if (!syncResult.success) {
-        console.error('❌ Background profile sync failed:', syncResult.error);
-      } else {
-        console.log('✅ Background profile sync completed');
-      }
-    }).catch((err) => {
-      console.error('❌ Background profile sync error:', err);
-    });
+    );
+    
+    if (!syncResult.success) {
+      console.error('❌ Profile sync failed:', syncResult.error);
+      // Continue anyway - basic auth data is already saved
+    } else {
+      console.log('✅ Full profile synced from ZO API (including avatar)');
+    }
 
     return NextResponse.json({
       success: true,

@@ -419,60 +419,15 @@ export default function Home() {
     }
   }, [privyOnboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
 
-  // 🔄 Returning User Quest Availability Check
-  // State to track if returning user has quest available (cooldown expired)
-  // MUST be declared before location modal useEffect (which uses it in dependencies)
-  const [questAvailableForReturningUser, setQuestAvailableForReturningUser] = useState<boolean | null>(null);
+  // DISABLED: No longer tracking quest availability for returning users
+  // Returning users always go to dashboard
   
-  // Check quest availability for returning users (Type 3)
-  useEffect(() => {
-    const checkQuestAvailability = async () => {
-      // Only check for returning users (completed onboarding)
-      if (!privyAuthenticated || !privyOnboardingComplete || !privyUserProfile?.id) {
-        console.log('🔍 [QuestCooldown] Skipping check:', {
-          authenticated: privyAuthenticated,
-          onboardingComplete: privyOnboardingComplete,
-          hasUserId: !!privyUserProfile?.id
-        });
-        return;
-      }
-      
-      console.log('🔍 [QuestCooldown] Checking quest availability for returning user:', privyUserProfile.id);
-      
-      try {
-        const { canUserCompleteQuest } = await import('@/lib/questService');
-        const result = await canUserCompleteQuest(
-          privyUserProfile.id,
-          'game-1111', // Voice quest slug
-          12 // 12-hour cooldown
-        );
-        
-        console.log('🔍 [QuestCooldown] Check result:', {
-          canComplete: result.canComplete,
-          nextAvailableAt: result.nextAvailableAt,
-          lastCompletedAt: result.lastCompletedAt
-        });
-        
-        setQuestAvailableForReturningUser(result.canComplete);
-        
-        if (result.canComplete) {
-          console.log('🎮 Quest available - showing quest screen');
-        } else {
-          console.log('⏳ Quest on cooldown - redirecting to dashboard');
-        }
-      } catch (error) {
-        console.error('❌ Error checking quest availability:', error);
-        // On error, assume quest not available (safer)
-        setQuestAvailableForReturningUser(false);
-      }
-    };
-    
-    checkQuestAvailability();
-  }, [privyAuthenticated, privyOnboardingComplete, privyUserProfile?.id]);
+  // DISABLED: No longer checking quest cooldown for returning users
+  // Returning users go straight to dashboard
+  // useEffect removed - no cooldown checks needed
 
   // Check if we should show location permission modal
   // 📍 ALWAYS ask for current location on new session (hard refresh)
-  // ⚠️ EXCEPT for returning users when quest is on cooldown (they go straight to dashboard)
   useEffect(() => {
     console.log('🔍 [LocationModal] Checking conditions:', {
       authenticated,
@@ -483,7 +438,6 @@ export default function Home() {
       lat: privyUserProfile?.lat,
       lng: privyUserProfile?.lng,
       onboardingComplete: privyOnboardingComplete,
-      questAvailable: questAvailableForReturningUser,
     });
 
     // Only check after user is authenticated and profile exists
@@ -495,16 +449,6 @@ export default function Home() {
     // Don't ask if we've already asked this session (prevents asking on every state change)
     if (typeof window !== 'undefined' && sessionStorage.getItem('location_permission_asked')) {
       console.log('⏭️ [LocationModal] Already asked for location this session');
-      return;
-    }
-    
-    // 🔄 Skip location modal for returning users when quest is on cooldown
-    // They should go straight to dashboard silently
-    if (privyOnboardingComplete && questAvailableForReturningUser === false) {
-      // Mark as asked so we don't ask again this session
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('location_permission_asked', 'true');
-      }
       return;
     }
     
@@ -521,7 +465,7 @@ export default function Home() {
     }, 2000); // 2 second delay to let dashboard load
     
     return () => clearTimeout(timeoutId);
-  }, [authenticated, userProfileStatus, privyUserProfile, authMethod, privyOnboardingComplete, questAvailableForReturningUser]);
+  }, [authenticated, userProfileStatus, privyUserProfile, authMethod, privyOnboardingComplete]);
 
   // Handle location granted from modal
   const handleLocationGranted = async (lat: number, lng: number) => {
@@ -734,10 +678,8 @@ export default function Home() {
       await reloadProfile();
     }
     
-    // 🔄 ALWAYS reset quest availability after completion (quest now on cooldown)
-    // This applies to ALL users (first-time and returning) after quest completion
-    console.log('🔄 Quest completed - setting cooldown state');
-    setQuestAvailableForReturningUser(false);
+    // 🔄 Quest completed - reset quest step
+    console.log('🔄 Quest completed');
     setOnboardingStep(null); // Reset quest step
     
     // 🚀 Start transition preparation (use unified auth user ID)
@@ -850,53 +792,13 @@ export default function Home() {
     );
   }, [shouldShowOnboarding, isNewUser, isExistingUserFromAnotherApp, onboardingStep, privyUserProfile?.id, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome, handleOnboardingComplete]);
   
-  // 🔄 Returning User Quest Screen (Type 3)
-  // Show quest if returning user has quest available (cooldown expired)
+  // 🔄 Returning User: ALWAYS show dashboard (no quest screens)
+  // Returning users go straight to dashboard - no cooldown checks, no quest screens
   const returningUserQuestScreen = useMemo(() => {
-    // Only for returning users (completed onboarding)
-    if (!privyAuthenticated || !privyOnboardingComplete) return null;
-    
-    // Still checking quest availability - silently show dashboard (don't block user)
-    if (questAvailableForReturningUser === null) {
-      console.log('🔍 [ReturningUser] Checking quest availability - showing dashboard...');
-      return null; // Show dashboard while checking
-    }
-    
-    // Quest available - show quest screen
-    if (questAvailableForReturningUser) {
-      // Handle different quest steps
-      if (onboardingStep === 'voice') {
-        return (
-          <QuestAudio 
-            onComplete={handleQuestAudioComplete} 
-            userId={privyUserProfile?.id || privyUser?.id}
-          />
-        );
-      }
-      
-      if (onboardingStep === 'complete') {
-        return (
-          <QuestComplete 
-            onGoHome={handleQuestCompleteGoHome} 
-            userId={privyUserProfile?.id || privyUser?.id}
-            score={questScore}
-            tokensEarned={questTokens}
-          />
-        );
-      }
-      
-      // Default: Show voice quest
-      return (
-        <QuestAudio 
-          onComplete={handleQuestAudioComplete} 
-          userId={privyUserProfile?.id || privyUser?.id}
-        />
-      );
-    }
-    
-    // Quest on cooldown - silently go to dashboard (return null to show main app)
-    return null;
-  }, [privyAuthenticated, privyOnboardingComplete, questAvailableForReturningUser, onboardingStep, privyUserProfile?.id, privyUser?.id, questScore, questTokens, handleQuestAudioComplete, handleQuestCompleteGoHome]);
+    // Returning users ALWAYS see dashboard
+    console.log('🏠 [ReturningUser] Going straight to dashboard');
+    return null; // null = show main dashboard
+  }, []);
   
   // Show loading screen while Privy initializes
   if (!privyReady && !isTransitioningFromOnboarding) {

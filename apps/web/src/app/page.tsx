@@ -57,6 +57,10 @@ export default function Home() {
   // Flag to ensure smooth transition from onboarding (prevents loading screen flash)
   const [isTransitioningFromOnboarding, setIsTransitioningFromOnboarding] = useState(false);
   
+  // 🔄 CRITICAL: Track when onboarding was just completed (before profile reloads)
+  // This prevents returning users from being treated as new users during the transition
+  const [onboardingJustCompleted, setOnboardingJustCompleted] = useState(false);
+  
   // Location permission modal state
   const [showLocationModal, setShowLocationModal] = useState(false);
   
@@ -318,7 +322,7 @@ export default function Home() {
 
   // Effect to check user profile when authenticated (Privy or ZO)
   useEffect(() => {
-    // Only run once when status is null
+    // Only run once when status is null AND profile loading is complete
     if (authenticated && !isLoadingProfile && userProfileStatus === null) {
       console.log('🔍 User authenticated, checking profile...', {
         authMethod,
@@ -328,6 +332,13 @@ export default function Home() {
         profileId: userProfile?.id
       });
       
+      // If profile is already loaded, set status immediately
+      if (userProfile) {
+        console.log('✅ Profile exists:', userProfile.name, '(onboarding_completed:', onboardingComplete, ')');
+        setUserProfileStatus('exists');
+        return;
+      }
+      
       // Set a maximum wait time of 5 seconds for profile to load
       let attempts = 0;
       const maxAttempts = 10; // 10 attempts x 500ms = 5 seconds
@@ -335,10 +346,13 @@ export default function Home() {
       const checkUserProfile = () => {
         attempts++;
         
-        if (userProfile) {
+        // Get current userProfile value (not from closure)
+        const currentProfile = userProfile;
+        
+        if (currentProfile) {
           // Profile exists in database - set status to 'exists'
           // User will be routed to onboarding if onboarding_completed === false
-          console.log('✅ Profile exists:', userProfile.name, '(onboarding_completed:', onboardingComplete, ')');
+          console.log('✅ Profile exists (onboarding_completed:', onboardingComplete, ')');
           setUserProfileStatus('exists');
         } else if (attempts >= maxAttempts) {
           // Timeout: assume profile doesn't exist after 5 seconds
@@ -659,12 +673,23 @@ export default function Home() {
     
     try {
       console.log('🎉 Quest complete! Going home...');
-      const userId = userProfile?.id || user?.id;
+      // Get userId from multiple sources (fallback chain)
+      const userId = userProfile?.id || user?.id || (typeof window !== 'undefined' ? localStorage.getItem('zo_user_id') : null);
+      
+      if (!userId) {
+        console.error('❌ No user ID available - cannot complete quest transition');
+        setIsTransitioningFromOnboarding(false);
+        return;
+      }
+      
       console.log('🔍 Starting transition with:', { 
         userId, 
         authMethod,
         hasLocation: !!onboardingLocation,
-        location: onboardingLocation 
+        location: onboardingLocation,
+        userProfileId: userProfile?.id,
+        userObjectId: user?.id,
+        localStorageId: typeof window !== 'undefined' ? localStorage.getItem('zo_user_id') : null
       });
       
       // ✅ Mark onboarding as complete (user now becomes Type 3: Returning User)
@@ -677,7 +702,11 @@ export default function Home() {
         });
         console.log('✅ User is now a returning user (Type 3)');
         
-        // Reload profile to update state
+        // 🔄 CRITICAL: Set flag IMMEDIATELY so routing logic knows user is returning
+        // This prevents race condition where component re-renders before profile reloads
+        setOnboardingJustCompleted(true);
+        
+        // Reload profile to update state (async, but flag already set)
         await reloadProfile();
       }
       
@@ -726,6 +755,13 @@ export default function Home() {
       // This ensures user isn't stuck on loading screen if something fails
       console.log('🏁 Clearing transition flag');
       setIsTransitioningFromOnboarding(false);
+      
+      // Clear the onboardingJustCompleted flag after a delay to allow profile to reload
+      // This ensures the flag is only used during the transition period
+      setTimeout(() => {
+        setOnboardingJustCompleted(false);
+        console.log('🔄 Cleared onboardingJustCompleted flag');
+      }, 2000); // 2 seconds should be enough for profile to reload
     }
   };
 
@@ -733,7 +769,8 @@ export default function Home() {
   // Show onboarding when:
   // 1. New user (no profile) - userProfileStatus === 'not_exists'
   // 2. Existing ZO user from another app - profile exists but onboarding_completed === false
-  const shouldShowOnboarding = authenticated && !onboardingComplete;
+  // BUT: Don't show onboarding if we just completed it (prevents loop for returning users)
+  const shouldShowOnboarding = authenticated && !onboardingComplete && !onboardingJustCompleted;
   
   // Determine if this is a new user (no profile) or existing user from another app
   const isNewUser = userProfileStatus === 'not_exists';

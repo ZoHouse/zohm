@@ -78,6 +78,13 @@ export async function POST(request: NextRequest) {
 
     const { user, tokens, device_id, device_secret } = data;
 
+    if (!user || !tokens) {
+      return NextResponse.json(
+        { error: 'Invalid response from ZO API' },
+        { status: 500 }
+      );
+    }
+
     // 4. Sync ZO profile to existing Supabase user
     const syncResult = await syncZoProfileToSupabase(
       userId,

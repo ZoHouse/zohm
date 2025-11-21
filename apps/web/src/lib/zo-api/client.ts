@@ -96,17 +96,9 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
   return credentials;
 }
 
-// Validate configuration
-if (!ZO_CLIENT_KEY_WEB) {
+// Validate configuration (only in development)
+if (!ZO_CLIENT_KEY_WEB && process.env.NODE_ENV === 'development') {
   console.error('⚠️ ZO_CLIENT_KEY_WEB is not set! Phone auth will fail.');
-  console.error('Available env vars:', {
-    ZO_API_BASE_URL: process.env.ZO_API_BASE_URL ? 'SET' : 'NOT SET',
-    NEXT_PUBLIC_ZO_API_BASE_URL: process.env.NEXT_PUBLIC_ZO_API_BASE_URL ? 'SET' : 'NOT SET',
-    ZO_CLIENT_KEY_WEB: process.env.ZO_CLIENT_KEY_WEB ? 'SET' : 'NOT SET',
-    NEXT_PUBLIC_ZO_CLIENT_KEY_WEB: process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB ? 'SET' : 'NOT SET',
-  });
-} else {
-  console.log('✅ ZO Client Key loaded:', ZO_CLIENT_KEY_WEB.substring(0, 10) + '...');
 }
 
 // Create axios instance for ZO API

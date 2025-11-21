@@ -2,17 +2,16 @@
 
 import React, { useMemo } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
+import ZoPassportComponent from './ZoPassportComponent';
 
 /**
  * ZoPassport - Fully wired Zo Passport component
  * 
  * This component automatically fetches and displays:
- * - User avatar (ZO avatar or fallback)
- * - User name (from ZO profile or fallback)
- * - Founder status (based on zo_membership or role)
+ * - User avatar (from profile or fallback)
+ * - User name (from profile)
+ * - Founder status (based on founder_nfts_count, role, or zo_membership)
  * - Profile completion progress
- * 
- * Supports both ZO and Privy authentication
  * 
  * Usage:
  * ```tsx
@@ -22,7 +21,7 @@ import { useZoAuth } from '@/hooks/useZoAuth';
  * No props needed - completely self-contained!
  */
 const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
-  const { userProfile, isLoading } = useZoAuth();
+  const { userProfile, isLoading, isFounder } = useZoAuth();
 
   // Calculate profile completion
   const completion = useMemo(() => {
@@ -30,16 +29,16 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
 
     // Define which fields count toward completion
     const profileFields = [
-      userProfile.name,                              // Display name
-      userProfile.bio,                               // Bio
-      userProfile.pfp,                               // Avatar
-      userProfile.body_type,                         // Body type (for avatar generation)
-      userProfile.culture,                           // Culture/interests
-      userProfile.city,                              // Location / city
-      userProfile.primary_wallet,                    // Has connected wallet
-      userProfile.email,                             // Email connected
-      userProfile.calendar_url,                      // Calendar link
-      userProfile.main_quest_url,                    // Main quest link
+      userProfile.name,             // Display name
+      userProfile.bio,              // Bio
+      userProfile.pfp,              // Avatar/Profile picture
+      userProfile.body_type,        // Body type (for avatar generation)
+      userProfile.culture,          // Culture/interests
+      userProfile.city,             // Location / city
+      userProfile.primary_wallet,   // Has connected wallet
+      userProfile.email,            // Email connected
+      userProfile.calendar_url,     // Calendar link
+      userProfile.main_quest_url,   // Main quest link
     ];
 
     const completedFields = profileFields.filter(field => {
@@ -56,22 +55,7 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
     };
   }, [userProfile]);
 
-  // 🔍 AUTOMATIC FOUNDER DETECTION
-  // This checks the database and automatically shows the correct passport:
-  // - ZO membership === 'founder' OR role === 'Founder' OR founder_nfts_count > 0
-  //   → FOUNDER passport (pink gradient, white text, founder badge)
-  // - Otherwise → CITIZEN passport (orange gradient, dark text, no badge)
-  const isFounder = useMemo(() => {
-    if (!userProfile) return false;
-    // Check multiple sources for founder status (supports both ZO and Privy users)
-    return (
-      userProfile.zo_membership === 'founder' ||
-      userProfile.role === 'Founder' ||
-      (userProfile.founder_nfts_count || 0) > 0
-    );
-  }, [userProfile]);
-
-  // Extract display data (supports both ZO and Privy users)
+  // Extract display data
   const profile = useMemo(() => {
     if (!userProfile) return undefined;
 
@@ -94,17 +78,14 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
     );
   }
 
-  // Render passport placeholder
-  // TODO: Restore ZoPassportTest component or inline its content here
+  // Render passport
   return (
-    <div className={className}>
-      <div className="bg-gradient-to-br from-zo-accent/10 to-purple-500/10 rounded-xl p-6 text-center">
-        <p className="text-white/60">Passport Component</p>
-        <p className="text-xs text-white/40 mt-2">Coming soon</p>
-      </div>
-    </div>
+    <ZoPassportComponent
+      profile={profile}
+      completion={completion}
+      className={className}
+    />
   );
 };
 
 export default ZoPassport;
-

@@ -856,16 +856,10 @@ export default function Home() {
     // Only for returning users (completed onboarding)
     if (!privyAuthenticated || !privyOnboardingComplete) return null;
     
-    // Still checking quest availability
+    // Still checking quest availability - silently show dashboard (don't block user)
     if (questAvailableForReturningUser === null) {
-      return (
-        <div className="fixed inset-0 bg-black flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <img src="/spinner_Z_4.gif" alt="Loading" className="w-24 h-24 mx-auto" />
-            <p className="text-white text-lg">Checking quest availability...</p>
-          </div>
-        </div>
-      );
+      console.log('🔍 [ReturningUser] Checking quest availability - showing dashboard...');
+      return null; // Show dashboard while checking
     }
     
     // Quest available - show quest screen

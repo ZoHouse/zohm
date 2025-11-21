@@ -1,7 +1,7 @@
 // apps/web/src/lib/zo-api/sync.ts
 // Sync ZO profile data to Supabase
 
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getProfile } from './profile';
 import type { ZoProfileResponse } from './types';
 
@@ -36,7 +36,18 @@ export async function syncZoProfileToSupabase(
   success: boolean;
   error?: string;
 }> {
+  // 🔒 CRITICAL: Check if we have admin access (required for database writes)
+  if (!supabaseAdmin) {
+    console.error('❌ [syncZoProfile] supabaseAdmin not available - cannot update database');
+    return {
+      success: false,
+      error: 'Database admin access not available',
+    };
+  }
+  
   try {
+    console.log('🔄 [syncZoProfile] Starting sync for user:', userId);
+    
     // 1. Fetch profile from ZO API
     // Use device credentials from authData if available (from verify-otp response)
     // This ensures we use the exact credentials that were validated by ZO API
@@ -53,6 +64,15 @@ export async function syncZoProfileToSupabase(
         error: error || 'Failed to fetch ZO profile',
       };
     }
+    
+    // 🔍 DEEP DEBUG: Log avatar data from ZO API
+    console.log('📸 [syncZoProfile] Avatar data from ZO API:', {
+      hasAvatar: !!profile.avatar,
+      avatarImage: profile.avatar?.image || 'null',
+      avatarStatus: profile.avatar?.status || 'null',
+      pfpImage: profile.pfp_image || 'null',
+      willUse: profile.avatar?.image || profile.pfp_image || 'FALLBACK!',
+    });
 
     // 2. Transform ZO profile to Supabase format
     const updateData: any = {
@@ -90,10 +110,26 @@ export async function syncZoProfileToSupabase(
       // Profile fields (from ZO API)
       name: `${profile.first_name} ${profile.last_name || ''}`.trim(),
       bio: profile.bio,
-      pfp: profile.avatar?.image || profile.pfp_image,
       email: profile.email_address,
       phone: profile.mobile_number,
       birthdate: profile.date_of_birth,
+      
+      // Avatar: Sync from ZO API if available
+      // Priority: avatar.image (generated avatar) > pfp_image (default profile pic)
+      // Only sync if we have a valid URL (not empty string)
+      // This handles:
+      // - New users: Avatar generated in ZO API → sync it ✅
+      // - Cross-app users: Avatar already in ZO API → sync it ✅
+      // - Edge case: Avatar generated locally but not in ZO yet → preserve it ✅
+      // Note: If ZO API doesn't have a valid avatar URL, pfp field is NOT included in updateData
+      // This means existing pfp in Supabase is preserved (not overwritten)
+      ...(() => {
+        const zoAvatarUrl = profile.avatar?.image || profile.pfp_image;
+        if (zoAvatarUrl && zoAvatarUrl.trim().length > 0 && zoAvatarUrl.startsWith('http')) {
+          return { pfp: zoAvatarUrl };
+        }
+        return {};
+      })(),
       
       // Cultures (JSONB array)
       cultures: profile.cultures || [],
@@ -125,8 +161,17 @@ export async function syncZoProfileToSupabase(
       updated_at: new Date().toISOString(),
     };
 
-    // 3. Update Supabase
-    const { error: updateError } = await supabase
+    // 🔍 DEEP DEBUG: Log what we're about to save
+    console.log('💾 [syncZoProfile] Saving to Supabase:', {
+      userId,
+      name: updateData.name,
+      pfp: updateData.pfp || 'NULL',
+      bio: updateData.bio?.substring(0, 30) || 'null',
+      bodyType: updateData.body_type,
+    });
+    
+    // 3. Update Supabase (using admin client to bypass RLS)
+    const { error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', userId);
@@ -145,10 +190,23 @@ export async function syncZoProfileToSupabase(
         error: updateError.message || 'Failed to update user profile',
       };
     }
+    
+    // 🔍 DEEP DEBUG: Verify what was saved
+    const { data: savedProfile } = await supabaseAdmin
+      .from('users')
+      .select('id, name, pfp')
+      .eq('id', userId)
+      .single();
+    
+    console.log('✅ [syncZoProfile] Verified saved data:', {
+      id: savedProfile?.id,
+      name: savedProfile?.name,
+      pfp: savedProfile?.pfp || 'NULL IN DB!',
+    });
 
     // 4. Also update/create wallet entry
     if (profile.wallet_address) {
-      await supabase
+      await supabaseAdmin
         .from('user_wallets')
         .upsert({
           user_id: userId,
@@ -183,8 +241,10 @@ export async function syncZoProfileToSupabase(
  * Check if user has ZO identity linked
  */
 export async function hasZoIdentity(userId: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  
   try {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('users')
       .select('zo_user_id')
       .eq('id', userId)
@@ -204,8 +264,10 @@ export async function getZoTokens(userId: string): Promise<{
   refreshToken?: string;
   accessExpiry?: string;
 } | null> {
+  if (!supabaseAdmin) return null;
+  
   try {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('users')
       .select('zo_token, zo_refresh_token, zo_token_expiry')
       .eq('id', userId)

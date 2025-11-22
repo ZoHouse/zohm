@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { refreshAccessToken } from '@/lib/zo-api/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sync profile using stored tokens or provided accessToken
-    const tokenToUse = accessToken || userData.zo_token;
+    // Get token to use (prefer database token as it might be more recent)
+    let tokenToUse = userData.zo_token || accessToken;
     if (!tokenToUse) {
       return NextResponse.json(
         { success: false, error: 'No ZO access token available' },
@@ -58,7 +59,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [Manual Sync] Starting profile sync for user:', userId);
+    // Check if token is expired and refresh if needed
+    const tokenExpiry = userData.zo_token_expiry;
+    const isTokenExpired = tokenExpiry && new Date(tokenExpiry) < new Date();
+    
+    if (isTokenExpired && userData.zo_refresh_token) {
+      console.log('🔄 [sync-profile] Token expired, refreshing...');
+      const refreshResult = await refreshAccessToken(userData.zo_refresh_token);
+      
+      if (refreshResult.success && refreshResult.tokens) {
+        // Handle actual API response format (access_token, refresh_token, etc.)
+        const tokens = refreshResult.tokens as any;
+        const newAccessToken = tokens.access_token || tokens.access;
+        const newRefreshToken = tokens.refresh_token || tokens.refresh;
+        const newAccessExpiry = tokens.access_token_expiry || tokens.access_expiry;
+        const newRefreshExpiry = tokens.refresh_token_expiry || tokens.refresh_expiry;
+        
+        if (newAccessToken) {
+          tokenToUse = newAccessToken;
+          
+          // Update tokens in database
+          await supabaseAdmin
+            .from('users')
+            .update({
+              zo_token: newAccessToken,
+              zo_refresh_token: newRefreshToken || userData.zo_refresh_token,
+              zo_token_expiry: newAccessExpiry || null,
+              zo_refresh_token_expiry: newRefreshExpiry || null,
+            })
+            .eq('id', userId);
+          
+          console.log('✅ [sync-profile] Token refreshed and updated');
+        } else {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Token refresh returned invalid format'
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Token expired and refresh failed. Please log in again.'
+          },
+          { status: 401 }
+        );
+      }
+    }
 
     const syncResult = await syncZoProfileToSupabase(
       userId,

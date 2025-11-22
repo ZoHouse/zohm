@@ -49,6 +49,7 @@ export async function getProfile(
       config
     );
 
+
     return {
       success: true,
       profile: response.data,

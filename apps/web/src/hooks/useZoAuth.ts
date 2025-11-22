@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getFullUserProfile,
   type FullUserProfile,
@@ -17,6 +17,7 @@ export function useZoAuth() {
   const [userProfile, setUserProfile] = useState<FullUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadUserProfileRef = useRef<(() => Promise<void>) | null>(null);
 
   // ============================================
   // Get ZO User ID from localStorage
@@ -73,34 +74,63 @@ export function useZoAuth() {
       }
 
       if (profile) {
-        // 🔍 DEEP DEBUG: Log ALL avatar-related fields from database
-        console.log('✅ [ZoAuth] Profile loaded successfully:', {
+        console.log('✅ [ZoAuth] Profile loaded:', {
           id: profile.id,
           name: profile.name,
-          email: profile.email,
-          phone: profile.phone,
           onboarding_completed: profile.onboarding_completed,
-          // Avatar fields - check ALL possible sources
-          pfp: profile.pfp || 'NULL',
-          pfpLength: profile.pfp?.length || 0,
           hasPfp: !!profile.pfp,
           zo_synced_at: profile.zo_synced_at,
-          // Raw profile object keys (to see what fields exist)
-          profileKeys: Object.keys(profile).filter(k => k.includes('avatar') || k.includes('pfp') || k.includes('image')),
-        });
-
-        // 🔍 DEEP DEBUG: Log avatar data separately for clarity
-        console.log('📸 [ZoAuth] Avatar in loaded profile:', {
-          pfp: profile.pfp || 'NULL',
-          hasPfp: !!profile.pfp,
-          pfpLength: profile.pfp?.length || 0,
-          // Check if profile has any other avatar-related fields
-          rawPfpValue: (profile as any).pfp,
-          rawAvatarImage: (profile as any).avatar_image,
-          rawAvatarUrl: (profile as any).avatar_url,
         });
 
         setUserProfile(profile);
+        
+        // 🔄 AUTO-SYNC: If profile was never synced from ZO API, trigger sync now
+        if (profile && !profile.zo_synced_at) {
+          console.log('🔄 [ZoAuth] Profile never synced, triggering auto-sync...');
+          
+          // Get access token from localStorage
+          const accessToken = typeof window !== 'undefined' 
+            ? localStorage.getItem('zo_access_token') || localStorage.getItem('zo_token')
+            : null;
+          
+          if (accessToken) {
+            // Trigger sync in background (don't await - let it happen async)
+            fetch('/api/zo/sync-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: profile.id,
+                accessToken: accessToken,
+              }),
+            })
+            .then(async (res) => {
+              const text = await res.text();
+              let result: any = {};
+              if (text) {
+                try {
+                  result = JSON.parse(text);
+                } catch {
+                  result = { error: 'Invalid JSON response' };
+                }
+              }
+              
+              if (res.ok) {
+                console.log('✅ [ZoAuth] Auto-sync completed');
+                // Reload profile to get updated avatar
+                if (loadUserProfileRef.current) {
+                  setTimeout(() => {
+                    loadUserProfileRef.current!();
+                  }, 1000);
+                }
+              } else {
+                console.error('❌ [ZoAuth] Auto-sync failed:', result?.error || 'Unknown error');
+              }
+            })
+            .catch((err) => {
+              console.error('❌ [ZoAuth] Auto-sync error:', err.message);
+            });
+          }
+        }
       } else {
         console.warn('⚠️ [ZoAuth] Session exists but profile not found:', zoUserId);
         setUserProfile(null);
@@ -113,6 +143,9 @@ export function useZoAuth() {
       setIsLoading(false);
     }
   }, [getZoUserId]);
+  
+  // Store ref to loadUserProfile for use in auto-sync
+  loadUserProfileRef.current = loadUserProfile;
 
   // ============================================
   // Logout

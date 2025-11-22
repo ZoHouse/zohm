@@ -44,19 +44,19 @@ export async function syncZoProfileToSupabase(
       error: 'Database admin access not available',
     };
   }
-  
+
   try {
     console.log('🔄 [syncZoProfile] Starting sync for user:', userId);
-    
+
     // 1. Fetch profile from ZO API
     // Use device credentials from authData if available (from verify-otp response)
     // This ensures we use the exact credentials that were validated by ZO API
     const deviceCredentials = authData?.device_id && authData?.device_secret
       ? { deviceId: authData.device_id, deviceSecret: authData.device_secret }
       : undefined;
-    
+
     const { success, profile, error } = await getProfile(accessToken, userId, deviceCredentials);
-    
+
     if (!success || !profile) {
       console.error('❌ Failed to fetch ZO profile:', error);
       return {
@@ -64,19 +64,12 @@ export async function syncZoProfileToSupabase(
         error: error || 'Failed to fetch ZO profile',
       };
     }
-    
-    // 🔍 DEEP DEBUG: Log avatar data from ZO API
-    console.log('📸 [syncZoProfile] Avatar data from ZO API:', {
-      hasAvatar: !!profile.avatar,
-      avatarImage: profile.avatar?.image || 'null',
-      avatarImageLength: profile.avatar?.image?.length || 0,
-      avatarStatus: profile.avatar?.status || 'null',
-      pfpImage: profile.pfp_image || 'null',
-      pfpImageLength: profile.pfp_image?.length || 0,
-      willUse: profile.avatar?.image || profile.pfp_image || 'FALLBACK!',
-      avatarImageIsValid: profile.avatar?.image && profile.avatar.image.trim().length > 0 && (profile.avatar.image.startsWith('http') || profile.avatar.image.startsWith('https')),
-      pfpImageIsValid: profile.pfp_image && profile.pfp_image.trim().length > 0 && (profile.pfp_image.startsWith('http') || profile.pfp_image.startsWith('https')),
-    });
+
+    // Log avatar sync status
+    const avatarUrl = profile.avatar?.image || profile.pfp_image;
+    if (avatarUrl) {
+      console.log('📸 [syncZoProfile] Avatar found in ZO API:', avatarUrl.substring(0, 50) + '...');
+    }
 
     // 2. Transform ZO profile to Supabase format
     const updateData: any = {
@@ -117,7 +110,7 @@ export async function syncZoProfileToSupabase(
       email: profile.email_address,
       phone: profile.mobile_number,
       birthdate: profile.date_of_birth,
-      
+
       // Avatar: Sync from ZO API if available
       // Priority: avatar.image (generated avatar) > pfp_image (default profile pic)
       // Only sync if we have a valid URL (not empty string)
@@ -130,12 +123,12 @@ export async function syncZoProfileToSupabase(
       ...(() => {
         // Priority: avatar.image (generated) > pfp_image (profile pic)
         const zoAvatarUrl = profile.avatar?.image || profile.pfp_image;
-        
+
         // Validate URL: must be non-empty and start with http/https
-        const isValidUrl = zoAvatarUrl && 
-          zoAvatarUrl.trim().length > 0 && 
+        const isValidUrl = zoAvatarUrl &&
+          zoAvatarUrl.trim().length > 0 &&
           (zoAvatarUrl.startsWith('http://') || zoAvatarUrl.startsWith('https://'));
-        
+
         if (isValidUrl) {
           console.log('✅ [syncZoProfile] Using avatar from ZO API:', zoAvatarUrl);
           return { pfp: zoAvatarUrl };
@@ -143,53 +136,50 @@ export async function syncZoProfileToSupabase(
           console.log('⚠️ [syncZoProfile] No valid avatar URL in ZO API:', {
             avatarImage: profile.avatar?.image || 'null',
             pfpImage: profile.pfp_image || 'null',
-            reason: !zoAvatarUrl ? 'no URL' : 
-                    zoAvatarUrl.trim().length === 0 ? 'empty string' : 
-                    'invalid format (must start with http/https)'
+            reason: !zoAvatarUrl ? 'no URL' :
+              zoAvatarUrl.trim().length === 0 ? 'empty string' :
+                'invalid format (must start with http/https)'
           });
           return {};
         }
       })(),
-      
+
       // Cultures (JSONB array)
       cultures: profile.cultures || [],
-      
+
       // Body type (for avatar)
       body_type: profile.body_type,
-      
+
       // Location (city only - don't override browser location)
       // Note: lat/lng should come from browser geolocation, not ZO API
       // ZO home_location is stored separately as zo_home_location for reference
       city: profile.place_name,
       ...(profile.home_location && {
-        zo_home_location: profile.home_location,  // Store as JSONB for reference
+        zo_home_location: profile.home_location,  // Store as JSONB: { lat: number, lng: number }
       }),
-      
+
       // ZO Membership (store as-is, separate from role column)
       // Note: membership comes from profile response, not authData
       ...(profile.membership && {
         zo_membership: profile.membership,  // 'founder' | 'citizen' | 'none'
       }),
       founder_nfts_count: profile.founder_tokens?.length || 0,
-      
+
       // Wallet
       primary_wallet_address: profile.wallet_address,
-      
+
       // Sync metadata
       zo_synced_at: new Date().toISOString(),
       zo_sync_status: 'synced',
       updated_at: new Date().toISOString(),
     };
 
-    // 🔍 DEEP DEBUG: Log what we're about to save
     console.log('💾 [syncZoProfile] Saving to Supabase:', {
       userId,
       name: updateData.name,
-      pfp: updateData.pfp || 'NULL',
-      bio: updateData.bio?.substring(0, 30) || 'null',
-      bodyType: updateData.body_type,
+      hasPfp: 'pfp' in updateData && !!updateData.pfp,
     });
-    
+
     // 3. Update Supabase (using admin client to bypass RLS)
     const { error: updateError } = await supabaseAdmin
       .from('users')
@@ -210,19 +200,18 @@ export async function syncZoProfileToSupabase(
         error: updateError.message || 'Failed to update user profile',
       };
     }
-    
-    // 🔍 DEEP DEBUG: Verify what was saved
+
+    // 🔍 DEEP DEBUG: Verify what was actually saved to database
+    // Verify what was saved
     const { data: savedProfile } = await supabaseAdmin
       .from('users')
-      .select('id, name, pfp')
+      .select('id, name, pfp, zo_synced_at')
       .eq('id', userId)
       .single();
     
-    console.log('✅ [syncZoProfile] Verified saved data:', {
-      id: savedProfile?.id,
-      name: savedProfile?.name,
-      pfp: savedProfile?.pfp || 'NULL IN DB!',
-    });
+    if (savedProfile?.pfp) {
+      console.log('✅ [syncZoProfile] Profile synced successfully, avatar saved');
+    }
 
     // 4. Also update/create wallet entry
     if (profile.wallet_address) {
@@ -262,14 +251,14 @@ export async function syncZoProfileToSupabase(
  */
 export async function hasZoIdentity(userId: string): Promise<boolean> {
   if (!supabaseAdmin) return false;
-  
+
   try {
     const { data } = await supabaseAdmin
       .from('users')
       .select('zo_user_id')
       .eq('id', userId)
       .single();
-    
+
     return !!data?.zo_user_id;
   } catch {
     return false;
@@ -285,16 +274,16 @@ export async function getZoTokens(userId: string): Promise<{
   accessExpiry?: string;
 } | null> {
   if (!supabaseAdmin) return null;
-  
+
   try {
     const { data } = await supabaseAdmin
       .from('users')
       .select('zo_token, zo_refresh_token, zo_token_expiry')
       .eq('id', userId)
       .single();
-    
+
     if (!data?.zo_token) return null;
-    
+
     return {
       accessToken: data.zo_token,
       refreshToken: data.zo_refresh_token,

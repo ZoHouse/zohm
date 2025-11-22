@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
 
 interface EventData {

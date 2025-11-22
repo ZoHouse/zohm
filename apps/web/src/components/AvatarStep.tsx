@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
-import { updateUserProfile } from '@/lib/privyDb';
+import { updateUserProfile } from '@/lib/userDb';
 
 interface AvatarStepProps {
   onAvatarSet: () => void;
 }
 
 export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
-  const { authenticated, userProfile, user: privyUser, reloadProfile } = useZoAuth();
+  const { authenticated, userProfile, reloadProfile } = useZoAuth();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -27,11 +27,11 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
 
   // Automatically start generation when component loads
   useEffect(() => {
-    if (authenticated && (privyUser || userProfile) && !isGenerating && !avatarUrl) {
+    if (authenticated && userProfile && !isGenerating && !avatarUrl) {
       console.log('🎨 Starting avatar generation on mount...');
       updateProfileWithBodyType();
     }
-  }, [authenticated, privyUser, userProfile]);
+  }, [authenticated, userProfile]);
 
   // ============================================================================
   // REAL AVATAR GENERATION IMPLEMENTATION
@@ -39,7 +39,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
 
   // Update profile with body_type (triggers avatar generation on backend)
   const updateProfileWithBodyType = async () => {
-    const userId = userProfile?.id || privyUser?.id;
+    const userId = userProfile?.id;
     if (!userId) {
       setError('Not authenticated');
       return;
@@ -133,7 +133,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
           
           // Save to Supabase and reload profile
           try {
-            const { updateUserProfile } = await import('@/lib/privyDb');
+            const { updateUserProfile } = await import('@/lib/userDb');
             await updateUserProfile(userId, {
               pfp: profile.avatar.image,
               body_type: bodyType
@@ -190,7 +190,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
 
   // Fallback to unicorn avatar
   const useFallbackAvatar = async () => {
-    const userId = userProfile?.id || privyUser?.id;
+    const userId = userProfile?.id;
     const bodyType = localStorage.getItem('zo_body_type') as 'bro' | 'bae';
     
     const fallbackAvatar = bodyType === 'bro' 
@@ -203,7 +203,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
     // Save fallback to database
     if (userId) {
       try {
-        const { updateUserProfile } = await import('@/lib/privyDb');
+        const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userId, {
           pfp: fallbackAvatar,
           body_type: bodyType

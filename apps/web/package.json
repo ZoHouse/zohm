@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@allbridge/bridge-core-sdk": "^3.24.0",
-    "@privy-io/react-auth": "^3.3.0",
-    "@privy-io/server-auth": "^1.32.5",
     "@supabase/supabase-js": "^2.52.0",
     "@types/mapbox-gl": "^3.4.1",
     "@types/three": "^0.181.0",

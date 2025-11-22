@@ -1,5 +1,5 @@
 // apps/web/src/app/api/zo/auth/link-account/route.ts
-// Link ZO phone identity to existing Supabase user (Privy or ZO)
+// Link ZO phone identity to existing Supabase user
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/lib/zo-api/auth';

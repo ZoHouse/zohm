@@ -113,7 +113,7 @@ The architecture reflects this by:
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | **Next.js API Routes** | 15.4.2 | Serverless API endpoints |
-| **Privy** | 3.3.0 | Auth (Email, Social, Wallets) |
+| **ZO API** | - | Authentication & profile management |
 | **Supabase JS** | 2.52.0 | Database client |
 | **Ethers.js** | 6.15.0 | Blockchain interactions |
 
@@ -122,8 +122,7 @@ The architecture reflects this by:
 | Technology | Purpose |
 |------------|---------|
 | **Supabase (PostgreSQL)** | Primary database |
-| **Privy Identity** | User authentication & DID management |
-| **ZO API** | External profile & avatar generation |
+| **ZO API** | User authentication, profile & avatar generation |
 | **IPFS** | Decentralized file storage (future) |
 
 ### Blockchain Layer
@@ -144,19 +143,27 @@ User Opens App
      │
      ▼
 ┌─────────────────────┐
-│  Check Privy Auth   │ ──No──> Login Screen
-└─────────────────────┘         (Email/Social/Wallet)
+│  Check ZO Auth      │ ──No──> Landing Page
+│  (useZoAuth hook)   │         (Phone Login Modal)
+└─────────────────────┘
      │ Yes                              │
      ▼                                  │
 ┌─────────────────────┐                │
-│  Fetch User Profile │ <──────────────┘
+│  Phone + OTP Login  │ <──────────────┘
+│  (ZO API)           │
+└─────────────────────┘
+     │
+     ▼
+┌─────────────────────┐
+│  Fetch User Profile │
 │  from Supabase      │
+│  (by zo_user_id)    │
 └─────────────────────┘
      │
      ▼
 ┌─────────────────────┐
 │  Check Onboarding   │ ──No──> Onboarding Flow
-│  Completed?         │         (Nickname→Portal→Avatar→Quest)
+│  Completed?         │         (Nickname→Avatar→Quest)
 └─────────────────────┘
      │ Yes
      ▼
@@ -284,10 +291,11 @@ apps/web/src/
 │   └── migrations/         # SQL migration scripts
 │
 ├── hooks/                  # Custom React hooks
+│   ├── useZoAuth.ts        # ZO authentication hook
 │   └── useAvatarGeneration.ts
 │
-└── providers/              # Context providers
-    └── PrivyProvider.tsx   # Auth provider wrapper
+└── providers/              # Context providers (legacy - not used)
+    └── PrivyProvider.tsx   # Legacy auth provider (deprecated)
 ```
 
 ### Component Hierarchy
@@ -295,7 +303,7 @@ apps/web/src/
 ```
 page.tsx (Home)
 │
-├── PrivyProvider
+├── useZoAuth() hook
 │   │
 │   ├── OnboardingPage (if !onboarding_completed)
 │   │   ├── NicknameStep
@@ -428,62 +436,17 @@ const { data, error } = await supabase
 
 ## Authentication & Identity
 
-### Current: Privy Authentication (v1.0 - Temporary)
+### Current: ZO API Authentication (v1.0 - Active)
 
-**Status**: ⚠️ **Planned for Migration to ZO API Auth**
+**Status**: ✅ **Production Ready**
 
-**DID Format**: `did:privy:clr3j1k2f00...` (stored as `users.id`)
-
-**Supported Auth Methods**:
-- Email (magic link)
-- Social (Google, Twitter, Discord)
-- Crypto Wallets (MetaMask, WalletConnect, Coinbase Wallet)
-- Embedded Wallets (Privy-managed)
-
-### Current Auth Flow (Privy)
-
-```typescript
-// Client-side (PrivyProvider.tsx)
-import { PrivyProvider } from '@privy-io/react-auth'
-
-<PrivyProvider
-  appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
-  config={{
-    loginMethods: ['email', 'wallet', 'google', 'twitter'],
-    appearance: {
-      theme: 'dark',
-      accentColor: '#00FF00'
-    }
-  }}
->
-  {children}
-</PrivyProvider>
-
-// Server-side (API routes)
-import { PrivyClient } from '@privy-io/server-auth'
-
-const privy = new PrivyClient(
-  process.env.PRIVY_APP_ID!,
-  process.env.PRIVY_APP_SECRET!
-)
-
-// Verify token
-const user = await privy.verifyAuthToken(authToken)
-```
-
----
-
-### Future: ZO API Authentication (v2.0 - Roadmap)
-
-**Status**: 🔄 **Planned Migration**
-
-**Rationale**: ZO API provides native phone-based auth with abstracted wallet creation, eliminating the need for Privy and simplifying the architecture.
+**Rationale**: ZO API provides native phone-based auth with abstracted wallet creation, eliminating the need for third-party auth providers and simplifying the architecture.
 
 **Primary Auth**: Phone Number + OTP  
-**Identifier**: ZO Profile ID (`pid`) instead of Privy DID  
+**Identifier**: ZO Profile ID (`pid`) and ZO User ID (`zo_user_id`)  
 **Wallet Strategy**: Backend-managed wallet abstraction (created automatically on signup)
 
-#### Future Auth Flow (ZO API)
+#### Current Auth Flow (ZO API)
 
 ```typescript
 // 1. Request OTP
@@ -539,43 +502,53 @@ Headers: {
 }
 ```
 
-#### Migration Benefits
+#### Implementation Details
 
-| Aspect | Current (Privy) | Future (ZO API) |
-|--------|----------------|-----------------|
-| **Dependencies** | +2 npm packages | Native API calls |
-| **Auth Method** | Email/Social/Wallet | Phone OTP |
-| **Identity** | Privy DID | ZO Profile ID (`pid`) |
-| **Wallet** | Multi-wallet support | Backend-managed (abstracted) |
-| **Profile Source** | Split (Privy + ZO API) | Single source (ZO API) |
-| **Data Sync** | Manual sync needed | Automatic (single API) |
-| **Latency** | ~800ms (2 systems) | ~400ms (1 system) |
-| **Cost** | Privy subscription | $0 |
-| **Complexity** | High (DID management) | Low (phone-based) |
+**Client-Side Hook**: `useZoAuth()` in `apps/web/src/hooks/useZoAuth.ts`
 
-#### Migration Plan
+```typescript
+// Client-side usage
+import { useZoAuth } from '@/hooks/useZoAuth'
 
-**Phase 1: Preparation**
-- [ ] Document ZO API auth endpoints
-- [ ] Create `lib/zoAuth.ts` service
-- [ ] Test phone OTP flow in dev environment
+function MyComponent() {
+  const { 
+    authenticated, 
+    userProfile, 
+    isLoading,
+    hasCompletedOnboarding,
+    isFounder 
+  } = useZoAuth()
+  
+  // Component logic
+}
+```
 
-**Phase 2: Database Schema Update**
-- [ ] Add `zo_pid` column to `users` table
-- [ ] Add `zo_token_hash` for session validation
-- [ ] Create migration to preserve existing users
+**API Routes**:
+- `POST /api/zo/auth/send-otp` - Send OTP to phone number
+- `POST /api/zo/auth/verify-otp` - Verify OTP and create session
+- `POST /api/zo/auth/link-account` - Link ZO account to Supabase user
+- `POST /api/zo/sync-profile` - Sync profile from ZO API (with token refresh)
 
-**Phase 3: Dual Auth (Temporary)**
-- [ ] Support both Privy DID and ZO PID
-- [ ] Allow existing users to migrate accounts
-- [ ] New users use ZO API auth only
+**Database Fields**:
+- `zo_user_id` - ZO user identifier
+- `zo_pid` - ZO profile ID
+- `zo_token` - Access token
+- `zo_refresh_token` - Refresh token
+- `zo_token_expiry` - Token expiration timestamp
+- `zo_device_id` - Device identifier
+- `zo_device_secret` - Device secret
+- `zo_membership` - Membership level (founder/citizen)
+- `zo_synced_at` - Last profile sync timestamp
+- `zo_home_location` - Home location (JSONB)
 
-**Phase 4: Complete Migration**
-- [ ] Remove Privy dependencies
-- [ ] Update all auth flows to ZO API
-- [ ] Deprecate Privy DID column
-
-**Timeline**: TBD (dependent on ZO API access for webapp)
+**Benefits**:
+- ✅ Single source of truth (ZO API)
+- ✅ Automatic profile sync
+- ✅ Token refresh handling
+- ✅ Backend-managed wallet abstraction
+- ✅ No third-party dependencies
+- ✅ Lower latency (~400ms vs ~800ms)
+- ✅ Zero cost (no subscription fees)
 
 **Reference Documentation**:
 - `Docs/ZO_API_DOCUMENTATION.md` - Complete ZO API reference
@@ -659,10 +632,11 @@ const subscription = supabase
 
 ### Authentication Security
 
-1. **Privy DID** as primary identity (blockchain-backed)
+1. **ZO User ID** (`zo_user_id`) as primary identity
 2. **Server-side token verification** for all API routes
-3. **Multi-wallet support** with wallet ownership verification
-4. **Session management** via Privy SDK
+3. **Token refresh** for expired sessions (automatic)
+4. **Session management** via localStorage and ZO API tokens
+5. **Phone number verification** via OTP (SMS)
 
 ### Database Security
 

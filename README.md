@@ -151,7 +151,7 @@ zohm/
 
 - **Frontend**: Next.js 15, React 19, TypeScript 5, Tailwind CSS
 - **Backend**: Next.js API Routes, Supabase (PostgreSQL)
-- **Authentication**: Privy (wallet + social auth)
+- **Authentication**: ZO API (phone + OTP)
 - **Blockchain**: Base (L2), Avalanche Fuji (testnet)
 - **Maps**: Mapbox GL JS (3D visualization)
 - **Real-time**: Supabase Realtime subscriptions
@@ -197,10 +197,11 @@ Required variables (add to `apps/web/.env.local`):
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Privy (Auth)
-NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
-PRIVY_APP_SECRET=your_privy_secret
+# ZO API (Authentication)
+ZO_API_BASE_URL=your_zo_api_base_url
+ZO_CLIENT_KEY_WEB=your_zo_client_key
 
 # Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
@@ -372,7 +373,7 @@ Every feature strengthens at least one:
 ## 🔐 Security
 
 - All secrets in environment variables
-- API routes use Privy authentication
+- API routes use ZO API authentication (phone + OTP)
 - Database uses Row Level Security (RLS)
 - Smart contracts audited before deployment
 

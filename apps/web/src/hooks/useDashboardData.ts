@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { usePrivyUser } from './usePrivyUser';
+import { useZoAuth } from './useZoAuth';
 
 export interface DashboardEvent {
   id: string;
@@ -35,7 +35,7 @@ export interface VisitedNode {
 }
 
 export function useDashboardData() {
-  const { userProfile } = usePrivyUser();
+  const { userProfile } = useZoAuth();
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [quests, setQuests] = useState<DashboardQuest[]>([]);
   const [visitedNodes, setVisitedNodes] = useState<VisitedNode[]>([]);

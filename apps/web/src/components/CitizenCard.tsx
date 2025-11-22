@@ -21,7 +21,7 @@ export default function CitizenCard({ onboardingStep, userId, onComplete }: Citi
   const selectedAvatar = localStorage.getItem('zo_avatar') || '/unicorn images/UnicornMemes_v1-01.png';
   const city = localStorage.getItem('zo_city') || 'San Francisco, CA';
   const citizenNumber = '#69'; // TODO: Get from database
-  const walletAddress = '0x98...nkdj'; // TODO: Get from Privy
+  const walletAddress = '0x98...nkdj'; // TODO: Get from user profile
   const tokenBalance = 0; // Initial token balance
 
   const handleQuantumSync = () => {

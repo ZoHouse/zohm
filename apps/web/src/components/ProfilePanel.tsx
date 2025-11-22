@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
-import { usePrivy, useLoginWithEmail, useLoginWithOAuth } from '@privy-io/react-auth';
+import { useZoAuth } from '@/hooks/useZoAuth';
+// Note: Email/Twitter linking features not available with ZO auth
 import { supabase } from '@/lib/supabase';
-import { updateUserProfile } from '@/lib/privyDb';
+import { updateUserProfile } from '@/lib/userDb';
 // WalletOverlay moved to parent component level
 import { getAllCultures, getCultureDisplayName, getCultureIcon } from '@/lib/cultures';
 import { getUnicornForAddress } from '@/lib/unicornAvatars';
@@ -31,14 +31,19 @@ interface ProfilePanelProps {
 const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
     const { 
         userProfile, 
-        displayName: privyDisplayName, 
-        primaryWalletAddress, 
         isFounder,
         isLoading: isLoadingProfile,
         reloadProfile 
-    } = usePrivyUser();
+    } = useZoAuth();
     
-    const { linkEmail, linkTwitter, unlinkEmail, unlinkTwitter } = usePrivy();
+    const privyDisplayName = userProfile?.name || userProfile?.email || 'User';
+    const primaryWalletAddress = userProfile?.primary_wallet_address || null;
+    
+    // Email/Twitter linking not available with ZO auth
+    const linkEmail = () => console.warn('Email linking not available with ZO auth');
+    const linkTwitter = () => console.warn('Twitter linking not available with ZO auth');
+    const unlinkEmail = () => console.warn('Email unlinking not available with ZO auth');
+    const unlinkTwitter = () => console.warn('Twitter unlinking not available with ZO auth');
     
     console.log('📊 ProfilePanel state:', {
         hasUserProfile: !!userProfile,

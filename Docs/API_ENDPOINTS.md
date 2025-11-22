@@ -26,20 +26,30 @@
 
 ## Authentication
 
-### Current: Privy-based (v1.0)
+### Current: ZO API Phone/OTP (v1.0 - Active)
 
-Authentication is handled client-side via `@privy-io/react-auth`. API routes verify the user's session token.
+Authentication is handled via ZO API using phone number + OTP. The `useZoAuth` hook manages client-side session state.
 
-**Headers Required**:
+**Auth Flow**:
+1. User enters phone number → `POST /api/zo/auth/send-otp`
+2. User enters OTP → `POST /api/zo/auth/verify-otp`
+3. Session stored in localStorage (`zo_user_id`, `zo_token`)
+4. Profile auto-synced from ZO API
+
+**Headers Required** (for authenticated requests):
 ```http
-Authorization: Bearer <privy_token>
+Authorization: Bearer <zo_access_token>
 ```
 
-**User Identifier**: Privy DID (`did:privy:clr3j1k2f00...`)
+**User Identifier**: ZO User ID (`zo_user_id`) stored in Supabase `users` table
 
-### Future: ZO API Phone Auth (v2.0)
+**API Endpoints**:
+- `POST /api/zo/auth/send-otp` - Send OTP to phone number
+- `POST /api/zo/auth/verify-otp` - Verify OTP and create session
+- `POST /api/zo/auth/link-account` - Link ZO account to Supabase user
+- `POST /api/zo/sync-profile` - Sync profile from ZO API (with token refresh)
 
-See `ARCHITECTURE.md` for migration plan.
+See `ARCHITECTURE.md` for complete authentication flow.
 
 ---
 
@@ -54,12 +64,12 @@ GET /api/users/{id}/progress
 **Description**: Fetch user's overall progress including tokens, quests completed, and level.
 
 **Path Parameters**:
-- `id` (string, required) - User's Privy DID
+- `id` (string, required) - User's Supabase ID (or ZO User ID)
 
 **Response**:
 ```json
 {
-  "user_id": "did:privy:xxx",
+  "user_id": "uuid-or-zo-user-id",
   "zo_points": 1500,
   "quests_completed": 23,
   "level": 5,

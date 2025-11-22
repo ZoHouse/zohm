@@ -139,7 +139,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
       
       // Save location to user profile
       if (userId) {
-        const { updateUserProfile } = await import('@/lib/privyDb');
+        const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userId, {
           lat: location.lat,
           lng: location.lng

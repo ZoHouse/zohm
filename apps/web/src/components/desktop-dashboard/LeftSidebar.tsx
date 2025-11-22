@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Plus, X, Pencil } from 'lucide-react';
 import { getCultureDisplayName, getCultureIcon, getAllCultures } from '@/lib/cultures';
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 import ZoPassport from './ZoPassport';
 

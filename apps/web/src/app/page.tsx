@@ -64,10 +64,10 @@ export default function Home() {
   // Location permission modal state
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  // 🔒 Race condition fix: Prevent multiple profile status updates during Privy auth
+  // 🔒 Race condition fix: Prevent multiple profile status updates during auth
   const hasSetProfileStatus = useRef(false);
 
-  // 🔒 Race condition fix: Prevent initApp from running multiple times during Privy loading
+  // 🔒 Race condition fix: Prevent initApp from running multiple times during auth loading
   const hasInitialized = useRef(false);
 
   // Hooks
@@ -167,7 +167,7 @@ export default function Home() {
       return;
     }
 
-    // Initialize Supabase and check Privy user profile
+    // Initialize Supabase and check user profile
     const initApp = async () => {
       console.log('🚀 Starting initApp...');
       hasInitialized.current = true; // Mark as initialized immediately
@@ -206,10 +206,10 @@ export default function Home() {
     }
   }, [ready, authenticated, userProfile, onboardingComplete, userProfileStatus]);
 
-  // Skip loading screen when Privy is ready for returning users
+  // Skip loading screen when auth is ready for returning users
   useEffect(() => {
     if (ready && authenticated && userProfileStatus === 'exists' && isLoading) {
-      console.log('⚡ Privy ready with existing profile, skipping loading screen');
+      console.log('⚡ Auth ready with existing profile, skipping loading screen');
       setIsLoading(false);
     }
   }, [ready, authenticated, userProfileStatus, isLoading]);
@@ -320,7 +320,7 @@ export default function Home() {
     });
   }, [authenticated, authMethod, isLoadingProfile, isLoading, ready, onboardingStep, userProfileStatus, onboardingComplete, userProfile]);
 
-  // Effect to check user profile when authenticated (Privy or ZO)
+  // Effect to check user profile when authenticated
   useEffect(() => {
     // Only run once when status is null AND profile loading is complete
     if (authenticated && !isLoadingProfile && userProfileStatus === null) {
@@ -503,7 +503,7 @@ export default function Home() {
 
     console.log('💾 Saving location to database:', { lat, lng });
     try {
-      const { updateUserProfile } = await import('@/lib/privyDb');
+      const { updateUserProfile } = await import('@/lib/userDb');
       await updateUserProfile(userProfile.id, {
         lat,
         lng,
@@ -537,7 +537,7 @@ export default function Home() {
 
       console.log('💾 Saving MapCanvas location for returning user...');
       try {
-        const { updateUserProfile } = await import('@/lib/privyDb');
+        const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userProfile.id, {
           lat: windowCoords.lat,
           lng: windowCoords.lng,
@@ -598,16 +598,16 @@ export default function Home() {
   };
 
 
-  // Handle red pill click - now uses Privy login
+  // Handle red pill click - opens phone login
   const handleRedPillClick = async () => {
-    console.log('🔴 Red pill clicked! Opening Privy login...');
+    console.log('🔴 Red pill clicked! Opening phone login...');
     login();
   };
 
-  // Debug Privy state when dashboard is opened
+  // Debug auth state when dashboard is opened
   useEffect(() => {
     if (isDashboardOpen) {
-      console.log('🔍 Dashboard opened - Privy state:', {
+      console.log('🔍 Dashboard opened - Auth state:', {
         authenticated: authenticated,
         hasProfile: !!userProfile,
         onboardingComplete: onboardingComplete
@@ -711,7 +711,7 @@ export default function Home() {
       // This only applies to first-time users (Type 1 & 2)
       if (userId && !onboardingComplete) {
         console.log('✅ Marking onboarding as complete for user:', userId);
-        const { updateUserProfile } = await import('@/lib/privyDb');
+        const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userId, {
           onboarding_completed: true
         });
@@ -900,7 +900,7 @@ export default function Home() {
     );
   }
 
-  // Show loading screen while Privy initializes
+  // Show loading screen while auth initializes
   if (!ready && !isTransitioningFromOnboarding) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -1006,7 +1006,7 @@ export default function Home() {
         // Update user profile with location
         const userId = userProfile?.id || user?.id;
         if (userId) {
-          const { updateUserProfile } = await import('@/lib/privyDb');
+          const { updateUserProfile } = await import('@/lib/userDb');
           await updateUserProfile(userId, {
             lat: latitude,
             lng: longitude,

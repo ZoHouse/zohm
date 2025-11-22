@@ -3,7 +3,7 @@
 import React from 'react';
 import ProfilePanel from './ProfilePanel';
 import { X } from 'lucide-react';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { GlowCard } from '@/components/ui';
 
 interface DashboardOverlayProps {
@@ -13,7 +13,7 @@ interface DashboardOverlayProps {
 }
 
 const DashboardOverlay: React.FC<DashboardOverlayProps> = ({ isVisible, onClose, onOpenWallet }) => {
-  const { authenticated, primaryWalletAddress } = usePrivyUser();
+  const { authenticated, userProfile } = useZoAuth();
 
   if (!isVisible) return null;
 

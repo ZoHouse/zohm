@@ -17,7 +17,7 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
 
   const handleButtonPress = () => {
     setIsPressed(true);
-    // Open phone login modal instead of Privy
+    // Open phone login modal
     setTimeout(() => {
       setShowPhoneModal(true);
     }, 200);

@@ -80,7 +80,7 @@ export function useOnboardingTransition() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Try to get location from updated profile
-      const { getUserById } = await import('@/lib/privyDb');
+      const { getUserById } = await import('@/lib/userDb');
       const userProfile = await getUserById(userId);
       
       if (userProfile?.lat && userProfile?.lng) {
@@ -109,7 +109,7 @@ export function useOnboardingTransition() {
       });
       console.log('✅ State set to preparing');
 
-      const { updateUserProfile } = await import('@/lib/privyDb');
+      const { updateUserProfile } = await import('@/lib/userDb');
       await updateUserProfile(userId, { onboarding_completed: true });
       
       setState(prev => ({
@@ -129,7 +129,7 @@ export function useOnboardingTransition() {
         await new Promise(resolve => setTimeout(resolve, 200));
         
         // Check if profile has updated (you can add more specific checks here)
-        const { getUserByWallet } = await import('@/lib/privyDb');
+        const { getUserByWallet } = await import('@/lib/userDb');
         // Profile check logic would go here
         profileReady = true; // Simplified for now
         if (profileReady) break;

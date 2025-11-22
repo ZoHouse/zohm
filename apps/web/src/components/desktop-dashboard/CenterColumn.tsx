@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';

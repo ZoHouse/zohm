@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
 import ZoPassportComponent from './ZoPassportComponent';
 
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 
 interface ZoPassportProps {
   className?: string;

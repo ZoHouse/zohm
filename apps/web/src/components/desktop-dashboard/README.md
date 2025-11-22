@@ -32,7 +32,7 @@ Main container component that orchestrates the entire dashboard layout.
 - `onClose?: () => void` - Callback when dashboard is closed
 
 **State Management:**
-- Uses `usePrivyUser` for user profile data
+- Uses `useZoAuth` for user profile data
 - Handles loading states
 - Manages background gradient overlay
 
@@ -288,7 +288,7 @@ The dashboard uses:
 - React 18+
 - Next.js 14+
 - Tailwind CSS
-- `@privy-io/react-auth` (for user authentication)
+- ZO API (for user authentication)
 - `lucide-react` (for icons)
 - Supabase client (for data fetching)
 

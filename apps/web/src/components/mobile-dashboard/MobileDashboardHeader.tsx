@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 import { DashboardAssets } from '@/styles/dashboard-tokens';
 
 interface MobileDashboardHeaderProps {

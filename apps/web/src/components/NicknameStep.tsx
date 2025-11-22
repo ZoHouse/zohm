@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
-import { upsertUserFromPrivy } from '@/lib/privyDb';
+import { upsertUserFromPrivy } from '@/lib/userDb';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import type { FormEvent } from 'react';
 
@@ -79,7 +79,7 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
 }
 
 export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
-  const { authenticated, userProfile, user: privyUser } = useZoAuth();
+  const { authenticated, userProfile } = useZoAuth();
   
   const [nickname, setNickname] = useState('');
   const [city, setCity] = useState('');
@@ -134,7 +134,7 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     setIsLoading(true);
     setError('');
     
-    if (!authenticated || (!privyUser && !userProfile)) {
+    if (!authenticated || !userProfile) {
       setError('Not authenticated');
       setIsLoading(false);
       return;
@@ -142,8 +142,8 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     
     try {
       console.log('🎬 Saving nickname, body_type, and city to database...');
-      // For ZO users, use userProfile; for Privy users, use privyUser
-      const authUser = privyUser || userProfile;
+      // Use userProfile (ZO authentication)
+      const authUser = userProfile;
       const user = await upsertUserFromPrivy(authUser as any, {
         name: nickname,
         city: city || null, // Save city if available

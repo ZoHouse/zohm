@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { getQuests, QuestEntry, getLeaderboards, LeaderboardEntry, isQuestCompleted, markQuestCompleted } from '@/lib/supabase';
-import { getUserByWallet } from '@/lib/privyDb';
+import { getUserByWallet } from '@/lib/userDb';
 import { verifyQuestCompletion, verifyTwitterQuestCompletion } from '@/lib/questVerifier';
 import { canUserCompleteQuest } from '@/lib/questService';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 import CooldownTimer from './CooldownTimer';
@@ -17,7 +17,8 @@ interface QuestsOverlayProps {
 }
 
 const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLaunchGame }) => {
-  const { primaryWalletAddress, authenticated } = usePrivyUser();
+  const { authenticated, userProfile } = useZoAuth();
+  const primaryWalletAddress = userProfile?.primary_wallet_address || null;
   const [quests, setQuests] = useState<QuestEntry[] | null>(null);
   const [leaders, setLeaders] = useState<LeaderboardEntry[] | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);

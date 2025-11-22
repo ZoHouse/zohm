@@ -11,7 +11,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getFullUserProfile,
   type FullUserProfile,
-} from '@/lib/privyDb';
+} from '@/lib/userDb';
 
 export function useZoAuth() {
   const [userProfile, setUserProfile] = useState<FullUserProfile | null>(null);

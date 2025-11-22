@@ -2,7 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { PrivyUserProfile } from '@/types/privy';
+import { PrivyUserProfile } from '@/types/user';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('../MapCanvas'), {

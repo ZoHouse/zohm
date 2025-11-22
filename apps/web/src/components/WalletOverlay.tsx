@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Copy, Check, LinkIcon, Loader2, X } from 'lucide-react';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
-import { usePrivy } from '@privy-io/react-auth';
+import { useZoAuth } from '@/hooks/useZoAuth';
+// Note: Wallet management features (linkWallet) not available with ZO auth
 import { getUnicornForAddress } from '@/lib/unicornAvatars';
 import { GlowCard } from '@/components/ui';
 import { ethers } from 'ethers';
@@ -14,8 +14,14 @@ interface WalletOverlayProps {
 }
 
 const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => {
-  const { userProfile, primaryWalletAddress, reloadProfile, changePrimaryWallet } = usePrivyUser();
-  const { linkWallet } = usePrivy();
+  const { userProfile, reloadProfile } = useZoAuth();
+  const primaryWalletAddress = userProfile?.primary_wallet_address || null;
+  // Wallet linking not available with ZO auth (wallets are backend-managed)
+  const linkWallet = () => console.warn('Wallet linking not available with ZO auth');
+  const changePrimaryWallet = async (_walletAddress: string) => {
+    console.warn('Changing primary wallet not available with ZO auth (wallets are backend-managed)');
+    return false;
+  };
   const [isLinkingWallet, setIsLinkingWallet] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [settingPrimaryFor, setSettingPrimaryFor] = useState<string | null>(null);

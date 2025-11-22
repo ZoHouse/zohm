@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { usePrivyUser } from './usePrivyUser';
+import { useZoAuth } from './useZoAuth';
 import { supabase } from '@/lib/supabase';
 
 interface MemberProfile {
@@ -19,7 +19,8 @@ interface MemberProfile {
 }
 
 export function useProfileGate() {
-  const { authenticated, primaryWalletAddress } = usePrivyUser();
+  const { authenticated, userProfile } = useZoAuth();
+  const primaryWalletAddress = userProfile?.primary_wallet_address || null;
   const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);

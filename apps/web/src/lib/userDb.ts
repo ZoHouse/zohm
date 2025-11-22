@@ -1,20 +1,21 @@
 /**
- * 🦄 Privy Database Helpers
+ * 🦄 User Database Helpers
  * 
- * This file contains all the database helpers for working with Privy users
- * in the new users/user_wallets/user_auth_methods schema.
+ * This file contains all the database helpers for working with users
+ * in the users/user_wallets/user_auth_methods schema.
+ * 
+ * Previously named privyDb.ts - renamed to reflect ZO-only authentication.
  */
 
 import { supabase } from './supabase';
 import { getUnicornForAddress } from './unicornAvatars';
-import type { User as PrivyUser } from '@privy-io/react-auth';
 
 // ============================================
 // TypeScript Types
 // ============================================
 
 export interface UserRecord {
-  id: string;  // Privy DID (or ZO user_id for ZO-only users)
+  id: string;  // User ID (ZO user_id for ZO-only users)
   name: string | null;
   bio: string | null;
   pfp: string | null;
@@ -123,15 +124,15 @@ export interface FullUserProfile extends UserRecord {
 // ============================================
 
 /**
- * Get user by ID (works for both Privy DID and ZO user ID)
+ * Get user by ID (works for both user ID and ZO user ID)
  */
-export async function getUserById(privyId: string): Promise<UserRecord | null> {
+export async function getUserById(userId: string): Promise<UserRecord | null> {
   try {
-    console.log('🔍 [getUserById] Looking up user by id:', privyId);
+    console.log('🔍 [getUserById] Looking up user by id:', userId);
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', privyId)
+      .eq('id', userId)
       .single();
 
     if (error) {
@@ -142,7 +143,7 @@ export async function getUserById(privyId: string): Promise<UserRecord | null> {
         const { data: userByZoId, error: zoError } = await supabase
           .from('users')
           .select('*')
-          .eq('zo_user_id', privyId)
+          .eq('zo_user_id', userId)
           .single();
         
         if (zoError) {
@@ -218,12 +219,12 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
 /**
  * Get full user profile with all wallets and auth methods
  */
-export async function getFullUserProfile(privyId: string): Promise<FullUserProfile | null> {
+export async function getFullUserProfile(userId: string): Promise<FullUserProfile | null> {
   try {
     const [user, wallets, authMethods] = await Promise.all([
-      getUserById(privyId),
-      getUserWallets(privyId),
-      getUserAuthMethods(privyId),
+      getUserById(userId),
+      getUserWallets(userId),
+      getUserAuthMethods(userId),
     ]);
 
     if (!user) return null;
@@ -243,9 +244,9 @@ export async function getFullUserProfile(privyId: string): Promise<FullUserProfi
 }
 
 /**
- * Check if the Privy migration has been run
+ * Check if the database migration has been run
  */
-export async function checkPrivyMigrationStatus(): Promise<boolean> {
+export async function checkDatabaseMigrationStatus(): Promise<boolean> {
   try {
     console.log('🔍 Checking if users table exists...');
     
@@ -287,32 +288,37 @@ export async function checkPrivyMigrationStatus(): Promise<boolean> {
 }
 
 /**
- * Create or update user from Privy
+ * Create or update user (works with ZO users or any user with id/email)
  */
-export async function upsertUserFromPrivy(
-  privyUser: PrivyUser,
+export async function upsertUser(
+  user: { id: string; email?: string | { address?: string } | null },
   profileData?: Partial<UserRecord>
 ): Promise<UserRecord | null> {
   try {
-    console.log('🔄 Upserting user from Privy:', {
-      privyUserId: privyUser.id,
-      email: privyUser.email?.address
+    const userId = user.id;
+    const userEmail = typeof user.email === 'string' 
+      ? user.email 
+      : (user.email as any)?.address || null;
+
+    console.log('🔄 Upserting user:', {
+      userId,
+      email: userEmail
     });
 
     // Check if user already exists
-    const existingUser = await getUserById(privyUser.id);
+    const existingUser = await getUserById(userId);
     const isNewUser = !existingUser;
 
     // Assign a default unicorn PFP for new users or existing users without a PFP
     let defaultPfp: string | null = null;
     if (isNewUser || (!existingUser?.pfp && !profileData?.pfp)) {
-      defaultPfp = getUnicornForAddress(privyUser.id);
+      defaultPfp = getUnicornForAddress(userId);
       console.log('🦄 Assigning default unicorn avatar:', defaultPfp);
     }
 
     const userData: Partial<UserRecord> = {
-      id: privyUser.id,
-      email: privyUser.email?.address || null,
+      id: userId,
+      email: userEmail,
       last_seen: new Date().toISOString(),
       ...(defaultPfp && { pfp: defaultPfp }), // Only set pfp if we generated a default
       ...profileData, // profileData can override the default pfp if provided
@@ -345,20 +351,6 @@ export async function upsertUserFromPrivy(
       console.log('✅ User updated successfully');
     }
 
-    // Sync wallets
-    try {
-      await syncUserWalletsFromPrivy(privyUser);
-    } catch (walletError) {
-      console.error('⚠️ Error syncing wallets:', walletError);
-    }
-
-    // Sync auth methods
-    try {
-      await syncUserAuthMethodsFromPrivy(privyUser);
-    } catch (authError) {
-      console.error('⚠️ Error syncing auth methods:', authError);
-    }
-
     return data;
   } catch (error) {
     if (error instanceof Error) {
@@ -371,19 +363,25 @@ export async function upsertUserFromPrivy(
 }
 
 /**
+ * Legacy function name - use upsertUser instead
+ * @deprecated Use upsertUser instead
+ */
+export const upsertUserFromPrivy = upsertUser;
+
+/**
  * Update user profile
  */
 export async function updateUserProfile(
-  privyId: string,
+  userId: string,
   updates: Partial<UserRecord>
 ): Promise<UserRecord | null> {
   try {
-    console.log('🔄 Updating user profile:', { privyId, updates });
+    console.log('🔄 Updating user profile:', { userId, updates });
     
     const { data, error } = await supabase
       .from('users')
       .update(updates)
-      .eq('id', privyId)
+      .eq('id', userId)
       .select()
       .single();
 
@@ -453,12 +451,13 @@ export async function getPrimaryWallet(userId: string): Promise<UserWalletRecord
 }
 
 /**
- * Sync wallets from Privy user object
+ * Sync wallets from user object (legacy - not used with ZO auth)
+ * @deprecated Not used with ZO authentication
  */
-export async function syncUserWalletsFromPrivy(privyUser: PrivyUser): Promise<void> {
+export async function syncUserWalletsFromPrivy(privyUser: any): Promise<void> {
   try {
     const walletAccounts = privyUser.linkedAccounts?.filter(
-      account => account.type === 'wallet'
+      (account: any) => account.type === 'wallet'
     ) || [];
 
     for (let i = 0; i < walletAccounts.length; i++) {
@@ -576,9 +575,10 @@ export async function getUserAuthMethods(userId: string): Promise<UserAuthMethod
 }
 
 /**
- * Sync auth methods from Privy user object
+ * Sync auth methods from user object (legacy - not used with ZO auth)
+ * @deprecated Not used with ZO authentication
  */
-export async function syncUserAuthMethodsFromPrivy(privyUser: PrivyUser): Promise<void> {
+export async function syncUserAuthMethodsFromPrivy(privyUser: any): Promise<void> {
   try {
     const linkedAccounts = privyUser.linkedAccounts || [];
 
@@ -634,12 +634,12 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: PrivyUser): Promis
  * Get user profile in old "members" format
  * This helps with backward compatibility
  */
-export async function getUserInMembersFormat(privyId: string) {
+export async function getUserInMembersFormat(userId: string) {
   try {
     const { data, error } = await supabase
       .from('members')  // This is now a VIEW
       .select('*')
-      .eq('privy_id', privyId)
+      .eq('privy_id', userId)
       .single();
 
     if (error) {
@@ -663,10 +663,10 @@ export async function getUserInMembersFormat(privyId: string) {
  */
 export async function userExists(
   identifier: string,
-  identifierType: 'privy_id' | 'email' | 'wallet' = 'privy_id'
+  identifierType: 'user_id' | 'email' | 'wallet' = 'user_id'
 ): Promise<boolean> {
   try {
-    if (identifierType === 'privy_id') {
+    if (identifierType === 'user_id') {
       const user = await getUserById(identifier);
       return user !== null;
     } else if (identifierType === 'email') {

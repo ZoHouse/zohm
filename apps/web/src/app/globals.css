@@ -845,8 +845,8 @@ next-route-announcer,
   }
 }
 
-/* Privy Modal Glassmorphism Styling - White & Highly Translucent */
-/* Override Privy's default modal backdrop */
+/* Modal Glassmorphism Styling - White & Highly Translucent */
+/* Modern dialog panels with glassmorphism effect */
 div[id^="headlessui-dialog-panel"] {
   background: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(40px) saturate(200%) !important;
@@ -855,7 +855,7 @@ div[id^="headlessui-dialog-panel"] {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
 }
 
-/* Privy modal buttons translucent */
+/* Modal buttons with glassmorphism */
 div[id^="headlessui-dialog-panel"] button {
   background: rgba(255, 255, 255, 0.2) !important;
   backdrop-filter: blur(10px) !important;
@@ -869,7 +869,7 @@ div[id^="headlessui-dialog-panel"] button:hover {
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Privy modal backdrop (the dark overlay behind modal) */
+/* Modal backdrop overlay (the dark overlay behind modal) */
 div[class*="ModalOverlay"] {
   background: rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(12px) !important;

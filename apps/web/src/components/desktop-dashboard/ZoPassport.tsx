@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
-import ZoPassportTest from './ZoPassportTest';
+import { useZoAuth } from '@/hooks/useZoAuth';
+import ZoPassportComponent from './ZoPassportComponent';
+
+import { PrivyUserProfile } from '@/types/privy';
+
+interface ZoPassportProps {
+  className?: string;
+  userProfile?: PrivyUserProfile | null;
+}
 
 /**
  * ZoPassport - Fully wired Zo Passport component
@@ -10,18 +17,33 @@ import ZoPassportTest from './ZoPassportTest';
  * This component automatically fetches and displays:
  * - User avatar (from profile or fallback)
  * - User name (from profile)
- * - Founder status (based on founder_nfts_count)
+ * - Founder status (based on founder_nfts_count, role, or zo_membership)
  * - Profile completion progress
  * 
  * Usage:
  * ```tsx
  * <ZoPassport />
+ * // OR with pre-loaded profile
+ * <ZoPassport userProfile={profile} />
  * ```
- * 
- * No props needed - completely self-contained!
  */
-const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
-  const { userProfile, isLoading } = usePrivyUser();
+const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUserProfile }) => {
+  const { userProfile: authUserProfile, isLoading: authLoading } = useZoAuth();
+
+  // Use prop profile for other fields if provided, but avatar always comes from auth (reactive)
+  const userProfile = propUserProfile !== undefined ? propUserProfile : authUserProfile;
+  const isLoading = propUserProfile !== undefined ? false : authLoading;
+
+  // Calculate founder status
+  const isFounder = useMemo(() => {
+    if (!userProfile) return false;
+
+    const isFounderRole = userProfile.role === 'Founder';
+    const hasFounderNfts = (userProfile.founder_nfts_count ?? 0) > 0;
+    const isZoFounder = userProfile.zo_membership?.toLowerCase() === 'founder';
+
+    return isFounderRole || hasFounderNfts || isZoFounder;
+  }, [userProfile]);
 
   // Calculate profile completion
   const completion = useMemo(() => {
@@ -45,6 +67,7 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
       // Check if field exists and is not empty
       if (field === null || field === undefined) return false;
       if (typeof field === 'string' && field.trim() === '') return false;
+      if (typeof field === 'object' && Object.keys(field).length === 0) return false;
       return true;
     }).length;
 
@@ -54,26 +77,33 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
     };
   }, [userProfile]);
 
-  // 🔍 AUTOMATIC FOUNDER DETECTION
-  // This checks the database and automatically shows the correct passport:
-  // - founder_nfts_count > 0 → FOUNDER passport (pink gradient, white text, founder badge)
-  // - founder_nfts_count === 0 → CITIZEN passport (orange gradient, dark text, no badge)
-  const isFounder = useMemo(() => {
-    if (!userProfile) return false;
-    // User is a founder if they have founder NFTs
-    return (userProfile.founder_nfts_count || 0) > 0;
-  }, [userProfile]);
-
   // Extract display data
+  // 🔑 CRITICAL: Always use authUserProfile for avatar (reactive, updates automatically)
+  // Use propUserProfile only for other fields if needed, but avatar must come from auth hook
   const profile = useMemo(() => {
-    if (!userProfile) return undefined;
+    // Always prefer auth profile for avatar (it's reactive and updates)
+    const profileForAvatar = authUserProfile || userProfile;
+    const profileForName = userProfile || authUserProfile;
+
+    if (!profileForAvatar && !profileForName) return undefined;
+
+    // Get avatar from various sources, prioritizing reactive auth profile
+    let avatar = authUserProfile?.pfp || profileForAvatar?.pfp;
+
+    // Fallback to localStorage if available (matches DashboardHeader behavior)
+    if (!avatar && typeof window !== 'undefined') {
+      const storedAvatar = localStorage.getItem('zo_avatar');
+      if (storedAvatar) {
+        avatar = storedAvatar;
+      }
+    }
 
     return {
-      avatar: userProfile.pfp || undefined,
-      name: userProfile.name || undefined,
+      avatar: avatar || undefined,
+      name: profileForName?.name || undefined,
       isFounder,
     };
-  }, [userProfile, isFounder]);
+  }, [authUserProfile, userProfile, isFounder, propUserProfile]);
 
   // Loading state
   if (isLoading) {
@@ -89,7 +119,7 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
 
   // Render passport
   return (
-    <ZoPassportTest
+    <ZoPassportComponent
       profile={profile}
       completion={completion}
       className={className}
@@ -98,4 +128,3 @@ const ZoPassport: React.FC<{ className?: string }> = ({ className }) => {
 };
 
 export default ZoPassport;
-

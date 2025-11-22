@@ -1,20 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import PhoneLoginModal from './PhoneLoginModal';
+import { useZoAuth } from '@/hooks/useZoAuth';
 
 interface LandingPageProps {
-  onConnect: () => void;
+  onConnect: () => void; // Keep for Email/Wallet buttons
 }
 
 export default function LandingPage({ onConnect }: LandingPageProps) {
+  const router = useRouter();
+  const { reloadProfile } = useZoAuth();
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
 
   const handleButtonPress = () => {
     setIsPressed(true);
-    // Add slight delay for button animation
+    // Open phone login modal instead of Privy
     setTimeout(() => {
-      onConnect();
+      setShowPhoneModal(true);
     }, 200);
+  };
+
+  const handlePhoneLoginSuccess = async (userId: string, userData: any) => {
+    // User logged in successfully via phone
+    console.log('✅ Phone login success, reloading profile...');
+    
+    // Reload the profile to update auth state
+    await reloadProfile();
+    
+    // Refresh page to show dashboard
+    router.refresh();
   };
 
   return (
@@ -106,6 +123,13 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
           </button>
         </div>
       </div>
+
+      {/* Phone Login Modal */}
+      <PhoneLoginModal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        onSuccess={handlePhoneLoginSuccess}
+      />
     </div>
   );
 }

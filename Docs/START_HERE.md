@@ -1,6 +1,23 @@
 # 🚀 Start Here - Zo World Documentation
 
+<<<<<<< Updated upstream
+=======
 **Welcome to Zo World!** This guide will help you get oriented quickly.
+
+---
+
+## 🚨 **IMPORTANT: ZO-Only Migration in Progress**
+
+**Status**: 🎯 Ready to Implement  
+**Decision**: ZO is the single source of truth for identity (no Privy)  
+**Timeline**: 4 weeks to complete migration
+
+**📋 Read These First:**
+1. [`ZO_ONLY_MIGRATION_SUMMARY.md`](./ZO_ONLY_MIGRATION_SUMMARY.md) - Executive summary & timeline
+2. [`ZO_ARCHITECTURE_DIAGRAM.md`](./ZO_ARCHITECTURE_DIAGRAM.md) - Visual architecture diagrams
+3. [`IMPLEMENTATION_STRATEGY_FINAL.md`](./IMPLEMENTATION_STRATEGY_FINAL.md) - Full technical implementation plan
+4. [`HYBRID_ARCHITECTURE_ZOHM.md`](./HYBRID_ARCHITECTURE_ZOHM.md) - ZO + Supabase architecture
+5. [`DATABASE_AUDIT_CURRENT_STATE.md`](./DATABASE_AUDIT_CURRENT_STATE.md) - Current database schema
 
 ---
 
@@ -44,7 +61,8 @@ Learn more in [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 - **Frontend**: Next.js 15, React 19, TypeScript 5, Tailwind CSS
 - **Backend**: Next.js API Routes, Supabase (PostgreSQL)
-- **Authentication**: Privy (wallet + social auth)
+- **Authentication**: **ZO API (Phone + OTP)** ← Migrating from Privy
+- **Identity Layer**: **ZO API** (avatar, wallet, tokens, profile)
 - **Blockchain**: Base (L2), Avalanche Fuji (testnet)
 - **Maps**: Mapbox GL JS (3D visualization)
 - **AI/ML**: AssemblyAI (voice), OpenAI (narrative)
@@ -157,6 +175,7 @@ Before making changes:
 
 ---
 
-**Last Updated**: November 19, 2025  
-**Status**: ✅ Production Ready  
-**Version**: v1.0.0
+**Last Updated**: November 20, 2025  
+**Status**: 🚧 ZO Migration in Progress  
+**Version**: v1.1.0 (ZO-Only Architecture)
+>>>>>>> Stashed changes

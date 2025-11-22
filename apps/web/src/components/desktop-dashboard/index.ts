@@ -6,7 +6,4 @@ export { default as CenterColumn } from './CenterColumn';
 export { default as RightSidebar } from './RightSidebar';
 export { default as DesktopLeaderboard } from './DesktopLeaderboard';
 export { default as ZoPassport } from './ZoPassport';
-export { default as ZoPassportTest } from './ZoPassportTest';
-
-
-
+export { default as ZoPassportComponent } from './ZoPassportComponent';

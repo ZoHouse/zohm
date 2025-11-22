@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { upsertUserFromPrivy } from '@/lib/privyDb';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import type { FormEvent } from 'react';
@@ -21,61 +21,65 @@ function BodyTypeSelector({ value, onChange }: { value: string; onChange: (v: st
       
       <div className="flex gap-4">
         {/* Bro button (male) */}
-      <button
-          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
+        <button
+          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 bg-white/20 backdrop-blur-sm transition-all duration-300 ${
             value === 'bro' 
-              ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
-              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+              ? 'border-zo-accent shadow-[0_0_20px_rgba(207,255,80,0.4)] scale-105' 
+              : 'border-white/30 hover:border-zo-accent/50 hover:bg-white/30'
           }`}
           onClick={() => onChange('bro')}
-        type="button"
-      >
-          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
-            <span className="text-[40px]">👨</span>
+          type="button"
+        >
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-white/10">
+            <img 
+              src="/bro.png" 
+              alt="Bro avatar" 
+              className="w-full h-full object-cover"
+            />
           </div>
-          <span className={`font-rubik text-[14px] font-medium transition-colors ${
-            value === 'bro' ? 'text-zo-accent' : 'text-white/60'
-          }`}>
+          <span className="font-rubik text-[14px] font-medium text-white">
             Bro
           </span>
           {value === 'bro' && (
             <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-zo-accent flex items-center justify-center">
               <span className="text-zo-dark text-[14px] font-bold">✓</span>
-        </div>
+            </div>
           )}
-      </button>
+        </button>
       
         {/* Bae button (female) */}
-      <button
-          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${
+        <button
+          className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 bg-white/20 backdrop-blur-sm transition-all duration-300 ${
             value === 'bae' 
-              ? 'border-zo-accent bg-zo-accent/10 scale-105 shadow-[0_0_20px_rgba(207,255,80,0.4)]' 
-              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+              ? 'border-zo-accent shadow-[0_0_20px_rgba(207,255,80,0.4)] scale-105' 
+              : 'border-white/30 hover:border-zo-accent/50 hover:bg-white/30'
           }`}
           onClick={() => onChange('bae')}
-        type="button"
-      >
-          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-pink-400 to-pink-600">
-            <span className="text-[40px]">👩</span>
+          type="button"
+        >
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center bg-white/10">
+            <img 
+              src="/bae.png" 
+              alt="Bae avatar" 
+              className="w-full h-full object-cover"
+            />
           </div>
-          <span className={`font-rubik text-[14px] font-medium transition-colors ${
-            value === 'bae' ? 'text-zo-accent' : 'text-white/60'
-          }`}>
+          <span className="font-rubik text-[14px] font-medium text-white">
             Bae
           </span>
           {value === 'bae' && (
             <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-zo-accent flex items-center justify-center">
               <span className="text-zo-dark text-[14px] font-bold">✓</span>
-        </div>
+            </div>
           )}
-      </button>
+        </button>
       </div>
     </div>
   );
 }
 
 export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
-  const { user: privyUser, authenticated } = usePrivy();
+  const { authenticated, userProfile, user: privyUser } = useZoAuth();
   
   const [nickname, setNickname] = useState('');
   const [city, setCity] = useState('');
@@ -130,7 +134,7 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     setIsLoading(true);
     setError('');
     
-    if (!privyUser) {
+    if (!authenticated || (!privyUser && !userProfile)) {
       setError('Not authenticated');
       setIsLoading(false);
       return;
@@ -138,7 +142,9 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     
     try {
       console.log('🎬 Saving nickname, body_type, and city to database...');
-      const user = await upsertUserFromPrivy(privyUser, {
+      // For ZO users, use userProfile; for Privy users, use privyUser
+      const authUser = privyUser || userProfile;
+      const user = await upsertUserFromPrivy(authUser as any, {
         name: nickname,
         city: city || null, // Save city if available
         body_type: bodyType, // Save body type for avatar generation
@@ -196,7 +202,7 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
     }
   };
 
-  if (!authenticated || !privyUser) return null;
+  if (!authenticated) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col bg-black w-screen h-screen overflow-hidden">
@@ -246,21 +252,21 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
         </p>
         
         {/* Nickname Input - Mobile: fixed position, Desktop: responsive */}
-        <div className="absolute top-[304px] md:top-[40vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px]">
+        <div className="absolute top-[304px] md:top-[40vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[360px] h-[56px] md:h-[56px]">
           <input
             type="text"
             value={nickname}
             onChange={(e) => setNickname(e.target.value.toLowerCase())}
             placeholder="samurai"
             maxLength={16}
-            className="w-full h-full px-5 bg-black border-[1px] border-[#49494A] rounded-button text-white text-[16px] md:text-[18px] lg:text-[20px] font-rubik font-normal placeholder:text-white/40 focus:outline-none focus:border-zo-accent transition-all duration-200"
+            className="w-full h-full px-5 bg-black border-[1px] border-[#49494A] rounded-button text-white text-[16px] md:text-[16px] font-rubik font-normal placeholder:text-white/40 focus:outline-none focus:border-zo-accent transition-all duration-200"
             autoFocus
             autoComplete="off"
           />
         </div>
         
         {/* Body Type Selector - Mobile: fixed position, Desktop: responsive */}
-        <div className="absolute top-[380px] md:top-[52vh] left-1/2 -translate-x-1/2 scale-100 md:scale-110">
+        <div className="absolute top-[420px] md:top-[50vh] left-1/2 -translate-x-1/2 scale-100 md:scale-100">
           <BodyTypeSelector value={bodyType} onChange={(v) => setBodyType(v as 'bro' | 'bae')} />
         </div>
         
@@ -269,7 +275,7 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
           <button
             onClick={handleEnableLocation}
             disabled={isGettingLocation}
-            className="absolute top-[560px] md:top-[72vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[400px] lg:w-[480px] h-[48px] md:h-[56px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] md:text-[16px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute top-[600px] md:top-[72vh] left-1/2 -translate-x-1/2 w-[312px] md:w-[360px] h-[48px] md:h-[48px] px-5 py-3 bg-white/10 backdrop-blur-sm text-white/80 border-[1px] border-white/20 rounded-button font-rubik text-[14px] md:text-[14px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/15 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
             {isGettingLocation ? '🌐 Detecting location...' : '📍 Enable Location'}
@@ -280,12 +286,12 @@ export default function NicknameStep({ onNicknameSet }: NicknameStepProps) {
         <button
           onClick={handleGetCitizenship}
           disabled={!isValid || isLoading}
-          className={`absolute left-1/2 -translate-x-1/2 bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-[312px] md:w-[400px] lg:w-[480px] h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-            locationEnabled ? 'top-[560px] md:top-[72vh]' : 'top-[624px] md:top-[80vh]'
+          className={`absolute left-1/2 -translate-x-1/2 bg-white flex items-center gap-4 justify-center overflow-clip px-5 py-4 rounded-button w-[312px] md:w-[360px] h-[56px] md:h-[56px] cursor-pointer transition-all duration-300 hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+            locationEnabled ? 'top-[600px] md:top-[72vh]' : 'top-[664px] md:top-[82vh]'
           }`}
           type="button"
         >
-          <span className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-zo-dark leading-normal">
+          <span className="font-rubik text-[16px] md:text-[16px] font-medium text-zo-dark leading-normal">
           {isLoading ? 'Processing...' : 'Get Citizenship'}
           </span>
         </button>

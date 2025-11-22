@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { updateUserProfile } from '@/lib/privyDb';
 
 interface AvatarStepProps {
@@ -9,7 +9,7 @@ interface AvatarStepProps {
 }
 
 export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
-  const { user: privyUser, authenticated } = usePrivy();
+  const { authenticated, userProfile, user: privyUser, reloadProfile } = useZoAuth();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
@@ -27,118 +27,201 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
 
   // Automatically start generation when component loads
   useEffect(() => {
-    if (authenticated && privyUser && !isGenerating && !avatarUrl) {
-      handleGenerateAvatar();
+    if (authenticated && (privyUser || userProfile) && !isGenerating && !avatarUrl) {
+      console.log('🎨 Starting avatar generation on mount...');
+      updateProfileWithBodyType();
     }
-  }, [authenticated, privyUser]);
+  }, [authenticated, privyUser, userProfile]);
 
-  const handleGenerateAvatar = async () => {
-    if (!privyUser?.id) {
+  // ============================================================================
+  // REAL AVATAR GENERATION IMPLEMENTATION
+  // ============================================================================
+
+  // Update profile with body_type (triggers avatar generation on backend)
+  const updateProfileWithBodyType = async () => {
+    const userId = userProfile?.id || privyUser?.id;
+    if (!userId) {
       setError('Not authenticated');
       return;
     }
 
     setIsGenerating(true);
     setError('');
-    console.log('🎨 Starting avatar generation...', { userId: privyUser.id, bodyType });
-
+    
     try {
-      // TODO: Replace with real ZO API call when credentials are available
-      // For now, use fallback unicorn avatar
-      console.log('⚠️ ZO API credentials not configured - using fallback avatar');
+      // Get data from localStorage (set in NicknameStep)
+      const nickname = localStorage.getItem('zo_nickname');
+      const bodyType = localStorage.getItem('zo_body_type') as 'bro' | 'bae';
+      const city = localStorage.getItem('zo_city');
+      const accessToken = localStorage.getItem('zo_access_token');
       
-      // Simulate generation delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Use unicorn avatar as fallback
-      const fallbackAvatar = bodyType === 'bro' 
-        ? '/unicorn images/UnicornMemes_v1-01.png'
-        : '/unicorn images/UnicornMemes_v1-02.png';
-      
-      // Save body_type to database
-      if (privyUser?.id) {
-        const { updateUserProfile } = await import('@/lib/privyDb');
-        const result = await updateUserProfile(privyUser.id, {
-          body_type: bodyType,
-          pfp: fallbackAvatar
-        });
-        
-        if (!result) {
-          console.warn('⚠️ Failed to save to database, but continuing anyway');
-        } else {
-          console.log('✅ Saved to database:', result);
-        }
+      if (!accessToken) {
+        console.warn('⚠️ No ZO access token found - using fallback avatar');
+        useFallbackAvatar();
+        return;
       }
       
-      console.log('✅ Fallback avatar set:', fallbackAvatar);
-      setAvatarUrl(fallbackAvatar);
-      setIsGenerating(false);
+      console.log('📡 Updating profile with body type...', { bodyType, nickname, city });
       
-      // Auto-advance after showing avatar briefly
-      setTimeout(() => {
-        console.log('➡️ Moving to next step...');
-        onAvatarSet();
-      }, 2000);
+      // Call ZO API to update profile (triggers avatar generation on backend)
+      const { updateProfile } = await import('@/lib/zo-api/profile');
+      const result = await updateProfile(accessToken, {
+        first_name: nickname || undefined,
+        body_type: bodyType,
+        place_name: city || undefined
+      }, userId);
+      
+      if (!result.success) {
+        console.error('❌ Failed to update profile:', result.error);
+        throw new Error(result.error || 'Failed to update profile');
+      }
+      
+      console.log('✅ Profile updated, starting polling...');
+      
+      // Start polling immediately
+      startPolling(accessToken, userId, bodyType);
       
     } catch (err) {
-      console.error('❌ Error generating avatar:', err);
-      setError('Failed to generate avatar. Please try again.');
+      console.error('❌ Error updating profile:', err);
+      setError('Failed to update profile');
       setIsGenerating(false);
+      
+      // Fallback to unicorn avatar on error
+      useFallbackAvatar();
     }
   };
 
-  const pollForAvatar = async () => {
-    if (!privyUser?.id) return;
-
+  // Poll for avatar completion
+  const startPolling = async (
+    accessToken: string,
+    userId: string,
+    bodyType: 'bro' | 'bae'
+  ) => {
+    setIsPolling(true);
     let attempts = 0;
-    const maxAttempts = 10; // 10 seconds max (1 attempt per second)
+    const maxAttempts = 15; // 15 attempts * 2 seconds = 30 seconds max
 
     const poll = async () => {
       attempts++;
       console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}...`);
 
       try {
-        const statusResponse = await fetch(`/api/avatar/status?userId=${privyUser.id}`);
-        const data = await statusResponse.json();
-
-        if (data.success && data.avatarUrl) {
-          console.log('🎉 Avatar ready!', data.avatarUrl);
-          setAvatarUrl(data.avatarUrl);
+        // Fetch profile from ZO API
+        const { getProfile } = await import('@/lib/zo-api/profile');
+        const result = await getProfile(accessToken, userId);
+        
+        if (!result.success || !result.profile) {
+          throw new Error(result.error || 'Failed to fetch profile');
+        }
+        
+        const profile = result.profile;
+        
+        console.log('📊 Profile data:', {
+          hasAvatar: !!profile.avatar?.image,
+          avatarUrl: profile.avatar?.image || 'null',
+          avatarStatus: profile.avatar?.status || 'unknown'
+        });
+        
+        // Check if avatar is ready
+        if (profile.avatar?.image && profile.avatar.image.length > 0) {
+          // SUCCESS! Avatar is ready
+          console.log('🎉 Avatar ready!', profile.avatar.image);
+          
+          setAvatarUrl(profile.avatar.image);
+          setIsGenerating(false);
           setIsPolling(false);
           
-          // Auto-advance after showing avatar briefly
+          // Save to Supabase and reload profile
+          try {
+            const { updateUserProfile } = await import('@/lib/privyDb');
+            await updateUserProfile(userId, {
+              pfp: profile.avatar.image,
+              body_type: bodyType
+            });
+            console.log('✅ Saved avatar to Supabase');
+            
+            // Reload profile to update in-memory state with new avatar
+            await reloadProfile();
+            console.log('✅ Profile reloaded with new avatar');
+          } catch (dbErr) {
+            console.warn('⚠️ Failed to save to Supabase, but continuing', dbErr);
+          }
+          
+          // Auto-advance after 2 seconds
           setTimeout(() => {
             console.log('➡️ Moving to next step...');
             onAvatarSet();
           }, 2000);
-          return;
+          
+          return; // Stop polling
         }
-
-        // Continue polling if not ready yet
+        
+        // Avatar not ready yet
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000); // Poll every 1 second
+          console.log('⏳ Avatar not ready, polling again in 2 seconds...');
+          setTimeout(poll, 2000); // Poll every 2 seconds
         } else {
-          console.log('⏱️ Polling timeout - continuing anyway');
+          // TIMEOUT - Use fallback
+          console.warn('⏱️ Polling timeout after 30 seconds, using fallback');
           setIsPolling(false);
-          setError('Avatar generation is taking longer than expected. Continuing anyway...');
-          setTimeout(onAvatarSet, 2000);
+          setIsGenerating(false);
+          useFallbackAvatar();
         }
+        
       } catch (err) {
         console.error('❌ Error polling for avatar:', err);
+        
+        // Retry on error (unless max attempts reached)
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
+          console.log('🔄 Retrying in 2 seconds...');
+          setTimeout(poll, 2000);
         } else {
+          console.error('❌ Max polling attempts reached, using fallback');
           setIsPolling(false);
-          setError('Failed to check avatar status. Continuing anyway...');
-          setTimeout(onAvatarSet, 2000);
+          setIsGenerating(false);
+          useFallbackAvatar();
         }
       }
     };
 
+    // Start polling
     poll();
   };
 
-  if (!authenticated || !privyUser) return null;
+  // Fallback to unicorn avatar
+  const useFallbackAvatar = async () => {
+    const userId = userProfile?.id || privyUser?.id;
+    const bodyType = localStorage.getItem('zo_body_type') as 'bro' | 'bae';
+    
+    const fallbackAvatar = bodyType === 'bro' 
+      ? '/unicorn images/UnicornMemes_v1-01.png'
+      : '/unicorn images/UnicornMemes_v1-02.png';
+    
+    console.log('🦄 Using fallback avatar:', fallbackAvatar);
+    setAvatarUrl(fallbackAvatar);
+    
+    // Save fallback to database
+    if (userId) {
+      try {
+        const { updateUserProfile } = await import('@/lib/privyDb');
+        await updateUserProfile(userId, {
+          pfp: fallbackAvatar,
+          body_type: bodyType
+        });
+        console.log('✅ Saved fallback avatar to Supabase');
+      } catch (err) {
+        console.warn('⚠️ Failed to save fallback to Supabase', err);
+      }
+    }
+    
+    // Auto-advance after showing fallback
+    setTimeout(() => {
+      console.log('➡️ Moving to next step with fallback...');
+      onAvatarSet();
+    }, 2000);
+  };
+
+  if (!authenticated) return null;
 
   const isLoading = isGenerating || isPolling;
 
@@ -172,35 +255,18 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
         {isLoading && !avatarUrl && (
           <>
-            {/* Generating state */}
-            <div className="flex flex-col items-center gap-8 md:gap-12">
-              {/* Avatar placeholder with pulse animation - scales on desktop */}
+            {/* Generating state - Minimal zen-like (matching mobile) */}
+            <div className="flex flex-col items-center justify-center">
+              {/* Single pulsing circle with body type image - breathing effect like mobile */}
               <div className="relative w-[200px] h-[200px] md:w-[280px] md:h-[280px] lg:w-[320px] lg:h-[320px]">
-                <div className="absolute inset-0 rounded-full bg-zo-accent/20 animate-pulse" />
-                <div className="absolute inset-4 rounded-full bg-zo-accent/30 animate-pulse" style={{ animationDelay: '0.5s' }} />
-                <div className="absolute inset-8 rounded-full bg-zo-accent/40 animate-pulse" style={{ animationDelay: '1s' }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-6xl md:text-8xl lg:text-9xl">{bodyType === 'bro' ? '👨' : '👩'}</span>
+                {/* Body type image pulsing (breathing animation like mobile) */}
+                <div className="absolute inset-0 rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center overflow-hidden animate-pulse">
+                  <img 
+                    src={bodyType === 'bro' ? '/bro.png' : '/bae.png'} 
+                    alt={bodyType === 'bro' ? 'Bro' : 'Bae'}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              </div>
-              
-              <div className="text-center space-y-2 md:space-y-4">
-                <h2 className="font-['Syne'] text-[28px] md:text-[42px] lg:text-[56px] font-extrabold text-white uppercase tracking-[0.28px] md:tracking-[0.42px]">
-                  {isGenerating ? 'Generating Avatar' : 'Almost Ready'}
-                </h2>
-                <p className="font-rubik text-[14px] md:text-[18px] lg:text-[20px] text-white/60 w-[312px] md:w-[500px]">
-                  {isGenerating 
-                    ? 'Creating your unique ZO avatar...' 
-                    : 'Checking avatar status...'
-                  }
-                </p>
-              </div>
-
-              {/* Loading indicator */}
-              <div className="flex gap-2 md:gap-3">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" />
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.2s' }} />
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-zo-accent animate-bounce" style={{ animationDelay: '0.4s' }} />
               </div>
             </div>
           </>
@@ -228,10 +294,10 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
               
               <div className="text-center space-y-2 md:space-y-4">
                 <h2 className="font-['Syne'] text-[28px] md:text-[42px] lg:text-[56px] font-extrabold text-white uppercase tracking-[0.28px] md:tracking-[0.42px]">
-                  Avatar Ready!
+                  Citizenship Minted
                 </h2>
                 <p className="font-rubik text-[14px] md:text-[18px] lg:text-[20px] text-white/60 w-[312px] md:w-[500px]">
-                  Your unique ZO identity has been created
+                  Welcome to the brave new world.
                 </p>
               </div>
             </div>
@@ -252,7 +318,7 @@ export default function AvatarStep({ onAvatarSet }: AvatarStepProps) {
               </p>
             </div>
             <button
-              onClick={handleGenerateAvatar}
+              onClick={() => window.location.reload()}
               className="bg-white px-8 py-4 md:px-12 md:py-5 rounded-button font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-zo-dark hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] transition-all duration-300 active:scale-[0.98]"
             >
               Retry

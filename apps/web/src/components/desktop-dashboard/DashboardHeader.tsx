@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 
 interface DashboardHeaderProps {
@@ -23,8 +22,7 @@ function getInitialAvatar(): string {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
-  const { userProfile, isFounder } = usePrivyUser();
-  const { login, logout, authenticated } = usePrivy();
+  const { userProfile, isFounder, authenticated, login, logout } = useZoAuth();
   const [balance, setBalance] = useState(0);
   const [avatar, setAvatar] = useState(getInitialAvatar);
   const [showMenu, setShowMenu] = useState(false);

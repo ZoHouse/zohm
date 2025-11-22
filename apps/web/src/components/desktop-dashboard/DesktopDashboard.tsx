@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { useZoAuth } from '@/hooks/useZoAuth';
 import DashboardHeader from './DashboardHeader';
 import LeftSidebar from './LeftSidebar';
 import CenterColumn from './CenterColumn';
@@ -24,7 +24,7 @@ interface DesktopDashboardProps {
 }
 
 const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [], onLaunchGame }) => {
-  const { userProfile, isLoading } = usePrivyUser();
+  const { userProfile, isLoading } = useZoAuth();
 
   if (isLoading) {
     return (

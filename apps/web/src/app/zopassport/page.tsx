@@ -3,12 +3,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { ZoPassport, ZoPassportTest } from '@/components/desktop-dashboard';
-import { usePrivyUser } from '@/hooks/usePrivyUser';
+import { ZoPassport, ZoPassportComponent } from '@/components/desktop-dashboard';
+import { useZoAuth } from '@/hooks/useZoAuth';
 
 export default function ZoPassportPage() {
   const router = useRouter();
-  const { userProfile, isLoading } = usePrivyUser();
+  const { userProfile, isLoading, authMethod, isFounder } = useZoAuth();
   const [selectedCultures, setSelectedCultures] = useState<string[]>(['business', 'design', 'followyourheart']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -421,10 +421,10 @@ Join me: https://zohm.world
             <p className="text-gray-400 text-center mb-8 md:mb-12">Evolve from Citizen to Founder</p>
             
             {/* Progression Path */}
-            <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap md:flex-nowrap">
+            <div className="flex items-start justify-center gap-6 md:gap-12 flex-wrap md:flex-nowrap min-h-[400px]">
               {/* Stage 1: Citizen */}
-              <div className="flex-shrink-0">
-                <div className="text-center mb-4">
+              <div className="flex-shrink-0 flex flex-col items-center" style={{ width: '240px' }}>
+                <div className="text-center mb-6">
                   <span className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white border mb-2"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -435,10 +435,10 @@ Join me: https://zohm.world
                   </span>
                   <p className="text-xs text-gray-500">Your starting point</p>
                 </div>
-                <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassportTest
+                <div className="flex items-center justify-center">
+                  <ZoPassportComponent
                     profile={{
-                      avatar: "/images/rank2.jpeg",
+                      avatar: "/bae.png",
                       name: "New Citizen",
                       isFounder: false,
                     }}
@@ -448,10 +448,10 @@ Join me: https://zohm.world
               </div>
 
               {/* Progression Steps */}
-              <div className="flex flex-col items-center gap-4 px-4 md:px-8 flex-shrink-0">
-                <div className="space-y-3 max-w-[280px]">
+              <div className="flex flex-col items-center justify-center gap-4 px-4 md:px-8 flex-shrink-0">
+                <div className="space-y-4 max-w-[280px]">
                   <div className="text-center">
-                    <p className="text-xs text-gray-400 mb-2">Complete your journey by:</p>
+                    <p className="text-sm text-gray-400 mb-4">Complete your journey by:</p>
                   </div>
                   
                   <div className="space-y-2">
@@ -487,8 +487,8 @@ Join me: https://zohm.world
               </div>
 
               {/* Stage 2: Founder */}
-              <div className="flex-shrink-0">
-                <div className="text-center mb-4">
+              <div className="flex-shrink-0 flex flex-col items-center" style={{ width: '240px' }}>
+                <div className="text-center mb-6">
                   <span className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white border mb-2"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -500,10 +500,10 @@ Join me: https://zohm.world
                   </span>
                   <p className="text-xs text-gray-400">Elite status unlocked</p>
                 </div>
-                <div style={{ transform: 'scale(0.85)' }}>
-                  <ZoPassportTest
+                <div className="flex items-center justify-center">
+                  <ZoPassportComponent
                     profile={{
-                      avatar: "/images/rank1.jpeg",
+                      avatar: "/bae (13).png",
                       name: "Founder",
                       isFounder: true,
                     }}
@@ -548,18 +548,20 @@ Join me: https://zohm.world
               <div className="relative h-full flex">
                 {/* Left Side: Passport */}
                 <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10">
-                  <div style={{ transform: 'scale(1.3)' }}>
-                    <ZoPassportTest
-                      profile={{
-                        avatar: userProfile?.pfp || "/images/rank1.jpeg",
-                        name: userProfile?.name || "New Citizen",
-                        isFounder: (userProfile?.founder_nfts_count || 0) > 0,
-                      }}
-                      completion={{
-                        done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
-                        total: 10,
-                      }}
-                    />
+                  <div className="flex items-center justify-center">
+                    <div style={{ transform: 'scale(1.4)', transformOrigin: 'center' }}>
+                      <ZoPassportComponent
+                        profile={{
+                          avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                          name: userProfile?.name || "New Citizen",
+                          isFounder: isFounder,
+                        }}
+                        completion={{
+                          done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                          total: 10,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -14,11 +14,11 @@ import type { User as PrivyUser } from '@privy-io/react-auth';
 // ============================================
 
 export interface UserRecord {
-  id: string;  // Privy DID
+  id: string;  // Privy DID (or ZO user_id for ZO-only users)
   name: string | null;
   bio: string | null;
   pfp: string | null;
-  culture: string | null;
+  culture: string | null;  // Legacy TEXT field (deprecated, use cultures JSONB)
   city: string | null;
   email: string | null;
   phone: string | null;
@@ -29,14 +29,55 @@ export interface UserRecord {
   lng: number | null;
   role: 'Founder' | 'Member' | 'Citizen';
   founder_nfts_count: number;
-  zo_balance: number;  // User's ZO token balance
+  zo_balance: number;  // User's ZO token balance (cached)
   calendar_url: string | null;
   main_quest_url: string | null;
   side_quest_url: string | null;
   onboarding_completed: boolean;
   onboarding_step: number;
   body_type: 'bro' | 'bae' | null;  // ZO API avatar generation body type
-  profile_synced_at: string | null;  // Last sync with ZO API
+  profile_synced_at: string | null;  // Legacy field (deprecated, use zo_synced_at)
+  
+  // ZO Identity fields (from migration 010)
+  zo_user_id: string | null;  // ZO API user.id (unique identifier)
+  zo_pid: string | null;  // ZO API user.pid (passport ID)
+  
+  // ZO Auth tokens
+  zo_token: string | null;  // JWT access token
+  zo_token_expiry: string | null;  // Access token expiry timestamp
+  zo_refresh_token: string | null;  // Refresh token
+  zo_refresh_token_expiry: string | null;  // Refresh token expiry timestamp
+  
+  // ZO Device credentials (required for API calls)
+  zo_device_id: string | null;  // Device ID from ZO API response
+  zo_device_secret: string | null;  // Device secret from ZO API response
+  
+  // Additional ZO auth fields (from verify-otp response)
+  zo_legacy_token: string | null;  // Legacy token from ZO API (deprecated, use zo_token)
+  zo_legacy_token_valid_till: string | null;  // Legacy token expiry timestamp
+  zo_client_key: string | null;  // Client key used for ZO API authentication
+  zo_device_info: Record<string, any> | null;  // Device info JSON from ZO API response
+  zo_roles: string[] | null;  // Array of user roles from ZO API (e.g., ["property-manager", "housekeeping-admin"])
+  zo_membership: string | null;  // ZO API membership: 'founder' | 'citizen' | 'none' (stored as-is, separate from role column)
+  
+  // Wallet tracking (for token balance)
+  primary_wallet_address: string | null;  // Primary wallet for balance fetching
+  wallet_chain_id: number | null;  // Chain ID (default: 8453 for Base)
+  balance_last_synced_at: string | null;  // Last time balance was synced
+  
+  // Cultures (JSONB array - replaces culture TEXT field)
+  cultures: Array<{
+    key: string;
+    name: string;
+    icon?: string;
+    description?: string;
+  }> | null;
+  
+  // ZO Sync metadata
+  zo_synced_at: string | null;  // Last sync timestamp from ZO API
+  zo_sync_status: 'never' | 'synced' | 'stale' | 'error' | null;  // Sync status
+  
+  // Timestamps
   created_at: string;
   last_seen: string | null;
   updated_at: string;
@@ -82,10 +123,11 @@ export interface FullUserProfile extends UserRecord {
 // ============================================
 
 /**
- * Get user by Privy ID
+ * Get user by ID (works for both Privy DID and ZO user ID)
  */
 export async function getUserById(privyId: string): Promise<UserRecord | null> {
   try {
+    console.log('🔍 [getUserById] Looking up user by id:', privyId);
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -93,13 +135,39 @@ export async function getUserById(privyId: string): Promise<UserRecord | null> {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // Not found
+      console.log('🔍 [getUserById] Query by id error:', error.code, error.message);
+      if (error.code === 'PGRST116') {
+        console.log('🔍 [getUserById] User not found by id, trying zo_user_id...');
+        // Try looking up by zo_user_id instead
+        const { data: userByZoId, error: zoError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('zo_user_id', privyId)
+          .single();
+        
+        if (zoError) {
+          console.log('🔍 [getUserById] Query by zo_user_id error:', zoError.code, zoError.message);
+          if (zoError.code === 'PGRST116') {
+            console.log('❌ [getUserById] User not found by zo_user_id either');
+            return null;
+          }
+          throw zoError;
+        }
+        
+        console.log('✅ [getUserById] Found user by zo_user_id:', {
+          id: userByZoId?.id,
+          zo_user_id: userByZoId?.zo_user_id,
+          name: userByZoId?.name
+        });
+        return userByZoId;
+      }
       throw error;
     }
 
+    console.log('✅ [getUserById] Found user by id:', data?.id);
     return data;
   } catch (error) {
-    console.error('Error fetching user by ID:', error);
+    console.error('❌ [getUserById] Error fetching user by ID:', error);
     return null;
   }
 }

@@ -29,12 +29,12 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   const [mapKey, setMapKey] = React.useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [balance, setBalance] = useState(0);
-
+  
   // Get user location for map centering
   const userLat = userProfile?.lat || 0;
   const userLng = userProfile?.lng || 0;
   const hasLocation = userLat !== 0 && userLng !== 0;
-
+  
   // game1111 quest cooldown (12 hours)
   // Hook signature: useQuestCooldown(questId, userId)
   const { canPlay, nextAvailableAt } = useQuestCooldown(
@@ -299,70 +299,65 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
             overflow: 'hidden',
           }}
         >
-          {/* MapCanvas Component */}
-          {hasLocation ? (
-            <div 
-              key={mapKey}
-              className="absolute" 
-              style={{ 
-                top: '-30%',
-                left: 0,
-                right: 0,
-                bottom: '-30%',
-                borderRadius: DashboardRadius.lg, 
-                overflow: 'hidden',
+          {/* MapCanvas Component - Always render to show location button when needed */}
+          <div 
+            key={mapKey}
+            className="absolute" 
+            style={{ 
+              top: '-30%',
+              left: 0,
+              right: 0,
+              bottom: '-30%',
+              borderRadius: DashboardRadius.lg, 
+              overflow: 'hidden',
+            }}
+          >
+            <MapCanvas
+              events={[]}
+              nodes={[]}
+              flyToEvent={null}
+              flyToNode={null}
+              shouldAnimateFromSpace={false}
+              userLocation={hasLocation ? { lat: userLat, lng: userLng } : null}
+              isMiniMap={true}
+              className="w-full h-full"
+              userId={userProfile?.id}
+              onLocationSaved={(lat, lng) => {
+                console.log('✅ Location saved! Reloading to show map...');
+                window.location.reload();
               }}
-            >
-              <MapCanvas
-                events={[]}
-                nodes={[]}
-                flyToEvent={null}
-                flyToNode={null}
-                shouldAnimateFromSpace={false}
-                userLocation={{ lat: userLat, lng: userLng }}
-                isMiniMap={true}
-                className="w-full h-full"
-              />
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: DashboardColors.background.tertiary }}>
-              <p style={{
-                fontFamily: DashboardTypography.fontFamily.primary,
-                fontSize: DashboardTypography.size.body.fontSize,
-                color: DashboardColors.text.secondary,
-              }}>
-                Location not available
-              </p>
+            />
+          </div>
+
+          {/* Overlay - Enter Map Button (only show when user has location) */}
+          {hasLocation && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
+              <button
+                onClick={onOpenMap}
+                className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200"
+                style={{
+                  backgroundColor: 'rgba(18, 18, 18, 0.3)',
+                  backdropFilter: `blur(${DashboardBlur.light})`,
+                  WebkitBackdropFilter: `blur(${DashboardBlur.light})`,
+                  borderColor: 'rgba(255, 255, 255, 0.16)',
+                  borderRadius: DashboardRadius.pill,
+                  padding: `${DashboardSpacing.md} ${DashboardSpacing.xl}`,
+                }}
+              >
+                <p style={{
+                  fontFamily: DashboardTypography.fontFamily.primary,
+                  fontWeight: DashboardTypography.fontWeight.medium,
+                  fontSize: DashboardTypography.size.small.fontSize,
+                  lineHeight: DashboardTypography.size.small.lineHeight,
+                  letterSpacing: '0.1em',
+                  color: DashboardColors.text.primary,
+                  textTransform: 'uppercase',
+                }}>
+                  Enter Map
+                </p>
+              </button>
             </div>
           )}
-
-          {/* Overlay - Enter Map Button */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
-            <button
-              onClick={onOpenMap}
-              className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200"
-              style={{
-                backgroundColor: 'rgba(18, 18, 18, 0.3)',
-                backdropFilter: `blur(${DashboardBlur.light})`,
-                WebkitBackdropFilter: `blur(${DashboardBlur.light})`,
-                borderColor: 'rgba(255, 255, 255, 0.16)',
-                borderRadius: DashboardRadius.pill,
-                padding: `${DashboardSpacing.md} ${DashboardSpacing.xl}`,
-              }}
-            >
-              <p style={{
-                fontFamily: DashboardTypography.fontFamily.primary,
-                fontWeight: DashboardTypography.fontWeight.medium,
-                fontSize: DashboardTypography.size.small.fontSize,
-                lineHeight: DashboardTypography.size.small.lineHeight,
-                letterSpacing: '0.1em',
-                color: DashboardColors.text.primary,
-                textTransform: 'uppercase',
-              }}>
-                Enter Map
-              </p>
-            </button>
-          </div>
         </div>
       </div>
 

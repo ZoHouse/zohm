@@ -98,7 +98,7 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
             
             {/* Rank 2 - Left (Second) */}
             {leaderboard.length >= 2 && (
-              <div className="absolute flex flex-col items-center gap-[2px]" style={{ top: '38px', left: '18%' }}>
+              <div className="absolute flex flex-col items-center gap-[2px]" style={{ top: '38px', left: '18%', transform: 'translateX(-50%)' }}>
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[1].avatar || '/images/rank2.jpeg'} 

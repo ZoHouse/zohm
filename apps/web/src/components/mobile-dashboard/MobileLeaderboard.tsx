@@ -60,7 +60,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 1 - Center */}
             {leaderboard.length >= 1 && (
-              <div className="absolute top-[-2px] left-[135px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[-2px] left-[50%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[0].avatar || '/images/rank1.jpeg'} 
@@ -68,7 +68,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[0].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">
@@ -79,7 +79,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 2 - Left */}
             {leaderboard.length >= 2 && (
-              <div className="absolute top-[35px] left-[30px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[35px] left-[18%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[1].avatar || '/images/rank2.jpeg'} 
@@ -87,7 +87,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[1].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">
@@ -98,7 +98,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 3 - Right */}
             {leaderboard.length >= 3 && (
-              <div className="absolute top-[55px] left-[230px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[55px] left-[82%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[2].avatar || '/images/rank3.jpeg'} 
@@ -106,7 +106,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[2].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">

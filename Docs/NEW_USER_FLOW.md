@@ -50,22 +50,28 @@ This document traces the complete flow from landing page to dashboard for a new 
 │                                                                       │
 │  4. ONBOARDING2 - Profile Setup                                      │
 │                                                                       │
-│     Step 1: Nickname                                                 │
-│     ├─ Enter nickname                                                │
-│     ├─ Validate (3-20 chars)                                         │
-│     └─ Save to database                                              │
+│     Step 1: Nickname + Body Type Selection                           │
+│     ├─ Enter nickname (4-16 chars, alphanumeric)                     │
+│     ├─ Select body type: Bro or Bae                                  │
+│     ├─ Get city from location                                        │
+│     └─ Save to localStorage                                          │
 │                                                                       │
-│     Step 2: Portal Animation                                         │
-│     └─ Visual transition showing entry to Zo World                   │
+│     Step 2: Avatar Generation                                        │
+│     ├─ Automatically generates avatar based on body type             │
+│     ├─ ZO API backend avatar generator returns URL                   │
+│     ├─ Polls for completion (~10-30 seconds)                         │
+│     └─ Fallback to unicorn avatar if generation fails                │
 │                                                                       │
-│     Step 3: Avatar Selection                                         │
-│     ├─ Choose avatar style                                           │
-│     ├─ AI generates avatar via ZO API                                │
-│     ├─ Preview and confirm                                           │
-│     └─ Save avatar URL to profile                                    │
+│     Step 3: Citizens Card                                            │
+│     ├─ Shows welcome screen with avatar                              │
+│     ├─ Displays: nickname, city, avatar                              │
+│     └─ "Quantum Sync" button to continue                             │
+│                                                                       │
+│     Step 4: Portal Animation                                         │
+│     └─ Magical transition showing entry to Zo World                  │
 │                                                                       │
 │     Database updates:                                                │
-│     UPDATE users SET name = ?, pfp = ? WHERE id = ?                  │
+│     UPDATE users SET name = ?, body_type = ?, city = ?, pfp = ?     │
 │                                                                       │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │
@@ -89,10 +95,11 @@ This document traces the complete flow from landing page to dashboard for a new 
 │     ├─ ✅ Valid: Continue to game                                    │
 │     └─ ❌ Invalid: Show error, retry                                 │
 │                                                                       │
-│     Step 4: Game1111 Counter                                         │
-│     ├─ Tap button rapidly for 11 seconds                             │
-│     ├─ Score calculated: taps + accuracy                             │
-│     └─ Tokens earned: score / 10                                     │
+│     Step 4: Game1111 - Timing Game                                   │
+│     ├─ Counter loops 0-9999 (2 seconds per cycle)                    │
+│     ├─ User must STOP counter at exactly 1111                        │
+│     ├─ Score = final counter value when stopped                      │
+│     └─ Tokens: 50 base + proximity bonus (closer = more tokens)     │
 │                                                                       │
 │     Database updates:                                                │
 │     INSERT INTO quest_completions (user_id, quest_id, score, ...)   │
@@ -141,7 +148,12 @@ This document traces the complete flow from landing page to dashboard for a new 
 │     Desktop Panels:                                                   │
 │     ├─ Left: Profile card, Zo Passport button                        │
 │     ├─ Right: Leaderboard, Local Events                              │
-│     └─ Bottom: Quests button                                         │
+│     └─ Bottom: Quests button          
+Map View:                                                         │
+│     ├─ Space-to-location animation (if location granted)             │
+│     ├─ Mapbox with events and nodes                                  │
+│     ├─ Global view (all events) or Local view (100km radius)         │
+│     └─ User can explore, click events, view nodes                               │
 │                                                                       │
 │     Mobile View:                                                      │
 │     ├─ Header: Profile photo, balance, quest button                  │
@@ -252,89 +264,198 @@ isLoading = true  // fetching profile
 
 **File**: `apps/web/src/components/Onboarding2.tsx`
 
-#### Part A: Nickname Step
+**Flow**: 4 steps managed by orchestrator:
+1. NicknameStep (nickname + body type + city)
+2. AvatarStep (automatic generation)
+3. CitizenCard (welcome screen)
+4. PortalAnimation (transition)
+
+---
+
+#### Part A: Nickname + Body Type Selection
 
 **File**: `apps/web/src/components/NicknameStep.tsx`
 
 **UI**:
 - Text input for nickname
-- Validation: 3-20 characters
-- "Next" button
+- Validation: 4-16 characters, alphanumeric only
+- Body type selector: "Bro" or "Bae" buttons with preview images
+- City input (from location or manual entry)
+- "Next" button (disabled until all valid)
 
-**User Action**: Enters nickname, clicks Next
-
-**API Call**:
+**Validations**:
 ```javascript
-POST /api/zo/profile/update
-Body: {
-  userId: "...",
-  name: "samurai"
-}
+// Nickname
+- Length: 4-16 characters
+- Format: lowercase alphanumeric only (a-z, 0-9)
+- Availability check: Must be unique
+
+// Body Type
+- Must select one: 'bro' or 'bae'
+
+// City
+- Must have location enabled
+- City name required
 ```
 
-**Database**:
-```sql
-UPDATE users SET name = 'samurai' WHERE id = ?
-```
+**User Action**: 
+1. Enters nickname (e.g., "samurai")
+2. Selects body type (e.g., "Bro")
+3. Grants location permission → City auto-filled
+4. Clicks "Next"
 
-#### Part B: Portal Animation
-
-**Duration**: ~3 seconds
-**Purpose**: Visual transition into Zo World
-**No user interaction required**
-
-#### Part C: Avatar Selection
-
-**File**: `apps/web/src/components/AvatarStep.tsx`
-
-**UI**:
-- Avatar style selector (cartoon, realistic, etc.)
-- "Generate Avatar" button
-- Preview of generated avatar
-- "Confirm" button
-
-**User Action**: Selects style, generates, confirms
-
-**API Calls**:
-1. **Generate Avatar**:
-   ```javascript
-   POST https://api.io.zo.xyz/api/avatars/generate
-   Body: {
-     user_id: "...",
-     style: "cartoon"
-   }
-   Response: {
-     job_id: "job_123"
-   }
-   ```
-
-2. **Poll Status** (every 2 seconds):
-   ```javascript
-   GET https://api.io.zo.xyz/api/avatars/status/{job_id}
-   Response: {
-     status: "completed",
-     avatar_url: "https://..."
-   }
-   ```
-
-3. **Save Avatar**:
-   ```javascript
-   POST /api/zo/profile/update
-   Body: {
-     userId: "...",
-     pfp: "https://..."
-   }
-   ```
-
-**Database**:
-```sql
-UPDATE users SET pfp = 'https://...' WHERE id = ?
+**What Saves**:
+```javascript
+// Saved to localStorage (not database yet)
+localStorage.setItem('zo_nickname', 'samurai')
+localStorage.setItem('zo_body_type', 'bro')
+localStorage.setItem('zo_city', 'San Francisco, CA')
 ```
 
 **State Change**:
 ```javascript
-onboardingStep = 'voice'
+step = 'avatar'
 ```
+
+---
+
+#### Part B: Avatar Generation (Automatic)
+
+**File**: `apps/web/src/components/AvatarStep.tsx`
+
+**UI**:
+- Loading spinner with "Generating your avatar..." text
+- Progress animation
+- Automatic - no user interaction required
+
+**What Happens**:
+1. **Reads from localStorage**:
+   ```javascript
+   const nickname = localStorage.getItem('zo_nickname')
+   const bodyType = localStorage.getItem('zo_body_type')  // 'bro' or 'bae'
+   const city = localStorage.getItem('zo_city')
+   ```
+
+2. **Updates Profile via ZO API**:
+   ```javascript
+   POST https://api.io.zo.xyz/api/profile
+   Headers: { Authorization: 'Bearer {access_token}' }
+   Body: {
+     first_name: "samurai",
+     body_type: "bro",
+     place_name: "San Francisco, CA"
+   }
+   ```
+   - This triggers avatar generation in backend avatar generator
+
+3. **Polls for Avatar Completion** (every 2 seconds):
+   ```javascript
+   GET https://api.io.zo.xyz/api/profile
+   Headers: { Authorization: 'Bearer {access_token}' }
+   
+   // Check response
+   if (profile.pfp && profile.pfp !== '') {
+     // Avatar ready!
+     avatarUrl = profile.pfp
+   }
+   ```
+
+4. **Saves Avatar URL**:
+   ```javascript
+   localStorage.setItem('zo_avatar', avatarUrl)
+   ```
+
+**Fallback**:
+- If generation fails or times out (>60 seconds)
+- Uses unicorn avatar as fallback
+- User can continue without waiting
+
+**Duration**: ~10-30 seconds (varies by ZO API load)
+
+**State Change**:
+```javascript
+step = 'card'
+```
+
+---
+
+#### Part C: Citizens Card (Welcome Screen)
+
+**File**: `apps/web/src/components/CitizenCard.tsx`
+
+**UI**:
+- Large circular avatar with glow effect
+- User's nickname (e.g., "samurai.zo")
+- City with pin emoji (e.g., "📍 San Francisco, CA")
+- Welcome message: "WELCOME TO ZO WORLD"
+- "Quantum Sync" button
+
+**Display Data**:
+```javascript
+// Read from localStorage
+const nickname = localStorage.getItem('zo_nickname')
+const avatar = localStorage.getItem('zo_avatar')
+const city = localStorage.getItem('zo_city')
+```
+
+**User Action**: Clicks "Quantum Sync"
+
+**What Happens**:
+- Triggers portal animation
+- No database updates yet
+
+**State Change**:
+```javascript
+step = 'portal'
+```
+
+---
+
+#### Part D: Portal Animation
+
+**File**: `apps/web/src/components/PortalAnimation.tsx`
+
+**UI**:
+- Animated portal opening
+- Stone disks spinning
+- Visual transition effect
+
+**Duration**: ~3-5 seconds
+
+**User Action**: None (automatic)
+
+**After Animation Completes**:
+```javascript
+onboardingStep = 'voice'
+// Goes to QuestAudio component
+```
+
+---
+
+### Summary of Onboarding2 Flow
+
+```
+NicknameStep
+├─ Input: nickname, body type, city
+└─ Save: localStorage only
+     ↓
+AvatarStep
+├─ Generate: backend avatar generator
+├─ Poll: profile endpoint until avatar URL ready
+└─ Save: avatar URL to localStorage
+     ↓
+CitizenCard
+├─ Display: welcome screen
+└─ Action: "Quantum Sync" button
+     ↓
+PortalAnimation
+├─ Play: 3-5 second animation
+└─ Complete: go to voice quest
+```
+
+**No database writes during Onboarding2!**
+- Everything stored in localStorage
+- Database updated later in QuestComplete
 
 ---
 
@@ -387,32 +508,73 @@ onboardingStep = 'voice'
 - Display what was heard
 - Allow retry
 
-#### Part B: Game1111 Counter
+#### Part B: Game1111 - Stop The Counter
 
 **File**: `apps/web/src/hooks/useGame1111Engine.ts`
 
+**Game Mechanics**:
+- **Goal**: Stop the counter at exactly 1111
+- **Counter**: Loops 0 → 9999 continuously (2 seconds per full cycle)
+- **Tech**: requestAnimationFrame for smooth 60fps
+- **Anti-cheat**: Tab visibility detection (game pauses if user switches tabs)
+- **Protection**: Double-click prevention
+
 **UI**:
-- Large tap button
-- 11-second timer
-- Real-time score counter
-- Accuracy meter
+- QUANTUM SYNC logo at top
+- Large counter display (4 digits)
+- "STOP" button at bottom
+- Background video (different for mobile/desktop)
 
-**User Action**: Taps button rapidly for 11 seconds
+**User Action**: 
+1. Watches counter loop continuously
+2. Clicks "STOP" when counter shows 1111
+3. Game freezes at stopped value
 
-**Scoring**:
+**Scoring Formula**:
 ```javascript
-// Base score
-score = totalTaps
+// Target value
+TARGET = 1111
 
-// Accuracy bonus (consistency in timing)
-accuracyBonus = calculateAccuracyBonus(tapTimings)
+// Calculate distance from target
+distance = Math.abs(stoppedValue - 1111)
 
-// Final score
-finalScore = score + accuracyBonus
+// Proximity factor (0.0 to 1.0)
+proximityFactor = Math.max(0, 1 - (distance / 1111))
 
-// Tokens earned
-tokensEarned = Math.floor(finalScore / 10)
+// Token calculation
+baseTokens = 50
+proximityBonus = proximityFactor * 150  // Max 150 bonus
+totalTokens = baseTokens + proximityBonus
+
+// Example scores:
+// 1111 (exact) → 50 + 150 = 200 tokens
+// 1110 or 1112 → ~199 tokens
+// 1000 → ~91 tokens
+// 0500 → ~77 tokens
 ```
+
+**Win/Loss Determination**:
+```javascript
+// If within 500 of target = WON (visual)
+if (distance < 500) {
+  phase = 'WON'
+  videoResult = 'success'
+} else {
+  phase = 'LOST'
+  videoResult = 'fail'
+}
+
+// Note: User always gets tokens regardless
+// "LOST" just shows fail video instead of success video
+```
+
+**Result Videos** (2 seconds):
+- **Success**: Shows if stopped within 500 of 1111
+  - Mobile: `/gamevoicequest/mobile_zozozosuccess.mp4`
+  - Desktop: `/gamevoicequest/desktop_zozozosuccess.mp4`
+- **Fail**: Shows if stopped >500 away from 1111
+  - Mobile: `/gamevoicequest/mobile_zozozofail.mp4`
+  - Desktop: `/gamevoicequest/desktop_zozozofail.mp4`
 
 **Database**:
 ```sql
@@ -600,7 +762,7 @@ CREATE TABLE quest_completions (
 |----------|--------|---------|
 | `/api/auth/send-otp` | POST | Send OTP to phone |
 | `/api/auth/verify-otp` | POST | Verify OTP code |
-| `/api/avatars/generate` | POST | Generate AI avatar |
+| `/api/profile` | POST | Update profile & trigger avatar generation |
 | `/api/avatars/status/{job_id}` | GET | Poll avatar status |
 
 ### Internal API
@@ -654,9 +816,9 @@ Landing      Onboarding2 → QuestAudio → QuestComplete → Dashboard
 **Action**: If both fail, show error and retry
 
 ### Avatar Generation Failed
-**When**: Step 3 (Avatar Selection)
-**Error**: ZO API timeout or error
-**Action**: Show default avatar, allow retry
+**When**: Step 3 (Avatar Generation)
+**Error**: Backend avatar generator timeout or error
+**Action**: Use unicorn fallback avatar, allow user to continue
 
 ### Network Error
 **When**: Any API call

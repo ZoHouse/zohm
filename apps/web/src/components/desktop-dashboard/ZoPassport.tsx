@@ -42,15 +42,6 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
     const hasFounderNfts = (userProfile.founder_nfts_count ?? 0) > 0;
     const isZoFounder = userProfile.zo_membership?.toLowerCase() === 'founder';
 
-    console.log('🔍 [ZoPassport] Founder check:', {
-      role: userProfile.role,
-      nfts: userProfile.founder_nfts_count,
-      membership: userProfile.zo_membership,
-      isFounderRole,
-      hasFounderNfts,
-      isZoFounder
-    });
-
     return isFounderRole || hasFounderNfts || isZoFounder;
   }, [userProfile]);
 
@@ -96,16 +87,6 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
 
     if (!profileForAvatar && !profileForName) return undefined;
 
-    // 🔍 DEEP DEBUG: Log what avatar we're using
-    console.log('🎨 [ZoPassport] Rendering with avatar:', {
-      pfp: profileForAvatar?.pfp || 'NULL',
-      hasPfp: !!profileForAvatar?.pfp,
-      willShow: profileForAvatar?.pfp || '/images/rank1.jpeg (FALLBACK)',
-      source: authUserProfile ? 'authUserProfile (REACTIVE)' : 'propUserProfile (STATIC)',
-      authPfp: authUserProfile?.pfp || 'NULL',
-      propPfp: propUserProfile?.pfp || 'NULL',
-    });
-
     // Get avatar from various sources, prioritizing reactive auth profile
     let avatar = authUserProfile?.pfp || profileForAvatar?.pfp;
 
@@ -113,7 +94,6 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
     if (!avatar && typeof window !== 'undefined') {
       const storedAvatar = localStorage.getItem('zo_avatar');
       if (storedAvatar) {
-        console.log('🎨 [ZoPassport] Using cached avatar from localStorage');
         avatar = storedAvatar;
       }
     }
@@ -139,17 +119,11 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
 
   // Render passport
   return (
-    <div className="relative">
-      <ZoPassportComponent
-        profile={profile}
-        completion={completion}
-        className={className}
-      />
-      {/* Debug Info - Temporary */}
-      <div className="absolute top-0 left-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none max-w-[200px] break-words">
-        R:{userProfile?.role} N:{userProfile?.founder_nfts_count} M:{userProfile?.zo_membership}
-      </div>
-    </div>
+    <ZoPassportComponent
+      profile={profile}
+      completion={completion}
+      className={className}
+    />
   );
 };
 

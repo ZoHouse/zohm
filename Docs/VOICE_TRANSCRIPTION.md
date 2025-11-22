@@ -597,15 +597,11 @@ The system has **multiple validation checkpoints** to ensure "zo" is detected. H
 **What the user sees:**
 
 ```
-❌ Voice Authentication Failed
+❌ Didn't hear "zo"
 
-You need to say a word containing "zo".
+You said: "hello world"
 
-What was detected: "hello world"
-
-Examples: "zo", "mozo", "fozo", "zo zo"
-
-Please try again!
+Try: "zo" or "zo zo"
 ```
 
 **Console logs:**
@@ -643,15 +639,11 @@ Please try again!
 **What the user sees:**
 
 ```
-❌ Voice Authentication Failed
+❌ Didn't hear "zo"
 
-You need to say a word containing "zo".
+You said: "hello there"
 
-What was detected: "hello there"
-
-Examples: "zo", "mozo", "fozo", "zo zo"
-
-Please try again!
+Try: "zo" or "zo zo"
 ```
 
 **Console logs:**
@@ -685,14 +677,9 @@ Please try again!
 **What the user sees:**
 
 ```
-❌ Voice Authentication Failed
+❌ Couldn't hear you
 
-Could not detect your voice.
-
-Please try again and make sure to:
-• Say a word with "zo" in it
-• Speak close to the microphone
-• Reduce background noise
+Speak closer to the mic and say "zo"
 ```
 
 **Common causes:**
@@ -714,16 +701,9 @@ Please try again and make sure to:
 **What the user sees:**
 
 ```
-❌ Voice Authentication Failed
+❌ Couldn't hear you
 
-Could not transcribe your audio.
-
-Error: Network request failed
-
-Please try again and make sure to:
-• Say a word with "zo" in it
-• Speak close to the microphone
-• Reduce background noise
+Speak closer to the mic and say "zo"
 ```
 
 ---

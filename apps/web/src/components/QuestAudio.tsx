@@ -842,11 +842,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               
               // Show error popup
               alert(
-                '❌ Voice Authentication Failed\n\n' +
-                'You need to say a word containing "zo".\n\n' +
-                'What was detected: "' + transcription.text + '"\n\n' +
-                'Examples: "zo", "mozo", "fozo", "zo zo"\n\n' +
-                'Please try again!'
+                '❌ Didn\'t hear "zo"\n\n' +
+                'You said: "' + transcription.text + '"\n\n' +
+                'Try: "zo" or "zo zo"'
               );
               
               // Reset to idle state so user can try again
@@ -869,12 +867,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             transcriptionTextRef.current = null;
             
             alert(
-              '❌ Voice Authentication Failed\n\n' +
-              'Could not transcribe your audio.\n\n' +
-              'Please try again and make sure to:\n' +
-              '• Say "Zo Zo Zo" clearly\n' +
-              '• Speak close to the microphone\n' +
-              '• Reduce background noise'
+              '❌ Couldn\'t hear you\n\n' +
+              'Speak closer to the mic and say "zo"'
             );
             
             // Reset to idle state so user can try again
@@ -930,11 +924,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               transcriptionTextRef.current = fallbackText;
               
               alert(
-                '❌ Voice Authentication Failed\n\n' +
-                'You need to say a word containing "zo".\n\n' +
-                'What was detected: "' + fallbackTranscript + '"\n\n' +
-                'Examples: "zo", "mozo", "fozo", "zo zo"\n\n' +
-                'Please try again!'
+                '❌ Didn\'t hear "zo"\n\n' +
+                'You said: "' + fallbackTranscript + '"\n\n' +
+                'Try: "zo" or "zo zo"'
               );
               
               setAudioStatus('idle');
@@ -947,14 +939,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               transcriptionTextRef.current = null;
               
               alert(
-                '❌ Voice Authentication Failed\n\n' +
-                'Could not detect your voice.\n\n' +
-                'Please try again and make sure to:\n' +
-                '• Say a word with "zo" in it\n' +
-                '• Speak close to the microphone\n' +
-                '• Reduce background noise\n\n' +
-                'Note: AssemblyAI transcription is not configured.\n' +
-                'Using browser speech recognition only.'
+                '❌ Couldn\'t hear you\n\n' +
+                'Speak closer to the mic and say "zo"'
               );
               
               setAudioStatus('idle');
@@ -986,13 +972,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             transcriptionTextRef.current = null;
             
             alert(
-              '❌ Voice Authentication Failed\n\n' +
-              'Could not transcribe your audio.\n\n' +
-              'Error: ' + error.message + '\n\n' +
-              'Please try again and make sure to:\n' +
-              '• Say a word with "zo" in it\n' +
-              '• Speak close to the microphone\n' +
-              '• Reduce background noise'
+              '❌ Couldn\'t hear you\n\n' +
+              'Speak closer to the mic and say "zo"'
             );
             
             setAudioStatus('idle');
@@ -1194,13 +1175,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   } else {
                     console.log('🎤 ❌ Fallback validation also failed');
                     alert(
-                      '❌ Voice Authentication Failed\n\n' +
-                      'Could not verify that you said "Zo Zo Zo".\n\n' +
-                      'What was detected: "' + (fullTranscript || 'nothing') + '"\n\n' +
-                      'Please try again and make sure to:\n' +
-                      '• Say "Zo Zo Zo" clearly\n' +
-                      '• Speak close to the microphone\n' +
-                      '• Reduce background noise'
+                      '❌ Didn\'t hear "zo"\n\n' +
+                      'You said: "' + (fullTranscript || 'nothing') + '"\n\n' +
+                      'Try: "zo" or "zo zo"'
                     );
                     // Reset to idle state so user can try again
                     setAudioStatus('idle');

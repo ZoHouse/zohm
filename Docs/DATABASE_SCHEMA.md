@@ -1,8 +1,8 @@
 # Zo World Map (ZOHM) - Database Schema Documentation
 
 **Database**: Supabase (PostgreSQL 15)  
-**Last Updated**: November 13, 2025  
-**Version**: 3.0 (Post City Progression Migration)
+**Last Updated**: November 22, 2025  
+**Version**: 4.0 (ZO API Auth, Privy Removed)
 
 ---
 
@@ -25,24 +25,28 @@
 ### Technology Stack
 - **Database**: PostgreSQL 15 (hosted on Supabase)
 - **ORM/Client**: `@supabase/supabase-js` v2.52.0
-- **Authentication**: Privy (DID-based identity)
-- **Migrations**: SQL scripts in `/migrations/` directory
+- **Authentication**: ZO API (phone-based authentication)
+- **Migrations**: Managed via Supabase Dashboard (not committed to git)
 
 ### Key Features
-- **Multi-wallet support**: Users can link multiple Ethereum/Avalanche/Solana wallets
-- **Privy authentication**: Email, social, and wallet-based login
+- **ZO API authentication**: Phone-based OTP authentication (Privy removed Nov 2024)
+- **Multi-wallet support**: Users can link Ethereum/Base wallets (optional for web3 features)
 - **Auto-updating leaderboards**: PostgreSQL triggers update rankings automatically
 - **Quest system**: Repeatable quests with cooldowns and rewards
-- **City progression**: Gamified city-level growth system
-- **Individual progression**: Reputation, streaks, inventory tracking
-- **Canonical events**: Deduplicated, cached event storage with geocoding
-- **Row-Level Security (RLS)**: User-level access control
+- **City progression**: Gamified city-level growth system (5 stages)
+- **Individual progression**: Reputation (4 traits), streaks (4 types), inventory tracking
+- **Canonical events**: Deduplicated event storage with geocoding cache (reduces Mapbox API costs by ~70%)
+- **Row-Level Security (RLS)**: User-level access control (enabled on auth tables)
 
 ### Migration History
-1. **001_privy_migration.sql** - Privy auth support (users, user_wallets, user_auth_methods)
-2. **002_foundation_individual_progression.sql** - Quest repeatability, reputation, streaks, inventory
-3. **003_city_progression.sql** - City system, community goals, city sync
-4. **006_create_canonical_events.sql** - Canonical event store with deduplication and geocoding cache
+**Note**: Migrations are managed via Supabase Dashboard, not committed to git [[memory:11179047]].
+
+Major schema changes:
+1. **Foundation** - Initial tables (users, quests, completed_quests, leaderboards)
+2. **Individual Progression** - Quest repeatability, reputation (4 traits), streaks (4 types), inventory
+3. **City Progression** - 5-stage city growth, community goals, city sync
+4. **Canonical Events** - Deduplicated event store with geocoding cache
+5. **ZO API Auth** (Nov 2024) - Replaced Privy with ZO API authentication, simplified user table
 
 ---
 
@@ -95,12 +99,12 @@
 ## Tables Reference
 
 ### 1. `users`
-**Purpose**: Main user identity table, keyed by Privy DID
+**Purpose**: Main user identity table, keyed by ZO User ID
 
 ```sql
 CREATE TABLE users (
   -- Identity
-  id TEXT PRIMARY KEY,                      -- Privy DID (format: did:privy:clr3j1k2f00...)
+  id TEXT PRIMARY KEY,                      -- ZO User ID (phone-based)
   
   -- Profile
   name TEXT,                                -- Display name (format: "ishaan.zo")
@@ -109,7 +113,7 @@ CREATE TABLE users (
   culture TEXT,                             -- Cultural affinity (18 types)
   
   -- Authentication & Contact
-  email TEXT,                               -- Primary email from Privy
+  email TEXT,                               -- Primary email from ZO profile
   x_handle TEXT,                            -- Twitter handle
   x_connected BOOLEAN DEFAULT FALSE,
   
@@ -164,7 +168,7 @@ CREATE TABLE users (
 ---
 
 ### 2. `user_wallets`
-**Purpose**: Multiple wallets per user (embedded + external)
+**Purpose**: Multiple wallets per user (optional, for web3 features)
 
 ```sql
 CREATE TABLE user_wallets (
@@ -176,12 +180,12 @@ CREATE TABLE user_wallets (
   
   -- Wallet Information
   address TEXT NOT NULL UNIQUE,             -- Ethereum address (0x...)
-  chain_type TEXT DEFAULT 'ethereum',       -- 'ethereum' | 'avalanche' | 'solana' | 'polygon' | 'base'
+  chain_type TEXT DEFAULT 'ethereum',       -- 'ethereum' | 'base' | 'polygon' | 'avalanche' | 'solana'
   
   -- Wallet Source
-  wallet_client TEXT,                       -- 'privy' | 'metamask' | 'coinbase_wallet' | 'walletconnect'
-  wallet_client_type TEXT,                  -- 'privy.io.embedded' | 'metamask.io.snap'
-  is_embedded BOOLEAN DEFAULT FALSE,        -- TRUE if Privy embedded wallet
+  wallet_client TEXT,                       -- 'metamask' | 'coinbase_wallet' | 'walletconnect' | 'rainbow'
+  wallet_client_type TEXT,                  -- 'metamask.io.snap' | 'coinbase.wallet' | etc.
+  is_embedded BOOLEAN DEFAULT FALSE,        -- Reserved for future use
   
   -- Primary Wallet Flag
   is_primary BOOLEAN DEFAULT FALSE,         -- One primary wallet per user for transactions
@@ -208,7 +212,9 @@ CREATE TABLE user_wallets (
 ---
 
 ### 3. `user_auth_methods`
-**Purpose**: Track all authentication methods (email, social, wallet)
+**Purpose**: Track authentication methods (legacy table, may be deprecated)
+
+**Note**: This table is from the Privy era and may not be actively used with ZO API authentication.
 
 ```sql
 CREATE TABLE user_auth_methods (
@@ -219,15 +225,11 @@ CREATE TABLE user_auth_methods (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   
   -- Auth Method Type
-  auth_type TEXT NOT NULL,                  -- 'email' | 'google' | 'twitter' | 'discord' | 'farcaster' | 'wallet'
+  auth_type TEXT NOT NULL,                  -- 'phone' | 'email' | 'twitter' | 'wallet'
   
   -- Auth Method Details
-  identifier TEXT NOT NULL,                 -- Email address, OAuth subject, wallet address
-  display_name TEXT,                        -- Display name from OAuth provider
-  
-  -- OAuth Specific
-  oauth_subject TEXT,                       -- OAuth subject ID
-  oauth_username TEXT,                      -- @username for Twitter, username for Discord
+  identifier TEXT NOT NULL,                 -- Phone number, email, or wallet address
+  display_name TEXT,                        -- Display name
   
   -- Verification
   is_verified BOOLEAN DEFAULT FALSE,
@@ -246,6 +248,8 @@ CREATE TABLE user_auth_methods (
 - `idx_user_auth_user_id` ON `(user_id)`
 - `idx_user_auth_type` ON `(auth_type)`
 - `idx_user_auth_identifier` ON `(identifier)`
+
+**Status**: ⚠️ Legacy table from Privy era, may be removed in future cleanup
 
 ---
 
@@ -1176,13 +1180,12 @@ SELECT
     json_build_object(
       'address', uw.address,
       'chain_type', uw.chain_type,
-      'is_primary', uw.is_primary,
-      'is_embedded', uw.is_embedded
+      'is_primary', uw.is_primary
     )
-  ) as wallets
+  ) FILTER (WHERE uw.address IS NOT NULL) as wallets
 FROM users u
 LEFT JOIN user_wallets uw ON u.id = uw.user_id
-WHERE u.id = 'did:privy:clr3j1k2f00...'
+WHERE u.id = '<zo_user_id>'
 GROUP BY u.id;
 ```
 
@@ -1196,7 +1199,7 @@ SELECT
   ) as reputation_breakdown
 FROM users u
 LEFT JOIN user_reputations ur ON u.id = ur.user_id
-WHERE u.id = 'did:privy:clr3j1k2f00...'
+WHERE u.id = '<zo_user_id>'
 GROUP BY u.id, u.name, u.total_reputation_score;
 ```
 
@@ -1209,7 +1212,7 @@ SELECT
   metadata,
   acquired_at
 FROM user_inventory
-WHERE user_id = 'did:privy:clr3j1k2f00...'
+WHERE user_id = '<zo_user_id>'
 ORDER BY acquired_at DESC;
 ```
 
@@ -1254,7 +1257,7 @@ SELECT
   cq.metadata
 FROM completed_quests cq
 JOIN quests q ON cq.quest_id = q.id
-WHERE cq.user_id = 'did:privy:clr3j1k2f00...'
+WHERE cq.user_id = '<zo_user_id>'
 ORDER BY cq.completed_at DESC
 LIMIT 50;
 ```
@@ -1303,6 +1306,7 @@ SELECT
 FROM user_reputations ur
 JOIN users u ON ur.user_id = u.id
 WHERE ur.trait = 'Explorer'
+ORDER BY ur.score DESC
 ORDER BY ur.score DESC
 LIMIT 100;
 ```
@@ -1494,12 +1498,14 @@ WHERE score < 0;
 
 ---
 
-**Database Version**: 3.0  
-**Last Migration**: `003_city_progression.sql`  
-**Total Tables**: 14  
+**Database Version**: 4.0  
+**Last Major Update**: November 22, 2025 (ZO API Auth Migration)  
+**Total Tables**: 14 (1 legacy)  
 **Total Indexes**: 50+  
-**Total Triggers**: 3  
-**Total Functions**: 4
+**Total Triggers**: 3 (auto-update stats, leaderboards, city population)  
+**Total Functions**: 4  
+**Authentication**: ZO API (phone-based OTP)  
+**Migrations**: Managed via Supabase Dashboard
 
 
 

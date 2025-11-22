@@ -57,15 +57,15 @@ tests/**/*.test.ts
 ```
 apps/web/src/app/api/**/*.ts
 apps/web/src/lib/supabase.ts
-apps/web/src/lib/privy.ts
-packages/api/migrations/**/*.sql
-.github/workflows/**/*.yml
+apps/web/src/lib/supabaseAdmin.ts
+apps/web/src/lib/zo-api/**/*.ts
+apps/web/src/lib/userDb.ts
 ```
 
 **Requirements:**
 - Create PR with detailed description
-- Generate draft receipt (see Receipt Generation)
-- Include test results
+- Include test results (`pnpm test`)
+- Document what changed and why
 - Tag appropriate reviewer
 - Wait for human approval before merge
 
@@ -75,56 +75,21 @@ packages/api/migrations/**/*.sql
 .env*
 apps/web/package.json
 apps/web/next.config.ts
-packages/contracts/**
-pnpm-workspace.yaml (structure changes)
+pnpm-workspace.yaml
 ```
 
 **If needed:**
-- Create work order in `Docs/WORK_ORDERS/`
-- Assign to human owner
+- Create issue explaining why the change is necessary
 - Provide detailed justification
+- List alternatives considered
+- Assign to human owner
 - Never attempt direct edit
 
 ---
 
 ## Pre-PR Workflow
 
-### Step 1: Create Laundry List (Required for all PRs)
-
-```bash
-# Create file
-touch Docs/LAUNDRY/$(date +%Y%m%d)-<slug>-LAUNDRY.md
-```
-
-Use the template below. List 3-5 concrete tasks.
-
-### Step 2: Create Work Order (If Feature-Sized)
-
-For changes affecting multiple systems or requiring >2 hours:
-
-```bash
-touch Docs/WORK_ORDERS/$(date +%Y%m%d)-<slug>-WORK_ORDER.md
-```
-
-Include:
-- Problem statement
-- Proposed solution
-- Affected systems (Vibe/Quests/Nodes/etc)
-- Migration requirements
-- Rollback plan
-- Signal contracts
-
-### Step 3: Generate Draft Receipt (If Touching Protected Paths)
-
-```bash
-python scripts/generate_receipt.py
-```
-
-This creates: `Docs/RECEIPTS/drafts/<receipt-id>.json`
-
-Commit this with your changes.
-
-### Step 4: Run Tests
+### Step 1: Run Tests
 
 ```bash
 cd /Users/samuraizan/zohm
@@ -133,214 +98,65 @@ pnpm test
 
 Include test summary in PR description.
 
-### Step 5: Verify Lore Compliance
+### Step 2: Verify Lore Compliance
 
 Read relevant sections:
-- `lore/zo_protocol_lore.md` - Operating ontology
+- `/lore/zo_protocol_lore.md` - Operating ontology
 - `Docs/PROJECT_RULES.md` - Foundational rules
-- `Docs/VIBE_SCORE.md` - If touching vibe calculations
 
 Confirm no contradictions.
 
-### Step 6: Update Contracts (If Adding Signals/Endpoints)
+### Step 3: Update Documentation (If Needed)
 
-- New signals → Update `Docs/SIGNALS.md`
-- New API routes → Update `Docs/API_CONTRACTS.md`
-- Schema changes → Update `Docs/DATABASE_SCHEMA.md`
-
----
-
-## Laundry List Template
-
-**File**: `Docs/LAUNDRY/YYYYMMDD-<slug>-LAUNDRY.md`
-
-```markdown
-# Laundry List: <Feature Name>
-
-**Date**: YYYY-MM-DD
-**Assignee**: AI Agent / Human Name
-**Status**: Draft / In Progress / Complete
-**Estimated Time**: <30 minutes
-
-## Context
-
-Brief description of why this work is needed.
-
-## Tasks
-
-- [ ] Task 1: Specific, actionable item
-- [ ] Task 2: Another concrete step
-- [ ] Task 3: Final verification step
-
-## Acceptance Criteria
-
-- Works on desktop and mobile
-- No console errors
-- Follows lore and rules
-- Tests pass
-
-## Related Docs
-
-- Link to ARCHITECTURE section
-- Link to relevant feature spec
-```
+- Architecture changes → Update `Docs/ARCHITECTURE.md`
+- New tables/fields → Update `Docs/DATABASE_SCHEMA.md`
+- New API routes → Document in `ARCHITECTURE.md` API section
 
 ---
 
-## Work Order Template
+## PR Description Template
 
-**File**: `Docs/WORK_ORDERS/YYYYMMDD-<slug>-WORK_ORDER.md`
+Use this when creating a PR for human review:
 
 ```markdown
-# Work Order: <Feature Name>
+## Summary
 
-**ID**: WO-YYYYMMDD-<slug>
-**Date**: YYYY-MM-DD
-**Assignee**: Human Name
-**Estimated Time**: 1-4 hours
-**Status**: Draft / In Progress / Review / Complete
+Brief description of what changed and why.
 
-## Problem Statement
+## Changes
 
-Clear description of what needs to be built or fixed.
+- Added/Modified/Removed: X
+- Added/Modified/Removed: Y
+- Added/Modified/Removed: Z
 
 ## Affected Systems
 
-- [ ] Vibe Score
+- [ ] Authentication
 - [ ] Quests
-- [ ] Nodes
-- [ ] Citizens
-- [ ] Map Interface
-- [ ] Narrative Engine
+- [ ] Map/Events
+- [ ] Database
+- [ ] Leaderboards
+- [ ] Cities
+- [ ] Other: ___
 
-## Proposed Solution
+## Testing
 
-### Architecture Changes
+- [ ] Unit tests pass (`pnpm test`)
+- [ ] Manual testing completed
+- [ ] No console errors
+- [ ] Works on mobile and desktop
 
-Describe any new components, services, or data flows.
+## Lore Compliance
 
-### Database Changes
-
-List any migrations required.
-
-### API Changes
-
-New or modified endpoints.
-
-### Signal Contracts
-
-What new signals will be emitted?
-
-## Implementation Plan
-
-1. Step 1
-2. Step 2
-3. Step 3
-
-## Testing Plan
-
-- Unit tests: X files
-- Integration tests: Y scenarios
-- Manual testing: Z steps
+- [ ] Aligns with PROJECT_RULES.md
+- [ ] No contradictions with /lore/zo_protocol_lore.md
+- [ ] Follows architectural patterns in ARCHITECTURE.md
 
 ## Rollback Plan
 
 If this needs to be reverted:
-1. Run migration down script: `migration_XXX_ROLLBACK.sql`
-2. Revert PR: `git revert <commit>`
-3. Clear cache: `...`
-
-## Related Docs
-
-- Link to feature spec
-- Link to migration
-- Link to laundry list
-
-## Approval
-
-- [ ] Human reviewer approved
-- [ ] Tests passed
-- [ ] Receipt generated
-```
-
----
-
-## Receipt Generation
-
-### What is a Receipt?
-
-A machine-readable record of changes to protected paths.
-
-### When Required
-
-- Any change to `apps/web/src/app/api/**`
-- Database migrations
-- CI/CD workflow changes
-- Smart contract modifications
-
-### How to Generate
-
-```bash
-cd /Users/samuraizan/zohm
-python scripts/generate_receipt.py
-```
-
-This creates `Docs/RECEIPTS/drafts/<timestamp>-<commit>.json`:
-
-```json
-{
-  "receipt_id": "20251113-143022-a1b2c3d",
-  "branch": "samurai-new",
-  "commit": "a1b2c3d",
-  "timestamp": "2025-11-13T14:30:22Z",
-  "changed_files": [
-    "apps/web/src/app/api/quests/complete/route.ts"
-  ],
-  "requires_human_review": true,
-  "tests_passed": true,
-  "lore_compliant": true
-}
-```
-
-### After Merge
-
-CI will move draft receipt to `Docs/RECEIPTS/` and update `index.json`.
-
----
-
-## Signal Contract Template
-
-**File**: `Docs/SIGNALS.md` (append to this file)
-
-```markdown
-### <signal_name>
-
-**Emitted by**: Quest/Map/Event system
-**Trigger**: User completes action X
-**Frequency**: Once per action / Continuous / Scheduled
-
-**Payload**:
-```json
-{
-  "signal_type": "quest_completed",
-  "user_id": "string",
-  "quest_id": "string",
-  "score": number,
-  "timestamp": "ISO8601",
-  "metadata": {
-    "proximity_factor": number,
-    "reward_zo": number
-  }
-}
-```
-
-**Consumed by**:
-- Vibe Score Engine (updates alignment)
-- Leaderboard (updates rank)
-- Narrative Engine (generates story beat)
-
-**Privacy**: No PII stored, only derived metrics
-**Retention**: 72 hours raw, aggregated to daily summaries
+1. Run `git revert <commit>`
+2. [Any additional steps, e.g., clear cache, restart services]
 ```
 
 ---
@@ -484,28 +300,28 @@ git commit -m "feat(ui): add NewComponent for feature X"
 **Protected Zone**: ⚠️ Human Review Required
 
 **Steps**:
-1. Create laundry list in `Docs/LAUNDRY/`
-2. Generate draft receipt: `python scripts/generate_receipt.py`
-3. Make changes to API route
-4. Update API_CONTRACTS.md if signature changed
-5. Write integration test
-6. Create PR (do not merge)
-7. Tag reviewer
+1. Make changes to API route
+2. Update `ARCHITECTURE.md` if endpoint signature changed
+3. Write/update tests
+4. Run `pnpm test` to verify
+5. Create PR with clear description (do not merge)
+6. Tag reviewer
 
 ---
 
 ### Scenario 3: Database Schema Change
 
-**Protected Zone**: ⚠️ Human Review Required + Migration
+**Protected Zone**: ⚠️ Human Review Required
 
 **Steps**:
-1. Create work order in `Docs/WORK_ORDERS/`
-2. Design migration (UP + DOWN scripts)
-3. Update `Docs/DATABASE_SCHEMA.md`
-4. Test migration on staging
-5. Generate draft receipt
-6. Create PR with migration files
-7. Wait for DBA/human review
+1. Document the change needed and why
+2. Update `Docs/DATABASE_SCHEMA.md` with new schema
+3. Write migration SQL (if needed, store locally, don't commit)
+4. Update affected API routes and types
+5. Write/update tests
+6. Create PR with clear description
+7. Wait for human review
+8. **Note**: Migration SQL should be run manually on Supabase dashboard, not committed to git [[memory:11179047]]
 
 ---
 
@@ -514,11 +330,12 @@ git commit -m "feat(ui): add NewComponent for feature X"
 **Forbidden**: 🚫 Never Touch
 
 **Steps**:
-1. Create work order explaining why dependency is needed
+1. Create GitHub issue explaining why dependency is needed
 2. List alternatives considered
-3. Security implications
-4. Assign to human owner
-5. Do not attempt direct edit
+3. Note security implications
+4. Tag: `dependencies` label
+5. Assign to human owner
+6. Do not attempt direct edit
 
 ---
 
@@ -536,28 +353,28 @@ git commit -m "feat(ui): add NewComponent for feature X"
 5. Request human review
 6. Wait for guidance
 
-### Missing Signal Contract
+### Missing Requirements
 
-**Detected**: Feature generates data but no signal defined
+**Detected**: Feature requirements unclear or missing
 
 **Action**:
 1. Stop implementation
-2. Create signal contract draft in `Docs/SIGNALS.md`
-3. Define payload, frequency, consumers
-4. Create laundry list for implementation
-5. Wait for approval
+2. Create GitHub issue describing the ambiguity
+3. Propose solution(s) with tradeoffs
+4. Tag relevant stakeholders
+5. Wait for clarification
 
 ### Forbidden Path Required
 
-**Detected**: Feature needs `package.json` or contract change
+**Detected**: Feature needs `package.json`, `.env`, or config change
 
 **Action**:
-1. Create work order with justification
+1. Create GitHub issue with justification
 2. Include:
    - Why it's needed
    - Alternatives considered
-   - Security review
-   - Migration/rollback plan
+   - Security considerations
+   - Impact assessment
 3. Assign to human owner
 4. Do not proceed with direct edit
 
@@ -582,17 +399,15 @@ If you cannot meet requirements (tests fail, lore violation, etc.):
 
 Before creating any PR:
 
-- [ ] Read PROJECT_RULES.md
-- [ ] Check path permissions (CONSTRAINTS.md)
-- [ ] Create laundry list (if needed)
-- [ ] Create work order (if feature-sized)
-- [ ] Generate receipt (if protected path)
+- [ ] Read PROJECT_RULES.md (understand principles)
+- [ ] Check path permissions (editable/review/forbidden)
 - [ ] Run tests (`pnpm test`)
-- [ ] Verify lore compliance
-- [ ] Update contracts (signals/API)
+- [ ] Verify lore compliance (no contradictions)
+- [ ] Update relevant docs (ARCHITECTURE.md, DATABASE_SCHEMA.md)
 - [ ] Write clear commit message
+- [ ] Create PR with detailed description
 - [ ] Tag appropriate reviewer
-- [ ] Do not merge if human review required
+- [ ] **Do not merge if human review required**
 
 ---
 
@@ -600,11 +415,12 @@ Before creating any PR:
 
 1. Check `.cursorrules` (root) for quick reference
 2. Read `Docs/PROJECT_RULES.md` for philosophy
-3. Check `Docs/CONSTRAINTS.md` for permissions
-4. Create issue if unclear
-5. Ask human when in doubt
+3. Check this file (cursorrule.md) for workflows
+4. Read `Docs/ARCHITECTURE.md` for technical details
+5. Create GitHub issue if unclear
+6. Ask human when in doubt
 
-**Remember**: Human wins. When in doubt, ask. Never merge protected changes.
+**Remember**: Human wins. When in doubt, ask. Never merge protected changes without approval.
 
 ---
 

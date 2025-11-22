@@ -1,8 +1,8 @@
 # Zo World Architecture
 
-**Version**: 1.0  
-**Last Updated**: 2025-11-13  
-**Platform**: Webapp (Next.js 15 + Supabase)
+**Version**: 2.0  
+**Last Updated**: 2025-11-22  
+**Platform**: Webapp (Next.js 15 + Supabase + ZO API)
 
 ---
 
@@ -113,16 +113,20 @@ The architecture reflects this by:
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | **Next.js API Routes** | 15.4.2 | Serverless API endpoints |
-| **ZO API** | - | Authentication & profile management |
+| **ZO API** | v1 | Authentication & profile management |
 | **Supabase JS** | 2.52.0 | Database client |
-| **Ethers.js** | 6.15.0 | Blockchain interactions |
+| **Ethers.js** | 6.x | Blockchain interactions (token rewards) |
+| **Anthropic Claude** | - | AI features (Vibe Score, quest generation) |
+| **OpenAI Whisper** | - | Voice transcription (quest audio) |
 
 ### Data Layer
 
 | Technology | Purpose |
 |------------|---------|
-| **Supabase (PostgreSQL)** | Primary database |
-| **ZO API** | User authentication, profile & avatar generation |
+| **Supabase (PostgreSQL)** | Primary database (users, quests, events, cities, nodes) |
+| **ZO API** | User authentication, profile management & avatar generation |
+| **Mapbox** | Geocoding & location services |
+| **Luma API** | Event calendar integration |
 | **IPFS** | Decentralized file storage (future) |
 
 ### Blockchain Layer
@@ -285,17 +289,32 @@ apps/web/src/
 │
 ├── lib/                    # Utility libraries
 │   ├── supabase.ts         # Supabase client
-│   ├── privy.ts            # Privy config
+│   ├── supabaseAdmin.ts    # Supabase admin client
+│   ├── userDb.ts           # User database operations
 │   ├── cityService.ts      # City data logic
 │   ├── geocoding.ts        # Location services
-│   └── migrations/         # SQL migration scripts
+│   ├── questService.ts     # Quest logic
+│   ├── reputationService.ts # Reputation system
+│   ├── streakService.ts    # Streak tracking
+│   └── zo-api/             # ZO API client library
+│       ├── auth.ts
+│       ├── profile.ts
+│       ├── avatar.ts
+│       ├── sync.ts
+│       ├── client.ts
+│       └── types.ts
 │
 ├── hooks/                  # Custom React hooks
 │   ├── useZoAuth.ts        # ZO authentication hook
-│   └── useAvatarGeneration.ts
+│   ├── useAvatarGeneration.ts  # Avatar generation
+│   ├── useDashboardData.ts # Dashboard state management
+│   ├── useProfileGate.ts   # Profile completion gate
+│   ├── useQuestCooldown.ts # Quest cooldown timer
+│   ├── useGame1111Engine.ts # Game1111 quest engine
+│   └── useOnboardingTransition.ts  # Onboarding flow
 │
-└── providers/              # Context providers (legacy - not used)
-    └── PrivyProvider.tsx   # Legacy auth provider (deprecated)
+└── types/                  # TypeScript types
+    └── user.ts             # User-related types
 ```
 
 ### Component Hierarchy
@@ -307,8 +326,9 @@ page.tsx (Home)
 │   │
 │   ├── OnboardingPage (if !onboarding_completed)
 │   │   ├── NicknameStep
-│   │   ├── Portal Animation
+│   │   ├── PortalAnimation
 │   │   ├── AvatarStep
+│   │   ├── MapSyncFlow (City sync)
 │   │   ├── QuestAudio (Game1111)
 │   │   └── QuestComplete
 │   │
@@ -400,16 +420,20 @@ All API responses follow this structure:
 
 ### Key Tables
 
-1. **`users`** - User identity & profile (Privy DID as primary key)
-2. **`user_wallets`** - Multi-wallet support
-3. **`quests`** - Quest definitions
-4. **`completed_quests`** - Quest completion records
-5. **`leaderboards`** - Global/city leaderboards
-6. **`cities`** - City data & progression
-7. **`city_progress`** - User contributions per city
-8. **`community_goals`** - City-level challenges
-9. **`user_reputations`** - Reputation traits (Builder, Connector, Explorer, Pioneer)
-10. **`user_streaks`** - Login/quest/event streaks
+1. **`users`** - User identity & profile (ZO User ID as primary key)
+2. **`user_wallets`** - Multi-wallet support (optional, for web3 features)
+3. **`user_inventory`** - Badges, items, collectibles
+4. **`quests`** - Quest definitions
+5. **`completed_quests`** - Quest completion records with cooldowns
+6. **`leaderboards`** - Global/city leaderboards (auto-updated via triggers)
+7. **`cities`** - City data & progression (5 stages)
+8. **`city_progress`** - User contributions per city
+9. **`community_goals`** - City-level challenges
+10. **`user_reputations`** - Reputation traits (Builder, Connector, Explorer, Pioneer)
+11. **`user_streaks`** - Login/quest/event/checkin streaks
+12. **`nodes`** - Zo Houses and partner locations
+13. **`calendars`** - Event calendar sources (Luma, iCal, etc.)
+14. **`canonical_events`** - Deduplicated event storage with geocoding cache
 
 ### Database Access Pattern
 
@@ -436,15 +460,16 @@ const { data, error } = await supabase
 
 ## Authentication & Identity
 
-### Current: ZO API Authentication (v1.0 - Active)
+### Authentication System: ZO API (v1.0 - Production)
 
-**Status**: ✅ **Production Ready**
+**Status**: ✅ **Active & Production Ready**
 
-**Rationale**: ZO API provides native phone-based auth with abstracted wallet creation, eliminating the need for third-party auth providers and simplifying the architecture.
+**Rationale**: ZO API provides native phone-based authentication with abstracted wallet creation. This eliminates third-party auth dependencies (Privy was removed in November 2024) and simplifies the architecture.
 
 **Primary Auth**: Phone Number + OTP  
 **Identifier**: ZO Profile ID (`pid`) and ZO User ID (`zo_user_id`)  
-**Wallet Strategy**: Backend-managed wallet abstraction (created automatically on signup)
+**Wallet Strategy**: Backend-managed wallet abstraction (created automatically on signup)  
+**Storage**: Session managed via localStorage (`zo_auth_session`)
 
 #### Current Auth Flow (ZO API)
 
@@ -523,23 +548,36 @@ function MyComponent() {
 }
 ```
 
-**API Routes**:
+**API Routes** (`apps/web/src/app/api/zo/`):
 - `POST /api/zo/auth/send-otp` - Send OTP to phone number
 - `POST /api/zo/auth/verify-otp` - Verify OTP and create session
 - `POST /api/zo/auth/link-account` - Link ZO account to Supabase user
 - `POST /api/zo/sync-profile` - Sync profile from ZO API (with token refresh)
 
-**Database Fields**:
-- `zo_user_id` - ZO user identifier
-- `zo_pid` - ZO profile ID
-- `zo_token` - Access token
-- `zo_refresh_token` - Refresh token
-- `zo_token_expiry` - Token expiration timestamp
-- `zo_device_id` - Device identifier
-- `zo_device_secret` - Device secret
-- `zo_membership` - Membership level (founder/citizen)
-- `zo_synced_at` - Last profile sync timestamp
-- `zo_home_location` - Home location (JSONB)
+**Client Library** (`apps/web/src/lib/zo-api/`):
+- `auth.ts` - Authentication methods (login, OTP, session)
+- `profile.ts` - Profile fetching and updates
+- `avatar.ts` - Avatar generation
+- `sync.ts` - Profile sync with Supabase
+- `client.ts` - HTTP client wrapper
+- `types.ts` - TypeScript interfaces
+
+**Database Fields** (in `users` table):
+- `id` - Primary key (ZO user ID)
+- `name` - Display name (format: "username.zo")
+- `email` - Email from ZO profile
+- `pfp` - Profile picture URL
+- `onboarding_completed` - Boolean flag
+- `onboarding_step` - Current step (0-3)
+- `zo_balance` - Token balance
+- `home_city_id` - FK to cities table
+- `city_synced_at` - Last city sync timestamp
+- `role` - 'Founder' | 'Member' | 'Citizen'
+- `founder_nfts_count` - NFT ownership count
+- `user_tier` - 'prospect' | 'settler' | 'pioneer' | 'elder' | 'legend'
+
+**Session Storage** (localStorage):
+- `zo_auth_session` - Complete auth session (token, user, device credentials)
 
 **Benefits**:
 - ✅ Single source of truth (ZO API)
@@ -551,8 +589,9 @@ function MyComponent() {
 - ✅ Zero cost (no subscription fees)
 
 **Reference Documentation**:
-- `Docs/ZO_API_DOCUMENTATION.md` - Complete ZO API reference
-- `Docs/WALLET_AND_PHONE_TO_PROFILE_FLOW.md` - Phone to wallet abstraction flow
+- `/lore/zo_protocol_lore.md` - Operating ontology and lore
+- `Docs/DATABASE_SCHEMA.md` - Complete database schema
+- `Docs/PROJECT_RULES.md` - 25 foundational principles
 
 ---
 
@@ -608,17 +647,18 @@ const subscription = supabase
 ### Environment Variables
 
 **Required**:
-- `NEXT_PUBLIC_PRIVY_APP_ID`
-- `PRIVY_APP_SECRET`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_MAPBOX_TOKEN`
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only)
+- `NEXT_PUBLIC_MAPBOX_TOKEN` - Mapbox GL JS access token
+- `ZO_API_BASE_URL` - ZO API base URL
+- `ZO_CLIENT_KEY_WEB` - ZO API client key
 
-**Optional** (Phase 2):
-- `ZO_API_BASE_URL`
-- `ZO_CLIENT_KEY_WEB`
-- `ZO_CLIENT_DEVICE_ID`
-- `ZO_CLIENT_DEVICE_SECRET`
+**Optional**:
+- `ZO_CLIENT_DEVICE_ID` - ZO API device ID (for server-side calls)
+- `ZO_CLIENT_DEVICE_SECRET` - ZO API device secret (for server-side calls)
+- `ANTHROPIC_API_KEY` - For AI features (Vibe Score, quest generation)
+- `PINECONE_API_KEY` - For vector embeddings (future)
+- `OPENAI_API_KEY` - For transcription (voice quests)
 
 ### CDN & Assets
 
@@ -632,11 +672,12 @@ const subscription = supabase
 
 ### Authentication Security
 
-1. **ZO User ID** (`zo_user_id`) as primary identity
-2. **Server-side token verification** for all API routes
-3. **Token refresh** for expired sessions (automatic)
-4. **Session management** via localStorage and ZO API tokens
-5. **Phone number verification** via OTP (SMS)
+1. **ZO User ID** (`id`) as primary identity (phone-based)
+2. **Phone number + OTP verification** (SMS-based)
+3. **Session storage** in localStorage (`zo_auth_session`)
+4. **Token-based API authentication** (Bearer tokens)
+5. **Server-side validation** for all protected API routes
+6. **No password storage** (passwordless authentication)
 
 ### Database Security
 
@@ -668,16 +709,18 @@ const subscription = supabase
 
 - `/apps/web/src/app/api/` - API routes (security impact)
 - `/apps/web/src/lib/supabase.ts` - Database client
-- `/apps/web/src/lib/privy.ts` - Auth config
-- `/packages/api/migrations/` - Database migrations
-- `.env` files - Environment variables
+- `/apps/web/src/lib/supabaseAdmin.ts` - Admin database client
+- `/apps/web/src/lib/zo-api/` - ZO API client library
+- `/apps/web/src/lib/userDb.ts` - User database operations
+- `.env*` files - Environment variables
 
 ### ❌ AI Must NOT Edit
 
 - `/apps/web/package.json` - Dependencies (breaking changes)
 - `/apps/web/next.config.ts` - Build config (deployment impact)
-- `/.github/workflows/` - CI/CD (security risk)
-- `/packages/contracts/` - Smart contracts (financial risk)
+- `/.github/workflows/` - CI/CD (if present, security risk)
+- `.env*` files - Secrets and configuration
+- `/pnpm-workspace.yaml` - Monorepo structure
 
 ### File Size Limits
 
@@ -721,8 +764,9 @@ const subscription = supabase
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-11-13  
+**Document Version**: 2.0  
+**Last Updated**: 2025-11-22  
 **Maintained By**: Development Team  
-**Status**: ✅ Active & Complete
+**Status**: ✅ Active & Production Ready  
+**Major Changes**: Privy removed, ZO API fully integrated, component structure updated
 

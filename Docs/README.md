@@ -1,20 +1,20 @@
 # Zo World Documentation
 
 **Project**: Zo World Map (ZOHM)  
-**Last Updated**: 2025-11-19  
-**Status**: ✅ Complete & Production Ready
+**Last Updated**: 2025-11-22  
+**Status**: ✅ Production Ready
 
 ---
 
 ## 🚀 Quick Start
 
-**New to the project?** Start here:
+**New to the project?** Read these 5 core documents in order:
 
 1. **`PROJECT_RULES.md`** ⭐ - **25 Foundational Rules** for building Zo World
-2. **`ARCHITECTURE.md`** - System architecture and tech stack
-3. **`AI_PAIR_CODING_SETUP.md`** - How to work with this repo
-4. **`CONSTRAINTS.md`** - What you can/cannot modify
-5. **`FEATURES/README.md`** - Feature specifications
+2. **`ARCHITECTURE.md`** ⭐ - System architecture, tech stack & data flows
+3. **`DATABASE_SCHEMA.md`** - Complete database schema with tables and relationships
+4. **`cursorrule.md`** - AI pair-coding workflows and constraints
+5. **`README.md`** - This file (documentation overview)
 
 ---
 
@@ -22,46 +22,17 @@
 
 ```
 Docs/
-├── 🏗️ Core System Docs
-│   ├── PROJECT_RULES.md ⭐ 25 FOUNDATIONAL RULES
-│   ├── ARCHITECTURE.md ⭐ START HERE
-│   ├── DATABASE_SCHEMA.md
-│   ├── API_ENDPOINTS.md
-│   ├── API_CONTRACTS.md
-│   ├── QUESTS_SYSTEM.md
-│   ├── VIBE_SCORE.md
-│   └── ZO_API_DOCUMENTATION.md
-│
-├── 🎯 Feature Specifications
-│   └── FEATURES/
-│       ├── README.md
-│       ├── 01-mapbox-integration.md
-│       ├── 02-events-spec.md
-│       ├── 03-quests-spec.md
-│       ├── 04-onboarding-spec.md
-│       ├── 05-voice-quest-spec.md
-│       ├── 06-game1111-spec.md
-│       └── legacy/ (old detailed docs)
-│
-├── 🛡️ Safety & Process
-│   ├── CONSTRAINTS.md
-│   ├── AI_PAIR_CODING_SETUP.md
-│   ├── LAUNDRY/ (tiny tasks)
-│   ├── WORK_ORDERS/ (medium tasks)
-│   └── RECEIPTS/ (change tracking)
-│
-├── 📱 Platform-Specific
-│   ├── mobile/ (React Native app docs)
-│   └── WALLET_AND_PHONE_TO_PROFILE_FLOW.md
-│
-├── 🗄️ Archive
-│   └── archive/ (superseded docs)
-│
-└── 📖 Guides (coming soon)
-    ├── DEVELOPMENT_SETUP.md
-    ├── DEPLOYMENT_GUIDE.md
-    └── TOKEN_ECONOMICS.md
+├── PROJECT_RULES.md       ⭐ 25 foundational principles
+├── ARCHITECTURE.md        ⭐ System design & tech stack
+├── DATABASE_SCHEMA.md     ⭐ Complete database schema
+├── cursorrule.md          ⭐ AI coding workflows
+└── README.md              ⭐ This file
+
+/lore/
+└── zo_protocol_lore.md    📖 Operating ontology & worldview
 ```
+
+**Philosophy**: We keep only essential docs. Everything else is in the code, comments, or git history.
 
 ---
 
@@ -69,282 +40,267 @@ Docs/
 
 ### For AI Assistants
 
-**Read first**:
-1. `AI_PAIR_CODING_SETUP.md` - Complete setup guide
-2. `CONSTRAINTS.md` - What you can/cannot modify
-3. `API_CONTRACTS.md` - API expectations
-4. `FEATURES/README.md` - Feature specs
+**Read first** (in order):
+1. `.cursorrules` (root) - Quick reference for safe zones
+2. `Docs/PROJECT_RULES.md` - 25 foundational principles
+3. `Docs/cursorrule.md` - Detailed workflows
+4. `Docs/ARCHITECTURE.md` - System architecture
+5. `Docs/DATABASE_SCHEMA.md` - Database schema
 
 **Before coding**:
-- Check path classification in `CONSTRAINTS.md`
-- Read relevant feature spec
-- Create Work Order if needed
+- Check path permissions in `cursorrule.md`
+- Read relevant architecture sections
+- Never edit forbidden paths (package.json, .env, etc.)
 
 ### For Developers
 
 **Getting started**:
 1. `ARCHITECTURE.md` - Understand the system
-2. `DEVELOPMENT_SETUP.md` - Set up local environment
-3. `FEATURES/README.md` - Browse features
+2. `DATABASE_SCHEMA.md` - Database structure
+3. `/lore/zo_protocol_lore.md` - Understand the philosophy
 
 **During development**:
-- Reference `API_ENDPOINTS.md` for API usage
-- Check `DATABASE_SCHEMA.md` for DB structure
-- Use feature specs as implementation guides
+- Reference `ARCHITECTURE.md` for API routes and data flows
+- Check `DATABASE_SCHEMA.md` for tables, triggers, and queries
+- Follow `PROJECT_RULES.md` for design principles
 
 ### For Product/Design
 
 **Understanding the product**:
-1. `ARCHITECTURE.md` - System overview
-2. `FEATURES/README.md` - All features at a glance
-3. Individual feature specs - Detailed UX notes
+1. `/lore/zo_protocol_lore.md` - The Zo worldview
+2. `ARCHITECTURE.md` - System overview & user flows
+3. `PROJECT_RULES.md` - Foundational design principles
 
 **Planning work**:
-- Create Work Orders for new features
-- Update feature specs when requirements change
-- Track acceptance criteria
+- All features must align with PROJECT_RULES.md
+- Check ARCHITECTURE.md for technical feasibility
+- Ensure lore compliance with zo_protocol_lore.md
 
 ---
 
 ## 📖 Core Documentation
 
-### System Architecture
+### 1. `PROJECT_RULES.md` ⭐
 
-**`ARCHITECTURE.md`** ⭐
-Complete system architecture, tech stack, data flows, and future roadmap.
+The 25 foundational rules that govern all decisions in Zo World. Read this first.
 
-**`DATABASE_SCHEMA.md`**
-Full Supabase/Postgres schema with tables, relationships, triggers, and RLS policies.
+**Key Principles**:
+- Lore is law (operating ontology)
+- Reality is programmable
+- Build only what strengthens the engine
+- Single source of truth
+- Everything generates signals
+- Simulation integrity above all
 
-**`API_ENDPOINTS.md`**
-Complete API reference with request/response examples for all endpoints.
+### 2. `ARCHITECTURE.md` ⭐
 
-**`API_CONTRACTS.md`**
-Machine-readable contracts for AI development with validation rules.
+Complete system architecture including:
+- Technology stack (Next.js 15, Supabase, ZO API, Mapbox)
+- Authentication system (ZO API phone-based auth)
+- Data flows (auth, quest completion, avatar generation, city sync)
+- Component hierarchy
+- API routes structure
+- Security model
+- Deployment architecture (Vercel)
 
-### Features & Systems
+### 3. `DATABASE_SCHEMA.md` ⭐
 
-**`QUESTS_SYSTEM.md`**
-Quest mechanics, reward calculations, cooldown system, and Game1111 integration.
+Full Supabase/Postgres schema:
+- 14 tables (users, quests, cities, nodes, events, etc.)
+- Relationships & foreign keys
+- Indexes for performance
+- Triggers & functions (auto-updating leaderboards, city population)
+- Row-Level Security (RLS) policies
+- Sample queries for common operations
 
-**`VIBE_SCORE.md`**
-Vibe Score specification with feature extraction, scoring algorithm, and API contracts.
+### 4. `cursorrule.md` ⭐
 
-**`ZO_API_DOCUMENTATION.md`**
-External ZO API reference including authentication, profile, and avatar endpoints.
+AI pair-coding workflows and constraints:
+- File permissions matrix (editable/review/forbidden)
+- Pre-PR workflow
+- Testing requirements
+- Migration checklist
+- Common scenarios
+- Conflict resolution
 
-**`WALLET_AND_PHONE_TO_PROFILE_FLOW.md`**
-Phone number to wallet authentication flow and migration strategy.
+### 5. `/lore/zo_protocol_lore.md` 📖
 
----
-
-## 🎯 Feature Specifications
-
-All feature specs are in `FEATURES/` folder:
-
-| # | Feature | Status | File |
-|---|---------|--------|------|
-| 01 | Mapbox Integration | ✅ Implemented | `01-mapbox-integration.md` |
-| 02 | Events System | 🚧 Partial | `02-events-spec.md` |
-| 03 | Quests System | ✅ Core Complete | `03-quests-spec.md` |
-| 04 | Onboarding Flow | 🚧 In Progress | `04-onboarding-spec.md` |
-| 05 | Voice Quest | 🔮 Planned | `05-voice-quest-spec.md` |
-| 06 | Game1111 | ✅ Core Implemented | `06-game1111-spec.md` |
-
-See `FEATURES/README.md` for complete feature list and status.
-
----
-
-## 🛡️ Safety & Process
-
-### Path Rules
-
-**`CONSTRAINTS.md`**
-Defines editable/guarded/immutable paths and workflows for safe changes.
-
-**Path Summary**:
-- ✅ **Editable**: `components/`, `hooks/`, `styles/` - modify freely
-- ⚠️ **Guarded**: `api/`, `migrations/`, `lib/questService.ts` - need receipts
-- 🔒 **Immutable**: `contracts/`, `infra/`, workflows - need permission
-
-### Task Management
-
-**`LAUNDRY/README.md`**
-System for tiny tasks (<30 minutes) that can be picked up autonomously.
-
-**`WORK_ORDERS/README.md`**
-System for medium tasks (1-4 hours) requiring planning and review.
-
-**`RECEIPTS/README.md`**
-Change tracking system for all modifications to guarded/immutable paths.
-
-### AI Pair-Coding
-
-**`AI_PAIR_CODING_SETUP.md`**
-Complete guide for safe AI pair-coding with workflows, examples, and best practices.
+The operating ontology and worldview of Zo World. All features must align with this.
 
 ---
 
-## 📱 Platform-Specific
+## ✨ Key Features (As of Nov 2024)
 
-### Mobile App
-
-**`mobile/`** folder contains React Native app documentation:
-- `APP_OVERVIEW.md` - Mobile app architecture
-- `MOBILE_APP_DATABASE_API.md` - Mobile API reference
-- `AVATAR_PROFILE_FIREBASE_DOCUMENTATION.md` - Avatar system
-
-**Note**: Mobile app is currently in separate repo, planned for monorepo migration.
-
----
-
-## 🗄️ Archive
-
-**`archive/`** folder contains superseded documentation:
-- `START_HERE.md` - Original onboarding plan
-- `ENV_SETUP.md` - Old environment setup
-- `SUPABASE_SETUP.md` - Old database setup
-- `AVATAR_INTEGRATION_STATUS.md` - Old progress tracking
-
-See `archive/README.md` for details on what's archived and why.
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **ZO API Auth** | ✅ Production | Phone-based authentication (Privy removed) |
+| **Mapbox Integration** | ✅ Production | Interactive map with events, nodes, cities |
+| **Quest System** | ✅ Production | Repeatable quests with cooldowns & rewards |
+| **Game1111 Quest** | ✅ Production | Voice-activated timing quest (stop at 11:11) |
+| **City Progression** | ✅ Production | 5-stage city growth system |
+| **Leaderboards** | ✅ Production | Global & city rankings (auto-updated) |
+| **Reputation System** | ✅ Production | 4 traits: Builder, Connector, Explorer, Pioneer |
+| **Streak Tracking** | ✅ Production | Login, quest, event, checkin streaks |
+| **Avatar Generation** | ✅ Production | ZO API avatar creation (bro/bae) |
+| **Onboarding Flow** | ✅ Production | Nickname → Avatar → City Sync → Quest |
+| **Event Calendar** | ✅ Production | Canonical events with geocoding cache |
+| **Vibe Score** | 🚧 In Progress | AI-powered alignment measurement |
+| **Node Activation** | 🔮 Planned | Physical location check-ins |
 
 ---
 
-## 📝 Creating New Documentation
+## 🛡️ Safety & Constraints
 
-### Adding a Feature Spec
+### Path Permissions (from `cursorrule.md`)
 
-1. Copy template from `FEATURES/README.md`
-2. Create `FEATURES/XX-feature-name.md`
-3. Fill out all sections
-4. Update `FEATURES/README.md` index
-5. Link from `ARCHITECTURE.md` if relevant
+**✅ AI Editable** (no pre-approval needed):
+- `apps/web/src/components/**/*.tsx` - React components
+- `apps/web/src/hooks/**/*.ts` - Custom React hooks
+- `packages/sdk/src/**/*.ts` - SDK types and utilities
+- `Docs/**/*.md` - Documentation
+- `tests/**/*.test.ts` - Tests
 
-### Adding a Work Order
+**⚠️ Human Review Required** (PR only, do not merge):
+- `apps/web/src/app/api/**/*.ts` - API routes (security impact)
+- `apps/web/src/lib/supabase.ts` - Database client
+- `apps/web/src/lib/zo-api/**/*.ts` - ZO API client library
+- `apps/web/src/lib/userDb.ts` - User database operations
 
-1. Copy template from `WORK_ORDERS/README.md`
-2. Create `WORK_ORDERS/WO-XXX-description.md`
-3. Get approval before starting work
-4. Generate receipt for guarded paths
-5. Archive after completion
+**🚫 Forbidden** (never touch):
+- `apps/web/package.json` - Dependencies (breaking changes)
+- `apps/web/next.config.ts` - Build config (deployment impact)
+- `.env*` files - Secrets and configuration
+- `pnpm-workspace.yaml` - Monorepo structure
 
-### Adding a Laundry Item
+### Core Principles
 
-1. Copy template from `LAUNDRY/README.md`
-2. Create `LAUNDRY/LAUNDRY-XXX-description.md`
-3. Mark status as 🟢 Available
-4. Pick up and complete
-5. Archive when done
+1. **Humans set direction**, AI executes safe edits
+2. **Single source of truth** - No duplicate logic or data
+3. **All changes must be reversible** - Rollback plans required
+4. **Simulation integrity** - Engine consistency over convenience
+5. **Lore compliance** - Never contradict zo_protocol_lore.md
 
 ---
 
-## 🔄 Updating Documentation
+## 🏗️ Tech Stack Summary
+
+**Frontend**:
+- Next.js 15.4.2 (App Router)
+- React 19.1.0
+- TypeScript 5.x
+- Tailwind CSS 4.x
+- Mapbox GL JS 3.13.0
+
+**Backend**:
+- Next.js API Routes (serverless)
+- Supabase (PostgreSQL 15)
+- ZO API (authentication & profiles)
+
+**Deployment**:
+- Vercel (hosting & CI/CD)
+- Supabase (managed database)
+
+**Key Integrations**:
+- ZO API - Phone auth, profile management, avatar generation
+- Mapbox - Maps, geocoding, location services
+- Luma API - Event calendar integration
+- Anthropic Claude - AI features (Vibe Score)
+- OpenAI Whisper - Voice transcription (quest audio)
+
+---
+
+## 📝 Updating Documentation
 
 ### When to Update
 
-- **Feature changes** → Update feature spec
-- **API changes** → Update `API_CONTRACTS.md` and `API_ENDPOINTS.md`
-- **DB changes** → Update `DATABASE_SCHEMA.md`
-- **Process changes** → Update relevant process doc
+- **Architecture changes** → Update `ARCHITECTURE.md`
+- **New tables/fields** → Update `DATABASE_SCHEMA.md`
+- **Process changes** → Update `cursorrule.md`
+- **Philosophy changes** → Update `PROJECT_RULES.md`
 
 ### How to Update
 
-1. Edit the document
-2. Increment version (if major change)
+1. Read the relevant doc thoroughly
+2. Make surgical edits (don't rewrite entire sections)
 3. Update "Last Updated" date
-4. Commit with `docs: update XXX`
-5. Create receipt if guarded/immutable doc
+4. Increment version if major change
+5. Commit with clear message: `docs: update [DOC_NAME]`
+
+**Philosophy**: Keep docs minimal. If it's not in these 5 files, it should be in the code.
 
 ---
 
-## 🔍 Finding Documentation
+## 🔍 Finding Information
 
-### By Topic
-
-- **Architecture**: `ARCHITECTURE.md`
-- **API**: `API_ENDPOINTS.md`, `API_CONTRACTS.md`
-- **Database**: `DATABASE_SCHEMA.md`
-- **Features**: `FEATURES/` folder
-- **Quests**: `QUESTS_SYSTEM.md`, `FEATURES/03-quests-spec.md`
-- **Auth**: `WALLET_AND_PHONE_TO_PROFILE_FLOW.md`
-- **Process**: `CONSTRAINTS.md`, `LAUNDRY/`, `WORK_ORDERS/`, `RECEIPTS/`
-
-### By Status
-
-- **Production Ready**: `ARCHITECTURE.md`, `API_ENDPOINTS.md`, `DATABASE_SCHEMA.md`
-- **In Development**: Check `FEATURES/` for status icons
-- **Planned**: Check `VIBE_SCORE.md`, some feature specs
-- **Archived**: `archive/` folder
+**For architecture questions**: Read `ARCHITECTURE.md`  
+**For database questions**: Read `DATABASE_SCHEMA.md`  
+**For philosophy questions**: Read `PROJECT_RULES.md` and `/lore/zo_protocol_lore.md`  
+**For AI coding questions**: Read `cursorrule.md`  
+**For everything else**: Search the codebase or ask the team
 
 ---
 
-## 📊 Documentation Health
+## 🚀 Getting Started
 
-| Metric | Status |
-|--------|--------|
-| **Core Docs** | ✅ Complete |
-| **Feature Specs** | ✅ 6/6 Complete |
-| **Process Docs** | ✅ Complete |
-| **Safety Systems** | ✅ Active |
-| **SDK** | ✅ Ready |
-| **Guides** | 🚧 In Progress |
+**For New Developers**:
+1. Read `PROJECT_RULES.md` (5 min)
+2. Read `ARCHITECTURE.md` (15 min)
+3. Read `DATABASE_SCHEMA.md` (10 min)
+4. Browse `/lore/zo_protocol_lore.md` (5 min)
+5. Start coding!
 
-**Overall Status**: 🟢 Production Ready
+**For AI Assistants**:
+1. Read `.cursorrules` in root (quick reference)
+2. Read `Docs/PROJECT_RULES.md` (principles)
+3. Read `Docs/cursorrule.md` (workflows)
+4. Read `Docs/ARCHITECTURE.md` (tech details)
+5. Check permissions before editing
 
----
-
-## 🤝 Contributing
-
-### Documentation Standards
-
-- Use clear, concise language
-- Include code examples where helpful
-- Provide API contracts for all endpoints
-- Add acceptance criteria for features
-- Include rollback plans for changes
-
-### Review Process
-
-1. Create or update documentation
-2. Self-review for completeness
-3. Open PR using template
-4. Get review from doc owner
-5. Merge and notify team
+**For Product/Design**:
+1. Read `/lore/zo_protocol_lore.md` (worldview)
+2. Read `PROJECT_RULES.md` (design principles)
+3. Read `ARCHITECTURE.md` (what's possible technically)
 
 ---
 
-## 📞 Support
+## 📊 Documentation Status
 
-**Need help?**
+| Document | Version | Last Updated | Status |
+|----------|---------|--------------|--------|
+| **PROJECT_RULES.md** | 1.0 | 2025-11-13 | ✅ Complete |
+| **ARCHITECTURE.md** | 2.0 | 2025-11-22 | ✅ Complete |
+| **DATABASE_SCHEMA.md** | 3.0 | 2025-11-13 | ✅ Complete |
+| **cursorrule.md** | 1.0 | 2025-11-13 | ⚠️ Needs update |
+| **README.md** | 2.0 | 2025-11-22 | ✅ Complete |
 
-1. Check this README for document locations
-2. Read `AI_PAIR_CODING_SETUP.md` for workflows
-3. Browse `FEATURES/` for feature specs
-4. Ask in team channel
+**Overall Status**: 🟢 4/5 Complete | ⚠️ 1 Needs Update
 
 ---
 
 ## 🎯 Quick Links
 
-### Most Used Docs
-- [Architecture](ARCHITECTURE.md)
-- [API Endpoints](API_ENDPOINTS.md)
-- [Feature Specs](FEATURES/README.md)
-- [Database Schema](DATABASE_SCHEMA.md)
+### Essential Reading
+- [PROJECT_RULES.md](PROJECT_RULES.md) - 25 foundational principles ⭐
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Complete system architecture ⭐
+- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - Database schema & queries ⭐
+- [cursorrule.md](cursorrule.md) - AI coding workflows ⭐
+- [/lore/zo_protocol_lore.md](../lore/zo_protocol_lore.md) - Operating ontology 📖
 
-### For AI Development
-- [AI Setup Guide](AI_PAIR_CODING_SETUP.md)
-- [Constraints](CONSTRAINTS.md)
-- [API Contracts](API_CONTRACTS.md)
+### For Development
+- Root `.cursorrules` - Quick reference for AI assistants
+- `apps/web/src/lib/zo-api/` - ZO API client library
+- `apps/web/src/lib/userDb.ts` - User database operations
+- `apps/web/src/app/api/` - API routes
 
-### Process & Safety
-- [Work Orders](WORK_ORDERS/README.md)
-- [Receipts](RECEIPTS/README.md)
-- [Laundry List](LAUNDRY/README.md)
+### For Understanding
+- All code should be self-documenting
+- Complex logic should have inline comments
+- Git history contains decision context
 
 ---
 
-**Last Updated**: 2025-11-19  
+**Last Updated**: 2025-11-22  
 **Maintained By**: Development Team  
-**Total Docs**: 30+ files  
-**Status**: ✅ Complete & Production Ready
+**Total Core Docs**: 5 files  
+**Philosophy**: Minimal docs, maximum code clarity  
+**Status**: ✅ Production Ready

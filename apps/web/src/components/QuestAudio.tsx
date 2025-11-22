@@ -502,7 +502,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       return;
     }
     
-    console.log('🎤 Starting voice recording - waiting 5 seconds for you to speak...');
+    console.log('🎤 Starting voice recording - waiting 3 seconds for you to speak...');
     
     setAudioStatus('recording');
     setRecordingDuration(0);
@@ -555,7 +555,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           console.log('🎤 💾 Audio file saved! (transcription not available)');
           console.log('   - Size:', audioBlob.size, 'bytes (', (audioBlob.size / 1024).toFixed(2), 'KB)');
           console.log('   - Format: WebM audio');
-          console.log('   - Duration: ~5 seconds');
+          console.log('   - Duration: ~3 seconds');
           console.log('   - Audio URL:', audioUrl);
           console.log('   - Filename:', filename);
           
@@ -592,9 +592,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       setRecordingDuration((prev) => prev + 1);
     }, 1000);
     
-        // Auto-stop after 5 seconds
+        // Auto-stop after 3 seconds
     setTimeout(() => {
-          console.log('🎤 5 seconds elapsed - stopping recording');
+          console.log('🎤 3 seconds elapsed - stopping recording');
           
           isRecordingRef.current = false; // Mark that recording is complete
           
@@ -605,10 +605,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         clearInterval(timerRef.current);
       }
           
-          // Only now transition to success state after full 5 seconds
+          // Only now transition to success state after full 3 seconds
           setAudioStatus('success'); // Play video (stones forming), will pause at 4s and show game
       setRecordingDuration(0);
-        }, 5000);
+        }, 3000);
       } catch (error: any) {
         console.error('Failed to start recording:', error);
         isRecordingRef.current = false;
@@ -622,7 +622,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     // Initialize speech recognition
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
-    recognition.continuous = true; // Keep listening for the full 5 seconds
+    recognition.continuous = true; // Keep listening for the full 3 seconds
     recognition.interimResults = true; // Show interim results
     
     recognition.onresult = (event: any) => {
@@ -734,7 +734,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           // Check if recognition is actually stopped before restarting
           // Note: Web Speech API doesn't expose state directly, so we try-catch
           console.log('🎤 🔄 Restarting speech recognition to continue listening...');
-          // Restart recognition to keep listening for the full 5 seconds
+          // Restart recognition to keep listening for the full 3 seconds
           speechRecognitionRef.current.start();
         } catch (e: any) {
           // Recognition might already be running, ignore
@@ -795,7 +795,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         console.log('🎤 💾 Audio file saved!');
         console.log('   - Size:', audioBlob.size, 'bytes (', (audioBlob.size / 1024).toFixed(2), 'KB)');
         console.log('   - Format: WebM audio');
-        console.log('   - Duration: ~5 seconds');
+        console.log('   - Duration: ~3 seconds');
         console.log('   - Audio URL:', audioUrl);
         console.log('   - Filename:', filename);
         
@@ -820,31 +820,33 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             }
             console.log('🎤 ✅ Using AssemblyAI as primary transcription source');
             
-            // Validate: Check if transcription contains "zo zo zo"
-            const requiredPhrase = 'zo zo zo';
-            const containsRequiredPhrase = transcribedText.includes(requiredPhrase);
+            // Validate: Check if transcription contains "zo" anywhere (in any word)
+            // Examples: "zo", "mozo", "fozo", "zo zo", "amazing zoo" - all valid!
+            const containsZo = transcribedText.includes('zo');
             
-            console.log('🎤 🔍 Validation:', containsRequiredPhrase ? '✅ PASSED' : '❌ FAILED');
-            console.log('🎤   Required phrase:', requiredPhrase);
-            console.log('🎤   Found in text:', containsRequiredPhrase);
+            console.log('🎤 🔍 Validation:', containsZo ? '✅ PASSED' : '❌ FAILED');
+            console.log('🎤   Looking for: "zo" anywhere in the text');
+            console.log('🎤   Found "zo":', containsZo);
+            console.log('🎤   Full text:', transcribedText);
             
-            if (containsRequiredPhrase) {
+            if (containsZo) {
               transcriptionValidatedRef.current = true;
-              console.log('🎤 ✅ AssemblyAI validation passed! Proceeding to success state...');
+              console.log('🎤 ✅ AssemblyAI validation passed! "zo" detected in text!');
               
               // Transition to success state immediately (AssemblyAI is primary, no need to wait)
               console.log('🎤 🚀 AssemblyAI validated - transitioning to success');
               setAudioStatus('success');
           } else {
               transcriptionValidatedRef.current = false;
-              console.log('🎤 ❌ Validation failed! Required phrase not found.');
+              console.log('🎤 ❌ Validation failed! No "zo" found in transcription.');
               
               // Show error popup
               alert(
                 '❌ Voice Authentication Failed\n\n' +
-                'You need to say "Zo Zo Zo" clearly.\n\n' +
+                'You need to say a word containing "zo".\n\n' +
                 'What was detected: "' + transcription.text + '"\n\n' +
-                'Please try again and make sure to say "Zo Zo Zo" clearly into the microphone.'
+                'Examples: "zo", "mozo", "fozo", "zo zo"\n\n' +
+                'Please try again!'
               );
               
               // Reset to idle state so user can try again
@@ -908,12 +910,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             // Fallback: Use Web Speech API transcript for validation
             const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
             const fallbackText = fallbackTranscript.toLowerCase().trim();
-            const requiredPhrase = 'zo zo zo';
-            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            const containsZo = fallbackText.includes('zo');
             
-            if (fallbackText && containsRequiredPhrase) {
+            if (fallbackText && containsZo) {
               console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
               console.log('🎤 📝 Web Speech API (secondary) detected:', fallbackTranscript);
+              console.log('🎤 ✅ "zo" found in text!');
               console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
               transcriptionValidatedRef.current = true;
               transcriptionTextRef.current = fallbackText;
@@ -921,20 +923,18 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               setRecordingDuration(0);
               return; // Success with fallback
             } else if (fallbackText) {
-              // Web Speech API detected something, but not the required phrase
+              // Web Speech API detected something, but no "zo"
               console.log('🎤 ⚠️ Web Speech API detected:', fallbackTranscript);
-              console.log('🎤 ❌ But required phrase "zo zo zo" not found');
+              console.log('🎤 ❌ But no "zo" found in text');
               transcriptionValidatedRef.current = false;
               transcriptionTextRef.current = fallbackText;
               
               alert(
                 '❌ Voice Authentication Failed\n\n' +
-                'Could not verify that you said "Zo Zo Zo".\n\n' +
+                'You need to say a word containing "zo".\n\n' +
                 'What was detected: "' + fallbackTranscript + '"\n\n' +
-                'Please try again and make sure to:\n' +
-                '• Say "Zo Zo Zo" clearly\n' +
-                '• Speak close to the microphone\n' +
-                '• Reduce background noise'
+                'Examples: "zo", "mozo", "fozo", "zo zo"\n\n' +
+                'Please try again!'
               );
               
               setAudioStatus('idle');
@@ -950,7 +950,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                 '❌ Voice Authentication Failed\n\n' +
                 'Could not detect your voice.\n\n' +
                 'Please try again and make sure to:\n' +
-                '• Say "Zo Zo Zo" clearly\n' +
+                '• Say a word with "zo" in it\n' +
                 '• Speak close to the microphone\n' +
                 '• Reduce background noise\n\n' +
                 'Note: AssemblyAI transcription is not configured.\n' +
@@ -968,11 +968,11 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             
             const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
             const fallbackText = fallbackTranscript.toLowerCase().trim();
-            const requiredPhrase = 'zo zo zo';
-            const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
+            const containsZo = fallbackText.includes('zo');
             
-            if (fallbackText && containsRequiredPhrase) {
+            if (fallbackText && containsZo) {
               console.log('🎤 ✅ FALLBACK validation passed with Web Speech API transcript');
+              console.log('🎤 ✅ "zo" found in text!');
               console.log('🎤 ⚠️ Note: Using Web Speech API fallback - AssemblyAI is preferred for better accuracy');
               transcriptionValidatedRef.current = true;
               transcriptionTextRef.current = fallbackText;
@@ -990,7 +990,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               'Could not transcribe your audio.\n\n' +
               'Error: ' + error.message + '\n\n' +
               'Please try again and make sure to:\n' +
-              '• Say "Zo Zo Zo" clearly\n' +
+              '• Say a word with "zo" in it\n' +
               '• Speak close to the microphone\n' +
               '• Reduce background noise'
             );
@@ -1060,14 +1060,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => {
           const newDuration = prev + 1;
-          console.log(`🎤 Recording... ${newDuration}/5 seconds`);
+          console.log(`🎤 Recording... ${newDuration}/3 seconds`);
           return newDuration;
         });
       }, 1000);
       
       // Auto-stop after 5 seconds
       setTimeout(() => {
-        console.log('🎤 5 seconds elapsed - stopping recording and transcription');
+        console.log('🎤 3 seconds elapsed - stopping recording and transcription');
         
         // CRITICAL: Set isRecordingRef to false BEFORE stopping recognition
         // This ensures that when onend fires, it won't try to restart
@@ -1213,7 +1213,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               setTimeout(checkTranscriptionValidation, 1000); // Give transcription 1 second to start
             }, 500); // Additional delay to capture any final results
           }, 500); // Delay to allow finalization
-      }, 5000);
+      }, 3000);
       
     } catch (error: any) {
       console.error('Failed to start recording:', error);

@@ -42,7 +42,7 @@ The voice transcription system powers the **Game1111 voice quest** where users s
 User says "Zo"
       ↓
 ┌─────────────────────────────────────────────┐
-│  1. RECORDING (5 seconds)                   │
+│  1. RECORDING (3 seconds)                   │
 │                                             │
 │  ┌────────────────┐   ┌──────────────────┐│
 │  │ Web Speech API │   │ MediaRecorder    ││
@@ -164,13 +164,13 @@ const startRecording = async () => {
     console.log('🎤 💾 Audio file saved!');
     console.log('   - Size:', audioBlob.size, 'bytes');
     console.log('   - Format: WebM audio');
-    console.log('   - Duration: ~5 seconds');
+    console.log('   - Duration: ~3 seconds');
   };
   
   mediaRecorder.start();
   mediaRecorderRef.current = mediaRecorder;
   
-  // Step 3: Auto-stop after 5 seconds
+  // Step 3: Auto-stop after 3 seconds
   timerRef.current = setTimeout(() => {
     stopRecording();
   }, 5000);
@@ -181,7 +181,7 @@ const startRecording = async () => {
 
 ### 2. **Stop Recording** (`stopRecording()`)
 
-After 5 seconds, recording stops and transcription begins:
+After 3 seconds, recording stops and transcription begins:
 
 ```typescript
 const stopRecording = async () => {
@@ -339,7 +339,7 @@ recognition.start();
 After transcription completes, the system validates and triggers the game:
 
 ```typescript
-// In mediaRecorder.onstop callback (after 5 seconds):
+// In mediaRecorder.onstop callback (after 3 seconds):
 
 mediaRecorder.onstop = () => {
   const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -578,6 +578,216 @@ if (permissionState === 'denied') {
 
 ---
 
+## Failure Flow - When "zo" Is NOT Recognized
+
+### What Happens When Validation Fails?
+
+The system has **multiple validation checkpoints** to ensure "zo" is detected. Here's what happens at each failure point:
+
+---
+
+### Scenario 1: AssemblyAI Transcribes, But No "zo" Found
+
+**Flow:**
+1. ✅ Recording completes (3 seconds)
+2. ✅ Audio sent to AssemblyAI API
+3. ✅ Transcription returns successfully
+4. ❌ Validation: `transcribedText.includes('zo')` returns `false`
+
+**What the user sees:**
+
+```
+❌ Voice Authentication Failed
+
+You need to say a word containing "zo".
+
+What was detected: "hello world"
+
+Examples: "zo", "mozo", "fozo", "zo zo"
+
+Please try again!
+```
+
+**Console logs:**
+
+```javascript
+🎤 ========================================
+🎤 📝 ASSEMBLYAI TRANSCRIPTION (PRIMARY)
+🎤 ========================================
+🎤 📄 Transcribed Text: hello world
+🎤 📊 Confidence: 95.3%
+🎤 ✅ Using AssemblyAI as primary transcription source
+🎤 🔍 Validation: ❌ FAILED
+🎤   Looking for: "zo" anywhere in the text
+🎤   Found "zo": false
+🎤   Full text: hello world
+🎤 ❌ Validation failed! No "zo" found in transcription.
+```
+
+**What happens next:**
+- `setAudioStatus('idle')` - Returns to idle state
+- `setRecordingDuration(0)` - Resets duration
+- User can immediately try again by clicking the microphone button
+
+---
+
+### Scenario 2: AssemblyAI Not Configured → Web Speech API Fallback (No "zo")
+
+**Flow:**
+1. ✅ Recording completes (3 seconds)
+2. ❌ AssemblyAI API returns 503 (not configured)
+3. ⚠️ System falls back to Web Speech API
+4. ✅ Web Speech API has transcript
+5. ❌ Validation: `fallbackText.includes('zo')` returns `false`
+
+**What the user sees:**
+
+```
+❌ Voice Authentication Failed
+
+You need to say a word containing "zo".
+
+What was detected: "hello there"
+
+Examples: "zo", "mozo", "fozo", "zo zo"
+
+Please try again!
+```
+
+**Console logs:**
+
+```javascript
+🎤 ⚠️ ASSEMBLYAI NOT CONFIGURED - FALLING BACK TO WEB SPEECH API
+🎤 ⚠️ AssemblyAI (primary) is not set up.
+🎤 🔄 Falling back to Web Speech API (secondary) for validation.
+
+🎤 📱 Web Speech API transcript (fallback): hello there
+🎤 🔍 Fallback Validation: ❌ FAILED
+🎤   Looking for: "zo" anywhere in the text
+🎤   Found "zo": false
+🎤 ⚠️ Web Speech API detected: hello there
+🎤 ❌ But no "zo" found in text
+```
+
+**What happens next:**
+- Returns to idle state
+- User can try again immediately
+
+---
+
+### Scenario 3: No Transcription Detected At All
+
+**Flow:**
+1. ✅ Recording completes (3 seconds)
+2. ❌ AssemblyAI returns empty/null text
+3. ❌ Web Speech API also has no transcript
+
+**What the user sees:**
+
+```
+❌ Voice Authentication Failed
+
+Could not detect your voice.
+
+Please try again and make sure to:
+• Say a word with "zo" in it
+• Speak close to the microphone
+• Reduce background noise
+```
+
+**Common causes:**
+- User didn't speak during the 3 seconds
+- Microphone volume too low
+- Background noise too loud
+- Microphone permissions denied after initial approval
+
+---
+
+### Scenario 4: Both Systems Fail (Transcription Error)
+
+**Flow:**
+1. ✅ Recording completes (3 seconds)
+2. ❌ AssemblyAI returns an error (network, API error, etc.)
+3. ⚠️ Falls back to Web Speech API
+4. ❌ Web Speech API also has no useful transcript
+
+**What the user sees:**
+
+```
+❌ Voice Authentication Failed
+
+Could not transcribe your audio.
+
+Error: Network request failed
+
+Please try again and make sure to:
+• Say a word with "zo" in it
+• Speak close to the microphone
+• Reduce background noise
+```
+
+---
+
+### Recovery Mechanism
+
+**Key behavior: Automatic state reset**
+
+```typescript
+// When validation fails, the component automatically resets:
+transcriptionValidatedRef.current = false;  // Mark as invalid
+setAudioStatus('idle');                     // Return to idle
+setRecordingDuration(0);                    // Reset duration counter
+```
+
+**This means:**
+- ✅ User can immediately try again
+- ✅ No page refresh needed
+- ✅ No manual state reset required
+- ✅ Microphone button becomes clickable again
+
+---
+
+### Validation Logic (Simple & Flexible)
+
+```typescript
+// Current validation (VERY permissive):
+const containsZo = transcribedText.toLowerCase().includes('zo');
+
+// ✅ Accepts:
+'zo'           → true
+'mozo'         → true  
+'fozo'         → true
+'zo zo'        → true
+'zo zo zo'     → true
+'amazing zoo'  → true  (contains 'zo' from 'zoo')
+'frozen'       → true  (contains 'zo')
+'arizona'      → true  (contains 'zo')
+'zone'         → true  (contains 'zo')
+'ozone'        → true  (contains 'zo')
+
+// ❌ Rejects:
+'hello'        → false
+'world'        → false
+'test'         → false
+```
+
+**Note:** The validation is now **extremely flexible** - ANY word containing the substring "zo" will pass!
+
+---
+
+### User Experience Summary
+
+| Scenario | Primary (AssemblyAI) | Fallback (Web Speech) | User Impact | Recovery |
+|----------|---------------------|----------------------|-------------|----------|
+| **Happy Path** | ✅ "zo" found | N/A | Success! Game starts | N/A |
+| **No "zo" detected** | ✅ Transcribed, ❌ No "zo" | N/A | Alert shows what was heard | Instant retry |
+| **AssemblyAI down** | ❌ Not configured | ✅ "zo" found | Success with fallback! | N/A |
+| **AssemblyAI down + No "zo"** | ❌ Not configured | ✅ Transcribed, ❌ No "zo" | Alert shows what was heard | Instant retry |
+| **Complete silence** | ❌ Empty | ❌ Empty | Alert: "Could not detect voice" | Instant retry |
+| **Both systems error** | ❌ Error | ❌ Error | Alert with error message | Instant retry |
+
+---
+
 ## Debugging
 
 ### Enable Console Logs
@@ -585,7 +795,7 @@ if (permissionState === 'denied') {
 The system has extensive logging. Check console for:
 
 ```
-🎤 Starting voice recording - waiting 5 seconds for you to speak...
+🎤 Starting voice recording - waiting 3 seconds for you to speak...
 🎙️ Microphone active
 🗣️ Heard: zo
 🎤 💾 Audio file saved!
@@ -656,7 +866,7 @@ pnpm dev
 1. **Background noise** - Try quieter environment
 2. **Microphone quality** - Use better microphone
 3. **Accent/pronunciation** - Try "zone" or "go" instead
-4. **Recording too short** - Speak within the 5 seconds
+4. **Recording too short** - Speak within the 3 seconds
 
 **Debug**:
 - Download the audio file and listen to it

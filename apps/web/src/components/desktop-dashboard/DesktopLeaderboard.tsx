@@ -144,18 +144,19 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
             }}
           >
             <p 
-              className="font-rubik font-medium uppercase pl-4"
+              className="font-rubik font-medium uppercase flex-shrink-0 pl-4"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
                 letterSpacing: '0.1px',
                 color: 'rgba(255, 255, 255, 0.44)',
+                width: '48px',
               }}
             >
               RANK
             </p>
             <p 
-              className="font-rubik font-medium uppercase pl-11"
+              className="font-rubik font-medium uppercase flex-1"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
@@ -166,12 +167,13 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
               PLAYER
             </p>
             <p 
-              className="font-rubik font-medium uppercase ml-auto pr-4 text-right"
+              className="font-rubik font-medium uppercase pr-4 text-right flex-shrink-0"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
                 letterSpacing: '0.1px',
                 color: 'rgba(255, 255, 255, 0.44)',
+                minWidth: '60px',
               }}
             >
               $ZO
@@ -193,45 +195,48 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
                 >
                   {/* Rank */}
                   <p 
-                    className="font-rubik font-normal text-white w-10 pl-4"
+                    className="font-rubik font-normal text-white flex-shrink-0 pl-4"
                     style={{
                       fontSize: '12px',
                       lineHeight: '18px',
                       letterSpacing: '0.12px',
+                      width: '48px',
                     }}
                   >
                     {entry.rank}
                   </p>
                   
-                  {/* Avatar */}
-                  <div className="w-6 h-6 rounded-full overflow-hidden ml-7">
-                    <img 
-                      src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
-                      alt={entry.nickname} 
-                      className="w-full h-full object-cover" 
-                    />
+                  {/* Avatar + Name Container */}
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
+                        alt={entry.nickname} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    
+                    <p 
+                      className="font-rubik font-normal text-white"
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '24px',
+                        letterSpacing: '0.16px',
+                      }}
+                    >
+                      {isCurrentUser ? 'You' : entry.nickname}
+                    </p>
                   </div>
-                  
-                  {/* Name */}
-                  <p 
-                    className="font-rubik font-normal text-white ml-[22px]"
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '24px',
-                      letterSpacing: '0.16px',
-                    }}
-                  >
-                    {isCurrentUser ? 'You' : entry.nickname}
-                  </p>
                   
                   {/* Score */}
                   <p 
-                    className="font-rubik font-medium ml-auto pr-4 text-right"
+                    className="font-rubik font-medium pr-4 text-right flex-shrink-0"
                     style={{
                       fontSize: '16px',
                       lineHeight: '24px',
                       letterSpacing: '0.16px',
                       color: '#CFFF50',
+                      minWidth: '60px',
                     }}
                   >
                     {entry.zo_points}
@@ -249,42 +254,47 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
                 }}
               >
                 <p 
-                  className="font-rubik font-normal text-white w-10 pl-4"
+                  className="font-rubik font-normal text-white flex-shrink-0 pl-4"
                   style={{
                     fontSize: '12px',
                     lineHeight: '18px',
                     letterSpacing: '0.12px',
+                    width: '48px',
                   }}
                 >
                   {userRank}
                 </p>
                 
-                <div className="w-6 h-6 rounded-full overflow-hidden ml-7">
-                  <img 
-                    src={'/images/rank1.jpeg'} 
-                    alt="You" 
-                    className="w-full h-full object-cover" 
-                  />
+                {/* Avatar + Name Container */}
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                    <img 
+                      src={'/images/rank1.jpeg'} 
+                      alt="You" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  
+                  <p 
+                    className="font-rubik font-normal text-white"
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      letterSpacing: '0.16px',
+                    }}
+                  >
+                    You
+                  </p>
                 </div>
                 
                 <p 
-                  className="font-rubik font-normal text-white ml-[22px]"
-                  style={{
-                    fontSize: '16px',
-                    lineHeight: '24px',
-                    letterSpacing: '0.16px',
-                  }}
-                >
-                  You
-                </p>
-                
-                <p 
-                  className="font-rubik font-medium ml-auto pr-4 text-right"
+                  className="font-rubik font-medium pr-4 text-right flex-shrink-0"
                   style={{
                     fontSize: '16px',
                     lineHeight: '24px',
                     letterSpacing: '0.16px',
                     color: '#CFFF50',
+                    minWidth: '60px',
                   }}
                 >
                   {userBalance}

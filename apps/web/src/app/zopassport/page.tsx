@@ -438,7 +438,7 @@ Join me: https://zohm.world
                 <div className="flex items-center justify-center">
                   <ZoPassportComponent
                     profile={{
-                      avatar: "/images/rank2.jpeg",
+                      avatar: "/bae.png",
                       name: "New Citizen",
                       isFounder: false,
                     }}
@@ -503,7 +503,7 @@ Join me: https://zohm.world
                 <div className="flex items-center justify-center">
                   <ZoPassportComponent
                     profile={{
-                      avatar: "/images/rank1.jpeg",
+                      avatar: "/bae (13).png",
                       name: "Founder",
                       isFounder: true,
                     }}

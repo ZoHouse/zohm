@@ -227,7 +227,13 @@ export async function POST(request: NextRequest) {
     
     if (!syncResult.success) {
       console.error('❌ Profile sync failed:', syncResult.error);
+      // Log warning if it's a service role key issue
+      if (syncResult.error?.includes('admin access not available') || syncResult.error?.includes('Database admin')) {
+        console.error('🚨 CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing in production! Avatar sync will fail.');
+        console.error('🚨 Set SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables');
+      }
       // Continue anyway - basic auth data is already saved
+      // But avatar won't be synced, so user will see fallback
     } else {
       console.log('✅ Full profile synced from ZO API (including avatar)');
     }

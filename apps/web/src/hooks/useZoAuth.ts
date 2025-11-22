@@ -73,19 +73,31 @@ export function useZoAuth() {
       }
 
       if (profile) {
+        // 🔍 DEEP DEBUG: Log ALL avatar-related fields from database
         console.log('✅ [ZoAuth] Profile loaded successfully:', {
           id: profile.id,
           name: profile.name,
           email: profile.email,
           phone: profile.phone,
-          onboarding_completed: profile.onboarding_completed
+          onboarding_completed: profile.onboarding_completed,
+          // Avatar fields - check ALL possible sources
+          pfp: profile.pfp || 'NULL',
+          pfpLength: profile.pfp?.length || 0,
+          hasPfp: !!profile.pfp,
+          zo_synced_at: profile.zo_synced_at,
+          // Raw profile object keys (to see what fields exist)
+          profileKeys: Object.keys(profile).filter(k => k.includes('avatar') || k.includes('pfp') || k.includes('image')),
         });
 
-        // 🔍 DEEP DEBUG: Log avatar data
+        // 🔍 DEEP DEBUG: Log avatar data separately for clarity
         console.log('📸 [ZoAuth] Avatar in loaded profile:', {
           pfp: profile.pfp || 'NULL',
           hasPfp: !!profile.pfp,
           pfpLength: profile.pfp?.length || 0,
+          // Check if profile has any other avatar-related fields
+          rawPfpValue: (profile as any).pfp,
+          rawAvatarImage: (profile as any).avatar_image,
+          rawAvatarUrl: (profile as any).avatar_url,
         });
 
         setUserProfile(profile);

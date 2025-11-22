@@ -159,12 +159,40 @@ export async function getUserById(privyId: string): Promise<UserRecord | null> {
           zo_user_id: userByZoId?.zo_user_id,
           name: userByZoId?.name
         });
+        
+        // 🔍 DEEP DEBUG: Log raw database response for avatar fields
+        console.log('🔍 [getUserById] Raw database data (zo_user_id lookup) - avatar fields:', {
+          pfp: userByZoId?.pfp || 'NULL',
+          pfpType: typeof userByZoId?.pfp,
+          pfpLength: userByZoId?.pfp?.length || 0,
+          hasPfp: !!userByZoId?.pfp,
+          // Check for other possible avatar columns
+          avatar_image: (userByZoId as any)?.avatar_image || 'NULL',
+          avatar_url: (userByZoId as any)?.avatar_url || 'NULL',
+        });
+        
         return userByZoId;
       }
       throw error;
     }
 
     console.log('✅ [getUserById] Found user by id:', data?.id);
+    
+    // 🔍 DEEP DEBUG: Log raw database response for avatar fields
+    console.log('🔍 [getUserById] Raw database data - avatar fields:', {
+      pfp: data?.pfp || 'NULL',
+      pfpType: typeof data?.pfp,
+      pfpLength: data?.pfp?.length || 0,
+      hasPfp: !!data?.pfp,
+      // Check for other possible avatar columns
+      avatar_image: (data as any)?.avatar_image || 'NULL',
+      avatar_url: (data as any)?.avatar_url || 'NULL',
+      // Show all keys that might be avatar-related
+      allKeys: Object.keys(data || {}).filter(k => 
+        k.includes('avatar') || k.includes('pfp') || k.includes('image')
+      ),
+    });
+    
     return data;
   } catch (error) {
     console.error('❌ [getUserById] Error fetching user by ID:', error);

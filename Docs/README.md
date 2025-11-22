@@ -8,13 +8,14 @@
 
 ## 🚀 Quick Start
 
-**New to the project?** Read these 5 core documents in order:
+**New to the project?** Read these 6 core documents in order:
 
 1. **`PROJECT_RULES.md`** ⭐ - **25 Foundational Rules** for building Zo World
 2. **`ARCHITECTURE.md`** ⭐ - System architecture, tech stack & data flows
 3. **`DATABASE_SCHEMA.md`** - Complete database schema with tables and relationships
-4. **`cursorrule.md`** - AI pair-coding workflows and constraints
-5. **`README.md`** - This file (documentation overview)
+4. **`ZO_API.md`** - Complete ZO API reference (authentication, profile, avatar)
+5. **`cursorrule.md`** - AI pair-coding workflows and constraints
+6. **`README.md`** - This file (documentation overview)
 
 ---
 
@@ -25,6 +26,7 @@ Docs/
 ├── PROJECT_RULES.md       ⭐ 25 foundational principles
 ├── ARCHITECTURE.md        ⭐ System design & tech stack
 ├── DATABASE_SCHEMA.md     ⭐ Complete database schema
+├── ZO_API.md              ⭐ ZO API reference (auth, profile, avatar)
 ├── cursorrule.md          ⭐ AI coding workflows
 └── README.md              ⭐ This file
 
@@ -113,7 +115,17 @@ Full Supabase/Postgres schema:
 - Row-Level Security (RLS) policies
 - Sample queries for common operations
 
-### 4. `cursorrule.md` ⭐
+### 4. `ZO_API.md` ⭐
+
+Complete ZO API documentation:
+- Phone-based OTP authentication
+- Profile management (get, update)
+- Avatar generation (bro/bae body types)
+- Token refresh & session management
+- All endpoints with request/response examples
+- TypeScript types and code examples
+
+### 5. `cursorrule.md` ⭐
 
 AI pair-coding workflows and constraints:
 - File permissions matrix (editable/review/forbidden)
@@ -123,7 +135,7 @@ AI pair-coding workflows and constraints:
 - Common scenarios
 - Conflict resolution
 
-### 5. `/lore/zo_protocol_lore.md` 📖
+### 6. `/lore/zo_protocol_lore.md` 📖
 
 The operating ontology and worldview of Zo World. All features must align with this.
 
@@ -246,8 +258,9 @@ The operating ontology and worldview of Zo World. All features must align with t
 1. Read `PROJECT_RULES.md` (5 min)
 2. Read `ARCHITECTURE.md` (15 min)
 3. Read `DATABASE_SCHEMA.md` (10 min)
-4. Browse `/lore/zo_protocol_lore.md` (5 min)
-5. Start coding!
+4. Skim `ZO_API.md` (5 min - reference as needed)
+5. Browse `/lore/zo_protocol_lore.md` (5 min)
+6. Start coding!
 
 **For AI Assistants**:
 1. Read `.cursorrules` in root (quick reference)
@@ -269,11 +282,12 @@ The operating ontology and worldview of Zo World. All features must align with t
 |----------|---------|--------------|--------|
 | **PROJECT_RULES.md** | 1.0 | 2025-11-13 | ✅ Complete |
 | **ARCHITECTURE.md** | 2.0 | 2025-11-22 | ✅ Complete |
-| **DATABASE_SCHEMA.md** | 3.0 | 2025-11-13 | ✅ Complete |
-| **cursorrule.md** | 1.0 | 2025-11-13 | ⚠️ Needs update |
-| **README.md** | 2.0 | 2025-11-22 | ✅ Complete |
+| **DATABASE_SCHEMA.md** | 4.0 | 2025-11-22 | ✅ Complete |
+| **ZO_API.md** | 1.0 | 2025-11-22 | ✅ Complete |
+| **cursorrule.md** | 2.0 | 2025-11-22 | ✅ Complete |
+| **README.md** | 3.0 | 2025-11-22 | ✅ Complete |
 
-**Overall Status**: 🟢 4/5 Complete | ⚠️ 1 Needs Update
+**Overall Status**: 🟢 6/6 Complete & Production Ready
 
 ---
 
@@ -283,6 +297,7 @@ The operating ontology and worldview of Zo World. All features must align with t
 - [PROJECT_RULES.md](PROJECT_RULES.md) - 25 foundational principles ⭐
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Complete system architecture ⭐
 - [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) - Database schema & queries ⭐
+- [ZO_API.md](ZO_API.md) - ZO API reference (auth, profile, avatar) ⭐
 - [cursorrule.md](cursorrule.md) - AI coding workflows ⭐
 - [/lore/zo_protocol_lore.md](../lore/zo_protocol_lore.md) - Operating ontology 📖
 
@@ -301,6 +316,6 @@ The operating ontology and worldview of Zo World. All features must align with t
 
 **Last Updated**: 2025-11-22  
 **Maintained By**: Development Team  
-**Total Core Docs**: 5 files  
+**Total Core Docs**: 6 files  
 **Philosophy**: Minimal docs, maximum code clarity  
-**Status**: ✅ Production Ready
+**Status**: ✅ Production Ready & Comprehensive

@@ -123,6 +123,59 @@ The desktop dashboard is a **full-screen overlay** that covers the entire map wh
 **Available Cultures**:
 - Art, Music, Technology, Food, Sports, Nature, etc.
 
+#### 5. Founder NFTs Section
+```
+┌─────────────────────────┐
+│  FOUNDER NFTs           │
+│  ┌──────┐              │
+│  │[VID] │  #523        │
+│  └──────┘              │
+│  ┌──────┐              │
+│  │[VID] │  #204        │
+│  └──────┘              │
+│  ┌──────┐              │
+│  │[VID] │  #158        │
+│  └──────┘              │
+│  ┌──────┐              │
+│  │[VID] │  #151        │
+│  └──────┘              │
+└─────────────────────────┘
+```
+
+**Features**:
+- **Dynamic from ZO API** - Fetches `founder_tokens` from user profile
+- **Video NFTs** - Each NFT is an animated video from `https://cdn.zo.xyz/nft/founders/{token_id}.mp4`
+- **Auto-play** - Videos loop continuously, muted
+- **Conditional Rendering**:
+  - Section is **hidden** if user has no Founder NFTs
+  - Shows "Loading NFTs..." while fetching
+  - Displays all NFTs when loaded
+
+**Data Source**:
+- Hook: `useFounderNFTs()` (see `apps/web/src/hooks/useFounderNFTs.ts`)
+- API: `GET /api/v1/profile/me/` → `founder_tokens: ["523", "204", ...]`
+- CDN: `https://cdn.zo.xyz/nft/founders/{token_id}.mp4`
+
+**Implementation**:
+```typescript
+const { nfts, isLoading } = useFounderNFTs();
+
+// Section only renders if nfts.length > 0 or isLoading
+{(nfts.length > 0 || isLoading) && (
+  <div>
+    {nfts.map(nft => (
+      <video
+        src={nft.video}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+    ))}
+  </div>
+)}
+```
+
 ---
 
 ## CENTER COLUMN

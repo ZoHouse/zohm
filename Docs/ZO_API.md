@@ -346,12 +346,7 @@ client-device-secret: <DEVICE_SECRET>
       "description": "Building the future"
     }
   ],
-  "founder_tokens": [
-    {
-      "token_id": "123",
-      "name": "Founder #123"
-    }
-  ],
+  "founder_tokens": ["523", "204", "158", "151"],
   "avatar": {
     "image": "https://cdn.zo.xyz/avatars/...",
     "status": "completed"
@@ -958,8 +953,72 @@ import { generateAvatar, pollAvatarStatus } from '@/lib/zo-api/avatar';
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: November 22, 2025  
+## Founder NFTs
+
+### Overview
+
+Founder NFTs are special tokens granted to founding members of Zo World. Each NFT has a unique token ID and is represented as an animated video.
+
+### Data Format
+
+The `founder_tokens` field in the user profile is an **array of strings** (token IDs):
+
+```json
+{
+  "founder_tokens": ["523", "204", "158", "151"]
+}
+```
+
+### Video Assets
+
+Each Founder NFT has a corresponding video hosted on the Zo CDN:
+
+**URL Pattern**: `https://cdn.zo.xyz/nft/founders/{token_id}.mp4`
+
+**Examples**:
+- Token #523: `https://cdn.zo.xyz/nft/founders/523.mp4`
+- Token #204: `https://cdn.zo.xyz/nft/founders/204.mp4`
+- Token #158: `https://cdn.zo.xyz/nft/founders/158.mp4`
+- Token #151: `https://cdn.zo.xyz/nft/founders/151.mp4`
+
+### Implementation
+
+```typescript
+// Fetch user profile
+const profile = await getProfile(accessToken, userId, { deviceId, deviceSecret });
+
+// Map founder tokens to video URLs
+const founderNFTs = profile.founder_tokens.map((tokenId: string) => ({
+  token_id: tokenId,
+  name: `#${tokenId}`,
+  video: `https://cdn.zo.xyz/nft/founders/${tokenId}.mp4`
+}));
+
+// Display as looping videos
+<video
+  src={nft.video}
+  autoPlay
+  loop
+  muted
+  playsInline
+  className="w-full h-full object-cover"
+/>
+```
+
+### UI Behavior
+
+- **Has NFTs**: Display section with looping videos
+- **No NFTs**: Hide the entire Founder NFTs section
+- **Loading**: Show loading state
+
+### Reference Implementation
+
+See `apps/web/src/hooks/useFounderNFTs.ts` for the complete implementation.
+
+---
+
+**Document Version**: 1.1  
+**Last Updated**: November 23, 2025  
 **Maintained By**: Zo World Development Team  
 **Status**: ✅ Production Ready
 

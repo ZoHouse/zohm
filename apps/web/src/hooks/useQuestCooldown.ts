@@ -44,6 +44,30 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
       return;
     }
 
+    // 1. Initial check from server (Source of Truth)
+    const syncWithServer = async () => {
+      try {
+        const res = await fetch(`/api/quests/status?userId=${userId}&questId=${questId}`);
+        const data = await res.json();
+        
+        if (data.nextAvailableAt) {
+          // Server says cooldown active - update storage
+          const serverNextAvailable = new Date(data.nextAvailableAt).toISOString();
+          setQuestCooldown(questId, userId, serverNextAvailable);
+        } else if (data.canComplete) {
+          // Server says ready - clear local storage just in case
+          clearQuestCooldown(questId, userId);
+        }
+      } catch (err) {
+        console.error('Failed to sync cooldown with server:', err);
+        // Fallback to localStorage if server check fails
+      }
+    };
+
+    // Run server sync once on mount
+    syncWithServer();
+
+    // 2. Continuous local check (for UI updates)
     const checkCooldown = () => {
       const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
       const storedCooldown = localStorage.getItem(storageKey);

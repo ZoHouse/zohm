@@ -1,9 +1,10 @@
 # ZO API Documentation
 
-**Version**: 1.0  
-**Last Updated**: November 22, 2025  
+**Version**: 1.1  
+**Last Updated**: November 23, 2025  
 **Base URL**: `https://api.io.zo.xyz`  
-**Authentication**: Phone-based OTP (SMS)
+**Authentication**: Phone-based OTP (SMS)  
+**Source of Truth**: Verified via Zo World Mobile App (production code)
 
 ---
 
@@ -33,7 +34,7 @@ The ZO API is a RESTful API for user authentication, profile management, and ava
 - 📱 **Phone-based authentication** - No passwords, just phone + OTP
 - 🔄 **Token refresh** - Automatic token renewal
 - 👤 **Profile management** - User profiles with cultures, locations, and metadata
-- 🎨 **Avatar generation** - AI-generated avatars (bro/bae body types)
+- 🎨 **Avatar generation** - Zo backend generated avatars (bro/bae body types)
 - 🔐 **Device credentials** - Session-based device tracking
 
 ### Base URL
@@ -367,9 +368,11 @@ client-device-secret: <DEVICE_SECRET>
 
 #### 2. Update Profile
 
-**PATCH** `/api/v1/profile/me/`
+**POST** `/api/v1/profile/me/`
 
 Update authenticated user's profile (partial updates supported).
+
+**Note**: The mobile app uses POST for profile updates. This is the canonical method confirmed by production code.
 
 **Headers**:
 ```http

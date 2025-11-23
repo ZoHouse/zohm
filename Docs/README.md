@@ -1,21 +1,23 @@
 # Zo World Documentation
 
 **Project**: Zo World Map (ZOHM)  
-**Last Updated**: 2025-11-22  
+**Last Updated**: 2025-11-23  
 **Status**: ✅ Production Ready
 
 ---
 
 ## 🚀 Quick Start
 
-**New to the project?** Read these 6 core documents in order:
+**New to the project?** Read these core documents in order:
 
 1. **`PROJECT_RULES.md`** ⭐ - **25 Foundational Rules** for building Zo World
 2. **`ARCHITECTURE.md`** ⭐ - System architecture, tech stack & data flows
 3. **`DATABASE_SCHEMA.md`** - Complete database schema with tables and relationships
 4. **`ZO_API.md`** - Complete ZO API reference (authentication, profile, avatar)
-5. **`cursorrule.md`** - AI pair-coding workflows and constraints
-6. **`README.md`** - This file (documentation overview)
+5. **`NEW_USER_FUNNEL_DEEP_DIVE.md`** - Complete new user onboarding flow (all API calls, DB operations)
+6. **`DASHBOARD_COMPLETE.md`** - Dashboard architecture (desktop & mobile)
+7. **`VOICE_TRANSCRIPTION.md`** - Voice quest transcription system
+8. **`README.md`** - This file (documentation overview)
 
 ---
 
@@ -23,15 +25,17 @@
 
 ```
 Docs/
-├── PROJECT_RULES.md       ⭐ 25 foundational principles
-├── ARCHITECTURE.md        ⭐ System design & tech stack
-├── DATABASE_SCHEMA.md     ⭐ Complete database schema
-├── ZO_API.md              ⭐ ZO API reference (auth, profile, avatar)
-├── cursorrule.md          ⭐ AI coding workflows
-└── README.md              ⭐ This file
+├── PROJECT_RULES.md              ⭐ 25 foundational principles
+├── ARCHITECTURE.md               ⭐ System design & tech stack
+├── DATABASE_SCHEMA.md            ⭐ Complete database schema
+├── ZO_API.md                     ⭐ ZO API reference (auth, profile, avatar)
+├── NEW_USER_FUNNEL_DEEP_DIVE.md  📘 Complete new user flow (all API calls & DB ops)
+├── DASHBOARD_COMPLETE.md         📘 Dashboard architecture (desktop & mobile)
+├── VOICE_TRANSCRIPTION.md        📘 Voice quest transcription system
+└── README.md                     ⭐ This file
 
 /lore/
-└── zo_protocol_lore.md    📖 Operating ontology & worldview
+└── zo_protocol_lore.md           📖 Operating ontology & worldview
 ```
 
 **Philosophy**: We keep only essential docs. Everything else is in the code, comments, or git history.
@@ -283,11 +287,13 @@ The operating ontology and worldview of Zo World. All features must align with t
 | **PROJECT_RULES.md** | 1.0 | 2025-11-13 | ✅ Complete |
 | **ARCHITECTURE.md** | 2.0 | 2025-11-22 | ✅ Complete |
 | **DATABASE_SCHEMA.md** | 4.0 | 2025-11-22 | ✅ Complete |
-| **ZO_API.md** | 1.0 | 2025-11-22 | ✅ Complete |
-| **cursorrule.md** | 2.0 | 2025-11-22 | ✅ Complete |
-| **README.md** | 3.0 | 2025-11-22 | ✅ Complete |
+| **ZO_API.md** | 1.1 | 2025-11-23 | ✅ Complete |
+| **NEW_USER_FUNNEL_DEEP_DIVE.md** | 1.0 | 2025-11-23 | ✅ Complete |
+| **DASHBOARD_COMPLETE.md** | 1.0 | 2025-11-22 | ✅ Complete |
+| **VOICE_TRANSCRIPTION.md** | 1.0 | 2025-11-22 | ✅ Complete |
+| **README.md** | 3.1 | 2025-11-23 | ✅ Complete |
 
-**Overall Status**: 🟢 6/6 Complete & Production Ready
+**Overall Status**: 🟢 8/8 Complete & Production Ready
 
 ---
 
@@ -314,8 +320,8 @@ The operating ontology and worldview of Zo World. All features must align with t
 
 ---
 
-**Last Updated**: 2025-11-22  
+**Last Updated**: 2025-11-23  
 **Maintained By**: Development Team  
-**Total Core Docs**: 6 files  
+**Total Core Docs**: 8 files  
 **Philosophy**: Minimal docs, maximum code clarity  
 **Status**: ✅ Production Ready & Comprehensive

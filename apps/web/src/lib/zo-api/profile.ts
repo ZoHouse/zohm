@@ -67,7 +67,7 @@ export async function getProfile(
 
 /**
  * Update user profile on ZO API
- * Partial updates supported
+ * Uses POST method to match mobile app implementation
  * @param accessToken - ZO API access token
  * @param updates - Profile fields to update
  * @param userId - Optional: Supabase user ID (for fetching device credentials from DB)
@@ -83,7 +83,7 @@ export async function updateProfile(
 }> {
   try {
     const headers = await getZoAuthHeaders(accessToken, userId);
-    const response = await zoApiClient.patch<ZoProfileResponse>(
+    const response = await zoApiClient.post<ZoProfileResponse>(
       '/api/v1/profile/me/',
       updates,
       {

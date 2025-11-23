@@ -60,7 +60,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 1 - Center */}
             {leaderboard.length >= 1 && (
-              <div className="absolute top-[-2px] left-[135px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[-2px] left-[50%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[0].avatar || '/images/rank1.jpeg'} 
@@ -68,7 +68,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[0].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">
@@ -79,7 +79,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 2 - Left */}
             {leaderboard.length >= 2 && (
-              <div className="absolute top-[35px] left-[30px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[35px] left-[18%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[1].avatar || '/images/rank2.jpeg'} 
@@ -87,7 +87,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[1].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">
@@ -98,7 +98,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             
             {/* Rank 3 - Right */}
             {leaderboard.length >= 3 && (
-              <div className="absolute top-[55px] left-[230px] flex flex-col items-center gap-[2px]">
+              <div className="absolute top-[55px] left-[82%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <img 
                     src={leaderboard[2].avatar || '/images/rank3.jpeg'} 
@@ -106,7 +106,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     className="w-full h-full object-cover" 
                   />
                 </div>
-                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px]">
+                <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
                   {leaderboard[2].nickname}
                 </p>
                 <p className="font-rubik text-sm font-medium text-white/60 m-0 leading-[16px]">
@@ -125,18 +125,19 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             }}
           >
             <p 
-              className="font-rubik font-medium uppercase pl-4"
+              className="font-rubik font-medium uppercase flex-shrink-0 pl-4"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
                 letterSpacing: '0.1px',
                 color: 'rgba(255, 255, 255, 0.44)',
+                width: '48px',
               }}
             >
               RANK
             </p>
             <p 
-              className="font-rubik font-medium uppercase pl-11"
+              className="font-rubik font-medium uppercase flex-1"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
@@ -147,12 +148,13 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
               PLAYER
             </p>
             <p 
-              className="font-rubik font-medium uppercase ml-auto pr-4 text-right"
+              className="font-rubik font-medium uppercase pr-4 text-right flex-shrink-0"
               style={{
                 fontSize: '10px',
                 lineHeight: '16px',
                 letterSpacing: '0.1px',
                 color: 'rgba(255, 255, 255, 0.44)',
+                minWidth: '60px',
               }}
             >
               $ZO
@@ -161,112 +163,125 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
           
           {/* Leaderboard Rows */}
           <div className="w-[312px] mx-auto">
-            {leaderboard.map((entry) => (
+            {leaderboard.map((entry) => {
+              const isCurrentUser = userId && entry.user_id === userId;
+              return (
+                <div 
+                  key={entry.user_id}
+                  className="h-11 flex items-center border-b"
+                  style={{
+                    backgroundColor: isCurrentUser ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                    borderColor: '#121212',
+                  }}
+                >
+                  {/* Rank */}
+                  <p 
+                    className="font-rubik font-normal text-white flex-shrink-0 pl-4"
+                    style={{
+                      fontSize: '12px',
+                      lineHeight: '18px',
+                      letterSpacing: '0.12px',
+                      width: '48px',
+                    }}
+                  >
+                    {entry.rank}
+                  </p>
+                  
+                  {/* Avatar + Name Container */}
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                      <img 
+                        src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
+                        alt={entry.nickname} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    
+                    <p 
+                      className="font-rubik font-normal text-white"
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '24px',
+                        letterSpacing: '0.16px',
+                      }}
+                    >
+                      {isCurrentUser ? 'You' : entry.nickname}
+                    </p>
+                  </div>
+                  
+                  {/* Score */}
+                  <p 
+                    className="font-rubik font-medium pr-4 text-right flex-shrink-0"
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      letterSpacing: '0.16px',
+                      color: '#CFFF50',
+                      minWidth: '60px',
+                    }}
+                  >
+                    {entry.zo_points}
+                  </p>
+                </div>
+              );
+            })}
+            
+            {/* "You" Row (only show if user is NOT in top 10) */}
+            {userId && !leaderboard.some(entry => entry.user_id === userId) && (
               <div 
-                key={entry.user_id}
-                className="h-11 flex items-center border-b"
+                className="h-11 flex items-center"
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  borderColor: '#121212',
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 }}
               >
-                {/* Rank */}
                 <p 
-                  className="font-rubik font-normal text-white w-10 pl-4"
+                  className="font-rubik font-normal text-white flex-shrink-0 pl-4"
                   style={{
                     fontSize: '12px',
                     lineHeight: '18px',
                     letterSpacing: '0.12px',
+                    width: '48px',
                   }}
                 >
-                  {entry.rank}
+                  {userRank}
                 </p>
                 
-                {/* Avatar */}
-                <div className="w-6 h-6 rounded-full overflow-hidden ml-7">
-                  <img 
-                    src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
-                    alt={entry.nickname} 
-                    className="w-full h-full object-cover" 
-                  />
+                {/* Avatar + Name Container */}
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                    <img 
+                      src={'/images/rank1.jpeg'} 
+                      alt="You" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  
+                  <p 
+                    className="font-rubik font-normal text-white"
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      letterSpacing: '0.16px',
+                    }}
+                  >
+                    You
+                  </p>
                 </div>
                 
-                {/* Name */}
                 <p 
-                  className="font-rubik font-normal text-white ml-[22px]"
-                  style={{
-                    fontSize: '16px',
-                    lineHeight: '24px',
-                    letterSpacing: '0.16px',
-                  }}
-                >
-                  {entry.nickname}
-                </p>
-                
-                {/* Score */}
-                <p 
-                  className="font-rubik font-medium ml-auto pr-4 text-right"
+                  className="font-rubik font-medium pr-4 text-right flex-shrink-0"
                   style={{
                     fontSize: '16px',
                     lineHeight: '24px',
                     letterSpacing: '0.16px',
                     color: '#CFFF50',
+                    minWidth: '60px',
                   }}
                 >
-                  {entry.zo_points}
+                  {userBalance}
                 </p>
               </div>
-            ))}
-            
-            {/* "You" Row (highlighted) */}
-            <div 
-              className="h-11 flex items-center"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <p 
-                className="font-rubik font-normal text-white w-10 pl-4"
-                style={{
-                  fontSize: '12px',
-                  lineHeight: '18px',
-                  letterSpacing: '0.12px',
-                }}
-              >
-                {userRank}
-              </p>
-              
-              <div className="w-6 h-6 rounded-full overflow-hidden ml-7">
-                <img 
-                  src={'/images/rank1.jpeg'} 
-                  alt="You" 
-                  className="w-full h-full object-cover" 
-                />
-              </div>
-              
-              <p 
-                className="font-rubik font-normal text-white ml-[22px]"
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  letterSpacing: '0.16px',
-                }}
-              >
-                You
-              </p>
-              
-              <p 
-                className="font-rubik font-medium ml-auto pr-4 text-right"
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  letterSpacing: '0.16px',
-                  color: '#CFFF50',
-                }}
-              >
-                {userBalance}
-              </p>
-            </div>
+            )}
           </div>
         </>
       )}

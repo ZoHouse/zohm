@@ -86,7 +86,7 @@ const ZoPassportComponent: React.FC<ZoPassportComponentProps> = ({ profile, comp
       </div>
 
       {/* Circular Progress - Absolutely positioned in center */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-10px' }}>
         <CircularProgress
           size={140}
           progress={progress}

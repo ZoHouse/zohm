@@ -42,6 +42,7 @@ export default {
         rubik: ['Rubik', 'sans-serif'],
         space: ['Space Grotesk', 'sans-serif'],
         paper: ['Comic Neue', 'Comic Sans MS', 'cursive'],
+        syne: ['var(--font-syne)', 'sans-serif'],
       },
       spacing: {
         // Figma exact spacing values
@@ -75,12 +76,17 @@ export default {
       },
       animation: {
         'slideUp': 'slideUp 0.3s ease-out',
+        'slide-up': 'slideUp 0.3s ease-out',
         'slideDown': 'slideDown 0.3s ease-in',
         'fadeIn': 'fadeIn 0.3s ease-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
         'scaleIn': 'scaleIn 0.3s ease-out',
+        'scale-in': 'scaleIn 0.3s ease-out',
         'twinkle': 'twinkle 4s ease-in-out infinite',
         'astronautFloat': 'astronautFloat 3s ease-in-out infinite',
         'zo-pulse': 'zo-pulse 2s ease-in-out infinite',
+        'spin-slow': 'spin 20s linear infinite',
+        'spin-reverse-slow': 'spin-reverse 25s linear infinite',
       },
       keyframes: {
         slideUp: {
@@ -109,7 +115,11 @@ export default {
         },
         'zo-pulse': {
           '0%, 100%': { transform: 'scale(1)', opacity: '1' },
-          '50%': { transform: 'scale(1.05)', opacity: '0.9' },
+          '50%': { transform: 'scale(1.1)', opacity: '0.85' },
+        },
+        'spin-reverse': {
+          '0%': { transform: 'rotate(360deg)' },
+          '100%': { transform: 'rotate(0deg)' },
         },
       },
     },

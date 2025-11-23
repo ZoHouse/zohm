@@ -26,6 +26,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (audioFile.size < 1000) {
+      console.warn('⚠️ Audio file too small:', audioFile.size, 'bytes');
+      return NextResponse.json(
+        { error: 'Audio file too small (empty recording)' },
+        { status: 400 }
+      );
+    }
+
     console.log('🎤 Transcribing audio file:', {
       name: audioFile.name,
       size: audioFile.size,

@@ -310,6 +310,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
   // DEV BYPASS: Press 'B' key to bypass permission check
   // DEV BYPASS: Press 'C' key to complete quest instantly (for testing)
   useEffect(() => {
+    // Only enable shortcuts in development
+    if (process.env.NODE_ENV !== 'development') return;
+
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'b' || e.key === 'B') {
         console.log('🚀 DEV BYPASS: Forcing granted state');
@@ -494,7 +497,18 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     }
   };
 
-  const startRecording = async () => {
+  const startRecording = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid double-firing (touch + mouse) on some devices
+    if (e && e.cancelable) {
+      // e.preventDefault(); // Note: preventing default on touchstart might block scroll/click in some cases, use carefully
+    }
+
+    // Guard: If already recording or processing, ignore
+    if (audioStatus !== 'idle') {
+      console.warn('⚠️ startRecording called but status is not idle:', audioStatus);
+      return;
+    }
+
     // P0-6: Prevent voice recording if quest is on cooldown
     if (!canPlay) {
       console.warn('⏳ Quest is on cooldown - cannot start voice recording');
@@ -504,6 +518,32 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     
     console.log('🎤 Starting voice recording - waiting 3 seconds for you to speak...');
     
+    // 🛑 CLEANUP: Force stop any lingering instances from previous attempts
+    if (speechRecognitionRef.current) {
+      try {
+        console.log('🧹 Cleaning up lingering SpeechRecognition instance...');
+        speechRecognitionRef.current.stop();
+        speechRecognitionRef.current = null;
+      } catch (e) {
+        console.warn('⚠️ Error cleaning up SpeechRecognition:', e);
+      }
+    }
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        console.log('🧹 Cleaning up lingering MediaRecorder instance...');
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+      } catch (e) {
+        console.warn('⚠️ Error cleaning up MediaRecorder:', e);
+      }
+    }
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setAudioStatus('recording');
     setRecordingDuration(0);
     isRecordingRef.current = true; // Mark that we're recording
@@ -798,6 +838,21 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         console.log('   - Duration: ~3 seconds');
         console.log('   - Audio URL:', audioUrl);
         console.log('   - Filename:', filename);
+
+        // Check if file is too small (likely empty header only)
+        if (audioBlob.size < 1000) {
+          console.warn('⚠️ Audio file is too small (< 1KB), likely empty recording');
+          console.warn('   - Skipping upload to prevent API errors');
+          
+          alert(
+            '❌ Audio recording failed\n\n' +
+            'The recording was empty. Please check your microphone settings and try again.'
+          );
+          
+          setAudioStatus('idle');
+          setRecordingDuration(0);
+          return;
+        }
         
         // Get current transcript if available (for fallback only)
         const currentTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
@@ -859,7 +914,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             if ((window as any).lastRecordedAudio) {
               (window as any).lastRecordedAudio.transcription = transcription.text;
               (window as any).lastRecordedAudio.confidence = transcription.confidence;
-              (window as any).lastRecordedAudio.validated = containsRequiredPhrase;
+              (window as any).lastRecordedAudio.validated = containsZo;
             }
           } else {
             // No transcription text received
@@ -1035,7 +1090,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(200); // Capture chunks every 200ms to ensure data is saved
       
       // Recording duration counter
       timerRef.current = setInterval(() => {
@@ -1220,7 +1275,17 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e && e.cancelable) {
+      e.preventDefault();
+    }
+
+    // Guard: Only stop if we are actually recording
+    if (audioStatus !== 'recording') {
+      console.warn('⚠️ stopRecording called but status is:', audioStatus);
+      return;
+    }
+
     isRecordingRef.current = false; // Mark that recording is stopped
     
     // Stop speech recognition
@@ -1411,7 +1476,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           </div>
 
           <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
-            Tap & say 'Zo Zo Zo'
+            Hold & Chant 'Zo Zo Zo'
           </p>
         </div>
 
@@ -1512,7 +1577,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
           </div>
 
           <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
-            Tap & say 'Zo Zo Zo'
+            Hold & Chant 'Zo Zo Zo'
           </p>
         </div>
 
@@ -1605,21 +1670,6 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       )}
 
       <QuantumSyncHeader userId={userId} />
-
-      {/* DEV: Complete Quest Button */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          onClick={() => {
-            console.log('🚀 DEV BYPASS: Completing quest instantly');
-            console.log('   Score: 1000, Tokens: 100');
-            onComplete(1000, 100);
-          }}
-          className="fixed bottom-4 right-4 z-[99999] px-4 py-2 bg-green-500 text-white font-rubik text-[12px] font-bold rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-600 shadow-lg"
-          title="DEV: Complete quest instantly (or press C key)"
-        >
-          ✅ COMPLETE QUEST (C)
-        </button>
-      )}
 
       {/* Game1111 renders full-screen, outside constrained container */}
         {audioStatus === 'game1111' ? (
@@ -1767,10 +1817,10 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                     className={`relative w-full h-full bg-transparent border-none transition-all duration-200 active:scale-95 p-0 overflow-hidden rounded-full ${
                       canPlay ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                     }`}
-                    onMouseDown={startRecording}
-                    onTouchStart={startRecording}
+                    onMouseDown={(e) => startRecording(e)}
+                    onTouchStart={(e) => startRecording(e)}
                     disabled={!canPlay}
-                    title={!canPlay ? `Quest on cooldown. Next available in: ${timeRemaining}` : 'Tap & say "Zo Zo Zo"'}
+                    title={!canPlay ? `Quest on cooldown. Next available in: ${timeRemaining}` : 'Hold & Chant "Zo Zo Zo"'}
                   >
                     <video
                       autoPlay
@@ -1784,7 +1834,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                   </button>
                 </div>
                 <p className="font-rubik text-[16px] font-normal text-white text-center leading-[20px] tracking-[0.16px] m-0 absolute top-[720px] left-1/2 -translate-x-1/2 w-[320px] z-[110]">
-                  Tap & say 'Zo Zo Zo'
+                  Hold & Chant 'Zo Zo Zo'
                 </p>
               </>
             ) : audioStatus === 'recording' ? (
@@ -1793,8 +1843,8 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                 <div className="absolute top-[364px] left-1/2 -translate-x-1/2 w-[180px] h-[180px]">
                   <button
                     className="relative w-full h-full bg-transparent border-none cursor-pointer transition-all duration-200 p-0 overflow-hidden rounded-full"
-                    onMouseUp={stopRecording}
-                    onTouchEnd={stopRecording}
+                    onMouseUp={(e) => stopRecording(e)}
+                    onTouchEnd={(e) => stopRecording(e)}
                   >
                     <video
                       autoPlay

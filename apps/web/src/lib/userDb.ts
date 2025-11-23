@@ -363,12 +363,6 @@ export async function upsertUser(
 }
 
 /**
- * Legacy function name - use upsertUser instead
- * @deprecated Use upsertUser instead
- */
-export const upsertUserFromPrivy = upsertUser;
-
-/**
  * Update user profile
  */
 export async function updateUserProfile(

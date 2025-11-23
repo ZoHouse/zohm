@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import LandingPage from '@/components/LandingPage';
-import Onboarding2 from '@/components/Onboarding2';
+import UnifiedOnboarding from '@/components/UnifiedOnboarding';
 import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
 import MobileView from '@/components/MobileView';
@@ -868,10 +868,10 @@ export default function Home() {
       );
     }
 
-    // New user: Show full Onboarding2 (nickname → portal → avatar)
+    // New user: Show full UnifiedOnboarding (nickname → avatar → portal)
     console.log('✅ New ZO user - showing full onboarding');
     return (
-      <Onboarding2
+      <UnifiedOnboarding
         onComplete={handleOnboardingComplete}
         userId={userProfile?.id || user?.id}
       />

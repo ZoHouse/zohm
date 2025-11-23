@@ -468,7 +468,7 @@ const { data, error } = await supabase
 
 **Primary Auth**: Phone Number + OTP  
 **Identifier**: ZO Profile ID (`pid`) and ZO User ID (`zo_user_id`)  
-**Wallet Strategy**: Backend-managed wallet abstraction (created automatically on signup)  
+**Wallet Strategy**: Backend-managed wallet abstraction (created automatically on signup)
 **Storage**: Session managed via localStorage (`zo_auth_session`)
 
 #### Current Auth Flow (ZO API)

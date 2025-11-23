@@ -1503,7 +1503,7 @@ WHERE score < 0;
 **Total Tables**: 14 (1 legacy)  
 **Total Indexes**: 50+  
 **Total Triggers**: 3 (auto-update stats, leaderboards, city population)  
-**Total Functions**: 4  
+**Total Functions**: 4
 **Authentication**: ZO API (phone-based OTP)  
 **Migrations**: Managed via Supabase Dashboard
 

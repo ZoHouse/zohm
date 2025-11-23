@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Comic_Neue, Abril_Fatface } from "next/font/google";
+import { Comic_Neue, Abril_Fatface, Syne, Rubik } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
@@ -15,6 +15,18 @@ const abrilFatface = Abril_Fatface({
   variable: '--font-abril-fatface',
   display: 'swap',
   weight: '400'
+});
+
+const syne = Syne({
+  subsets: ['latin'],
+  variable: '--font-syne',
+  display: 'swap',
+});
+
+const rubik = Rubik({
+  subsets: ['latin'],
+  variable: '--font-rubik',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -69,7 +81,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body 
-        className={`${comicNeue.variable} ${abrilFatface.variable} paper-ui antialiased bg-black text-white`}
+        className={`${comicNeue.variable} ${abrilFatface.variable} ${syne.variable} ${rubik.variable} paper-ui antialiased bg-black text-white`}
         suppressHydrationWarning
       >
         <ServiceWorkerRegistration />

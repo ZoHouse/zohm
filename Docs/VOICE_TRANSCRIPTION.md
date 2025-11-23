@@ -816,9 +816,20 @@ curl -X POST http://localhost:3000/api/transcribe \
 
 ---
 
-## Troubleshooting
+## Common Issues & Troubleshooting
 
-### Issue: "Microphone access denied"
+### 1. "Audio file too small" or Empty Recordings
+- **Symptoms**: Error "Audio file too small", 500 error from API, or `audioBlob.size` < 1KB.
+- **Cause**: Browser `MediaRecorder` failing to capture data chunks in short timeframe.
+- **Fix**: We now use `mediaRecorder.start(200)` to force data chunks every 200ms, and validate blob size > 1KB before upload.
+- **User Action**: Check microphone permissions and selection.
+
+### 2. Transcription Failed (500 Error)
+- **Symptoms**: API returns 500.
+- **Cause**: Usually invalid file format or empty file (see above), or invalid API key.
+- **Fix**: Check server logs. If file is valid, verify `ASSEMBLYAI_API_KEY`.
+
+### 3. Microphone Permission Denied
 
 **Solution**: 
 1. Check browser permissions (Settings → Privacy → Microphone)
@@ -827,7 +838,7 @@ curl -X POST http://localhost:3000/api/transcribe \
 
 ---
 
-### Issue: "Transcription service not configured"
+### 4. "Transcription service not configured"
 
 **Solution**:
 ```bash
@@ -840,7 +851,7 @@ pnpm dev
 
 ---
 
-### Issue: "No 'Zo' detected" (but you said it clearly)
+### 5. "No 'Zo' detected" (but you said it clearly)
 
 **Possible causes**:
 1. **Background noise** - Try quieter environment
@@ -855,7 +866,7 @@ pnpm dev
 
 ---
 
-### Issue: Web Speech API not working
+### 6. Web Speech API not working
 
 **Check**:
 1. Browser support (Chrome/Safari only)

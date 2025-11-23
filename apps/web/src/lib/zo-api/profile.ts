@@ -55,12 +55,20 @@ export async function getProfile(
       profile: response.data,
     };
   } catch (error: any) {
-    console.error('Failed to fetch profile:', error.response?.data || error);
+    console.error('❌ getProfile error details:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      hasResponse: !!error.response,
+      isNetworkError: !error.response,
+    });
     
     const errorData = error.response?.data as ZoErrorResponse;
     return {
       success: false,
-      error: errorData?.detail || errorData?.message || 'Failed to fetch profile',
+      error: errorData?.detail || errorData?.message || error.message || 'Failed to fetch profile',
     };
   }
 }

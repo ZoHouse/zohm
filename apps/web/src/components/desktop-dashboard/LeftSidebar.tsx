@@ -7,6 +7,7 @@ import { getCultureDisplayName, getCultureIcon, getAllCultures } from '@/lib/cul
 import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 import ZoPassport from './ZoPassport';
+import { useFounderNFTs } from '@/hooks/useFounderNFTs';
 
 interface LeftSidebarProps {
   userProfile: PrivyUserProfile | null;
@@ -22,6 +23,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const bioTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const userId = userProfile?.id;
+  
+  // Fetch founder NFTs from ZO API
+  const { nfts: founderNFTs, isLoading: isLoadingNFTs } = useFounderNFTs();
 
   // Fetch token balance
   React.useEffect(() => {
@@ -452,12 +456,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
                 color: DashboardColors.text.tertiary,
               }}>Cultures</p>
               <div className="flex flex-wrap" style={{ gap: DashboardSpacing.sm }}>
-                {selectedCultures.map((culture, idx) => {
+                {selectedCultures.map((culture) => {
                   const icon = getCultureIcon(culture);
                   const displayName = getCultureDisplayName(culture);
                   return (
                     <div
-                      key={idx}
+                      key={culture}
                       className="flex items-center border border-solid group hover:border-red-500/50 transition-colors"
                       style={{
                         gap: DashboardSpacing.xs,
@@ -676,112 +680,92 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           </button>
         </div>
 
-        {/* Founder NFTs */}
-        <div
-          className="flex flex-col border border-solid"
-          style={{
-            backdropFilter: `blur(${DashboardBlur.medium})`,
-            WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
-            backgroundColor: DashboardColors.background.primary,
-            borderColor: DashboardColors.border.primary,
-            borderRadius: DashboardRadius.lg,
-            padding: DashboardSpacing.xl,
-            gap: DashboardSpacing.xl,
-          }}
-        >
-          <p style={{
-            fontFamily: DashboardTypography.fontFamily.primary,
-            fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-            fontSize: DashboardTypography.size.bodyMedium.fontSize,
-            lineHeight: '16px',
-            letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-            color: DashboardColors.text.tertiary,
-            textTransform: 'uppercase',
-          }}>FOUNDER NFTs</p>
+        {/* Founder NFTs - Dynamic from ZO API */}
+        {(founderNFTs.length > 0 || isLoadingNFTs) && (
+          <div
+            className="flex flex-col border border-solid"
+            style={{
+              backdropFilter: `blur(${DashboardBlur.medium})`,
+              WebkitBackdropFilter: `blur(${DashboardBlur.medium})`,
+              backgroundColor: DashboardColors.background.primary,
+              borderColor: DashboardColors.border.primary,
+              borderRadius: DashboardRadius.lg,
+              padding: DashboardSpacing.xl,
+              gap: DashboardSpacing.xl,
+            }}
+          >
+            <p style={{
+              fontFamily: DashboardTypography.fontFamily.primary,
+              fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
+              fontSize: DashboardTypography.size.bodyMedium.fontSize,
+              lineHeight: '16px',
+              letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
+              color: DashboardColors.text.tertiary,
+              textTransform: 'uppercase',
+            }}>FOUNDER NFTs</p>
 
-          <div className="flex flex-col" style={{ gap: DashboardSpacing.md }}>
-            {/* NFT 1 */}
-            <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-              <div
-                className="overflow-hidden"
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: DashboardRadius.md,
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src="/dashboard-assets/430-1.png"
-                  alt="NFT #411"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <p style={{
-                fontFamily: DashboardTypography.fontFamily.primary,
-                fontWeight: DashboardTypography.size.small.fontWeight,
-                fontSize: DashboardTypography.size.small.fontSize,
-                lineHeight: DashboardTypography.size.small.lineHeight,
-                letterSpacing: DashboardTypography.size.small.letterSpacing,
-                color: DashboardColors.text.primary,
-              }}>#411</p>
-            </div>
-
-            {/* NFT 2 */}
-            <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-              <div
-                className="overflow-hidden"
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: DashboardRadius.md,
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src="/dashboard-assets/430-2.png"
-                  alt="NFT #831"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <p style={{
-                fontFamily: DashboardTypography.fontFamily.primary,
-                fontWeight: DashboardTypography.size.small.fontWeight,
-                fontSize: DashboardTypography.size.small.fontSize,
-                lineHeight: DashboardTypography.size.small.lineHeight,
-                letterSpacing: DashboardTypography.size.small.letterSpacing,
-                color: DashboardColors.text.primary,
-              }}>#831</p>
-            </div>
-
-            {/* NFT 3 */}
-            <div className="flex items-center" style={{ gap: DashboardSpacing.md }}>
-              <div
-                className="overflow-hidden"
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: DashboardRadius.md,
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src="/dashboard-assets/430-3.png"
-                  alt="NFT #420"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <p style={{
-                fontFamily: DashboardTypography.fontFamily.primary,
-                fontWeight: DashboardTypography.size.small.fontWeight,
-                fontSize: DashboardTypography.size.small.fontSize,
-                lineHeight: DashboardTypography.size.small.lineHeight,
-                letterSpacing: DashboardTypography.size.small.letterSpacing,
-                color: DashboardColors.text.primary,
-              }}>#420</p>
+            <div className="flex flex-col" style={{ gap: DashboardSpacing.md }}>
+              {isLoadingNFTs ? (
+                // Loading state
+                <div style={{
+                  fontFamily: DashboardTypography.fontFamily.primary,
+                  fontSize: DashboardTypography.size.small.fontSize,
+                  color: DashboardColors.text.secondary,
+                  padding: DashboardSpacing.md,
+                  textAlign: 'center',
+                }}>
+                  Loading NFTs...
+                </div>
+              ) : founderNFTs.length === 0 ? (
+                // Empty state
+                <div style={{
+                  fontFamily: DashboardTypography.fontFamily.primary,
+                  fontSize: DashboardTypography.size.small.fontSize,
+                  color: DashboardColors.text.secondary,
+                  padding: DashboardSpacing.md,
+                  textAlign: 'center',
+                }}>
+                  No Founder NFTs found
+                </div>
+              ) : (
+                // Render actual NFTs
+                founderNFTs.map((nft) => (
+                  <div key={nft.token_id} className="flex items-center" style={{ gap: DashboardSpacing.md }}>
+                    <div
+                      className="overflow-hidden"
+                      style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: DashboardRadius.md,
+                        flexShrink: 0,
+                        backgroundColor: DashboardColors.background.secondary,
+                      }}
+                    >
+                      <video
+                        src={nft.video}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    </div>
+                    <p style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
+                      fontWeight: DashboardTypography.size.small.fontWeight,
+                      fontSize: DashboardTypography.size.small.fontSize,
+                      lineHeight: DashboardTypography.size.small.lineHeight,
+                      letterSpacing: DashboardTypography.size.small.letterSpacing,
+                      color: DashboardColors.text.primary,
+                    }}>
+                      #{nft.token_id}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Zo Mafia Card */}
         <Link

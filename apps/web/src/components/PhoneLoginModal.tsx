@@ -165,6 +165,12 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
           // Also store as zo_token for backward compatibility
           localStorage.setItem('zo_token', data.tokens.access);
         }
+        // Store device credentials (required for all ZO API calls)
+        if (data.deviceCredentials) {
+          localStorage.setItem('zo_device_id', data.deviceCredentials.deviceId);
+          localStorage.setItem('zo_device_secret', data.deviceCredentials.deviceSecret);
+          console.log('✅ Device credentials stored');
+        }
         console.log('✅ ZO session stored:', data.userId);
 
         // Dispatch login success event for other components to pick up

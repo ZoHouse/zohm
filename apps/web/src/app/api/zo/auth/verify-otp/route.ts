@@ -253,6 +253,10 @@ export async function POST(request: NextRequest) {
         accessExpiry: access_token_expiry,
         refreshExpiry: refresh_token_expiry,
       },
+      deviceCredentials: {
+        deviceId: device_id,
+        deviceSecret: device_secret,
+      },
     });
 
   } catch (error: any) {

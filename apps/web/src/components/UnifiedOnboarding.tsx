@@ -133,7 +133,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
   const triggerAvatarGeneration = async () => {
     const token = getAccessToken();
     if (!token) {
-      console.error('No access token found');
+      console.error('❌ No access token found for avatar generation');
       // Fallback
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -145,17 +145,33 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     // Web approach: send all fields in one request for efficiency
     try {
       console.log('🚀 Triggering avatar generation via API...');
-      await updateProfile(token, { 
+      console.log('📝 Profile data:', { 
+        first_name: nickname,
+        body_type: bodyType,
+        place_name: city,
+        userId: userProfile?.id
+      });
+      
+      // Pass userId so device credentials can be fetched from Supabase
+      const userId = userProfile?.id || localStorage.getItem('zo_user_id');
+      const result = await updateProfile(token, { 
         first_name: nickname,
         body_type: bodyType,
         place_name: city
-      }, userProfile?.id);
+      }, userId || undefined);
+      
+      console.log('📡 updateProfile result:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Profile update failed');
+      }
       
       // Start polling
+      console.log('⏳ Starting avatar polling...');
       setIsPolling(true);
       pollForAvatar(token);
     } catch (err) {
-      console.error('Failed to trigger generation:', err);
+      console.error('❌ Failed to trigger generation:', err);
       // Fallback to default assets if API fails
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -166,8 +182,10 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     attemptsRef.current += 1;
     const maxAttempts = 30; // 30 seconds timeout
 
+    console.log(`🔄 Polling attempt ${attemptsRef.current}/${maxAttempts}...`);
+
     if (attemptsRef.current > maxAttempts) {
-      console.warn('⚠️ Avatar generation timeout');
+      console.warn('⚠️ Avatar generation timeout after 30 seconds');
       setIsPolling(false);
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -175,7 +193,17 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     }
 
     try {
-      const result = await getProfile(token);
+      // Pass userId so device credentials can be fetched from Supabase
+      const userId = userProfile?.id || localStorage.getItem('zo_user_id');
+      const result = await getProfile(token, userId || undefined);
+      
+      console.log(`📊 Poll ${attemptsRef.current} result:`, {
+        success: result.success,
+        hasProfile: !!result.profile,
+        hasAvatar: !!result.profile?.avatar,
+        avatarStatus: result.profile?.avatar?.status,
+        avatarImage: result.profile?.avatar?.image ? 'EXISTS' : 'NULL',
+      });
       
       if (result.success && result.profile?.avatar?.image) {
         console.log('✅ Avatar ready:', result.profile.avatar.image);
@@ -192,7 +220,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       // Poll again in 1s
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     } catch (err) {
-      console.error('Polling error:', err);
+      console.error(`❌ Polling error on attempt ${attemptsRef.current}:`, err);
       // Continue polling despite error
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     }

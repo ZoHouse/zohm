@@ -22,8 +22,6 @@ export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<Pa
 
   for (const url of calendarUrls) {
     try {
-      console.log('📅 Fetching calendar from:', url);
-      
       // Use our API route to avoid CORS issues
       const response = await fetch(url, {
         headers: {
@@ -37,26 +35,14 @@ export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<Pa
       }
 
       const icalData = await response.text();
-      console.log(`📝 Received ${icalData.length} characters of iCal data from ${url}`);
       
       // Check if response is actually iCal data
       if (!icalData.includes('BEGIN:VCALENDAR')) {
-        console.warn(`⚠️ Response doesn't appear to be iCal data from ${url}:`, icalData.substring(0, 200));
+        console.warn(`⚠️ Response doesn't appear to be iCal data from ${url}`);
         continue;
       }
       
-      console.log(`🔄 Starting to parse iCal data from ${url}...`);
       const events = parseICS(icalData);
-      console.log(`✅ Finished parsing ${url}, found ${events.length} events`);
-      
-      console.log(`✅ Parsed ${events.length} events from ${url}`);
-      if (events.length > 0) {
-        console.log(`📋 First few events:`, events.slice(0, 3).map(e => ({
-          name: e['Event Name'],
-          date: e['Date & Time'],
-          location: e.Location
-        })));
-      }
       allEvents.push(...events);
       
     } catch (error) {
@@ -74,8 +60,6 @@ export function parseICS(icsData: string): ParsedEvent[] {
   try {
     // Get current date - show all future events
     const now = new Date();
-    
-    console.log(`🕐 Showing all events after: ${now.toISOString()}`);
     
     // Split the iCal data into lines
     const lines = icsData.split(/\r?\n/);
@@ -117,31 +101,10 @@ export function parseICS(icsData: string): ParsedEvent[] {
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const isInRange = eventDate >= today;
             
-            // Debug logging for date filtering
-            const eventName = currentEvent['Event Name'] || 'Unnamed Event';
-            const isSpecialEvent = eventName.includes('FIFA') || eventName.includes('Monad') || eventName.includes('Musa');
-            
-            if (isSpecialEvent) {
-              console.log(`🎯 SPECIAL EVENT: "${eventName}"`);
-              console.log(`   Event Date: ${eventDate.toISOString()}`);
-              console.log(`   Now: ${now.toISOString()}`);
-              console.log(`   Is Future: ${isInRange}`);
-              console.log(`   Location: "${currentEvent.Location}"`);
-              console.log(`   Date comparison: ${eventDate.getTime()} >= ${now.getTime()} = ${eventDate.getTime() >= now.getTime()}`);
-            } else {
-              console.log(`📅 Event: "${eventName}" | Date: ${eventDate.toISOString()} | Is Future: ${isInRange}`);
-            }
-            
             if (isInRange) {
               // Only add events with required fields
               if (currentEvent['Event Name'] && currentEvent.Location) {
-                // Only log important events to reduce noise
-                if (currentEvent['Event Name'].includes('Monad') || currentEvent['Event Name'].includes('Musa')) {
-                  console.log(`✅ Adding important event: ${currentEvent['Event Name']} at ${currentEvent['Date & Time']}`);
-                }
                 events.push(currentEvent as ParsedEvent);
-              } else {
-                console.log(`❌ Event missing required fields: Name="${currentEvent['Event Name']}" Location="${currentEvent.Location}"`);
               }
             }
           }
@@ -152,10 +115,6 @@ export function parseICS(icsData: string): ParsedEvent[] {
         const key = line.substring(0, colonIndex);
         const value = line.substring(colonIndex + 1);
         
-        // Debug specific keys for important events
-        if (key === 'SUMMARY' && (value.includes('Monad') || value.includes('Musa'))) {
-          console.log(`🔍 Processing important event: "${value}"`);
-        }
         
         // Check if this might be a multi-line value
         if (value && !value.endsWith('\\')) {
@@ -175,13 +134,6 @@ export function parseICS(icsData: string): ParsedEvent[] {
       return dateA.getTime() - dateB.getTime();
     });
     
-    console.log(`🗓️ Found ${events.length} future events`);
-    console.log(`📋 Events found:`, events.map(e => ({ 
-      name: e['Event Name'], 
-      date: e['Date & Time'],
-      location: e.Location,
-      url: e['Event URL']
-    })));
     return events;
     
   } catch (error) {
@@ -202,7 +154,6 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
       
     case 'DTSTART':
       // Parse datetime - could be in format YYYYMMDDTHHMMSSZ or YYYYMMDD
-      // console.log(`🕐 Raw DTSTART value: "${value}"`);
       
       // Handle different datetime formats
       let eventDate: Date;
@@ -220,10 +171,6 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
         
         // Debug logging for specific events
         if (value.includes('20250802T033000Z') || value.includes('20250510T010000Z') || value.includes('20250724T190000Z')) {
-          console.log(`🔍 DEBUG DATE PARSING:`);
-          console.log(`   Raw value: ${value}`);
-          console.log(`   Parsed UTC: ${eventDate.toISOString()}`);
-          console.log(`   Local time: ${eventDate.toString()}`);
         }
       } else {
         // Fallback to basic parsing
@@ -247,13 +194,11 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
       }
       
       event['Date & Time'] = eventDate.toISOString();
-      // console.log(`📅 Parsed date: ${value} → ${eventDate.toISOString()}`);
       break;
       
     case 'LOCATION':
       // Extract location, preferring the actual address over the URL
       event.Location = value; // Accept both URLs and addresses
-      // console.log(`🏠 Location found: "${value}"`);
       break;
       
     case 'DESCRIPTION':
@@ -263,7 +208,6 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
         // Remove any trailing backslashes or escape characters
         const cleanUrl = urlMatch[0].replace(/\\+$/, '');
         event['Event URL'] = cleanUrl;
-        console.log(`🔗 Found event URL: ${cleanUrl}`);
       }
       
       // If location is missing or is a URL, try to extract address from description
@@ -271,7 +215,6 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
         const addressMatch = value.match(/Address:\s*([^\n]+)/);
         if (addressMatch) {
           event.Location = addressMatch[1].trim();
-          console.log(`🏠 Extracted address from description: ${addressMatch[1].trim()}`);
         }
       }
       break;
@@ -336,7 +279,6 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
 export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]): Promise<ParsedEvent[]> {
   const events = await fetchAllCalendarEvents(calendarUrls);
   
-  console.log(`🔄 Processing ${events.length} events for geocoding...`);
   
   // Process events to add geocoding for those missing coordinates
   const processedEvents = await Promise.all(
@@ -348,26 +290,22 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
       
       // Try to geocode the location
       if (event.Location && !event.Location.startsWith('http')) {
-        console.log(`🗺️ Geocoding location: ${event.Location}`);
         
         // Check if it's a Zo House event and use known coordinates
         if (event.Location.toLowerCase().includes('zo house')) {
           if (event.Location.toLowerCase().includes('bangalore') || event.Location.toLowerCase().includes('koramangala')) {
-            console.log(`🏠 Using Zo House Bangalore coordinates for: ${event.Location}`);
             return {
               ...event,
               Latitude: '12.932658',
               Longitude: '77.634402'
             };
           } else if (event.Location.toLowerCase().includes('san francisco') || event.Location.toLowerCase().includes('sf')) {
-            console.log(`🏠 Using Zo House SF coordinates for: ${event.Location}`);
             return {
               ...event,
               Latitude: '37.7817309',
               Longitude: '-122.401198'
             };
           } else if (event.Location.toLowerCase().includes('whitefield')) {
-            console.log(`🏠 Using Zo House Whitefield coordinates for: ${event.Location}`);
             return {
               ...event,
               Latitude: '12.9725',
@@ -379,7 +317,6 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
         try {
           const coords = await geocodeLocation(event.Location);
           if (coords) {
-            console.log(`✅ Geocoding successful for: ${event.Location} → [${coords.lat}, ${coords.lng}]`);
             return {
               ...event,
               Latitude: coords.lat.toString(),
@@ -398,8 +335,6 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
     })
   );
   
-  console.log(`✅ Finished processing events. Events with coordinates:`, processedEvents.filter(e => e.Latitude && e.Longitude).length);
-  console.log(`📋 Final events:`, processedEvents.map(e => ({ name: e['Event Name'], location: e.Location, coords: e.Latitude && e.Longitude ? `[${e.Latitude}, ${e.Longitude}]` : 'None' })));
   
   // 🦄 UNICORN: Temporarily disabled SF filtering for debugging
   // TODO: Re-enable once we verify events are loading

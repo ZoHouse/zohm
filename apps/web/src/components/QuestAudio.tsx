@@ -788,18 +788,17 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
       }
     };
     
-    // Start speech recognition
-    // IMPORTANT: Set all handlers BEFORE starting to ensure onend can fire
-    try {
-      speechRecognitionRef.current = recognition; // Set ref BEFORE starting
-      recognition.start();
-      console.log('🎤 🎙️ Speech recognition initialized - speak now!');
-      console.log('🎤 📋 Waiting for your voice input...');
-      console.log('🎤 🔍 onend handler is set and ready');
-    } catch (error) {
-      console.error('❌ Failed to start speech recognition:', error);
-      speechRecognitionRef.current = null; // Clear ref on error
-    }
+    // Web Speech API DISABLED - Using AssemblyAI exclusively
+    // (Keeping handlers defined above for reference, but not starting recognition)
+    // try {
+    //   speechRecognitionRef.current = recognition;
+    //   recognition.start();
+    //   console.log('🎤 🎙️ Speech recognition initialized - speak now!');
+    // } catch (error) {
+    //   console.error('❌ Failed to start speech recognition:', error);
+    //   speechRecognitionRef.current = null;
+    // }
+    console.log('🎤 ✅ Using AssemblyAI for transcription (Web Speech API disabled)');
     
     // Also record audio with MediaRecorder
     try {

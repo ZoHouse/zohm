@@ -44,10 +44,7 @@ export interface ZoUser {
     icon: string;
     description: string;
   }>;
-  founder_tokens: Array<{
-    token_id: string;
-    name: string;
-  }>;
+  founder_tokens: string[]; // Array of token IDs like ["523", "204", "158"]
   avatar?: {
     image: string;
     status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -96,10 +93,7 @@ export interface ZoProfileResponse {
     icon: string;
     description: string;
   }>;
-  founder_tokens: Array<{
-    token_id: string;
-    name: string;
-  }>;
+  founder_tokens: string[]; // Array of token IDs like ["523", "204", "158"]
   avatar?: {
     image: string;
     status: string;

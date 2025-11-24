@@ -48,7 +48,7 @@ export function useDashboardData() {
         // Fetch upcoming events using lat/lng bounding box (same as map)
         let eventsQuery = supabase
           .from('canonical_events')
-          .select('id, title, description, starts_at, location_raw, lat, lng, category, raw_payload, is_free')
+          .select('id, title, description, starts_at, location_raw, lat, lng, raw_payload, is_free')
           .gte('starts_at', new Date().toISOString())
           .not('lat', 'is', null)
           .not('lng', 'is', null)
@@ -106,7 +106,7 @@ export function useDashboardData() {
             description: event.description,
             start_time: event.starts_at,
             location: event.location_raw,
-            category: event.category,
+            category: event.raw_payload?.category || 'event',
             image_url: event.raw_payload?.image_url || '/dashboard-assets/rectangle-738.png',
             is_free: event.is_free ?? true,
           })));
@@ -115,7 +115,7 @@ export function useDashboardData() {
         // Fetch available quests
         const { data: questsData, error: questsError } = await supabase
           .from('quests')
-          .select('id, slug, title, description, reward, category, image_url')
+          .select('id, slug, title, description, reward')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(3);
@@ -151,7 +151,7 @@ export function useDashboardData() {
         if (userProfile?.id) {
           const { data: nodesData, error: nodesError } = await supabase
             .from('nodes')
-            .select('id, name, city, latitude, longitude, image_url')
+            .select('id, name, city, latitude, longitude')
             .order('created_at', { ascending: false })
             .limit(5);
 
@@ -166,7 +166,7 @@ export function useDashboardData() {
               city: node.city,
               lat: node.latitude,
               lng: node.longitude,
-              image_url: node.image_url,
+              image_url: '/dashboard-assets/rectangle-738.png', // Default fallback image
             })));
           }
         }

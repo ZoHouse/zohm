@@ -1,0 +1,887 @@
+@import "tailwindcss";
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+:root {
+  --background-dark: #0A0A0A;
+  --background-light: #1C1C1E;
+  --foreground-light: #F5F5F7;
+  --foreground-dark: #8A8A8E;
+  --accent-blue: #0A84FF;
+  --accent-purple: #BF5AF2;
+  --glass-bg: rgba(28, 28, 30, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --font-sans: 'Space Grotesk', sans-serif;
+
+  /* Paper UI Variables */
+  --paper-bg: #f4f4f4;
+  --paper-ink: #1a1a1a;
+  --paper-stroke: #333;
+  --paper-font: 'Comic Neue', 'Comic Sans MS', cursive;
+
+  /* Glow UI Design System - Capsule Language */
+  --glow-chip-bg: rgba(255, 255, 255, 0.20);
+  --glow-chip-border: rgba(255, 255, 255, 0.40);
+  --glow-chip-text: #ff4d6d;
+  --glow-chip-dot: #ff4d6d;
+  --glow-chip-dot-shadow: 0 0 10px rgba(255, 77, 109, 0.6);
+  --glow-chip-radius: 9999px; /* full rounded */
+  --glow-chip-font-weight: 600;
+  --glow-chip-letter-spacing: 0.02em;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+
+body {
+  background-color: var(--background-dark);
+  color: var(--foreground-light);
+  font-family: var(--font-sans);
+}
+
+/* Custom Cursor for Desktop */
+@media (min-width: 768px) {
+  html,
+  body,
+  * {
+    cursor: url('/cursornormal.png') 16 16, auto !important;
+  }
+  
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    cursor: url('/cursornormal.png') 16 16, pointer !important;
+  }
+  
+  button:active,
+  a:active,
+  [role="button"]:active,
+  input[type="button"]:active,
+  input[type="submit"]:active,
+  *:active {
+    cursor: url('/cursoronclick.png') 16 16, pointer !important;
+  }
+}
+
+.paper-ui {
+  background-color: var(--paper-bg);
+  background-image: radial-gradient(var(--paper-stroke) 1px, transparent 0);
+  background-size: 20px 20px;
+  color: var(--paper-ink);
+  font-family: var(--paper-font);
+}
+
+
+/* Legacy glass utilities - unused, can be removed in future cleanup */
+.liquid-glass-pane {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+}
+
+.liquid-glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.liquid-glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.solid-button {
+  background: linear-gradient(to right, #007cf0, #00dfd8);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.solid-button:hover {
+  box-shadow: 0 4px 15px rgba(0, 223, 216, 0.4);
+  transform: translateY(-2px);
+}
+
+.glass-icon-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--foreground-light);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.glass-icon-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide mapbox controls on mobile */
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  display: none !important;
+}
+
+/* Hide Next.js route announcer completely - prevents layout gaps */
+next-route-announcer,
+[aria-live="assertive"][role="alert"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+  pointer-events: none !important;
+}
+
+/* CSS custom properties for viewport calculations */
+:root {
+  --vh: 1vh;
+  --mobile-vh: 100vh;
+  --available-height: 100vh;
+  --real-vh: 100vh;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* Disable default mapbox popup animations - appear directly at pin */
+.paper-card .mapboxgl-popup-content {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Glow UI popup styling */
+.node-popup-clean .mapboxgl-popup-content {
+  padding: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  animation: none !important;
+  transform: none !important;
+  min-width: 240px;
+}
+
+.node-popup-clean .mapboxgl-popup-tip {
+  border-top-color: rgba(255, 255, 255, 0.15) !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Glow UI popup button styling */
+.glow-popup-button {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  background: #ff4d6d;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.glow-popup-button:hover {
+  background: #ff3355;
+  box-shadow: 0 6px 16px rgba(255, 77, 109, 0.4);
+  transform: translateY(-1px);
+}
+
+.glow-popup-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 77, 109, 0.3);
+}
+
+.glow-popup-button.secondary {
+  background: rgba(255, 255, 255, 0.3);
+  color: #000;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.glow-popup-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Zo House marker pulse animation */
+@keyframes zo-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Circular text rotation animation */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Zo House marker specific styles */
+.zo-house-marker {
+  position: absolute !important;
+  transform-origin: center !important;
+  pointer-events: auto !important;
+}
+
+.mapboxgl-marker.zo-house-marker {
+  z-index: 1000 !important;
+}
+
+/* Zo House event marker styles */
+.zo-house-event-marker {
+  position: absolute !important;
+  transform-origin: center !important;
+  pointer-events: auto !important;
+}
+
+.mapboxgl-marker .zo-house-event-marker {
+  z-index: 1000 !important;
+}
+
+/* User location marker - always on top */
+.mapboxgl-marker[style*="Green+Day+Unicorn"] {
+  z-index: 10000 !important;
+}
+
+/* Ensure user location marker container has highest z-index */
+.mapboxgl-marker {
+  z-index: 1000;
+}
+
+.mapboxgl-marker[style*="z-index: 10000"] {
+  z-index: 10000 !important;
+}
+
+/* Paper UI Navbar */
+.paper-nav {
+  background-color: var(--paper-bg);
+  border: 2px solid var(--paper-ink);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 5px 5px 0px var(--paper-ink);
+}
+
+.paper-nav-item {
+  font-family: var(--paper-font);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--paper-ink);
+  background-color: transparent;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease-in-out;
+}
+
+.paper-nav-item:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.paper-nav-item.active {
+  background-color: var(--paper-ink);
+  color: var(--paper-bg);
+  box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+}
+
+/* Events ticker strip (fixed above navbar) */
+.event-ticker {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 108px; /* slightly above the navbar */
+  z-index: 50;
+  padding: 0;
+}
+
+.event-ticker-viewport {
+  width: 100%;
+  margin: 0;
+  border: 2px solid var(--paper-ink);
+  border-radius: 0;
+  background-color: var(--paper-bg);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.event-ticker.inline {
+  position: relative;
+  bottom: auto;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.event-ticker.inline .event-ticker-viewport {
+  border-radius: 9999px;
+  border-width: 1px;
+}
+
+.event-ticker.ticker-md .event-ticker-item {
+  padding: 8px 20px;
+  font-size: 0.95rem;
+}
+
+.event-ticker.ticker-mobile .event-ticker-item {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.event-ticker.ticker-mobile .event-ticker-viewport {
+  border-width: 1px;
+}
+
+.event-ticker-track {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker-scroll 300s linear infinite; /* 🦄 very slow for maximum readability */
+}
+
+/* Pause ticker on hover */
+.event-ticker-viewport:hover .event-ticker-track {
+  animation-play-state: paused;
+  cursor: pointer;
+}
+
+.event-ticker-item {
+  display: inline-block;
+  padding: 10px 24px;
+  font-family: var(--paper-font);
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 🦄 UNICORN: Slow down nodes ticker for readability */
+.node-ticker .event-ticker-track {
+  animation-duration: 120s; /* slower, readable speed */
+}
+
+/* Use a separate keyframe for nodes to match 4x duplication (25%) */
+@keyframes ticker-scroll-nodes {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
+}
+
+.node-ticker .event-ticker-track {
+  animation-name: ticker-scroll-nodes;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Mobile-specific button improvements */
+  .glass-icon-button {
+    min-height: 48px; /* iOS minimum touch target */
+    min-width: 48px;
+    touch-action: manipulation;
+  }
+
+  .solid-button {
+    min-height: 44px; /* iOS minimum touch target */
+    padding: 12px 16px;
+  }
+
+  /* Mobile input improvements */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  /* Mobile overlay improvements */
+  .liquid-glass-pane {
+    border-radius: 16px;
+  }
+
+  /* Mobile navigation improvements */
+  nav {
+    padding: 8px;
+  }
+
+  /* Enhanced mobile navbar */
+  nav.liquid-glass-pane {
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Mobile viewport fixes */
+  body, html {
+    height: 100vh;
+    height: calc(var(--available-height, 100vh));
+    height: 100dvh;
+    height: -webkit-fill-available;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Prevent scrolling and bounce on mobile */
+  body {
+    position: fixed;
+    width: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area support for bottom elements on iPhone */
+  .safe-area-bottom {
+    padding-bottom: var(--safe-area-bottom) !important;
+  }
+
+  /* For elements with bottom positioning */
+  .bottom-safe {
+    bottom: var(--safe-area-bottom) !important;
+  }
+
+  /* Add safe area padding to mapbox popups at bottom */
+  .mapboxgl-popup-anchor-bottom .mapboxgl-popup-content,
+  .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-content,
+  .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-content {
+    padding-bottom: calc(12px + var(--safe-area-bottom)) !important;
+  }
+
+  /* Adjust popup tip position for bottom-anchored popups */
+  .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+    margin-bottom: var(--safe-area-bottom);
+  }
+
+  /* Ensure minimum bottom spacing for all fixed/absolute bottom elements */
+  [class*="bottom-"] {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Add safe area to modals and sheets that slide from bottom */
+  .sheet-container,
+  .modal-container {
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* Mobile button active states */
+  .glass-icon-button:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+
+  /* Mobile sheet animations */
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+  }
+
+  .mobile-sheet-enter {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .mobile-sheet-exit {
+    animation: slideDown 0.3s ease-in;
+  }
+
+  /* Mobile gradient backgrounds */
+  .mobile-gradient-bg {
+    background: linear-gradient(135deg, #0A0A0A 0%, #1C1C1E 50%, #2A2A2E 100%);
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .liquid-glass-pane {
+    border-radius: 12px;
+  }
+
+  .liquid-glass-card {
+    border-radius: 12px;
+  }
+
+  /* Ultra-compact mobile navbar */
+  nav.liquid-glass-pane {
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .glass-icon-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Modern gradient utilities */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1px;
+  border-radius: inherit;
+}
+
+.gradient-border > * {
+  background: inherit;
+  border-radius: inherit;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Line clamp utility */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Ensure map canvas is visible and renders properly */
+.mapboxgl-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1 !important;
+}
+
+.mapboxgl-canvas-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure map popups are visible and clickable */
+.mapboxgl-popup {
+  z-index: 1000 !important;
+}
+
+.mapboxgl-popup-content {
+  z-index: 1001 !important;
+  pointer-events: auto !important;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Paper UI Overlays */
+.paper-overlay {
+  background-color: var(--paper-bg);
+  border: 2px solid var(--paper-ink);
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px var(--paper-ink);
+  padding: 24px;
+  color: var(--paper-ink);
+}
+
+.paper-card {
+  border: 2px solid var(--paper-ink);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease-in-out;
+}
+
+.paper-card:hover {
+  box-shadow: 4px 4px 0px var(--paper-ink);
+  transform: translate(-4px, -4px);
+}
+
+/* Disable hover lift for specific cards when needed */
+.paper-card.no-hover:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Zo House event styling - Orange theme */
+.zo-house-event {
+  border-color: #ea580c !important; /* Orange-600 */
+  background-color: #fff7ed; /* Orange-50 */
+}
+
+.zo-house-event:hover {
+  box-shadow: 4px 4px 0px #ea580c !important;
+  border-color: #ea580c !important;
+}
+
+.zo-house-badge {
+  color: #ea580c;
+  margin-right: 8px;
+}
+
+.zo-house-button {
+  background-color: #ea580c !important; /* Orange-600 */
+  border-color: #ea580c !important;
+  color: white !important;
+}
+
+.zo-house-button:hover {
+  background-color: #dc2626 !important; /* Red-600 for hover */
+  border-color: #dc2626 !important;
+  box-shadow: 2px 2px 0px #dc2626 !important;
+}
+
+.paper-button {
+  font-family: var(--paper-font);
+  font-weight: 700;
+  background-color: var(--paper-ink);
+  color: var(--paper-bg);
+  border: 2px solid var(--paper-ink);
+  border-radius: 12px;
+  padding: 10px 20px;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.paper-button:hover {
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+  transform: translate(2px, 2px);
+}
+
+.paper-button:active {
+  box-shadow: 0px 0px 0px rgba(0,0,0,0.2);
+  transform: translate(4px, 4px);
+}
+
+/* Disable hover effects for buttons when needed */
+.paper-button.no-hover:hover {
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+  transform: none;
+}
+
+.paper-input {
+  font-family: var(--paper-font);
+  font-size: 1rem;
+  padding: 12px 16px;
+  border: 2px solid var(--paper-ink);
+  border-radius: 12px;
+  background-color: var(--paper-bg);
+  color: var(--paper-ink);
+  transition: all 0.2s ease-in-out;
+}
+
+.paper-input:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px var(--paper-ink);
+}
+
+/* Paper UI Profile */
+.paper-profile-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.paper-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid var(--paper-ink);
+  margin: 0 auto 16px;
+  box-shadow: 6px 6px 0px var(--paper-ink);
+}
+
+.paper-profile-body {
+  border: 2px solid var(--paper-ink);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Red Pill Button - Special case for wallet connection */
+.red-pill-button {
+  font-family: var(--paper-font);
+  font-weight: 700;
+  background-color: #dc2626; /* Red-600 */
+  color: white;
+  border: 2px solid #991b1b; /* Red-800 */
+  border-radius: 12px;
+  padding: 12px 24px;
+  box-shadow: 4px 4px 0px #000;
+  transition: all 0.2s ease-in-out;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.red-pill-button:hover {
+  background-color: #b91c1c; /* Red-700 */
+  border-color: #7f1d1d; /* Red-900 */
+  box-shadow: 2px 2px 0px #000;
+  transform: translate(2px, 2px);
+}
+
+.red-pill-button:active {
+  box-shadow: 0px 0px 0px #000;
+  transform: translate(4px, 4px);
+}
+
+/* Mac-style onboarding animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Glassmorphism Styling - White & Highly Translucent */
+/* Modern dialog panels with glassmorphism effect */
+div[id^="headlessui-dialog-panel"] {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Modal buttons with glassmorphism */
+div[id^="headlessui-dialog-panel"] button {
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+div[id^="headlessui-dialog-panel"] button:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Modal backdrop overlay (the dark overlay behind modal) */
+div[class*="ModalOverlay"] {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}

@@ -9,9 +9,9 @@ interface MobileDashboardHeaderProps {
   onClose: () => void;
 }
 
-const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ 
+const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
   userProfile,
-  onClose 
+  onClose
 }) => {
   const [balance, setBalance] = useState(0);
   const userId = userProfile?.id;
@@ -26,7 +26,7 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.quests?.zo_points !== undefined) {
@@ -44,24 +44,24 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
   }, [userId]);
 
   return (
-    <div 
-      className="sticky top-0 z-50 h-20 flex items-center justify-between px-6"
-      style={{ 
+    <div
+      className="sticky top-0 z-50 h-20 flex items-center justify-between px-4 md:px-6"
+      style={{
         backgroundColor: 'transparent',
         paddingTop: 'max(1rem, env(safe-area-inset-top))',
       }}
     >
       {/* Zo Logo (40px) */}
       <div className="w-10 h-10">
-        <img 
+        <img
           src={DashboardAssets.logo}
-          alt="Zo World" 
+          alt="Zo World"
           className="w-full h-full object-contain"
         />
       </div>
-      
+
       {/* Avatar + Balance Pill (right side) */}
-      <div 
+      <div
         className="flex items-center gap-1 px-2 py-2 rounded-full"
         style={{
           backgroundColor: 'rgba(18, 18, 18, 0.2)',
@@ -72,19 +72,19 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
       >
         {/* Avatar (32px for mobile) */}
         <div className="w-8 h-8 rounded-full overflow-hidden">
-          <img 
-            src={userProfile?.pfp || DashboardAssets.profile.photo} 
-            alt="Profile" 
+          <img
+            src={userProfile?.pfp || DashboardAssets.profile.photo}
+            alt="Profile"
             className="w-full h-full object-cover"
           />
         </div>
-        
+
         {/* Balance Tag */}
-        <div 
+        <div
           className="flex items-center gap-1 px-2 py-1 rounded-full"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
         >
-          <span 
+          <span
             className="font-rubik text-xs font-medium text-white"
             style={{
               fontSize: '12px',
@@ -96,14 +96,14 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
           </span>
           {/* Coin Icon (16px, multi-layer) */}
           <div className="relative w-4 h-4 rounded-full overflow-hidden">
-            <img 
+            <img
               src={DashboardAssets.coin.gradient1}
-              alt="" 
+              alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
-            <img 
+            <img
               src={DashboardAssets.coin.gradient2}
-              alt="" 
+              alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>

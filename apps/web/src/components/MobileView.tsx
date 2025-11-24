@@ -73,7 +73,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>('dashboard');
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  
+
   // Game1111 state
   const [showGame1111, setShowGame1111] = useState(false);
   const [game1111UserId, setGame1111UserId] = useState<string | undefined>();
@@ -85,7 +85,7 @@ const MobileView: React.FC<MobileViewProps> = ({
     setShowTileModal(true);
     setActiveList(null);
   };
-  
+
   const handleLaunchGame = (userId: string) => {
     console.log('🎮 Launching game1111 for user:', userId);
     setGame1111UserId(userId);
@@ -94,7 +94,7 @@ const MobileView: React.FC<MobileViewProps> = ({
     setActiveList(null);
     setShowTileModal(false);
   };
-  
+
   const handleGameComplete = (score: number, tokensEarned: number) => {
     console.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
@@ -135,7 +135,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   // 🎨 Show quest complete page after finishing quest
   if (showQuestComplete) {
     return (
-      <QuestComplete 
+      <QuestComplete
         onGoHome={handleQuestCompleteGoHome}
         userId={userId}
         score={questScore}
@@ -148,13 +148,12 @@ const MobileView: React.FC<MobileViewProps> = ({
     <main className={`relative w-full h-screen overflow-hidden ${isAnyModalOpen ? 'bg-black' : 'bg-[#f4f1ea]'}`}>
       {/* Map Canvas - shrinks to top half when modal is open */}
       <div
-        className={`absolute inset-0 pointer-events-none transition-all duration-300 ease-out ${
-          isAnyModalOpen ? 'h-[50%]' : 'h-full'
-        }`}
+        className={`absolute inset-0 pointer-events-none transition-all duration-300 ease-out ${isAnyModalOpen ? 'h-[50%]' : 'h-full'
+          }`}
         style={{ willChange: 'height' }}
       >
-        <MapCanvas 
-          className="absolute inset-0 pointer-events-auto" 
+        <MapCanvas
+          className="absolute inset-0 pointer-events-auto"
           onMapReady={onMapReady}
           flyToEvent={flyToEvent}
           flyToNode={flyToNode}
@@ -179,16 +178,16 @@ const MobileView: React.FC<MobileViewProps> = ({
         <CityInfoCard city={userCity} />
       ) : (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 text-center w-full px-4">
-          <img 
-            src="/Z_to_House.gif" 
-            alt="Zo House Events Calendar" 
+          <img
+            src="/Z_to_House.gif"
+            alt="Zo House Events Calendar"
             className="h-12 w-auto mx-auto opacity-90 drop-shadow-lg"
           />
         </div>
       )}
 
       {/* Map View Toggle & Stats Pill - Mobile */}
-      <div 
+      <div
         className="absolute top-24 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-auto"
         style={{ touchAction: 'auto' }}
       >
@@ -200,13 +199,13 @@ const MobileView: React.FC<MobileViewProps> = ({
           isLoading={isRequestingLocation}
           className="scale-90"
         />
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-xs font-semibold shadow whitespace-nowrap">
-          <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)]"></span>
-          <span>{totalEventsCount} Events</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[#ff4d6d] text-[10px] md:text-xs font-semibold shadow max-w-[90vw] overflow-x-auto scrollbar-hide">
+          <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-[#ff4d6d] shadow-[0_0_8px_rgba(255,77,109,0.5)] shrink-0"></span>
+          <span className="whitespace-nowrap">{totalEventsCount} Events</span>
           <span className="opacity-70">•</span>
-          <span>{totalNodesCount} Nodes</span>
+          <span className="whitespace-nowrap">{totalNodesCount} Nodes</span>
           <span className="opacity-70">•</span>
-          <span>{questCount} Quests</span>
+          <span className="whitespace-nowrap">{questCount} Quests</span>
         </div>
       </div>
 
@@ -219,9 +218,9 @@ const MobileView: React.FC<MobileViewProps> = ({
           boxShadow: '0 8px 32px rgba(255, 77, 109, 0.4)',
         }}
       >
-        <img 
-          src="/Cultural Stickers/FollowYourHeart.png" 
-          alt="Follow Your Heart" 
+        <img
+          src="/Cultural Stickers/FollowYourHeart.png"
+          alt="Follow Your Heart"
           className="w-full h-full object-contain"
         />
       </button>
@@ -251,25 +250,25 @@ const MobileView: React.FC<MobileViewProps> = ({
       />
 
       {/* Quests Overlay */}
-      <QuestsOverlay 
-        isVisible={activeList === 'quests'} 
+      <QuestsOverlay
+        isVisible={activeList === 'quests'}
         onClose={handleCloseAll}
         onLaunchGame={handleLaunchGame}
       />
 
       {/* Mobile Dashboard */}
-      <MobileDashboard 
-        isVisible={activeList === 'dashboard'} 
-        onClose={handleCloseAll} 
+      <MobileDashboard
+        isVisible={activeList === 'dashboard'}
+        onClose={handleCloseAll}
         onLaunchGame={handleLaunchGame}
       />
 
       {/* Wallet Overlay - rendered at root level */}
-      <WalletOverlay 
-        isVisible={isWalletOpen} 
-        onClose={handleCloseWallet} 
+      <WalletOverlay
+        isVisible={isWalletOpen}
+        onClose={handleCloseWallet}
       />
-      
+
       {/* Game1111 Full-Screen Experience - Independent of overlays */}
       {showGame1111 && (
         <div className="fixed inset-0 z-[10000] bg-black">

@@ -255,7 +255,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-[400px] bg-black/95 border border-white/20 rounded-[24px] p-8 shadow-2xl">
+      <div className="relative z-10 w-full max-w-[90vw] md:max-w-[400px] bg-black/95 border border-white/20 rounded-[24px] p-6 md:p-8 shadow-2xl">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -290,7 +290,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white font-rubik focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20"
+                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-2 md:px-4 py-3 text-white font-rubik text-sm md:text-base focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20"
                 >
                   <option value="1" className="bg-black">🇺🇸 +1</option>
                   <option value="91" className="bg-black">🇮🇳 +91</option>
@@ -354,7 +354,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
 
             <div className="space-y-4">
               {/* OTP Inputs */}
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-1 md:gap-2 justify-center w-full">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -365,7 +365,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-12 h-14 bg-white/10 border border-white/20 rounded-lg text-center text-white font-rubik text-xl font-semibold focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20"
+                    className="w-10 h-12 md:w-12 md:h-14 bg-white/10 border border-white/20 rounded-lg text-center text-white font-rubik text-lg md:text-xl font-semibold focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 p-0"
                   />
                 ))}
               </div>

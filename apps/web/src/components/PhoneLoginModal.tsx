@@ -14,7 +14,7 @@ type Step = 'phone' | 'otp';
 export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLoginModalProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('phone');
-  const [countryCode, setCountryCode] = useState('1'); // ZO API expects without +
+  const [countryCode, setCountryCode] = useState('91'); // ZO API expects without + (India default)
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,8 +124,10 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
     }
   };
 
-  const handleVerifyOTP = async () => {
-    const otpString = otp.join('');
+  const handleVerifyOTP = async (otpArray?: string[]) => {
+    // Use provided OTP array or fall back to state
+    const otpToVerify = otpArray || otp;
+    const otpString = otpToVerify.join('');
     if (otpString.length !== 6) {
       setError('Please enter the complete 6-digit code');
       return;
@@ -223,8 +225,9 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
     }
 
     // Auto-submit when all 6 digits entered
+    // Pass newOtp directly to avoid state update race condition
     if (newOtp.every(digit => digit !== '') && index === 5) {
-      handleVerifyOTP();
+      handleVerifyOTP(newOtp);
     }
   };
 
@@ -372,7 +375,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
               )}
 
               <button
-                onClick={handleVerifyOTP}
+                onClick={() => handleVerifyOTP()}
                 disabled={isLoading || otp.some(d => !d)}
                 className="w-full bg-black border-2 border-white/20 rounded-lg px-5 py-4 text-white font-rubik font-medium hover:bg-[#1a1a1a] hover:border-white/40 hover:shadow-[0_0_30px_rgba(207,255,80,0.2)] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
                 type="button"

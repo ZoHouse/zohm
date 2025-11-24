@@ -96,14 +96,6 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/api:
-    dependencies:
-      '@supabase/supabase-js':
-        specifier: ^2.52.0
-        version: 2.84.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-
-  packages/contracts: {}
-
   packages/sdk:
     devDependencies:
       '@types/node':
@@ -115,8 +107,6 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
-
-  packages/shared: {}
 
 packages:
 

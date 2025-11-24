@@ -806,12 +806,12 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             }
             console.log('🎤 ✅ Using AssemblyAI as primary transcription source');
             
-            // Validate: Check if transcription contains "zo zo zo"
-            const requiredPhrase = 'zo zo zo';
+            // Validate: Check if transcription contains "zo" (simplified - any occurrence)
+            const requiredPhrase = 'zo';
             const containsRequiredPhrase = transcribedText.includes(requiredPhrase);
             
             console.log('🎤 🔍 Validation:', containsRequiredPhrase ? '✅ PASSED' : '❌ FAILED');
-            console.log('🎤   Required phrase:', requiredPhrase);
+            console.log('🎤   Required word:', requiredPhrase);
             console.log('🎤   Found in text:', containsRequiredPhrase);
             
             if (containsRequiredPhrase) {
@@ -828,9 +828,9 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               // Show error popup
               alert(
                 '❌ Voice Authentication Failed\n\n' +
-                'You need to say "Zo Zo Zo" clearly.\n\n' +
+                'You need to say "Zo" clearly.\n\n' +
                 'What was detected: "' + transcription.text + '"\n\n' +
-                'Please try again and make sure to say "Zo Zo Zo" clearly into the microphone.'
+                'Please try again and make sure to say "Zo" clearly into the microphone.'
               );
               
               // Reset to idle state so user can try again
@@ -852,14 +852,14 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             transcriptionValidatedRef.current = false;
             transcriptionTextRef.current = null;
             
-            alert(
-              '❌ Voice Authentication Failed\n\n' +
-              'Could not transcribe your audio.\n\n' +
-              'Please try again and make sure to:\n' +
-              '• Say "Zo Zo Zo" clearly\n' +
-              '• Speak close to the microphone\n' +
-              '• Reduce background noise'
-            );
+              alert(
+                '❌ Voice Authentication Failed\n\n' +
+                'Could not transcribe your audio.\n\n' +
+                'Please try again and make sure to:\n' +
+                '• Say "Zo" clearly\n' +
+                '• Speak close to the microphone\n' +
+                '• Reduce background noise'
+              );
             
             // Reset to idle state so user can try again
             setAudioStatus('idle');
@@ -894,7 +894,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
             // Fallback: Use Web Speech API transcript for validation
             const fallbackTranscript = transcriptRef.current.final.trim() || transcriptRef.current.interim.trim();
             const fallbackText = fallbackTranscript.toLowerCase().trim();
-            const requiredPhrase = 'zo zo zo';
+            const requiredPhrase = 'zo';
             const containsRequiredPhrase = fallbackText.includes(requiredPhrase);
             
             if (fallbackText && containsRequiredPhrase) {
@@ -907,18 +907,18 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
               setRecordingDuration(0);
               return; // Success with fallback
             } else if (fallbackText) {
-              // Web Speech API detected something, but not the required phrase
+              // Web Speech API detected something, but not the required word
               console.log('🎤 ⚠️ Web Speech API detected:', fallbackTranscript);
-              console.log('🎤 ❌ But required phrase "zo zo zo" not found');
+              console.log('🎤 ❌ But required word "zo" not found');
               transcriptionValidatedRef.current = false;
               transcriptionTextRef.current = fallbackText;
               
               alert(
                 '❌ Voice Authentication Failed\n\n' +
-                'Could not verify that you said "Zo Zo Zo".\n\n' +
+                'Could not verify that you said "Zo".\n\n' +
                 'What was detected: "' + fallbackTranscript + '"\n\n' +
                 'Please try again and make sure to:\n' +
-                '• Say "Zo Zo Zo" clearly\n' +
+                '• Say "Zo" clearly\n' +
                 '• Speak close to the microphone\n' +
                 '• Reduce background noise'
               );
@@ -936,7 +936,7 @@ export default function QuestAudio({ onComplete, userId }: QuestAudioProps) {
                 '❌ Voice Authentication Failed\n\n' +
                 'Could not detect your voice.\n\n' +
                 'Please try again and make sure to:\n' +
-                '• Say "Zo Zo Zo" clearly\n' +
+                '• Say "Zo" clearly\n' +
                 '• Speak close to the microphone\n' +
                 '• Reduce background noise\n\n' +
                 'Note: AssemblyAI transcription is not configured.\n' +

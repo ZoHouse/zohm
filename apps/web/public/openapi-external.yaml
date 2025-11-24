@@ -1,0 +1,571 @@
+openapi: 3.0.0
+info:
+  title: ZO Backend API
+  version: 1.0.0
+  description: |
+    RESTful API for ZO authentication, profile management, and avatar generation.
+    Uses phone-based OTP authentication with JWT tokens.
+    
+    **Note**: This API is operated by the ZO team. Contact dev@zo.xyz for API access credentials.
+  contact:
+    email: dev@zo.xyz
+    url: https://discord.gg/zo
+
+servers:
+  - url: https://api.io.zo.xyz
+    description: Production ZO Backend
+
+security:
+  - bearerAuth: []
+  - deviceCredentials: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from login/verify-otp response
+    
+    deviceCredentials:
+      type: apiKey
+      in: header
+      name: client-key
+      description: |
+        **Required Headers for All Requests:**
+        - `client-key`: Platform API key (contact ZO team)
+        - `client-device-id`: Unique device identifier
+        - `client-device-secret`: Device secret
+        
+        ⚠️ **Security Warning**: Never expose these credentials in public repositories.
+
+  schemas:
+    # Request Schemas
+    SendOTPRequest:
+      type: object
+      required:
+        - mobile_country_code
+        - mobile_number
+      properties:
+        mobile_country_code:
+          type: string
+          example: "+1"
+          description: Country code with + prefix
+        mobile_number:
+          type: string
+          example: "5551234567"
+          description: Phone number without spaces or dashes
+        message_channel:
+          type: string
+          example: ""
+          description: Must be empty string
+
+    VerifyOTPRequest:
+      type: object
+      required:
+        - mobile_country_code
+        - mobile_number
+        - otp
+      properties:
+        mobile_country_code:
+          type: string
+          example: "+1"
+        mobile_number:
+          type: string
+          example: "5551234567"
+        otp:
+          type: string
+          example: "123456"
+          description: 6-digit OTP code from SMS
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token from login response
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        bio:
+          type: string
+          example: "Living consciously"
+        date_of_birth:
+          type: string
+          format: date
+          example: "1990-01-01"
+        place_name:
+          type: string
+          example: "San Francisco, CA"
+        body_type:
+          type: string
+          enum: [bro, bae]
+          description: Can only be changed before avatar generation
+
+    AvatarGenerateRequest:
+      type: object
+      required:
+        - body_type
+      properties:
+        body_type:
+          type: string
+          enum: [bro, bae]
+          example: "bro"
+
+    # Response Schemas
+    SendOTPResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "OTP sent successfully"
+
+    ZoUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pid:
+          type: string
+          example: "PID123"
+        first_name:
+          type: string
+        last_name:
+          type: string
+        mobile_number:
+          type: string
+        email_address:
+          type: string
+          format: email
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        bio:
+          type: string
+        pfp_image:
+          type: string
+          format: uri
+        wallet_address:
+          type: string
+        membership:
+          type: string
+          enum: [founder, citizen, none]
+        body_type:
+          type: string
+          enum: [bro, bae]
+        place_name:
+          type: string
+        home_location:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+              format: float
+            lng:
+              type: number
+              format: float
+        cultures:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              name:
+                type: string
+              icon:
+                type: string
+              description:
+                type: string
+        founder_tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                type: string
+              name:
+                type: string
+        avatar:
+          type: object
+          nullable: true
+          properties:
+            image:
+              type: string
+              format: uri
+            status:
+              type: string
+              enum: [pending, processing, completed, failed]
+
+    VerifyOTPResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        access_token_expiry:
+          type: string
+          format: date-time
+        refresh_token:
+          type: string
+        refresh_token_expiry:
+          type: string
+          format: date-time
+        client_key:
+          type: string
+        device_id:
+          type: string
+          description: Store for subsequent requests
+        device_secret:
+          type: string
+          description: Store for subsequent requests
+        device_info:
+          type: object
+        user:
+          $ref: '#/components/schemas/ZoUser'
+        token:
+          type: string
+          description: Legacy field (same as access_token)
+        valid_till:
+          type: string
+          format: date-time
+          description: Legacy field (same as access_token_expiry)
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+          description: New access token
+        refresh:
+          type: string
+          description: New refresh token
+        access_expiry:
+          type: string
+          format: date-time
+        refresh_expiry:
+          type: string
+          format: date-time
+
+    LoginCheckResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+
+    ProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/ZoUser'
+        - type: object
+          properties:
+            mobile_country_code:
+              type: string
+
+    AvatarGenerateResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        message:
+          type: string
+
+    AvatarStatusResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        result:
+          type: object
+          nullable: true
+          properties:
+            avatar_url:
+              type: string
+              format: uri
+        error:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        errors:
+          type: array
+          items:
+            type: string
+        detail:
+          type: string
+        error:
+          type: string
+        message:
+          type: string
+
+paths:
+  /api/v1/auth/login/mobile/otp/:
+    post:
+      summary: Send OTP
+      description: Send OTP code to user's phone number via SMS
+      tags:
+        - Authentication
+      security:
+        - deviceCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOTPRequest'
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendOTPResponse'
+        '400':
+          description: Invalid phone number or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded (max 5 requests per 15 minutes)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login/mobile/:
+    post:
+      summary: Verify OTP
+      description: Verify OTP code and authenticate user
+      tags:
+        - Authentication
+      security:
+        - deviceCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOTPResponse'
+        '400':
+          description: Invalid OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/token/refresh/:
+    post:
+      summary: Refresh Token
+      description: Refresh expired access token using refresh token
+      tags:
+        - Authentication
+      security:
+        - deviceCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login/check/:
+    get:
+      summary: Check Login Status
+      description: Validate if user is currently authenticated
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+        - deviceCredentials: []
+      responses:
+        '200':
+          description: Login status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginCheckResponse'
+
+  /api/v1/profile/me/:
+    get:
+      summary: Get Profile
+      description: Fetch authenticated user's full profile
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+        - deviceCredentials: []
+      responses:
+        '200':
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update Profile
+      description: Update authenticated user's profile (partial updates supported)
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+        - deviceCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/avatar/generate/:
+    post:
+      summary: Generate Avatar
+      description: Start avatar generation for authenticated user
+      tags:
+        - Avatar
+      security:
+        - bearerAuth: []
+        - deviceCredentials: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvatarGenerateRequest'
+      responses:
+        '200':
+          description: Avatar generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarGenerateResponse'
+        '400':
+          description: Invalid body_type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/avatar/status/{task_id}/:
+    get:
+      summary: Check Avatar Status
+      description: |
+        Check avatar generation status. 
+        
+        **Polling Strategy**: Poll every 2 seconds, max 30 attempts (60 seconds total).
+      tags:
+        - Avatar
+      security:
+        - bearerAuth: []
+        - deviceCredentials: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: Task ID from avatar generation response
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Avatar status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarStatusResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Authentication
+    description: Phone-based OTP authentication and token management
+  - name: Profile
+    description: User profile management
+  - name: Avatar
+    description: Avatar generation and status tracking

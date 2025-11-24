@@ -1,0 +1,684 @@
+openapi: 3.0.0
+info:
+  title: ZO House Internal API
+  version: 1.0.0
+  description: |
+    Internal API routes for the ZO House Next.js application.
+    These endpoints are used by the frontend to manage quests, inventory, leaderboards, and more.
+  contact:
+    url: https://github.com/zo-house
+
+servers:
+  - url: /api
+    description: Application API (relative path)
+
+components:
+  schemas:
+    # Common Schemas
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Internal server error"
+
+    # NFT Schemas
+    NFTCheckResponse:
+      type: object
+      properties:
+        hasNFT:
+          type: boolean
+          example: true
+        address:
+          type: string
+          example: "0x1234..."
+        contract:
+          type: string
+          example: "0xf9e631014ce1759d9b76ce074d496c3da633ba12"
+
+    # Leaderboard Schemas
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+          example: 1
+        user_id:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+          example: "CodeWarrior"
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        zo_points:
+          type: integer
+          example: 1500
+        total_quests_completed:
+          type: integer
+          example: 25
+        home_city:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+              example: "San Francisco"
+            country:
+              type: string
+              example: "USA"
+
+    LeaderboardResponse:
+      type: object
+      properties:
+        leaderboard:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+        scope:
+          type: string
+          enum: [global, local]
+          example: "global"
+        city_id:
+          type: string
+          format: uuid
+          nullable: true
+        total:
+          type: integer
+          example: 10
+
+    # Quest Schemas
+    QuestCompleteRequest:
+      type: object
+      required:
+        - user_id
+        - quest_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        quest_id:
+          type: string
+          description: Quest slug (human-readable identifier)
+          example: "morning-meditation"
+        score:
+          type: integer
+          example: 100
+        location:
+          type: string
+          example: "San Francisco"
+        latitude:
+          type: number
+          format: float
+          example: 37.7749
+        longitude:
+          type: number
+          format: float
+          example: -122.4194
+        metadata:
+          type: object
+          additionalProperties: true
+
+    QuestCompleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        completion_id:
+          type: string
+          format: uuid
+        rewards:
+          type: object
+          properties:
+            zo_tokens:
+              type: integer
+              example: 50
+            reputation:
+              type: object
+              additionalProperties:
+                type: integer
+            items:
+              type: array
+              items:
+                type: string
+        next_available_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # Inventory Schemas
+    InventoryItem:
+      type: object
+      properties:
+        item_id:
+          type: string
+        item_type:
+          type: string
+          enum: [badge, nft, collectible, item]
+        quantity:
+          type: integer
+          example: 1
+        acquired_at:
+          type: string
+          format: date-time
+        display:
+          type: object
+          properties:
+            name:
+              type: string
+            icon:
+              type: string
+            description:
+              type: string
+
+    InventorySummary:
+      type: object
+      properties:
+        total_items:
+          type: integer
+        badges:
+          type: integer
+        nfts:
+          type: integer
+        collectibles:
+          type: integer
+        items:
+          type: integer
+
+    InventoryResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        summary:
+          $ref: '#/components/schemas/InventorySummary'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+
+    # Progress Schemas
+    ProgressResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            pfp:
+              type: string
+              format: uri
+            email:
+              type: string
+              format: email
+            zo_balance:
+              type: integer
+            user_tier:
+              type: string
+              example: "citizen"
+        quests:
+          type: object
+          properties:
+            zo_points:
+              type: integer
+            total_completed:
+              type: integer
+            last_completed_at:
+              type: string
+              format: date-time
+              nullable: true
+        reputations:
+          type: array
+          items:
+            type: object
+            properties:
+              trait:
+                type: string
+              score:
+                type: integer
+              level:
+                type: integer
+              progress:
+                type: number
+                format: float
+        total_reputation_score:
+          type: integer
+        streaks:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+              longest:
+                type: integer
+              last_action_at:
+                type: string
+                format: date-time
+        inventory:
+          $ref: '#/components/schemas/InventorySummary'
+
+    # Reputation Schemas
+    ReputationEntry:
+      type: object
+      properties:
+        trait:
+          type: string
+          example: "explorer"
+        score:
+          type: integer
+          example: 750
+        level:
+          type: integer
+          example: 3
+        progress:
+          type: number
+          format: float
+          example: 0.75
+        description:
+          type: string
+        icon:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    ReputationsResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        reputations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReputationEntry'
+        total_score:
+          type: integer
+          example: 2500
+
+    # Cities Schemas
+    City:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "San Francisco"
+        country:
+          type: string
+          example: "USA"
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        stage:
+          type: integer
+          example: 1
+
+    CitiesResponse:
+      type: object
+      properties:
+        cities:
+          type: array
+          items:
+            $ref: '#/components/schemas/City'
+
+paths:
+  /check-nft:
+    get:
+      summary: Check NFT Ownership
+      description: Check if an Ethereum address owns a Zo House Founder NFT
+      tags:
+        - NFT
+      parameters:
+        - name: address
+          in: query
+          required: true
+          description: Ethereum wallet address
+          schema:
+            type: string
+            example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      responses:
+        '200':
+          description: NFT ownership status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NFTCheckResponse'
+        '400':
+          description: Missing address parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /leaderboard:
+    get:
+      summary: Get Leaderboard
+      description: Fetch global or local leaderboard rankings
+      tags:
+        - Leaderboard
+      parameters:
+        - name: scope
+          in: query
+          description: Leaderboard scope
+          schema:
+            type: string
+            enum: [global, local]
+            default: global
+        - name: cityId
+          in: query
+          description: City ID for local leaderboard
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum number of entries
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Leaderboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /quests/complete:
+    post:
+      summary: Complete Quest
+      description: Record quest completion and award rewards
+      tags:
+        - Quests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestCompleteRequest'
+      responses:
+        '200':
+          description: Quest completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestCompleteResponse'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Quest or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Quest on cooldown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Quest is on cooldown"
+                  next_available_at:
+                    type: string
+                    format: date-time
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}/inventory:
+    get:
+      summary: Get User Inventory
+      description: Fetch user's inventory items with optional filtering
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          description: Filter by item type
+          schema:
+            type: string
+            enum: [badge, nft, collectible, item]
+      responses:
+        '200':
+          description: User inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}/progress:
+    get:
+      summary: Get User Progress
+      description: Fetch comprehensive user progress including quests, reputations, streaks, and inventory
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User progress data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}/reputations:
+    get:
+      summary: Get User Reputations
+      description: Fetch user's reputation scores across different traits
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User reputations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReputationsResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}/streaks:
+    get:
+      summary: Get User Streaks
+      description: Fetch user's activity streaks
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User streaks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    format: uuid
+                  streaks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        count:
+                          type: integer
+                        longest:
+                          type: integer
+                        last_action_at:
+                          type: string
+                          format: date-time
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar:
+    get:
+      summary: Get Calendar Events
+      description: Fetch iCal calendar data from Luma or external sources
+      tags:
+        - Calendar
+      parameters:
+        - name: id
+          in: query
+          description: Luma calendar ID
+          schema:
+            type: string
+        - name: url
+          in: query
+          description: Direct iCal feed URL (URL-encoded)
+          schema:
+            type: string
+            format: uri
+      responses:
+        '200':
+          description: iCal calendar data
+          content:
+            text/calendar:
+              schema:
+                type: string
+        '400':
+          description: Missing calendar ID or URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cities:
+    get:
+      summary: Get Cities
+      description: Fetch all cities ordered by stage and name
+      tags:
+        - Cities
+      responses:
+        '200':
+          description: List of cities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitiesResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+tags:
+  - name: NFT
+    description: NFT ownership verification
+  - name: Leaderboard
+    description: User rankings and leaderboards
+  - name: Quests
+    description: Quest completion and rewards
+  - name: Users
+    description: User data including inventory, progress, reputations, and streaks
+  - name: Calendar
+    description: Calendar event management
+  - name: Cities
+    description: City data and management

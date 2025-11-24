@@ -20,10 +20,11 @@
 /out/
 
 # production
-/build
+build
 
 # misc
 .DS_Store
+__MACOSX
 *.pem
 
 # debug
@@ -84,3 +85,4 @@ docs/
 
 # Temporary design assets
 public/duration/
+

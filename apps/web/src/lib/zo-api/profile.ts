@@ -79,24 +79,46 @@ export async function getProfile(
  * @param accessToken - ZO API access token
  * @param updates - Profile fields to update
  * @param userId - Optional: Supabase user ID (for fetching device credentials from DB)
+ * @param deviceCredentials - Optional: Device credentials from verify-otp response (preferred)
  */
 export async function updateProfile(
   accessToken: string,
   updates: ZoProfileUpdatePayload,
-  userId?: string
+  userId?: string,
+  deviceCredentials?: { deviceId: string; deviceSecret: string }
 ): Promise<{
   success: boolean;
   profile?: ZoProfileResponse;
   error?: string;
 }> {
   try {
-    const headers = await getZoAuthHeaders(accessToken, userId);
+    const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
+    
+    // Log device credentials being used (for debugging)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 updateProfile using device credentials:', {
+        deviceId: headers['client-device-id'],
+        deviceSecret: headers['client-device-secret']?.substring(0, 10) + '...',
+        fromAuthData: !!deviceCredentials,
+      });
+    }
+    
+    // Pass device credentials in metadata so interceptor can use them if headers aren't set
+    const config: any = {
+      headers,
+      metadata: {
+        userId,
+        ...(deviceCredentials && {
+          deviceId: deviceCredentials.deviceId,
+          deviceSecret: deviceCredentials.deviceSecret,
+        }),
+      },
+    };
+    
     const response = await zoApiClient.post<ZoProfileResponse>(
       '/api/v1/profile/me/',
       updates,
-      {
-        headers,
-      }
+      config
     );
 
     return {

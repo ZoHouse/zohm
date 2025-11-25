@@ -5,12 +5,21 @@ import { supabase } from '@/lib/supabase';
  * POST /api/avatar/generate
  * 
  * Triggers avatar generation via ZO API
- * Request: { userId: string, bodyType: 'bro' | 'bae' }
+ * NOTE: This endpoint is ONLY for new users during onboarding.
+ * Credentials must be passed from localStorage (stored after phone login).
+ * 
+ * Request: { 
+ *   userId: string, 
+ *   bodyType: 'bro' | 'bae',
+ *   accessToken: string (from localStorage),
+ *   deviceId: string (from localStorage),
+ *   deviceSecret: string (from localStorage)
+ * }
  * Response: { success: boolean, message: string, profile?: any }
  */
 export async function POST(req: NextRequest) {
   try {
-    const { userId, bodyType } = await req.json();
+    const { userId, bodyType, accessToken, deviceId, deviceSecret } = await req.json();
 
     // Validation
     if (!userId || !bodyType) {
@@ -30,10 +39,8 @@ export async function POST(req: NextRequest) {
     // Get environment variables
     const ZO_API_BASE_URL = process.env.ZO_API_BASE_URL;
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
-    const ZO_DEVICE_ID = process.env.ZO_CLIENT_DEVICE_ID;
-    const ZO_DEVICE_SECRET = process.env.ZO_CLIENT_DEVICE_SECRET;
 
-    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY || !ZO_DEVICE_ID || !ZO_DEVICE_SECRET) {
+    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
       console.error('Missing ZO API environment variables');
       return NextResponse.json(
         { success: false, message: 'Server configuration error' },
@@ -41,39 +48,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get user's auth token from Supabase (or session)
-    // Using imported supabase client
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // For new users: Avatar generation happens immediately after login
+    // Credentials are in localStorage and passed via request body
+    // This is the PRIMARY path for avatar generation
+    
+    if (!accessToken || !deviceId || !deviceSecret) {
+      console.error('❌ Missing credentials in request body. Avatar generation requires credentials from localStorage (new users only).');
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { 
+          success: false, 
+          message: 'Device credentials required. Please ensure you are logged in and try again.' 
+        },
         { status: 401 }
       );
     }
 
-    // TODO: Get actual user token from ZO auth system
-    // For now, we'll need to integrate with ZO's authentication
-    // This might require storing ZO tokens in Supabase user metadata
-    const ZO_USER_TOKEN = user.user_metadata?.zo_token || '';
+    console.log('✅ Using credentials from request body (localStorage - new user)');
+    const ZO_USER_TOKEN = accessToken;
+    const finalDeviceId = deviceId;
+    const finalDeviceSecret = deviceSecret;
 
-    if (!ZO_USER_TOKEN) {
-      return NextResponse.json(
-        { success: false, message: 'ZO authentication required. Please link your ZO account.' },
-        { status: 401 }
-      );
-    }
-
-    // Call ZO API to trigger avatar generation
+    // Call ZO API to trigger avatar generation with user-specific device credentials
     const zoResponse = await fetch(`${ZO_API_BASE_URL}/api/v1/profile/me/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Platform': 'web',
         'client-key': ZO_CLIENT_KEY,
-        'client-device-id': ZO_DEVICE_ID,
-        'client-device-secret': ZO_DEVICE_SECRET,
+        'client-device-id': finalDeviceId,
+        'client-device-secret': finalDeviceSecret,
         'Authorization': `Bearer ${ZO_USER_TOKEN}`,
       },
       body: JSON.stringify({

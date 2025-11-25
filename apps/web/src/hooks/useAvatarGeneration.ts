@@ -55,7 +55,18 @@ export const useAvatarGeneration = () => {
     setAttemptCount(attemptCountRef.current);
 
     try {
-      const response = await fetch(`/api/avatar/status?userId=${userId}`);
+      // Get credentials from localStorage (for new users, these are stored after login)
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('zo_access_token') : null;
+      const deviceId = typeof window !== 'undefined' ? localStorage.getItem('zo_device_id') : null;
+      const deviceSecret = typeof window !== 'undefined' ? localStorage.getItem('zo_device_secret') : null;
+
+      // Build query params with credentials from localStorage (for new users)
+      const params = new URLSearchParams({ userId });
+      if (accessToken) params.set('accessToken', accessToken);
+      if (deviceId) params.set('deviceId', deviceId);
+      if (deviceSecret) params.set('deviceSecret', deviceSecret);
+
+      const response = await fetch(`/api/avatar/status?${params.toString()}`);
       const data: AvatarStatus = await response.json();
 
       if (!response.ok) {
@@ -106,7 +117,12 @@ export const useAvatarGeneration = () => {
     try {
       const bodyType = mapGenderToBodyType(gender);
 
-      // Call generation API
+      // Get credentials from localStorage (for new users, these are stored after login)
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('zo_access_token') : null;
+      const deviceId = typeof window !== 'undefined' ? localStorage.getItem('zo_device_id') : null;
+      const deviceSecret = typeof window !== 'undefined' ? localStorage.getItem('zo_device_secret') : null;
+
+      // Call generation API with credentials from localStorage (for new users)
       const response = await fetch('/api/avatar/generate', {
         method: 'POST',
         headers: {
@@ -115,6 +131,10 @@ export const useAvatarGeneration = () => {
         body: JSON.stringify({
           userId,
           bodyType,
+          // Pass credentials from localStorage for new users
+          ...(accessToken && { accessToken }),
+          ...(deviceId && { deviceId }),
+          ...(deviceSecret && { deviceSecret }),
         }),
       });
 

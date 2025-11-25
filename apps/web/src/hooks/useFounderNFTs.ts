@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getProfile } from '@/lib/zo-api/profile';
 import { supabase } from '@/lib/supabase';
 
@@ -12,6 +12,7 @@ export function useFounderNFTs() {
   const [nfts, setNfts] = useState<FounderNFT[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     async function fetchFounderNFTs() {
@@ -44,20 +45,20 @@ export function useFounderNFTs() {
         const deviceSecret = localStorage.getItem('zo_device_secret');
           
         if (!accessToken) {
-          console.log('No access token in Supabase, skipping founder NFTs fetch');
+          console.log('No access token, skipping founder NFTs fetch');
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
         if (!deviceId || !deviceSecret) {
-          console.log('No device credentials in Supabase, skipping founder NFTs fetch');
+          console.log('No device credentials in localStorage, skipping founder NFTs fetch');
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
-        console.log('🔑 Fetching Founder NFTs with device credentials from Supabase');
+        console.log('🔑 Fetching Founder NFTs with device credentials from localStorage');
         console.log('📊 Credentials:', {
           hasAccessToken: !!accessToken,
           hasDeviceId: !!deviceId,
@@ -99,6 +100,7 @@ export function useFounderNFTs() {
 
         console.log('✅ Loaded', nftsWithImages.length, 'Founder NFTs');
         setNfts(nftsWithImages);
+        hasFetchedRef.current = true;
 
       } catch (err) {
         console.warn('⚠️ Could not fetch Founder NFTs:', err);
@@ -110,7 +112,46 @@ export function useFounderNFTs() {
       }
     }
 
-    fetchFounderNFTs();
+    // Fetch immediately on mount if credentials are available
+    const hasCredentials = 
+      localStorage.getItem('zo_user_id') &&
+      localStorage.getItem('zo_access_token') &&
+      localStorage.getItem('zo_device_id') &&
+      localStorage.getItem('zo_device_secret');
+    
+    if (hasCredentials && !hasFetchedRef.current) {
+      fetchFounderNFTs();
+    } else if (!hasCredentials) {
+      setIsLoading(false);
+    }
+
+    // Listen for login success event to re-fetch when user logs in
+    const handleLoginSuccess = () => {
+      console.log('📢 zoLoginSuccess event received, re-fetching Founder NFTs');
+      hasFetchedRef.current = false; // Reset to allow re-fetch
+      fetchFounderNFTs();
+    };
+
+    window.addEventListener('zoLoginSuccess', handleLoginSuccess);
+
+    // Also check periodically if credentials become available (for cases where login happens before mount)
+    const checkInterval = setInterval(() => {
+      const hasCreds = 
+        localStorage.getItem('zo_user_id') &&
+        localStorage.getItem('zo_access_token') &&
+        localStorage.getItem('zo_device_id') &&
+        localStorage.getItem('zo_device_secret');
+      
+      if (hasCreds && !hasFetchedRef.current) {
+        console.log('🔄 Credentials available, fetching Founder NFTs');
+        fetchFounderNFTs();
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => {
+      window.removeEventListener('zoLoginSuccess', handleLoginSuccess);
+      clearInterval(checkInterval);
+    };
   }, []);
 
   return { nfts, isLoading, error };

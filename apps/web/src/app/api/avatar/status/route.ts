@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 /**
- * GET /api/avatar/status?userId=xxx
+ * GET /api/avatar/status?userId=xxx&accessToken=xxx&deviceId=xxx&deviceSecret=xxx
  * 
  * Polls ZO API to check if avatar generation is complete
+ * NOTE: This endpoint is ONLY for new users during onboarding.
+ * Credentials must be passed from localStorage (stored after phone login).
+ * 
  * Response: { 
  *   status: 'pending' | 'ready' | 'error', 
  *   avatarUrl?: string,
@@ -15,6 +18,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
+    const accessToken = searchParams.get('accessToken');
+    const deviceId = searchParams.get('deviceId');
+    const deviceSecret = searchParams.get('deviceSecret');
 
     if (!userId) {
       return NextResponse.json(
@@ -26,10 +32,8 @@ export async function GET(req: NextRequest) {
     // Get environment variables
     const ZO_API_BASE_URL = process.env.ZO_API_BASE_URL;
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
-    const ZO_DEVICE_ID = process.env.ZO_CLIENT_DEVICE_ID;
-    const ZO_DEVICE_SECRET = process.env.ZO_CLIENT_DEVICE_SECRET;
 
-    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY || !ZO_DEVICE_ID || !ZO_DEVICE_SECRET) {
+    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
       console.error('Missing ZO API environment variables');
       return NextResponse.json(
         { status: 'error', message: 'Server configuration error' },
@@ -37,36 +41,35 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user's auth token
-    // Using imported supabase client
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // For new users: Avatar status polling happens during onboarding
+    // Credentials are in localStorage and passed via query params
+    // This is the PRIMARY path for avatar status checks
+    
+    if (!accessToken || !deviceId || !deviceSecret) {
+      console.error('❌ Missing credentials in query params. Avatar status check requires credentials from localStorage (new users only).');
       return NextResponse.json(
-        { status: 'error', message: 'Unauthorized' },
+        { 
+          status: 'error', 
+          message: 'Device credentials required. Please ensure you are logged in and try again.' 
+        },
         { status: 401 }
       );
     }
 
-    const ZO_USER_TOKEN = user.user_metadata?.zo_token || '';
+    console.log('✅ Using credentials from query params (localStorage - new user)');
+    const ZO_USER_TOKEN = accessToken;
+    const finalDeviceId = deviceId;
+    const finalDeviceSecret = deviceSecret;
 
-    if (!ZO_USER_TOKEN) {
-      return NextResponse.json(
-        { status: 'error', message: 'ZO authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Poll ZO API for profile status
+    // Poll ZO API for profile status with user-specific device credentials
     const zoResponse = await fetch(`${ZO_API_BASE_URL}/api/v1/profile/me/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Platform': 'web',
         'client-key': ZO_CLIENT_KEY,
-        'client-device-id': ZO_DEVICE_ID,
-        'client-device-secret': ZO_DEVICE_SECRET,
+        'client-device-id': finalDeviceId,
+        'client-device-secret': finalDeviceSecret,
         'Authorization': `Bearer ${ZO_USER_TOKEN}`,
       },
     });

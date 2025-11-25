@@ -152,13 +152,33 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         userId: userProfile?.id
       });
       
-      // Pass userId so device credentials can be fetched from Supabase
+      // Pass userId and device credentials from localStorage (stored after login)
       const userId = userProfile?.id || localStorage.getItem('zo_user_id');
-      const result = await updateProfile(token, { 
-        first_name: nickname,
-        body_type: bodyType,
-        place_name: city
-      }, userId || undefined);
+      const deviceId = localStorage.getItem('zo_device_id');
+      const deviceSecret = localStorage.getItem('zo_device_secret');
+      
+      // Use device credentials from localStorage if available (preferred)
+      const deviceCredentials = (deviceId && deviceSecret) 
+        ? { deviceId, deviceSecret }
+        : undefined;
+      
+      console.log('🔑 Avatar generation credentials:', {
+        hasAccessToken: !!token,
+        hasDeviceId: !!deviceId,
+        hasDeviceSecret: !!deviceSecret,
+        userId,
+      });
+      
+      const result = await updateProfile(
+        token, 
+        { 
+          first_name: nickname,
+          body_type: bodyType,
+          place_name: city
+        }, 
+        userId || undefined,
+        deviceCredentials
+      );
       
       console.log('📡 updateProfile result:', result);
       
@@ -193,9 +213,21 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     }
 
     try {
-      // Pass userId so device credentials can be fetched from Supabase
+      // Get device credentials from localStorage (stored after login)
       const userId = userProfile?.id || localStorage.getItem('zo_user_id');
-      const result = await getProfile(token, userId || undefined);
+      const deviceId = localStorage.getItem('zo_device_id');
+      const deviceSecret = localStorage.getItem('zo_device_secret');
+      
+      // Use device credentials from localStorage if available (preferred)
+      const deviceCredentials = (deviceId && deviceSecret) 
+        ? { deviceId, deviceSecret }
+        : undefined;
+      
+      const result = await getProfile(
+        token, 
+        userId || undefined,
+        deviceCredentials
+      );
       
       console.log(`📊 Poll ${attemptsRef.current} result:`, {
         success: result.success,

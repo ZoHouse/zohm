@@ -134,9 +134,17 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     const token = getAccessToken();
     if (!token) {
       console.error('❌ No access token found for avatar generation');
-      // Fallback
-      setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
-      setStep('success');
+      console.error('Available localStorage keys:', {
+        zo_access_token: !!localStorage.getItem('zo_access_token'),
+        zo_token: !!localStorage.getItem('zo_token'),
+        zo_user_id: !!localStorage.getItem('zo_user_id'),
+        zo_device_id: !!localStorage.getItem('zo_device_id'),
+        zo_device_secret: !!localStorage.getItem('zo_device_secret'),
+      });
+      // Don't go to success - show error and stay in generating step
+      setError('Authentication required. Please log in again.');
+      setIsPolling(false);
+      // Don't set step to success - let user see the error
       return;
     }
 
@@ -169,6 +177,9 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         userId,
       });
       
+      console.log('📞 Calling updateProfile API...');
+      const apiStartTime = Date.now();
+      
       const result = await updateProfile(
         token, 
         { 
@@ -180,33 +191,136 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         deviceCredentials
       );
       
-      console.log('📡 updateProfile result:', result);
+      const apiDuration = Date.now() - apiStartTime;
+      console.log(`📡 updateProfile API call completed in ${apiDuration}ms`);
+      console.log('📡 updateProfile result:', {
+        success: result.success,
+        hasProfile: !!result.profile,
+        hasAvatar: !!result.profile?.avatar,
+        avatarImage: result.profile?.avatar?.image || 'NOT_READY',
+        avatarStatus: result.profile?.avatar?.status || 'unknown',
+        error: result.error,
+        fullResponse: result.profile ? JSON.stringify(result.profile, null, 2) : 'NO_PROFILE',
+      });
+      
+      // CRITICAL: Always wait for API response before deciding what to do
+      // Even if updateProfile fails, we should still poll because:
+      // 1. The API might have accepted the request server-side
+      // 2. Avatar generation might have been triggered even if response indicates failure
+      // 3. Network errors might be temporary
       
       if (!result.success) {
-        throw new Error(result.error || 'Profile update failed');
+        console.error('❌ Profile update API call failed:', result.error);
+        console.log('⚠️ Will still attempt to poll - avatar generation might have been triggered server-side');
+        // DO NOT fallback here - continue to polling
+      } else {
+        console.log('✅ Profile update API call succeeded');
       }
       
-      // Start polling
+      // Check if avatar is already ready (unlikely but possible for new users)
+      const avatarImage = result.profile?.avatar?.image;
+      const avatarStatus = result.profile?.avatar?.status;
+      
+      console.log('📊 Avatar status from updateProfile:', {
+        hasAvatar: !!result.profile?.avatar,
+        image: avatarImage || 'null',
+        status: avatarStatus || 'unknown',
+        imageLength: avatarImage?.length || 0,
+      });
+      
+      // Only skip polling if avatar is actually ready (has valid image URL)
+      if (result.success && avatarImage && avatarImage.trim() !== '' && avatarImage !== 'null' && avatarImage.length > 10) {
+        console.log('✅ Avatar already ready from updateProfile response!', avatarImage);
+        setAvatarUrl(avatarImage);
+        setIsPolling(false);
+        setTimeout(() => {
+          setStep('success');
+        }, 1000);
+        return;
+      } else {
+        console.log('⏳ Avatar not ready yet, will start polling...');
+        // Continue to polling - avatar is generating
+      }
+      
+      // Start polling (even if updateProfile failed - avatar might still be generating)
       console.log('⏳ Starting avatar polling...');
+      console.log('🔍 Pre-polling check:', {
+        step,
+        isPolling,
+        hasToken: !!token,
+        hasDeviceId: !!deviceId,
+        hasDeviceSecret: !!deviceSecret,
+        userId,
+      });
+      
       setIsPolling(true);
-      pollForAvatar(token);
+      attemptsRef.current = 0; // Reset polling attempts
+      
+      // Ensure we stay in generating step
+      setStep('generating');
+      
+      // Start polling immediately (use setTimeout to ensure state updates are applied)
+      setTimeout(() => {
+        console.log('🚀 Actually starting poll now...');
+        pollForAvatar(token);
+      }, 100);
     } catch (err) {
-      console.error('❌ Failed to trigger generation:', err);
-      // Fallback to default assets if API fails
-      setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
-      setStep('success');
+      console.error('❌ Exception in triggerAvatarGeneration:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      
+      // Even on exception, try to poll - avatar generation might have been triggered
+      console.log('⚠️ Exception occurred, but attempting to poll anyway...');
+      console.log('🔍 Post-exception check:', {
+        step,
+        hasToken: !!token,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+      
+      setIsPolling(true);
+      attemptsRef.current = 0;
+      
+      // Ensure we stay in generating step
+      setStep('generating');
+      
+      // Start polling immediately (use setTimeout to ensure state updates are applied)
+      setTimeout(() => {
+        console.log('🚀 Starting poll after exception...');
+        pollForAvatar(token);
+      }, 100);
     }
   };
 
   const pollForAvatar = async (token: string) => {
+    // CRITICAL: Always ensure we're in generating step during polling
+    setStep('generating');
+    
     attemptsRef.current += 1;
     const maxAttempts = 30; // 30 seconds timeout
 
     console.log(`🔄 Polling attempt ${attemptsRef.current}/${maxAttempts}...`);
+    console.log(`📊 Current state:`, {
+      step: 'generating', // Always generating during polling
+      isPolling,
+      hasAvatarUrl: !!avatarUrl,
+      attempts: attemptsRef.current,
+      hasToken: !!token,
+    });
 
+    // CRITICAL: Only fallback to placeholder after ALL polling attempts are exhausted
+    // This ensures we wait for the full 30 seconds before giving up
     if (attemptsRef.current > maxAttempts) {
-      console.warn('⚠️ Avatar generation timeout after 30 seconds');
+      console.warn(`⚠️ Avatar generation timeout after ${maxAttempts} attempts (${maxAttempts} seconds)`);
+      console.log('📊 Final timeout state:', {
+        attempts: attemptsRef.current,
+        maxAttempts,
+        isPolling,
+        hasAvatarUrl: !!avatarUrl,
+      });
       setIsPolling(false);
+      // Only now do we fallback to placeholder - after waiting the full duration
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
       return;
@@ -218,10 +332,18 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       const deviceId = localStorage.getItem('zo_device_id');
       const deviceSecret = localStorage.getItem('zo_device_secret');
       
+      if (!deviceId || !deviceSecret) {
+        console.error('❌ Missing device credentials in localStorage during polling');
+        // Continue polling anyway - might get credentials later
+      }
+      
       // Use device credentials from localStorage if available (preferred)
       const deviceCredentials = (deviceId && deviceSecret) 
         ? { deviceId, deviceSecret }
         : undefined;
+      
+      console.log(`🔍 Poll ${attemptsRef.current} - Calling getProfile API...`);
+      const pollStartTime = Date.now();
       
       const result = await getProfile(
         token, 
@@ -229,17 +351,46 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         deviceCredentials
       );
       
+      const pollDuration = Date.now() - pollStartTime;
+      console.log(`📡 Poll ${attemptsRef.current} API call completed in ${pollDuration}ms`);
       console.log(`📊 Poll ${attemptsRef.current} result:`, {
         success: result.success,
         hasProfile: !!result.profile,
         hasAvatar: !!result.profile?.avatar,
-        avatarStatus: result.profile?.avatar?.status,
-        avatarImage: result.profile?.avatar?.image ? 'EXISTS' : 'NULL',
+        avatarStatus: result.profile?.avatar?.status || 'unknown',
+        avatarImage: result.profile?.avatar?.image ? result.profile.avatar.image.substring(0, 50) + '...' : 'NULL',
+        error: result.error,
+        fullAvatarObject: result.profile?.avatar ? JSON.stringify(result.profile.avatar, null, 2) : 'NO_AVATAR',
       });
       
-      if (result.success && result.profile?.avatar?.image) {
-        console.log('✅ Avatar ready:', result.profile.avatar.image);
-        setAvatarUrl(result.profile.avatar.image);
+      // CRITICAL: Always wait for API response - never fallback early
+      if (!result.success) {
+        console.warn(`⚠️ Poll ${attemptsRef.current} - Profile fetch API call failed:`, result.error);
+        console.log(`⏳ Will continue polling - this might be a temporary error (attempt ${attemptsRef.current}/${maxAttempts})`);
+        // Continue polling - might be temporary error, don't give up yet
+        pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
+        return;
+      }
+      
+      // API call succeeded - check avatar status
+      console.log(`✅ Poll ${attemptsRef.current} - API call succeeded, checking avatar status...`);
+      
+      // Check if avatar is ready - must have valid image URL
+      const avatarImage = result.profile?.avatar?.image;
+      const avatarStatus = result.profile?.avatar?.status;
+      
+      console.log(`🔍 Checking avatar readiness:`, {
+        hasImage: !!avatarImage,
+        imageLength: avatarImage?.length || 0,
+        imagePreview: avatarImage ? avatarImage.substring(0, 50) + '...' : 'NULL',
+        status: avatarStatus || 'unknown',
+        isImageValid: avatarImage && avatarImage.trim() !== '' && avatarImage !== 'null' && avatarImage.length > 10,
+      });
+      
+      // Only proceed to success if we have a valid avatar image URL
+      if (avatarImage && avatarImage.trim() !== '' && avatarImage !== 'null' && avatarImage.length > 10) {
+        console.log(`✅ Avatar ready on attempt ${attemptsRef.current}!`, avatarImage);
+        setAvatarUrl(avatarImage);
         setIsPolling(false);
         
         // Wait a moment for image to be ready/cached
@@ -249,11 +400,16 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         return;
       }
       
-      // Poll again in 1s
+      // Avatar not ready yet - continue polling
+      console.log(`⏳ Avatar not ready yet (status: ${avatarStatus || 'unknown'}), polling again in 1s... (attempt ${attemptsRef.current}/${maxAttempts})`);
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     } catch (err) {
       console.error(`❌ Polling error on attempt ${attemptsRef.current}:`, err);
-      // Continue polling despite error
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      // Continue polling despite error (might be network issue)
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     }
   };
@@ -414,14 +570,26 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
         {/* GENERATING STEP - Pulsating Avatar Only */}
         {step === 'generating' && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-[200px] h-[200px] rounded-full border-2 border-white/20 bg-white/10 backdrop-blur-md flex items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="w-[200px] h-[200px] rounded-full border-2 border-white/20 bg-white/10 backdrop-blur-md flex items-center justify-center overflow-hidden mb-6">
               <img 
                 src={bodyType === 'bro' ? '/bro.png' : '/bae.png'} 
                 alt="Generating..." 
                 className="w-full h-full object-cover opacity-80 animate-zo-pulse"
               />
             </div>
+            {/* Polling status indicator */}
+            {isPolling && (
+              <p className="text-white/60 text-sm font-rubik animate-fade-in">
+                Generating your avatar... {attemptsRef.current > 0 && `(${attemptsRef.current}/30)`}
+              </p>
+            )}
+            {/* Error display in generating step */}
+            {error && (
+              <p className="text-red-400 text-sm font-medium mt-4 text-center animate-fade-in max-w-[90vw]">
+                {error}
+              </p>
+            )}
           </div>
         )}
 

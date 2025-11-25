@@ -92,16 +92,25 @@ export async function updateProfile(
   error?: string;
 }> {
   try {
+    console.log('📞 [updateProfile] Starting API call...', {
+      endpoint: '/api/v1/profile/me/',
+      method: 'POST',
+      updates: JSON.stringify(updates),
+      hasAccessToken: !!accessToken,
+      hasUserId: !!userId,
+      hasDeviceCredentials: !!deviceCredentials,
+    });
+    
     const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
     
     // Log device credentials being used (for debugging)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 updateProfile using device credentials:', {
-        deviceId: headers['client-device-id'],
-        deviceSecret: headers['client-device-secret']?.substring(0, 10) + '...',
-        fromAuthData: !!deviceCredentials,
-      });
-    }
+    console.log('🔍 [updateProfile] Using device credentials:', {
+      deviceId: headers['client-device-id'] || 'MISSING',
+      deviceSecret: headers['client-device-secret'] ? headers['client-device-secret'].substring(0, 10) + '...' : 'MISSING',
+      hasClientKey: !!headers['client-key'],
+      hasAuth: !!headers['Authorization'],
+      fromAuthData: !!deviceCredentials,
+    });
     
     // Pass device credentials in metadata so interceptor can use them if headers aren't set
     const config: any = {
@@ -115,23 +124,43 @@ export async function updateProfile(
       },
     };
     
+    console.log('📡 [updateProfile] Making POST request to ZO API...');
+    const apiStartTime = Date.now();
+    
     const response = await zoApiClient.post<ZoProfileResponse>(
       '/api/v1/profile/me/',
       updates,
       config
     );
+    
+    const apiDuration = Date.now() - apiStartTime;
+    console.log(`✅ [updateProfile] API call succeeded in ${apiDuration}ms`, {
+      status: response.status,
+      hasData: !!response.data,
+      hasAvatar: !!response.data?.avatar,
+      avatarStatus: response.data?.avatar?.status || 'unknown',
+      avatarImage: response.data?.avatar?.image ? 'EXISTS' : 'NULL',
+    });
 
     return {
       success: true,
       profile: response.data,
     };
   } catch (error: any) {
-    console.error('Failed to update profile:', error.response?.data || error);
+    console.error('❌ [updateProfile] API call failed:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      hasResponse: !!error.response,
+      isNetworkError: !error.response,
+      fullError: error,
+    });
     
     const errorData = error.response?.data as ZoErrorResponse;
     return {
       success: false,
-      error: errorData?.detail || errorData?.message || 'Failed to update profile',
+      error: errorData?.detail || errorData?.message || error.message || 'Failed to update profile',
     };
   }
 }

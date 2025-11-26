@@ -73,7 +73,7 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
         {/* Avatar (32px for mobile) */}
         <div className="w-8 h-8 rounded-full overflow-hidden">
           <img
-            src={userProfile?.pfp || DashboardAssets.profile.photo}
+            src={(typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || userProfile?.pfp || DashboardAssets.profile.photo}
             alt="Profile"
             className="w-full h-full object-cover"
           />

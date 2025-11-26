@@ -81,9 +81,11 @@ export default function Home() {
     isLoading: isLoadingProfile,
     user,
     login,
+    logout,
     ready,
     reloadProfile,
-    authMethod
+    authMethod,
+    syncProfile
   } = useZoAuth();
 
   // 🚀 Onboarding transition coordinator (prevents race conditions)

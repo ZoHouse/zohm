@@ -11,9 +11,17 @@ interface DashboardHeaderProps {
 // Get initial avatar synchronously to prevent flash
 function getInitialAvatar(): string {
   if (typeof window !== 'undefined') {
+    // Check new cache first (from avatar generation), then fallback to old cache
+    const newAvatar = localStorage.getItem('zo_avatar_url');
     const storedAvatar = localStorage.getItem('zo_avatar');
+
+    if (newAvatar) {
+      console.log('🎨 Loading avatar from localStorage (zo_avatar_url):', newAvatar);
+      return newAvatar;
+    }
+
     if (storedAvatar) {
-      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      console.log('🎨 Loading avatar from localStorage (zo_avatar):', storedAvatar);
       return storedAvatar;
     }
   }
@@ -31,6 +39,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
 
   // Update avatar when userProfile loads from API (but only if different)
   useEffect(() => {
+    // Priority 1: Check new cache (generated avatar)
+    const cachedAvatar = typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null;
+
+    if (cachedAvatar && cachedAvatar !== avatar) {
+      console.log('🎨 Using cached avatar (zo_avatar_url):', cachedAvatar);
+      setAvatar(cachedAvatar);
+      return;
+    }
+
+    // Priority 2: Use profile avatar from API
     if (userProfile?.pfp && userProfile.pfp !== avatar) {
       console.log('🎨 Updating avatar from API:', userProfile.pfp);
       setAvatar(userProfile.pfp);
@@ -49,7 +67,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.quests?.zo_points !== undefined) {
@@ -81,7 +99,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
   }, [showMenu]);
 
   return (
-    <div 
+    <div
       className="sticky top-0 w-full border-b border-solid z-50"
       style={{
         backdropFilter: `blur(${DashboardBlur.light})`,
@@ -94,15 +112,15 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
         {/* Left: Zo World Logo + Founder Badge */}
         <div className="flex items-center gap-4">
           <div className="flex items-center justify-center w-16 h-16">
-            <img 
+            <img
               src={DashboardAssets.logo}
-              alt="Zo World" 
+              alt="Zo World"
               className="w-10 h-10 object-contain"
             />
           </div>
           {isFounder && (
             <div className="flex items-center justify-center px-4">
-              <p 
+              <p
                 className="uppercase whitespace-nowrap"
                 style={{
                   fontFamily: DashboardTypography.fontFamily.display,
@@ -133,28 +151,28 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
             }}
           >
             {/* Avatar */}
-            <div 
+            <div
               className="w-[26px] h-[26px] overflow-hidden flex-shrink-0"
               style={{
                 borderRadius: '50%',
               }}
             >
-              <img 
-                src={avatar} 
-                alt="Profile" 
+              <img
+                src={avatar}
+                alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Token Balance */}
-            <div 
+            <div
               className="flex items-center gap-1 px-2 py-1"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.06)',
                 borderRadius: DashboardRadius.pill,
               }}
             >
-              <span 
+              <span
                 style={{
                   fontFamily: DashboardTypography.fontFamily.primary,
                   fontSize: '10px',
@@ -168,14 +186,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
               </span>
               {/* Coin Icon */}
               <div className="relative w-[13px] h-[13px]">
-                <img 
+                <img
                   src={DashboardAssets.coin.gradient1}
-                  alt="Coin" 
+                  alt="Coin"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <img 
+                <img
                   src={DashboardAssets.coin.gradient2}
-                  alt="" 
+                  alt=""
                   className="absolute inset-0 w-full h-full object-cover z-[1]"
                 />
               </div>
@@ -211,7 +229,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div 
+              <div
                 className="absolute right-0 mt-2 w-48 border border-solid overflow-hidden"
                 style={{
                   backgroundColor: DashboardColors.background.primary,

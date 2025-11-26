@@ -6,7 +6,7 @@ import axios, { AxiosInstance } from 'axios';
 // Base URL: Use env var if set, otherwise default to correct URL
 // NOTE: The correct base URL is https://api.io.zo.xyz (with .io., NOT .ios.)
 // Fix common mistakes: api.zo.xyz -> api.io.zo.xyz, api.ios.zo.xyz -> api.io.zo.xyz
-let baseUrl = process.env.ZO_API_BASE_URL || process.env.NEXT_PUBLIC_ZO_API_BASE_URL || 'https://api.io.zo.xyz';
+let baseUrl = process.env.ZO_API_BASE_URL || process.env.NEXT_PUBLIC_ZO_API_BASE_URL;
 if (baseUrl === 'https://api.zo.xyz' || baseUrl === 'https://api.ios.zo.xyz') {
   baseUrl = 'https://api.io.zo.xyz';
 }
@@ -77,7 +77,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
   // Fallback to localStorage (for pre-login requests)
   const storageKey = 'zo_device_credentials';
   const stored = localStorage.getItem(storageKey);
-  
+
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
@@ -92,7 +92,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
   // Generate new credentials
   const credentials = generateDeviceCredentials();
   localStorage.setItem(storageKey, JSON.stringify(credentials));
-  
+
   return credentials;
 }
 
@@ -125,13 +125,13 @@ zoApiClient.interceptors.request.use(async (config) => {
   } else {
     console.warn('⚠️ client-key header not set - request may fail');
   }
-  
+
   // Check if device credentials are already set in headers (from getZoAuthHeaders)
   // If not, check if they're in config.metadata (passed explicitly)
   // Otherwise, fetch/generate them
   if (!config.headers['client-device-id'] || !config.headers['client-device-secret']) {
     const metadata = (config as any).metadata || {};
-    
+
     // Priority 1: Use device credentials from metadata (explicitly passed)
     if (metadata.deviceId && metadata.deviceSecret) {
       config.headers['client-device-id'] = metadata.deviceId;
@@ -155,10 +155,10 @@ zoApiClient.interceptors.request.use(async (config) => {
       console.log('🔍 Interceptor: Device credentials already in headers, not overriding');
     }
   }
-  
+
   // Note: Platform header is NOT in the official curl command, so we don't send it
   // config.headers['Platform'] = 'web'; // Removed - not in official API spec
-  
+
   return config;
 });
 
@@ -172,7 +172,7 @@ export async function getZoAuthHeaders(
   // Otherwise, fetch from database or generate new
   let deviceId: string;
   let deviceSecret: string;
-  
+
   if (deviceCredentials) {
     deviceId = deviceCredentials.deviceId;
     deviceSecret = deviceCredentials.deviceSecret;
@@ -181,7 +181,7 @@ export async function getZoAuthHeaders(
     deviceId = creds.deviceId;
     deviceSecret = creds.deviceSecret;
   }
-  
+
   return {
     'client-key': ZO_CLIENT_KEY_WEB!,
     'client-device-id': deviceId,

@@ -149,17 +149,9 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
     if (!token) {
       console.error('❌ No access token found for avatar generation');
-      console.error('Available localStorage keys:', {
-        zo_access_token: !!localStorage.getItem('zo_access_token'),
-        zo_token: !!localStorage.getItem('zo_token'),
-        zo_user_id: !!localStorage.getItem('zo_user_id'),
-        zo_device_id: !!localStorage.getItem('zo_device_id'),
-        zo_device_secret: !!localStorage.getItem('zo_device_secret'),
-      });
-      // Don't go to success - show error and stay in generating step
-      setError('Authentication required. Please log in again.');
-      setIsPolling(false);
-      // Don't set step to success - let user see the error
+      // Fallback
+      setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
+      setStep('success');
       return;
     }
 
@@ -194,26 +186,8 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
       // Start polling
       console.log('⏳ Starting avatar polling...');
-      console.log('🔍 Pre-polling check:', {
-        step,
-        isPolling,
-        hasToken: !!token,
-        hasDeviceId: !!deviceId,
-        hasDeviceSecret: !!deviceSecret,
-        userId,
-      });
-      
       setIsPolling(true);
-      attemptsRef.current = 0; // Reset polling attempts
-      
-      // Ensure we stay in generating step
-      setStep('generating');
-      
-      // Start polling immediately (use setTimeout to ensure state updates are applied)
-      setTimeout(() => {
-        console.log('🚀 Actually starting poll now...');
-        pollForAvatar(token);
-      }, 100);
+      pollForAvatar(token);
     } catch (err) {
       console.error('❌ Failed to trigger generation (catch block):', err);
       // Fallback to default assets if API fails
@@ -223,40 +197,21 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
   };
 
   const pollForAvatar = async (token: string) => {
-    // CRITICAL: Always ensure we're in generating step during polling
-    setStep('generating');
-    
     attemptsRef.current += 1;
     const maxAttempts = 30; // 30 seconds timeout
 
     console.log(`🔄 Polling attempt ${attemptsRef.current}/${maxAttempts}...`);
-    console.log(`📊 Current state:`, {
-      step: 'generating', // Always generating during polling
-      isPolling,
-      hasAvatarUrl: !!avatarUrl,
-      attempts: attemptsRef.current,
-      hasToken: !!token,
-    });
 
-    // CRITICAL: Only fallback to placeholder after ALL polling attempts are exhausted
-    // This ensures we wait for the full 30 seconds before giving up
     if (attemptsRef.current > maxAttempts) {
-      console.warn(`⚠️ Avatar generation timeout after ${maxAttempts} attempts (${maxAttempts} seconds)`);
-      console.log('📊 Final timeout state:', {
-        attempts: attemptsRef.current,
-        maxAttempts,
-        isPolling,
-        hasAvatarUrl: !!avatarUrl,
-      });
+      console.warn('⚠️ Avatar generation timeout after 30 seconds');
       setIsPolling(false);
-      // Only now do we fallback to placeholder - after waiting the full duration
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
       return;
     }
 
     try {
-      // Get device credentials from localStorage (stored after login)
+      // Pass userId so device credentials can be fetched from Supabase
       const userId = userProfile?.id || localStorage.getItem('zo_user_id');
       const result = await getProfile(token, userId || undefined);
 
@@ -270,6 +225,10 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
       if (result.success && result.profile?.avatar?.image) {
         console.log('✅ Avatar ready:', result.profile.avatar.image);
+
+        // Cache avatar URL for immediate use
+        localStorage.setItem('zo_avatar_url', result.profile.avatar.image);
+
         setAvatarUrl(result.profile.avatar.image);
         setIsPolling(false);
 
@@ -284,11 +243,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     } catch (err) {
       console.error(`❌ Polling error on attempt ${attemptsRef.current}:`, err);
-      console.error('Error details:', {
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : undefined,
-      });
-      // Continue polling despite error (might be network issue)
+      // Continue polling despite error
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     }
   };
@@ -457,18 +412,6 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
                 className="w-full h-full object-cover opacity-80 animate-zo-pulse"
               />
             </div>
-            {/* Polling status indicator */}
-            {isPolling && (
-              <p className="text-white/60 text-sm font-rubik animate-fade-in">
-                Generating your avatar... {attemptsRef.current > 0 && `(${attemptsRef.current}/30)`}
-              </p>
-            )}
-            {/* Error display in generating step */}
-            {error && (
-              <p className="text-red-400 text-sm font-medium mt-4 text-center animate-fade-in max-w-[90vw]">
-                {error}
-              </p>
-            )}
           </div>
         )}
 

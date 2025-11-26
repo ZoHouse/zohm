@@ -4,12 +4,8 @@
 import axios, { AxiosInstance } from 'axios';
 
 // Base URL: Use env var if set, otherwise default to correct URL
-// NOTE: The correct base URL is https://api.io.zo.xyz (with .io., NOT .ios.)
-// Fix common mistakes: api.zo.xyz -> api.io.zo.xyz, api.ios.zo.xyz -> api.io.zo.xyz
 let baseUrl = process.env.ZO_API_BASE_URL || process.env.NEXT_PUBLIC_ZO_API_BASE_URL;
-if (baseUrl === 'https://api.zo.xyz' || baseUrl === 'https://api.ios.zo.xyz') {
-  baseUrl = 'https://api.io.zo.xyz';
-}
+
 const ZO_API_BASE_URL = baseUrl;
 const ZO_CLIENT_KEY_WEB = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB;
 

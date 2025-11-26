@@ -36,7 +36,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
   return (
     <div className="w-full px-6 mt-16">
       {/* Heading */}
-      <h2 
+      <h2
         className="font-rubik font-medium text-white text-center mb-8"
         style={{
           fontSize: '24px',
@@ -46,26 +46,30 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
       >
         Leaderboard
       </h2>
-      
+
       {leaderboard.length > 0 && (
         <>
           {/* Top 3 Podium (copied from QuestComplete) */}
           <div className="relative w-[305px] h-[124px] mb-6 mx-auto">
             {/* Podium SVG Background */}
-            <img 
-              src="/leaderboard/podium.svg" 
+            <img
+              src="/leaderboard/podium.svg"
               alt="Leaderboard podium"
               className="w-full h-full"
             />
-            
+
             {/* Rank 1 - Center */}
             {leaderboard.length >= 1 && (
               <div className="absolute top-[-2px] left-[50%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
-                  <img 
-                    src={leaderboard[0].avatar || '/images/rank1.jpeg'} 
-                    alt={leaderboard[0].nickname} 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={
+                      (userId && leaderboard[0].user_id === userId)
+                        ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || leaderboard[0].avatar || '/images/rank1.jpeg'
+                        : leaderboard[0].avatar || '/images/rank1.jpeg'
+                    }
+                    alt={leaderboard[0].nickname}
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
@@ -76,15 +80,19 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                 </p>
               </div>
             )}
-            
+
             {/* Rank 2 - Left */}
             {leaderboard.length >= 2 && (
               <div className="absolute top-[35px] left-[18%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
-                  <img 
-                    src={leaderboard[1].avatar || '/images/rank2.jpeg'} 
-                    alt={leaderboard[1].nickname} 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={
+                      (userId && leaderboard[1].user_id === userId)
+                        ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || leaderboard[1].avatar || '/images/rank2.jpeg'
+                        : leaderboard[1].avatar || '/images/rank2.jpeg'
+                    }
+                    alt={leaderboard[1].nickname}
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
@@ -95,15 +103,19 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                 </p>
               </div>
             )}
-            
+
             {/* Rank 3 - Right */}
             {leaderboard.length >= 3 && (
               <div className="absolute top-[55px] left-[82%] -translate-x-1/2 flex flex-col items-center gap-[2px]">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
-                  <img 
-                    src={leaderboard[2].avatar || '/images/rank3.jpeg'} 
-                    alt={leaderboard[2].nickname} 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={
+                      (userId && leaderboard[2].user_id === userId)
+                        ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || leaderboard[2].avatar || '/images/rank3.jpeg'
+                        : leaderboard[2].avatar || '/images/rank3.jpeg'
+                    }
+                    alt={leaderboard[2].nickname}
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <p className="font-rubik text-sm font-normal text-white m-0 leading-[16px] text-center">
@@ -115,16 +127,16 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
               </div>
             )}
           </div>
-          
+
           {/* Table Header */}
-          <div 
+          <div
             className="w-[312px] h-[37px] mx-auto flex items-center border-b"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderColor: '#121212',
             }}
           >
-            <p 
+            <p
               className="font-rubik font-medium uppercase flex-shrink-0 pl-4"
               style={{
                 fontSize: '10px',
@@ -136,7 +148,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             >
               RANK
             </p>
-            <p 
+            <p
               className="font-rubik font-medium uppercase flex-1"
               style={{
                 fontSize: '10px',
@@ -147,7 +159,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
             >
               PLAYER
             </p>
-            <p 
+            <p
               className="font-rubik font-medium uppercase pr-4 text-right flex-shrink-0"
               style={{
                 fontSize: '10px',
@@ -160,13 +172,13 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
               $ZO
             </p>
           </div>
-          
+
           {/* Leaderboard Rows */}
           <div className="w-[312px] mx-auto">
             {leaderboard.map((entry) => {
               const isCurrentUser = userId && entry.user_id === userId;
               return (
-                <div 
+                <div
                   key={entry.user_id}
                   className="h-11 flex items-center border-b"
                   style={{
@@ -175,7 +187,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                   }}
                 >
                   {/* Rank */}
-                  <p 
+                  <p
                     className="font-rubik font-normal text-white flex-shrink-0 pl-4"
                     style={{
                       fontSize: '12px',
@@ -186,18 +198,22 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                   >
                     {entry.rank}
                   </p>
-                  
+
                   {/* Avatar + Name Container */}
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                      <img 
-                        src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
-                        alt={entry.nickname} 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={
+                          isCurrentUser
+                            ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || entry.avatar || `/images/rank${entry.rank}.jpeg`
+                            : entry.avatar || `/images/rank${entry.rank}.jpeg`
+                        }
+                        alt={entry.nickname}
+                        className="w-full h-full object-cover"
                       />
                     </div>
-                    
-                    <p 
+
+                    <p
                       className="font-rubik font-normal text-white"
                       style={{
                         fontSize: '16px',
@@ -208,9 +224,9 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                       {isCurrentUser ? 'You' : entry.nickname}
                     </p>
                   </div>
-                  
+
                   {/* Score */}
-                  <p 
+                  <p
                     className="font-rubik font-medium pr-4 text-right flex-shrink-0"
                     style={{
                       fontSize: '16px',
@@ -225,16 +241,16 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                 </div>
               );
             })}
-            
+
             {/* "You" Row (only show if user is NOT in top 10) */}
             {userId && !leaderboard.some(entry => entry.user_id === userId) && (
-              <div 
+              <div
                 className="h-11 flex items-center"
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 }}
               >
-                <p 
+                <p
                   className="font-rubik font-normal text-white flex-shrink-0 pl-4"
                   style={{
                     fontSize: '12px',
@@ -245,18 +261,18 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                 >
                   {userRank}
                 </p>
-                
+
                 {/* Avatar + Name Container */}
                 <div className="flex items-center gap-3 flex-1">
                   <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                    <img 
-                      src={'/images/rank1.jpeg'} 
-                      alt="You" 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={(typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || '/images/rank1.jpeg'}
+                      alt="You"
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                  
-                  <p 
+
+                  <p
                     className="font-rubik font-normal text-white"
                     style={{
                       fontSize: '16px',
@@ -267,8 +283,8 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
                     You
                   </p>
                 </div>
-                
-                <p 
+
+                <p
                   className="font-rubik font-medium pr-4 text-right flex-shrink-0"
                   style={{
                     fontSize: '16px',

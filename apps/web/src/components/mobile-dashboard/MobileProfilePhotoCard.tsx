@@ -12,7 +12,7 @@ const MobileProfilePhotoCard: React.FC<MobileProfilePhotoCardProps> = ({ userPro
   return (
     <div className="flex flex-col items-center justify-center w-full">
       {/* Profile Photo with Animated GIF Frame */}
-      <div 
+      <div
         className="relative"
         style={{
           width: '355px',
@@ -20,12 +20,12 @@ const MobileProfilePhotoCard: React.FC<MobileProfilePhotoCardProps> = ({ userPro
         }}
       >
         {/* Animated GIF Frame (transparent) */}
-        <img 
+        <img
           src="/Profileacrd.gif"
-          alt="Profile Frame" 
+          alt="Profile Frame"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
-        
+
         {/* Profile Photo - Absolutely positioned inside frame */}
         <div
           className="absolute overflow-hidden"
@@ -39,9 +39,9 @@ const MobileProfilePhotoCard: React.FC<MobileProfilePhotoCardProps> = ({ userPro
             backgroundColor: 'transparent',
           }}
         >
-          <img 
-            src={userProfile?.pfp || DashboardAssets.profile.photo}
-            alt="Profile" 
+          <img
+            src={(typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || userProfile?.pfp || DashboardAssets.profile.photo}
+            alt="Profile"
             className="w-full h-full"
             style={{
               objectFit: 'contain',

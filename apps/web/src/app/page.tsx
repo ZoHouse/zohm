@@ -81,9 +81,11 @@ export default function Home() {
     isLoading: isLoadingProfile,
     user,
     login,
+    logout,
     ready,
     reloadProfile,
-    authMethod
+    authMethod,
+    syncProfile
   } = useZoAuth();
 
   // 🚀 Onboarding transition coordinator (prevents race conditions)
@@ -786,7 +788,6 @@ export default function Home() {
   // 2. Existing ZO user from another app - profile exists but onboarding_completed === false
   // BUT: Don't show onboarding if we just completed it (prevents loop for returning users)
   // AND: Don't show onboarding if profile status is still being determined (null)
-  // const shouldShowOnboarding = true;
   const shouldShowOnboarding = authenticated &&
     !onboardingComplete &&
     !onboardingJustCompleted &&

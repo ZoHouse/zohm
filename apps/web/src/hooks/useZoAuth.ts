@@ -82,17 +82,31 @@ export function useZoAuth() {
           zo_synced_at: profile.zo_synced_at,
         });
 
+        // 🔄 CACHE CHECK: Use cached avatar if available and profile has default/missing PFP
+        const cachedAvatar = typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null;
+        const isDefaultPfp = !profile.pfp || profile.pfp.includes('unicorn') || profile.pfp.includes('default');
+
+        if (cachedAvatar && isDefaultPfp) {
+          console.log('🔄 [ZoAuth] Using cached avatar:', cachedAvatar);
+          profile.pfp = cachedAvatar;
+        } else if (profile.pfp && !isDefaultPfp) {
+          // Update cache if we have a valid new PFP
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('zo_avatar_url', profile.pfp);
+          }
+        }
+
         setUserProfile(profile);
-        
+
         // 🔄 AUTO-SYNC: If profile was never synced from ZO API, trigger sync now
         if (profile && !profile.zo_synced_at) {
           console.log('🔄 [ZoAuth] Profile never synced, triggering auto-sync...');
-          
+
           // Get access token from localStorage
-          const accessToken = typeof window !== 'undefined' 
+          const accessToken = typeof window !== 'undefined'
             ? localStorage.getItem('zo_access_token') || localStorage.getItem('zo_token')
             : null;
-          
+
           if (accessToken) {
             // Trigger sync in background (don't await - let it happen async)
             fetch('/api/zo/sync-profile', {
@@ -103,32 +117,32 @@ export function useZoAuth() {
                 accessToken: accessToken,
               }),
             })
-            .then(async (res) => {
-              const text = await res.text();
-              let result: any = {};
-              if (text) {
-                try {
-                  result = JSON.parse(text);
-                } catch {
-                  result = { error: 'Invalid JSON response' };
+              .then(async (res) => {
+                const text = await res.text();
+                let result: any = {};
+                if (text) {
+                  try {
+                    result = JSON.parse(text);
+                  } catch {
+                    result = { error: 'Invalid JSON response' };
+                  }
                 }
-              }
-              
-              if (res.ok) {
-                console.log('✅ [ZoAuth] Auto-sync completed');
-                // Reload profile to get updated avatar
-                if (loadUserProfileRef.current) {
-                  setTimeout(() => {
-                    loadUserProfileRef.current!();
-                  }, 1000);
+
+                if (res.ok) {
+                  console.log('✅ [ZoAuth] Auto-sync completed');
+                  // Reload profile to get updated avatar
+                  if (loadUserProfileRef.current) {
+                    setTimeout(() => {
+                      loadUserProfileRef.current!();
+                    }, 1000);
+                  }
+                } else {
+                  console.error('❌ [ZoAuth] Auto-sync failed:', result?.error || 'Unknown error');
                 }
-              } else {
-                console.error('❌ [ZoAuth] Auto-sync failed:', result?.error || 'Unknown error');
-              }
-            })
-            .catch((err) => {
-              console.error('❌ [ZoAuth] Auto-sync error:', err.message);
-            });
+              })
+              .catch((err) => {
+                console.error('❌ [ZoAuth] Auto-sync error:', err.message);
+              });
           }
         }
       } else {
@@ -143,9 +157,63 @@ export function useZoAuth() {
       setIsLoading(false);
     }
   }, [getZoUserId]);
-  
+
   // Store ref to loadUserProfile for use in auto-sync
   loadUserProfileRef.current = loadUserProfile;
+
+  // ============================================
+  // Auto-fetch avatar from ZO API if not cached
+  // ============================================
+  useEffect(() => {
+    if (!userProfile?.id) return;
+
+    // Check if avatar is already cached
+    const cachedAvatar = typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null;
+    if (cachedAvatar) {
+      console.log('✅ [ZoAuth] Avatar already cached, skipping auto-fetch');
+      return;
+    }
+
+    // No cache -> always fetch from ZO API (source of truth)
+    console.log('🔄 [ZoAuth] No cached avatar found, auto-fetching from ZO API...');
+
+    const token = typeof window !== 'undefined'
+      ? localStorage.getItem('zo_access_token') || localStorage.getItem('zo_token')
+      : null;
+    const deviceId = typeof window !== 'undefined' ? localStorage.getItem('zo_device_id') : null;
+    const deviceSecret = typeof window !== 'undefined' ? localStorage.getItem('zo_device_secret') : null;
+
+    if (!token || !deviceId || !deviceSecret) {
+      console.log('⚠️ [ZoAuth] Missing credentials for auto-fetch, skipping');
+      return;
+    }
+
+    // Auto-fetch avatar in background
+    fetch('/api/zo/fetch-avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accessToken: token,
+        userId: userProfile.id,
+        deviceId: deviceId,
+        deviceSecret: deviceSecret
+      }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.avatarUrl) {
+          console.log('✅ [ZoAuth] Auto-fetched avatar:', data.avatarUrl);
+          localStorage.setItem('zo_avatar_url', data.avatarUrl);
+          // Trigger a re-render by reloading profile
+          loadUserProfile();
+        } else {
+          console.log('ℹ️ [ZoAuth] No avatar available from API');
+        }
+      })
+      .catch(err => {
+        console.error('❌ [ZoAuth] Auto-fetch failed:', err);
+      });
+  }, [userProfile?.id, loadUserProfile]);
 
   // ============================================
   // Logout
@@ -226,6 +294,35 @@ export function useZoAuth() {
     },
     reloadProfile: loadUserProfile,
     refreshProfile: loadUserProfile,
+    syncProfile: async () => {
+      if (!userProfile?.id) return;
+      const accessToken = typeof window !== 'undefined'
+        ? localStorage.getItem('zo_access_token') || localStorage.getItem('zo_token')
+        : null;
+
+      if (!accessToken) return;
+
+      try {
+        const res = await fetch('/api/zo/sync-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userProfile.id,
+            accessToken: accessToken,
+          }),
+        });
+
+        if (res.ok) {
+          console.log('✅ [ZoAuth] Manual sync completed');
+          loadUserProfile(); // Reload to get updated data
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.error('❌ [ZoAuth] Manual sync failed:', err);
+        return false;
+      }
+    },
 
     // Metadata
     authMethod: authenticated ? ('zo' as const) : null,

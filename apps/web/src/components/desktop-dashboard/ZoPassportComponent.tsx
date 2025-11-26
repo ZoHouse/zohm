@@ -67,13 +67,16 @@ const ZoPassportComponent: React.FC<ZoPassportComponentProps> = ({ profile, comp
 
   const bgImage = isFounder ? FOUNDER_BG : CITIZEN_BG;
   const textColor = isFounder ? 'text-white' : 'text-[#111111]';
-  const shadowColor = isFounder ? 'shadow-black/50' : 'shadow-[#F1563F]/50';
+  const shadowStyle = isFounder
+    ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+    : '0 20px 25px -5px rgba(241, 86, 63, 0.5), 0 8px 10px -6px rgba(241, 86, 63, 0.1)';
 
   return (
     <div
-      className={`relative w-[234px] h-[300px] rounded-tr-[20px] rounded-br-[20px] overflow-hidden shadow-xl ${shadowColor} ${className || ''}`}
+      className={`relative w-[234px] h-[300px] rounded-tr-[20px] rounded-br-[20px] overflow-hidden ${className || ''}`}
       style={{
         fontFamily: DashboardTypography.fontFamily.primary,
+        boxShadow: shadowStyle,
       }}
     >
       {/* Background Image */}
@@ -114,17 +117,17 @@ const ZoPassportComponent: React.FC<ZoPassportComponentProps> = ({ profile, comp
       </div>
 
       {/* Text Container - Absolutely positioned at bottom */}
-      <div 
-        className="absolute left-0 right-0 text-center flex flex-col gap-1" 
-        style={{ 
+      <div
+        className="absolute left-0 right-0 text-center flex flex-col gap-1"
+        style={{
           bottom: '16px',
           paddingLeft: '16px',
           paddingRight: '16px'
         }}
       >
-        <p 
+        <p
           className={`font-bold truncate ${textColor}`}
-          style={{ 
+          style={{
             fontSize: '18px',
             lineHeight: '24px',
             maxWidth: '100%',
@@ -135,9 +138,9 @@ const ZoPassportComponent: React.FC<ZoPassportComponentProps> = ({ profile, comp
         >
           {name}
         </p>
-        <p 
+        <p
           className={`opacity-70 uppercase tracking-wider ${textColor}`}
-          style={{ 
+          style={{
             fontSize: '10px',
             lineHeight: '14px',
             letterSpacing: '0.05em'

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import html2canvas from 'html2canvas';
 import { ArrowLeft } from 'lucide-react';
 import { ZoPassport, ZoPassportComponent } from '@/components/desktop-dashboard';
 import { useZoAuth } from '@/hooks/useZoAuth';
@@ -18,10 +19,10 @@ export default function ZoPassportPage() {
   const modalCardRef = useRef<HTMLDivElement>(null);
   const userId = userProfile?.id;
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   // Fetch token balance with polling
@@ -34,7 +35,7 @@ export default function ZoPassportPage() {
           cache: 'no-cache',
           headers: { 'Content-Type': 'application/json' },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data?.quests?.zo_points !== undefined) {
@@ -84,55 +85,45 @@ export default function ZoPassportPage() {
 
   const handlePostOnX = async () => {
     if (!modalCardRef.current) return;
-    
+
     setIsGenerating(true);
-    
+
     try {
-      // Load html2canvas from CDN
-      if (!(window as any).html2canvas) {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-      
-      const html2canvas = (window as any).html2canvas;
-      
       const canvas = await html2canvas(modalCardRef.current, {
         backgroundColor: '#000000',
         scale: 2,
         logging: false,
         width: 1200,
         height: 675,
+        useCORS: true, // Enable CORS for images
+        allowTaint: true,
       });
-      
+
       // Download the card
       canvas.toBlob((blob: Blob | null) => {
         if (!blob) return;
-        
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
-        
+
         // Then open X with pre-filled text after a short delay
         setTimeout(() => {
+          const baseUrl = window.location.origin;
           const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
 
 I commit to AGENCY, ALIGNMENT, CREATIVITY & SYMMETRY.
 
-Join me: https://zohm.world
-
-#ZoWorld #ZoProtocol #LifeDesign`;
+Join me: ${baseUrl}/share/${userId}
+ 
+ #ZoWorld #FollowYourHeart`;
 
           const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
           window.open(twitterUrl, '_blank', 'width=550,height=420');
-          
+
           // Close modal and show instruction
           setIsModalOpen(false);
           setTimeout(() => {
@@ -183,7 +174,7 @@ Join me: https://zohm.world
           background: rgba(255, 255, 255, 0.3);
         }
       `}</style>
-      
+
       <div className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12">
         {/* Back Button */}
         <button
@@ -209,12 +200,12 @@ Join me: https://zohm.world
           {/* Left: Passport Card + Declaration Button */}
           <div className="flex flex-col gap-6 items-center lg:items-start order-1">
             <ZoPassport />
-            
+
             {/* Declaration Button */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="w-[234px] px-6 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group border border-white/10"
-              style={{ 
+              style={{
                 fontFamily: 'Rubik, sans-serif',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
@@ -252,9 +243,9 @@ Join me: https://zohm.world
           {/* Right: For the Culture */}
           <div className="order-2 lg:order-3">
             <h3 className="text-lg font-medium text-white mb-4">For the Culture</h3>
-            
+
             {/* $Zo Balance with Coin Animation */}
-            <div 
+            <div
               className="rounded-lg p-4 border border-white/10 mb-4"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -271,14 +262,14 @@ Join me: https://zohm.world
                     $Zo
                   </span>
                   {/* Coin Video Animation */}
-                  <div 
+                  <div
                     className="overflow-hidden rounded-lg"
                     style={{
                       width: '48px',
                       height: '48px',
                     }}
                   >
-                    <video 
+                    <video
                       autoPlay
                       loop
                       muted
@@ -292,10 +283,10 @@ Join me: https://zohm.world
                 </div>
               </div>
             </div>
-            
+
             {/* Selected Cultures with Dropdown */}
-            <div 
-              className="rounded-lg p-4 border border-white/10" 
+            <div
+              className="rounded-lg p-4 border border-white/10"
               ref={dropdownRef}
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -310,7 +301,7 @@ Join me: https://zohm.world
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors flex items-center gap-1 border border-white/10"
-                  style={{ 
+                  style={{
                     fontFamily: 'Rubik, sans-serif',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
@@ -340,8 +331,8 @@ Join me: https://zohm.world
                         }}
                       >
                         <span className="flex items-center gap-1.5">
-                          <img 
-                            src={culture.image} 
+                          <img
+                            src={culture.image}
                             alt={culture.name}
                             className="w-4 h-4 object-contain"
                           />
@@ -358,7 +349,7 @@ Join me: https://zohm.world
                     ))
                 )}
               </div>
-              
+
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="mt-3 pt-3 border-t border-white/10">
@@ -370,11 +361,10 @@ Join me: https://zohm.world
                           <button
                             key={culture.id}
                             onClick={() => toggleCulture(culture.id)}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-all text-sm border ${
-                              isSelected
-                                ? 'text-white border-white/30'
-                                : 'text-gray-400 hover:text-white border-white/5 hover:border-white/10'
-                            }`}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-all text-sm border ${isSelected
+                              ? 'text-white border-white/30'
+                              : 'text-gray-400 hover:text-white border-white/5 hover:border-white/10'
+                              }`}
                             style={{
                               fontFamily: 'Rubik, sans-serif',
                               backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
@@ -383,8 +373,8 @@ Join me: https://zohm.world
                             }}
                           >
                             <span className="flex items-center gap-2">
-                              <img 
-                                src={culture.image} 
+                              <img
+                                src={culture.image}
                                 alt={culture.name}
                                 className="w-5 h-5 object-contain"
                               />
@@ -406,7 +396,7 @@ Join me: https://zohm.world
 
         {/* Progression Flow Section */}
         <div className="mt-12 md:mt-16">
-          <div 
+          <div
             className="rounded-lg p-8 md:p-12 border overflow-x-auto"
             style={{
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -419,7 +409,7 @@ Join me: https://zohm.world
               Your Journey in Zo World
             </h2>
             <p className="text-gray-400 text-center mb-8 md:mb-12">Evolve from Citizen to Founder</p>
-            
+
             {/* Progression Path */}
             <div className="flex items-start justify-center gap-6 md:gap-12 flex-wrap md:flex-nowrap min-h-[400px]">
               {/* Stage 1: Citizen */}
@@ -453,9 +443,9 @@ Join me: https://zohm.world
                   <div className="text-center">
                     <p className="text-sm text-gray-400 mb-4">Complete your journey by:</p>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -464,7 +454,7 @@ Join me: https://zohm.world
                     >
                       Participate in Zo World
                     </div>
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -473,7 +463,7 @@ Join me: https://zohm.world
                     >
                       Complete Quests
                     </div>
-                    <div 
+                    <div
                       className="px-4 py-2 rounded-lg text-xs text-white text-center border"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -518,115 +508,115 @@ Join me: https://zohm.world
 
       {/* Declaration Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative max-w-[1300px] w-full">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-black hover:bg-gray-200 transition-colors z-10 shadow-lg"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-[1300px] flex flex-col items-center min-h-min py-8">
+            {/* Scale Container for Responsiveness */}
+            <ScaleContainer>
+              {/* Declaration Card - Designed for 1200x675 (16:9) */}
+              <div
+                ref={modalCardRef}
+                className="absolute inset-0 origin-top-left"
+                style={{
+                  width: '1200px',
+                  height: '675px',
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  backdropFilter: 'blur(40px)',
+                  WebkitBackdropFilter: 'blur(40px)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                }}
+              >
+                {/* Decorative Grid Overlay */}
+                <div className="absolute inset-0 opacity-5" style={{
+                  backgroundImage: 'linear-gradient(0deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                  backgroundSize: '40px 40px'
+                }}></div>
 
-            {/* Declaration Card - Designed for 1200x675 (16:9) */}
-            <div 
-              ref={modalCardRef}
-              className="relative w-[1200px] h-[675px] mx-auto border border-white/10"
-              style={{ 
-                background: 'rgba(0, 0, 0, 0.6)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
-              }}
-            >
-              {/* Decorative Grid Overlay */}
-              <div className="absolute inset-0 opacity-5" style={{
-                backgroundImage: 'linear-gradient(0deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                backgroundSize: '40px 40px'
-              }}></div>
-
-              {/* Main Content */}
-              <div className="relative h-full flex">
-                {/* Left Side: Passport */}
-                <div className="w-[500px] flex flex-col items-center justify-center p-12 border-r border-white/10">
-                  <div className="flex items-center justify-center">
-                    <div style={{ transform: 'scale(1.4)', transformOrigin: 'center' }}>
-                      <ZoPassportComponent
-                        profile={{
-                          avatar: userProfile?.pfp || "/images/rank1.jpeg",
-                          name: userProfile?.name || "New Citizen",
-                          isFounder: isFounder,
-                        }}
-                        completion={{
-                          done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
-                          total: 10,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side: Declaration Text */}
-                <div className="flex-1 flex flex-col items-center justify-center p-16">
-                  {/* Zo Logo/Symbol */}
-                  <div className="mb-8">
-                    <div className="text-7xl font-black text-white tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                      Zo Zo
-                    </div>
-                  </div>
-
-                  {/* Declaration Headline */}
-                  <h1 className="text-5xl font-black text-white mb-8 text-center leading-tight">
-                    I Declare Myself a<br/>Citizen of Zo World
-                  </h1>
-
-                  {/* Declaration Statement */}
-                  <div className="space-y-4 max-w-[500px]">
-                    <p className="text-xl text-gray-300 text-center leading-relaxed">
-                      I commit to living with
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
-                        <span 
-                          key={word}
-                          className="px-4 py-2 text-white font-bold text-sm rounded-full border"
-                          style={{
-                            fontFamily: 'Rubik, sans-serif',
-                            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
+                {/* Main Content */}
+                <div className="relative h-full flex">
+                  {/* Left Side: Passport */}
+                  <div className="w-[500px] flex flex-col items-center justify-center p-12" style={{ borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <div className="flex items-center justify-center">
+                      <div style={{ transform: 'scale(1.4)', transformOrigin: 'center' }}>
+                        <ZoPassportComponent
+                          profile={{
+                            avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                            name: userProfile?.name || "New Citizen",
+                            isFounder: isFounder,
                           }}
-                        >
-                          {word}
-                        </span>
-                      ))}
+                          completion={{
+                            done: Math.floor(((userProfile?.name ? 1 : 0) + (userProfile?.bio ? 1 : 0) + (userProfile?.pfp ? 1 : 0) + (userProfile?.city ? 1 : 0) + (userProfile?.primary_wallet ? 1 : 0)) * 2),
+                            total: 10,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Date & Signature */}
-                  <div className="mt-12 text-center space-y-3">
-                    <p className="text-gray-500 text-sm">{currentDate}</p>
-                    <div className="h-px w-48 mx-auto bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
-                    <p className="text-white text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
-                      Signed by {userProfile?.name || "New Citizen"}
-                    </p>
-                  </div>
+                  {/* Right Side: Declaration Text */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-16">
+                    {/* Zo Logo/Symbol */}
+                    <div className="mb-8">
+                      <div className="text-7xl font-black text-white tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                        Zo Zo
+                      </div>
+                    </div>
 
-                  {/* Footer */}
-                  <div className="absolute bottom-8 right-8">
-                    <p className="text-gray-600 text-xs">zohm.world</p>
+                    {/* Declaration Headline */}
+                    <h1 className="text-6xl md:text-5xl font-black text-white mb-8 text-center leading-tight">
+                      I Declare Myself a<br />Citizen of Zo World
+                    </h1>
+
+                    {/* Declaration Statement */}
+                    <div className="space-y-4 max-w-[500px]">
+                      <p className="text-2xl md:text-xl text-center leading-relaxed" style={{ color: '#d1d5db' }}>
+                        I commit to living with
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
+                          <span
+                            key={word}
+                            className="px-4 py-2 text-white font-bold text-lg md:text-sm rounded-full border"
+                            style={{
+                              fontFamily: 'Rubik, sans-serif',
+                              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                              borderColor: 'rgba(255, 255, 255, 0.3)',
+                              backdropFilter: 'blur(20px)',
+                              WebkitBackdropFilter: 'blur(20px)',
+                            }}
+                          >
+                            {word}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Date & Signature */}
+                    <div className="mt-12 text-center space-y-3">
+                      <p className="text-lg md:text-sm" style={{ color: '#6b7280' }}>{currentDate}</p>
+                      <div className="h-px w-48 mx-auto" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent)' }}></div>
+                      <p className="text-white text-lg md:text-sm font-medium" style={{ fontFamily: 'Rubik, sans-serif' }}>
+                        Signed by {userProfile?.name || "New Citizen"}
+                      </p>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="absolute bottom-8 right-8">
+                      <p className="text-xs" style={{ color: '#4b5563' }}>zohm.world</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </ScaleContainer>
 
             {/* Action Buttons */}
-            <div className="mt-6 flex justify-center gap-4">
+            <div className="mt-6 flex justify-center gap-4 relative z-50 flex-wrap">
               <button
                 onClick={handlePostOnX}
                 disabled={isGenerating}
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
-                style={{ 
+                style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',
@@ -644,7 +634,7 @@ Join me: https://zohm.world
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/10"
-                style={{ 
+                style={{
                   fontFamily: 'Rubik, sans-serif',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',
@@ -676,3 +666,4 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
   );
 }
 
+import { ScaleContainer } from '@/components/ScaleContainer';

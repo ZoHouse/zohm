@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import html2canvas from 'html2canvas';
 import { ArrowLeft } from 'lucide-react';
 import { ZoPassport, ZoPassportComponent } from '@/components/desktop-dashboard';
 import { useZoAuth } from '@/hooks/useZoAuth';
@@ -16,7 +15,6 @@ export default function ZoPassportPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [balance, setBalance] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const modalCardRef = useRef<HTMLDivElement>(null);
   const userId = userProfile?.id;
 
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -84,36 +82,32 @@ export default function ZoPassportPage() {
   };
 
   const handlePostOnX = async () => {
-    if (!modalCardRef.current) return;
+    if (!userId) return;
 
     setIsGenerating(true);
 
     try {
-      const canvas = await html2canvas(modalCardRef.current, {
-        backgroundColor: '#000000',
-        scale: 2,
-        logging: false,
-        width: 1200,
-        height: 675,
-        useCORS: true, // Enable CORS for images
-        allowTaint: true,
-      });
+      // Fetch the image from server-side API
+      const response = await fetch(`/api/passport-image/${userId}`);
 
-      // Download the card
-      canvas.toBlob((blob: Blob | null) => {
-        if (!blob) return;
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
+      const blob = await response.blob();
 
-        // Then open X with pre-filled text after a short delay
-        setTimeout(() => {
-          const baseUrl = window.location.origin;
-          const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
+      // Download the image
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `zo-world-declaration-${userProfile?.name?.replace(/\s+/g, '-').toLowerCase() || 'citizen'}.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Then open X with pre-filled text after a short delay
+      setTimeout(() => {
+        const baseUrl = window.location.origin;
+        const tweetText = `I have declared myself a citizen of Zo World! 🌍✨
 
 I commit to AGENCY, ALIGNMENT, CREATIVITY & SYMMETRY.
 
@@ -121,16 +115,15 @@ Join me: ${baseUrl}/share/${userId}
  
  #ZoWorld #FollowYourHeart`;
 
-          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-          window.open(twitterUrl, '_blank', 'width=550,height=420');
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+        window.open(twitterUrl, '_blank', 'width=550,height=420');
 
-          // Close modal and show instruction
-          setIsModalOpen(false);
-          setTimeout(() => {
-            alert('✅ Card downloaded!\n\n📎 Now click the image button in X and attach the downloaded image before posting.');
-          }, 1000);
-        }, 500);
-      });
+        // Close modal and show instruction
+        setIsModalOpen(false);
+        setTimeout(() => {
+          alert('✅ Card downloaded!\n\n📎 Now click the image button in X and attach the downloaded image before posting.');
+        }, 1000);
+      }, 500);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate card. Please try again.');
@@ -514,7 +507,6 @@ Join me: ${baseUrl}/share/${userId}
             <ScaleContainer>
               {/* Declaration Card - Designed for 1200x675 (16:9) */}
               <div
-                ref={modalCardRef}
                 className="absolute inset-0 origin-top-left"
                 style={{
                   width: '1200px',
@@ -575,9 +567,9 @@ Join me: ${baseUrl}/share/${userId}
                       </p>
                       <div className="flex flex-wrap justify-center gap-3">
                         {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
-                          <span
+                          <div
                             key={word}
-                            className="px-4 py-2 text-white font-bold text-lg md:text-sm rounded-full border"
+                            className="px-4 py-2 text-white font-bold text-lg md:text-sm rounded-full border text-center"
                             style={{
                               fontFamily: 'Rubik, sans-serif',
                               backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -587,7 +579,7 @@ Join me: ${baseUrl}/share/${userId}
                             }}
                           >
                             {word}
-                          </span>
+                          </div>
                         ))}
                       </div>
                     </div>

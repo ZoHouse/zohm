@@ -3,14 +3,6 @@ import { supabase } from '@/lib/supabase';
 
 export const runtime = 'edge';
 
-export const alt = 'Zo Passport';
-export const size = {
-    width: 1200,
-    height: 675,
-};
-
-export const contentType = 'image/png';
-
 const FOUNDER_BG = "https://proxy.cdn.zo.xyz/gallery/media/images/a1659b07-94f0-4490-9b3c-3366715d9717_20250515053726.png";
 const CITIZEN_BG = "https://proxy.cdn.zo.xyz/gallery/media/images/bda9da5a-eefe-411d-8d90-667c80024463_20250515053805.png";
 
@@ -35,6 +27,8 @@ async function fetchImage(url: string) {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('avif')) {
             console.warn(`Received AVIF despite requesting PNG for ${url}`);
+            // If we still get AVIF, we might be stuck, but let's try to proceed or return null to avoid crashing
+            // returning null will just show no image instead of crashing the whole route
             return null;
         }
 
@@ -45,7 +39,10 @@ async function fetchImage(url: string) {
     }
 }
 
-export default async function Image({ params }: { params: { userId: string } }) {
+export async function GET(
+    request: Request,
+    { params }: { params: { userId: string } }
+) {
     const { userId } = await params;
 
     const { data: user } = await supabase
@@ -53,6 +50,10 @@ export default async function Image({ params }: { params: { userId: string } }) 
         .select('*')
         .eq('id', userId)
         .single();
+
+    if (!user) {
+        return new Response('User not found', { status: 404 });
+    }
 
     const isFounder = user?.is_founder || false;
     const name = user?.name || "New Citizen";
@@ -390,7 +391,8 @@ export default async function Image({ params }: { params: { userId: string } }) 
             </div>
         ),
         {
-            ...size,
+            width: 1200,
+            height: 675,
         }
     );
 }

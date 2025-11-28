@@ -68,7 +68,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title,
             description,
-            images: [`/share/${userId}/opengraph-image`],
+            images: [`${baseUrl}/share/${userId}/opengraph-image`],
+            site: '@ZoWorld',
             creator: '@ZoWorld',
         },
     };
@@ -166,9 +167,9 @@ export default async function SharePage({ params }: Props) {
                                     </p>
                                     <div className="flex flex-wrap justify-center gap-3">
                                         {['AGENCY', 'ALIGNMENT', 'CREATIVITY', 'SYMMETRY'].map((word) => (
-                                            <span
+                                            <div
                                                 key={word}
-                                                className="px-4 py-2 text-white font-bold text-lg md:text-sm rounded-full border"
+                                                className="px-4 py-2 text-white font-bold text-lg md:text-sm rounded-full border text-center"
                                                 style={{
                                                     fontFamily: 'Rubik, sans-serif',
                                                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -178,7 +179,7 @@ export default async function SharePage({ params }: Props) {
                                                 }}
                                             >
                                                 {word}
-                                            </span>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>

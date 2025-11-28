@@ -9,7 +9,7 @@ interface LandingPageProps {
   onConnect: () => void; // Keep for Email/Wallet buttons
 }
 
-export default function LandingPage({ onConnect }: LandingPageProps) {
+export default function LandingPage({ }: LandingPageProps) {
   const router = useRouter();
   const { reloadProfile } = useZoAuth();
   const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -94,37 +94,6 @@ export default function LandingPage({ onConnect }: LandingPageProps) {
               <span className="font-rubik text-[16px] md:text-[18px] lg:text-[20px] font-medium text-white leading-normal">Tune into Zo World</span>
             </button>
 
-            <div className="flex flex-col items-center gap-3 w-full">
-              <p className="font-rubik text-[14px] md:text-[16px] font-normal text-white/44 leading-normal tracking-[0.16px] text-center m-0">
-                or login with
-              </p>
-
-              <div className="flex gap-3 w-full md:w-[400px] justify-center">
-                <button
-                  onClick={onConnect}
-                  className="flex-1 flex items-center gap-2 justify-center overflow-clip px-4 py-3 rounded-button h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-white/10 hover:border hover:border-white/20 active:scale-[0.98] bg-black/40 border border-white/10"
-                  type="button"
-                >
-                  <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 20 20" fill="none">
-                    <path d="M3 4C3 3.44772 3.44772 3 4 3H16C16.5523 3 17 3.44772 17 4V16C17 16.5523 16.5523 17 16 17H4C3.44772 17 3 16.5523 3 16V4Z" stroke="white" strokeWidth="2" />
-                    <path d="M3 7L10 11L17 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span className="font-rubik text-[16px] md:text-[18px] font-medium text-white leading-normal">Email</span>
-                </button>
-
-                <button
-                  onClick={onConnect}
-                  className="flex-1 flex items-center gap-2 justify-center overflow-clip px-4 py-3 rounded-button h-[56px] md:h-[64px] cursor-pointer transition-all duration-300 hover:bg-white/10 hover:border hover:border-white/20 active:scale-[0.98] bg-black/40 border border-white/10"
-                  type="button"
-                >
-                  <svg className="w-6 h-6 md:w-7 md:h-7" viewBox="0 0 24 24" fill="none">
-                    <rect x="4" y="4" width="16" height="16" rx="2" stroke="white" strokeWidth="2" />
-                    <path d="M8 8L12 12L16 8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  <span className="font-rubik text-[16px] md:text-[18px] font-medium text-white leading-normal">Wallet</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

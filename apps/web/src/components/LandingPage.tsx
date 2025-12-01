@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PhoneLoginModal from './PhoneLoginModal';
 import { useZoAuth } from '@/hooks/useZoAuth';
+import { devLog } from '@/lib/logger';
 
 interface LandingPageProps {
   onConnect: () => void; // Keep for Email/Wallet buttons
@@ -25,7 +26,7 @@ export default function LandingPage({ }: LandingPageProps) {
 
   const handlePhoneLoginSuccess = async (userId: string, userData: any) => {
     // User logged in successfully via phone
-    console.log('✅ Phone login success, reloading profile...');
+    devLog.log('✅ Phone login success, reloading profile...');
 
     // Reload the profile to update auth state
     await reloadProfile();

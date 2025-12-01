@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 interface LeaderboardPlayer {
   rank: number;
@@ -27,7 +28,7 @@ const MobileLeaderboard: React.FC<MobileLeaderboardProps> = ({ userId, userBalan
         const data = await getQuestLeaderboard(10);
         setLeaderboard(data);
       } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        devLog.error('Error fetching leaderboard:', error);
       }
     }
     fetchLeaderboard();

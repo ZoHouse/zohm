@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import ARQuest from '@/components/ARQuest';
+import { devLog } from '@/lib/logger';
 
 /**
  * AR Quest Test Page
@@ -13,7 +14,7 @@ export default function ARQuestPage() {
   const router = useRouter();
 
   const handleComplete = (data: any) => {
-    console.log('🎉 AR Quest completed:', data);
+    devLog.log('🎉 AR Quest completed:', data);
     // Navigate back or to next step
     router.push('/');
   };

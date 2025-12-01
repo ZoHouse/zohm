@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { devLog } from '@/lib/logger';
 
 // Supabase configuration - Centralized configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -19,18 +20,18 @@ export async function pingSupabase() {
 
     if (error && error.code === 'PGRST116') {
       // Table doesn't exist, but connection is working
-      console.log('✅ Supabase connection working! (Table "members" not found, but connection is valid)');
-      console.log('💡 Create a "members" table in Supabase to test data retrieval');
+      devLog.log('✅ Supabase connection working! (Table "members" not found, but connection is valid)');
+      devLog.log('💡 Create a "members" table in Supabase to test data retrieval');
       return true;
     } else if (error) {
-      console.error('❌ Supabase connection error:', error);
+      devLog.error('❌ Supabase connection error:', error);
       return false;
     } else {
-      console.log('✅ Supabase connection successful!');
+      devLog.log('✅ Supabase connection successful!');
       return true;
     }
   } catch (error) {
-    console.error('❌ Failed to ping Supabase:', error);
+    devLog.error('❌ Failed to ping Supabase:', error);
     return false;
   }
 }
@@ -38,7 +39,7 @@ export async function pingSupabase() {
 // Comprehensive table verification function
 export async function verifyMembersTable() {
   try {
-    console.log('🔍 Verifying members table setup...');
+    devLog.log('🔍 Verifying members table setup...');
     
     // Test basic table access
     const { data, error } = await supabase
@@ -48,17 +49,17 @@ export async function verifyMembersTable() {
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('❌ Members table does not exist');
-        console.log('📝 Please create the members table using this SQL:');
-        console.log(createMembersTableSQL);
+        devLog.log('❌ Members table does not exist');
+        devLog.log('📝 Please create the members table using this SQL:');
+        devLog.log(createMembersTableSQL);
         return { exists: false, error: 'Table does not exist' };
       } else {
-        console.warn('⚠️ Error accessing members table (this may be okay):', error.message || 'Unknown error');
+        devLog.warn('⚠️ Error accessing members table (this may be okay):', error.message || 'Unknown error');
         return { exists: false, error: error.message };
       }
     }
 
-    console.log('✅ Members table exists and is accessible');
+    devLog.log('✅ Members table exists and is accessible');
     
     // Test insert functionality with a dummy record
     const testWallet = 'test_wallet_' + Date.now();
@@ -74,12 +75,12 @@ export async function verifyMembersTable() {
       .select();
 
     if (insertError) {
-      console.warn('⚠️ Could not verify insert permissions (this is okay):', insertError.message || 'Unknown error');
+      devLog.warn('⚠️ Could not verify insert permissions (this is okay):', insertError.message || 'Unknown error');
       // Table exists but we can't test insert - that's fine, continue anyway
       return { exists: true, canInsert: false, error: null };
     }
 
-    console.log('✅ Test record inserted successfully:', insertData);
+    devLog.log('✅ Test record inserted successfully:', insertData);
 
     // Clean up test record
     const { error: deleteError } = await supabase
@@ -88,9 +89,9 @@ export async function verifyMembersTable() {
       .eq('wallet', testWallet);
 
     if (deleteError) {
-      console.warn('⚠️ Could not clean up test record:', deleteError);
+      devLog.warn('⚠️ Could not clean up test record:', deleteError);
     } else {
-      console.log('✅ Test record cleaned up');
+      devLog.log('✅ Test record cleaned up');
     }
 
     // Get current member count
@@ -99,7 +100,7 @@ export async function verifyMembersTable() {
       .select('*', { count: 'exact', head: true });
 
     if (!countError) {
-      console.log(`📊 Current members count: ${count}`);
+      devLog.log(`📊 Current members count: ${count}`);
     }
 
     return { 
@@ -111,7 +112,7 @@ export async function verifyMembersTable() {
     };
 
   } catch (error) {
-    console.error('❌ Exception during table verification:', error);
+    devLog.error('❌ Exception during table verification:', error);
     return { exists: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -150,14 +151,14 @@ export async function upsertMemberByWallet(memberData: Omit<Member, 'id'>) {
       .select();
 
     if (error) {
-      console.error('Error upserting member:', error);
+      devLog.error('Error upserting member:', error);
       return null;
     }
 
-    console.log('✅ Member upserted:', data);
+    devLog.log('✅ Member upserted:', data);
     return data;
   } catch (error) {
-    console.error('Exception upserting member:', error);
+    devLog.error('Exception upserting member:', error);
     return null;
   }
 }
@@ -175,14 +176,14 @@ export async function getMemberByWallet(wallet: string): Promise<Member | null> 
         // No member found
         return null;
       }
-      console.error('Error fetching member by wallet:', error);
+      devLog.error('Error fetching member by wallet:', error);
       return null;
     }
 
-    console.log('✅ Member found:', data);
+    devLog.log('✅ Member found:', data);
     return data;
   } catch (error) {
-    console.error('Exception fetching member by wallet:', error);
+    devLog.error('Exception fetching member by wallet:', error);
     return null;
   }
 }
@@ -195,14 +196,14 @@ export async function insertMember(memberData: Omit<Member, 'id'>) {
       .select();
 
     if (error) {
-      console.error('Error inserting member:', error);
+      devLog.error('Error inserting member:', error);
       return null;
     }
 
-    console.log('✅ Member inserted:', data);
+    devLog.log('✅ Member inserted:', data);
     return data;
   } catch (error) {
-    console.error('Exception inserting member:', error);
+    devLog.error('Exception inserting member:', error);
     return null;
   }
 }
@@ -222,14 +223,14 @@ export async function updateMemberLocation(memberId: string, latitude: number, l
       .select();
 
     if (error) {
-      console.error('Error updating member location:', error);
+      devLog.error('Error updating member location:', error);
       return null;
     }
 
-    console.log('✅ Member location updated:', data);
+    devLog.log('✅ Member location updated:', data);
     return data;
   } catch (error) {
-    console.error('Exception updating member location:', error);
+    devLog.error('Exception updating member location:', error);
     return null;
   }
 }
@@ -242,14 +243,14 @@ export async function getAllMembers(): Promise<Member[] | null> {
       .order('last_seen', { ascending: false });
 
     if (error) {
-      console.error('Error fetching members:', error);
+      devLog.error('Error fetching members:', error);
       return null;
     }
 
-    console.log('✅ Members fetched:', data);
+    devLog.log('✅ Members fetched:', data);
     return data;
   } catch (error) {
-    console.error('Exception fetching members:', error);
+    devLog.error('Exception fetching members:', error);
     return null;
   }
 }
@@ -331,15 +332,15 @@ export async function getNodesFromDB(): Promise<PartnerNodeRecord[] | null> {
       .order('name');
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ nodes table not found. Use createNodesTableSQL to set it up.');
+        devLog.log('ℹ️ nodes table not found. Use createNodesTableSQL to set it up.');
         return [];
       }
-      console.warn('Unable to fetch nodes:', error);
+      devLog.warn('Unable to fetch nodes:', error);
       return [];
     }
     return (data as PartnerNodeRecord[]) || [];
   } catch (e) {
-    console.warn('Unable to fetch nodes:', e);
+    devLog.warn('Unable to fetch nodes:', e);
     return [];
   }
 }
@@ -384,15 +385,15 @@ export async function getLeaderboards(): Promise<LeaderboardEntry[] | null> {
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ leaderboards table not found. Using empty mock.');
+        devLog.log('ℹ️ leaderboards table not found. Using empty mock.');
         return [];
       }
-      console.warn('Unable to fetch leaderboards:', error);
+      devLog.warn('Unable to fetch leaderboards:', error);
       return [];
     }
     return (data as LeaderboardEntry[]) || [];
   } catch (e) {
-    console.warn('Unable to fetch leaderboards:', e);
+    devLog.warn('Unable to fetch leaderboards:', e);
     return [];
   }
 }
@@ -406,15 +407,15 @@ export async function getQuests(): Promise<QuestEntry[] | null> {
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ quests table not found. Using empty mock.');
+        devLog.log('ℹ️ quests table not found. Using empty mock.');
         return [];
       }
-      console.warn('Unable to fetch quests:', error);
+      devLog.warn('Unable to fetch quests:', error);
       return [];
     }
     return (data as QuestEntry[]) || [];
   } catch (e) {
-    console.warn('Unable to fetch quests:', e);
+    devLog.warn('Unable to fetch quests:', e);
     return [];
   }
 }
@@ -472,15 +473,15 @@ export async function getActiveCalendars(): Promise<CalendarSource[] | null> {
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ calendars table not found. Database may need setup.');
+        devLog.log('ℹ️ calendars table not found. Database may need setup.');
         return [];
       }
-      console.warn('⚠️ Error fetching calendars (this may be okay):', error.message || 'Unknown error');
+      devLog.warn('⚠️ Error fetching calendars (this may be okay):', error.message || 'Unknown error');
       return null;
     }
     return (data as CalendarSource[]) || [];
   } catch (e) {
-    console.warn('⚠️ Exception fetching calendars (this may be okay):', e);
+    devLog.warn('⚠️ Exception fetching calendars (this may be okay):', e);
     return null;
   }
 }
@@ -494,14 +495,14 @@ export async function addCalendar(calendar: Omit<CalendarSource, 'id' | 'created
       .single();
 
     if (error) {
-      console.error('Error adding calendar:', error);
+      devLog.error('Error adding calendar:', error);
       return null;
     }
 
-    console.log('✅ Calendar added:', data);
+    devLog.log('✅ Calendar added:', data);
     return data;
   } catch (error) {
-    console.error('Exception adding calendar:', error);
+    devLog.error('Exception adding calendar:', error);
     return null;
   }
 }
@@ -514,14 +515,14 @@ export async function updateCalendarStatus(id: string, isActive: boolean): Promi
       .eq('id', id);
 
     if (error) {
-      console.error('Error updating calendar status:', error);
+      devLog.error('Error updating calendar status:', error);
       return false;
     }
 
-    console.log(`✅ Calendar ${id} status updated to ${isActive ? 'active' : 'inactive'}`);
+    devLog.log(`✅ Calendar ${id} status updated to ${isActive ? 'active' : 'inactive'}`);
     return true;
   } catch (error) {
-    console.error('Exception updating calendar status:', error);
+    devLog.error('Exception updating calendar status:', error);
     return false;
   }
 }
@@ -575,16 +576,16 @@ export async function isQuestCompleted(wallet: string, questId: string): Promise
       }
       if (error.code === '42P01' || error.message.includes('does not exist')) {
         // Table doesn't exist yet
-        console.log('ℹ️ completed_quests table not found. Quest marked as not completed.');
+        devLog.log('ℹ️ completed_quests table not found. Quest marked as not completed.');
         return false;
       }
-      console.error('Error checking quest completion:', error);
+      devLog.error('Error checking quest completion:', error);
       return false;
     }
 
     return !!data; // Quest is completed if we found a record
   } catch (error) {
-    console.error('Exception checking quest completion:', error);
+    devLog.error('Exception checking quest completion:', error);
     return false;
   }
 }
@@ -610,14 +611,14 @@ export async function markQuestCompleted(
       .single();
 
     if (error) {
-      console.error('Error marking quest as completed:', error);
+      devLog.error('Error marking quest as completed:', error);
       return null;
     }
 
-    console.log('✅ Quest marked as completed:', data);
+    devLog.log('✅ Quest marked as completed:', data);
     return data;
   } catch (error) {
-    console.error('Exception marking quest as completed:', error);
+    devLog.error('Exception marking quest as completed:', error);
     return null;
   }
 }
@@ -635,13 +636,13 @@ export async function getCompletedQuestsByWallet(wallet: string): Promise<Comple
         // Table doesn't exist yet
         return [];
       }
-      console.error('Error fetching completed quests:', error);
+      devLog.error('Error fetching completed quests:', error);
       return null;
     }
 
     return data || [];
   } catch (error) {
-    console.error('Exception fetching completed quests:', error);
+    devLog.error('Exception fetching completed quests:', error);
     return null;
   }
 }
@@ -659,13 +660,13 @@ export async function getCompletedQuestsByQuest(questId: string): Promise<Comple
         // Table doesn't exist yet
         return [];
       }
-      console.error('Error fetching quest completions:', error);
+      devLog.error('Error fetching quest completions:', error);
       return null;
     }
 
     return data || [];
   } catch (error) {
-    console.error('Exception fetching quest completions:', error);
+    devLog.error('Exception fetching quest completions:', error);
     return null;
   }
 }

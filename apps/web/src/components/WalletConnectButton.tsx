@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/useWallet';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 interface WalletConnectButtonProps {
   onProfileClick?: () => void;
@@ -31,33 +32,33 @@ export default function WalletConnectButton({ onProfileClick, onProfileSetupClic
     
     setIsCheckingUser(true);
     try {
-      console.log('🔍 Checking user existence for:', walletAddress);
+      devLog.log('🔍 Checking user existence for:', walletAddress);
       
       const { data, error, count } = await supabase
         .from('members')
         .select('wallet', { count: 'exact' })
         .eq('wallet', walletAddress.toLowerCase());
 
-      console.log('🔍 User check result:', { data, error, count });
+      devLog.log('🔍 User check result:', { data, error, count });
 
       if (error) {
         if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-          console.log('ℹ️ Members table does not exist, assuming user does not exist');
+          devLog.log('ℹ️ Members table does not exist, assuming user does not exist');
           setUserExists(false);
           return;
         }
-        console.error('Error checking user existence:', error);
+        devLog.error('Error checking user existence:', error);
         setUserExists(false);
         return;
       }
 
       // User exists if we found any records
       const exists = (count || 0) > 0;
-      console.log(`👤 User ${exists ? 'exists' : 'does not exist'} in database`);
+      devLog.log(`👤 User ${exists ? 'exists' : 'does not exist'} in database`);
       setUserExists(exists);
       
     } catch (error) {
-      console.error('Exception checking user existence:', error);
+      devLog.error('Exception checking user existence:', error);
       setUserExists(false);
     } finally {
       setIsCheckingUser(false);
@@ -74,15 +75,15 @@ export default function WalletConnectButton({ onProfileClick, onProfileSetupClic
   }, [isConnected, address]);
 
   const handleConnect = async () => {
-    console.log('🔴 Red pill button clicked!');
+    devLog.log('🔴 Red pill button clicked!');
     const walletAddress = await connectWallet();
-    console.log('💰 Wallet connection result:', walletAddress);
+    devLog.log('💰 Wallet connection result:', walletAddress);
     // If wallet connected successfully, trigger the ritual
     if (walletAddress && onWalletConnected) {
-      console.log('🎭 Calling onWalletConnected callback');
+      devLog.log('🎭 Calling onWalletConnected callback');
       onWalletConnected();
     } else {
-      console.log('❌ No wallet address or callback not provided');
+      devLog.log('❌ No wallet address or callback not provided');
     }
   };
 
@@ -98,11 +99,11 @@ export default function WalletConnectButton({ onProfileClick, onProfileSetupClic
   };
 
   const handleProfileSetupClick = () => {
-    console.log('🔧 Profile Setup button clicked');
-    console.log('🔧 onProfileSetupClick callback:', !!onProfileSetupClick);
+    devLog.log('🔧 Profile Setup button clicked');
+    devLog.log('🔧 onProfileSetupClick callback:', !!onProfileSetupClick);
     if (onProfileSetupClick) {
       onProfileSetupClick();
-      console.log('🔧 Profile Setup callback executed');
+      devLog.log('🔧 Profile Setup callback executed');
     }
   };
 

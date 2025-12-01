@@ -9,6 +9,7 @@
 
 import { supabase } from './supabase';
 import { getUnicornForAddress } from './unicornAvatars';
+import { devLog } from '@/lib/logger';
 
 // ============================================
 // TypeScript Types
@@ -128,7 +129,7 @@ export interface FullUserProfile extends UserRecord {
  */
 export async function getUserById(userId: string): Promise<UserRecord | null> {
   try {
-    console.log('🔍 [getUserById] Looking up user by id:', userId);
+    devLog.log('🔍 [getUserById] Looking up user by id:', userId);
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -136,9 +137,9 @@ export async function getUserById(userId: string): Promise<UserRecord | null> {
       .single();
 
     if (error) {
-      console.log('🔍 [getUserById] Query by id error:', error.code, error.message);
+      devLog.log('🔍 [getUserById] Query by id error:', error.code, error.message);
       if (error.code === 'PGRST116') {
-        console.log('🔍 [getUserById] User not found by id, trying zo_user_id...');
+        devLog.log('🔍 [getUserById] User not found by id, trying zo_user_id...');
         // Try looking up by zo_user_id instead
         const { data: userByZoId, error: zoError } = await supabase
           .from('users')
@@ -147,15 +148,15 @@ export async function getUserById(userId: string): Promise<UserRecord | null> {
           .single();
         
         if (zoError) {
-          console.log('🔍 [getUserById] Query by zo_user_id error:', zoError.code, zoError.message);
+          devLog.log('🔍 [getUserById] Query by zo_user_id error:', zoError.code, zoError.message);
           if (zoError.code === 'PGRST116') {
-            console.log('❌ [getUserById] User not found by zo_user_id either');
+            devLog.log('❌ [getUserById] User not found by zo_user_id either');
             return null;
           }
           throw zoError;
         }
         
-        console.log('✅ [getUserById] Found user by zo_user_id:', {
+        devLog.log('✅ [getUserById] Found user by zo_user_id:', {
           id: userByZoId?.id,
           zo_user_id: userByZoId?.zo_user_id,
           name: userByZoId?.name
@@ -165,10 +166,10 @@ export async function getUserById(userId: string): Promise<UserRecord | null> {
       throw error;
     }
 
-    console.log('✅ [getUserById] Found user by id:', data?.id);
+    devLog.log('✅ [getUserById] Found user by id:', data?.id);
     return data;
   } catch (error) {
-    console.error('❌ [getUserById] Error fetching user by ID:', error);
+    devLog.error('❌ [getUserById] Error fetching user by ID:', error);
     return null;
   }
 }
@@ -188,7 +189,7 @@ export async function getUserByWallet(walletAddress: string): Promise<UserRecord
 
     return getUserById(walletData.user_id);
   } catch (error) {
-    console.error('Error fetching user by wallet:', error);
+    devLog.error('Error fetching user by wallet:', error);
     return null;
   }
 }
@@ -211,7 +212,7 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
 
     return data;
   } catch (error) {
-    console.error('Error fetching user by email:', error);
+    devLog.error('Error fetching user by email:', error);
     return null;
   }
 }
@@ -238,7 +239,7 @@ export async function getFullUserProfile(userId: string): Promise<FullUserProfil
       primary_wallet: primaryWallet,
     };
   } catch (error) {
-    console.error('Error fetching full user profile:', error);
+    devLog.error('Error fetching full user profile:', error);
     return null;
   }
 }
@@ -248,7 +249,7 @@ export async function getFullUserProfile(userId: string): Promise<FullUserProfil
  */
 export async function checkDatabaseMigrationStatus(): Promise<boolean> {
   try {
-    console.log('🔍 Checking if users table exists...');
+    devLog.log('🔍 Checking if users table exists...');
     
     // Try to query the users table
     const { data, error } = await supabase
@@ -257,32 +258,32 @@ export async function checkDatabaseMigrationStatus(): Promise<boolean> {
       .limit(1);
     
     if (error) {
-      console.error('❌ Users table check failed - Full error:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error details:', error.details);
-      console.error('❌ Error hint:', error.hint);
+      devLog.error('❌ Users table check failed - Full error:', error);
+      devLog.error('❌ Error code:', error.code);
+      devLog.error('❌ Error message:', error.message);
+      devLog.error('❌ Error details:', error.details);
+      devLog.error('❌ Error hint:', error.hint);
       
       // Check if it's a "relation does not exist" error
       if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        console.error('💡 The "users" table does not exist. Please run the migration SQL in Supabase Dashboard.');
-        console.error('💡 See: migrations/README.md for instructions');
+        devLog.error('💡 The "users" table does not exist. Please run the migration SQL in Supabase Dashboard.');
+        devLog.error('💡 See: migrations/README.md for instructions');
       }
       
       // Check if it's an RLS policy error
       if (error.code === '42501' || error.message?.includes('policy')) {
-        console.error('💡 This might be a Row Level Security (RLS) policy issue.');
-        console.error('💡 Try disabling RLS temporarily: ALTER TABLE users DISABLE ROW LEVEL SECURITY;');
+        devLog.error('💡 This might be a Row Level Security (RLS) policy issue.');
+        devLog.error('💡 Try disabling RLS temporarily: ALTER TABLE users DISABLE ROW LEVEL SECURITY;');
       }
       
       return false;
     }
     
-    console.log('✅ Users table exists - migration has been run');
-    console.log('✅ Sample data:', data);
+    devLog.log('✅ Users table exists - migration has been run');
+    devLog.log('✅ Sample data:', data);
     return true;
   } catch (error) {
-    console.error('❌ Exception checking migration status:', error);
+    devLog.error('❌ Exception checking migration status:', error);
     return false;
   }
 }
@@ -300,7 +301,7 @@ export async function upsertUser(
       ? user.email 
       : (user.email as any)?.address || null;
 
-    console.log('🔄 Upserting user:', {
+    devLog.log('🔄 Upserting user:', {
       userId,
       email: userEmail
     });
@@ -313,7 +314,7 @@ export async function upsertUser(
     let defaultPfp: string | null = null;
     if (isNewUser || (!existingUser?.pfp && !profileData?.pfp)) {
       defaultPfp = getUnicornForAddress(userId);
-      console.log('🦄 Assigning default unicorn avatar:', defaultPfp);
+      devLog.log('🦄 Assigning default unicorn avatar:', defaultPfp);
     }
 
     const userData: Partial<UserRecord> = {
@@ -324,7 +325,7 @@ export async function upsertUser(
       ...profileData, // profileData can override the default pfp if provided
     };
 
-    console.log('📝 Attempting to upsert user:', userData);
+    devLog.log('📝 Attempting to upsert user:', userData);
     
     const { data, error } = await supabase
       .from('users')
@@ -333,30 +334,30 @@ export async function upsertUser(
       .single();
 
     if (error) {
-      console.error('❌ Error saving user to Supabase:', error);
-      console.error('❌ Error details:', { message: error.message, code: error.code, details: error.details, hint: error.hint });
+      devLog.error('❌ Error saving user to Supabase:', error);
+      devLog.error('❌ Error details:', { message: error.message, code: error.code, details: error.details, hint: error.hint });
       throw new Error(`Supabase error: ${error.message || 'Unknown error'}`);
     }
 
     if (!data) {
-      console.error('❌ No data returned from upsert!');
+      devLog.error('❌ No data returned from upsert!');
       throw new Error('No data returned from Supabase upsert');
     }
 
-    console.log('✅ Supabase returned data:', data);
+    devLog.log('✅ Supabase returned data:', data);
 
     if (isNewUser) {
-      console.log('✅ New user created with unicorn avatar:', defaultPfp);
+      devLog.log('✅ New user created with unicorn avatar:', defaultPfp);
     } else {
-      console.log('✅ User updated successfully');
+      devLog.log('✅ User updated successfully');
     }
 
     return data;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('❌ Failed to save user:', error.message);
+      devLog.error('❌ Failed to save user:', error.message);
     } else {
-      console.error('❌ Failed to save user:', error);
+      devLog.error('❌ Failed to save user:', error);
     }
     throw error;
   }
@@ -370,7 +371,7 @@ export async function updateUserProfile(
   updates: Partial<UserRecord>
 ): Promise<UserRecord | null> {
   try {
-    console.log('🔄 Updating user profile:', { userId, updates });
+    devLog.log('🔄 Updating user profile:', { userId, updates });
     
     const { data, error } = await supabase
       .from('users')
@@ -380,7 +381,7 @@ export async function updateUserProfile(
       .single();
 
     if (error) {
-      console.error('❌ Supabase error:', {
+      devLog.error('❌ Supabase error:', {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -389,10 +390,10 @@ export async function updateUserProfile(
       throw error;
     }
     
-    console.log('✅ Profile updated successfully:', data);
+    devLog.log('✅ Profile updated successfully:', data);
     return data;
   } catch (error) {
-    console.error('❌ Error updating user profile:', error);
+    devLog.error('❌ Error updating user profile:', error);
     return null;
   }
 }
@@ -415,7 +416,7 @@ export async function getUserWallets(userId: string): Promise<UserWalletRecord[]
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Error fetching user wallets:', error);
+    devLog.error('Error fetching user wallets:', error);
     return [];
   }
 }
@@ -439,7 +440,7 @@ export async function getPrimaryWallet(userId: string): Promise<UserWalletRecord
 
     return data;
   } catch (error) {
-    console.error('Error fetching primary wallet:', error);
+    devLog.error('Error fetching primary wallet:', error);
     return null;
   }
 }
@@ -476,7 +477,7 @@ export async function syncUserWalletsFromPrivy(privyUser: any): Promise<void> {
         });
     }
   } catch (error) {
-    console.error('Error syncing wallets from Privy:', error);
+    devLog.error('Error syncing wallets from Privy:', error);
   }
 }
 
@@ -504,7 +505,7 @@ export async function setPrimaryWallet(
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error('Error setting primary wallet:', error);
+    devLog.error('Error setting primary wallet:', error);
     return false;
   }
 }
@@ -540,7 +541,7 @@ export async function addWalletToUser(
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error adding wallet to user:', error);
+    devLog.error('Error adding wallet to user:', error);
     return null;
   }
 }
@@ -563,7 +564,7 @@ export async function getUserAuthMethods(userId: string): Promise<UserAuthMethod
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Error fetching user auth methods:', error);
+    devLog.error('Error fetching user auth methods:', error);
     return [];
   }
 }
@@ -616,7 +617,7 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: any): Promise<void
         });
     }
   } catch (error) {
-    console.error('Error syncing auth methods from Privy:', error);
+    devLog.error('Error syncing auth methods from Privy:', error);
   }
 }
 
@@ -643,7 +644,7 @@ export async function getUserInMembersFormat(userId: string) {
 
     return data;
   } catch (error) {
-    console.error('Error fetching user in members format:', error);
+    devLog.error('Error fetching user in members format:', error);
     return null;
   }
 }
@@ -672,7 +673,7 @@ export async function userExists(
     }
     return false;
   } catch (error) {
-    console.error('Error checking if user exists:', error);
+    devLog.error('Error checking if user exists:', error);
     return false;
   }
 }

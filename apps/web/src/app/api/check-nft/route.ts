@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/logger';
 
 // Zo House Founder NFT contract address
 const FOUNDER_NFT_CONTRACT = '0xf9e631014ce1759d9b76ce074d496c3da633ba12';
@@ -12,12 +13,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
-    console.log('🔍 Checking Founder NFT for address:', address);
+    devLog.log('🔍 Checking Founder NFT for address:', address);
     
     // Check actual NFT ownership
     const hasNFT = await checkNFTOwnership(address, FOUNDER_NFT_CONTRACT);
     
-    console.log('✅ Founder NFT check result:', { address, hasNFT, contract: FOUNDER_NFT_CONTRACT });
+    devLog.log('✅ Founder NFT check result:', { address, hasNFT, contract: FOUNDER_NFT_CONTRACT });
     
     return NextResponse.json({
       hasNFT,
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ NFT check error:', error);
+    devLog.error('❌ NFT check error:', error);
     return NextResponse.json(
       { error: 'Internal server error' }, 
       { status: 500 }
@@ -54,11 +55,11 @@ async function checkNFTOwnership(address: string, contractAddress: string): Prom
     const balance = await contract.balanceOf(address);
     const hasNFT = balance > 0;
     
-    console.log(`📊 NFT Balance for ${address}: ${balance.toString()}`);
+    devLog.log(`📊 NFT Balance for ${address}: ${balance.toString()}`);
     return hasNFT;
     
   } catch (error) {
-    console.error('❌ Error checking NFT ownership:', error);
+    devLog.error('❌ Error checking NFT ownership:', error);
     return false;
   }
 } 

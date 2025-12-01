@@ -8,6 +8,7 @@ import type {
   ZoAvatarStatusResponse,
   ZoErrorResponse,
 } from './types';
+import { devLog } from '@/lib/logger';
 
 /**
  * Generate avatar for user
@@ -42,7 +43,7 @@ export async function generateAvatar(
       status: response.data.status,
     };
   } catch (error: any) {
-    console.error('Failed to generate avatar:', error.response?.data || error);
+    devLog.error('Failed to generate avatar:', error.response?.data || error);
 
     const errorData = error.response?.data as ZoErrorResponse;
     return {
@@ -80,7 +81,7 @@ export async function getAvatarStatus(
       avatarUrl: response.data.result?.avatar_url,
     };
   } catch (error: any) {
-    console.error('Failed to get avatar status:', error.response?.data || error);
+    devLog.error('Failed to get avatar status:', error.response?.data || error);
 
     const errorData = error.response?.data as ZoErrorResponse;
     return {
@@ -120,7 +121,7 @@ export async function pollAvatarStatus(
 
     if (attempts > maxAttempts) {
       const timeoutError = 'Avatar generation timed out';
-      console.error(timeoutError);
+      devLog.error(timeoutError);
       onError?.(timeoutError);
       return;
     }

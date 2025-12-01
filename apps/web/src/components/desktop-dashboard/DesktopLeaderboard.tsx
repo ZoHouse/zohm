@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
+import { devLog } from '@/lib/logger';
 
 interface LeaderboardPlayer {
   rank: number;
@@ -35,7 +36,7 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
           setIsUserInTop10(userInTop10);
         }
       } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        devLog.error('Error fetching leaderboard:', error);
       }
     }
     fetchLeaderboard();

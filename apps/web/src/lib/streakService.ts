@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { devLog } from '@/lib/logger';
 
 export interface Streak {
   id: string;
@@ -23,16 +24,16 @@ export async function getStreaks(userId: string): Promise<Streak[]> {
 
     if (error) {
       if (error.code === 'PGRST116' || error.code === '42P01') {
-        console.log('ℹ️ No streaks found for user.');
+        devLog.log('ℹ️ No streaks found for user.');
         return [];
       }
-      console.warn('⚠️ Error fetching streaks:', error.message);
+      devLog.warn('⚠️ Error fetching streaks:', error.message);
       return [];
     }
 
     return (data as Streak[]) || [];
   } catch (error) {
-    console.warn('⚠️ Exception fetching streaks:', error);
+    devLog.warn('⚠️ Exception fetching streaks:', error);
     return [];
   }
 }
@@ -64,13 +65,13 @@ export async function getStreak(
           created_at: new Date().toISOString(),
         };
       }
-      console.warn(`⚠️ Error fetching ${type} streak:`, error.message);
+      devLog.warn(`⚠️ Error fetching ${type} streak:`, error.message);
       return null;
     }
 
     return data as Streak;
   } catch (error) {
-    console.warn(`⚠️ Exception fetching ${type} streak:`, error);
+    devLog.warn(`⚠️ Exception fetching ${type} streak:`, error);
     return null;
   }
 }
@@ -112,7 +113,7 @@ export async function updateStreak(
         .single();
 
       if (error) {
-        console.warn(`⚠️ Error creating ${type} streak:`, error.message);
+        devLog.warn(`⚠️ Error creating ${type} streak:`, error.message);
         return null;
       }
 
@@ -154,13 +155,13 @@ export async function updateStreak(
       .single();
 
     if (error) {
-      console.warn(`⚠️ Error updating ${type} streak:`, error.message);
+      devLog.warn(`⚠️ Error updating ${type} streak:`, error.message);
       return null;
     }
 
     return data as Streak;
   } catch (error) {
-    console.warn(`⚠️ Exception updating ${type} streak:`, error);
+    devLog.warn(`⚠️ Exception updating ${type} streak:`, error);
     return null;
   }
 }
@@ -219,13 +220,13 @@ export async function getStreakLeaderboard(
       .limit(limit);
 
     if (error) {
-      console.error(`Error fetching ${type} streak leaderboard:`, error);
+      devLog.error(`Error fetching ${type} streak leaderboard:`, error);
       return [];
     }
 
     return (data as Streak[]) || [];
   } catch (error) {
-    console.error(`Exception fetching ${type} streak leaderboard:`, error);
+    devLog.error(`Exception fetching ${type} streak leaderboard:`, error);
     return [];
   }
 }

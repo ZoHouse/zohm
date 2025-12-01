@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { devLog } from '@/lib/logger';
 
 const PWAInstaller: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -11,10 +12,10 @@ const PWAInstaller: React.FC = () => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          devLog.log('SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          devLog.log('SW registration failed: ', registrationError);
         });
     }
 
@@ -31,7 +32,7 @@ const PWAInstaller: React.FC = () => {
 
     // Listen for the appinstalled event
     window.addEventListener('appinstalled', () => {
-      console.log('PWA was installed');
+      devLog.log('PWA was installed');
       setShowInstallButton(false);
       setDeferredPrompt(null);
     });
@@ -49,7 +50,7 @@ const PWAInstaller: React.FC = () => {
 
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
+    devLog.log(`User response to the install prompt: ${outcome}`);
 
     // Clear the deferredPrompt
     setDeferredPrompt(null);

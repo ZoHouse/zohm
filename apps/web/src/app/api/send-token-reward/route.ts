@@ -16,6 +16,7 @@ import {
   TOKEN_CONFIG
 } from '@/lib/customTokenReward';
 import { ethers } from 'ethers';
+import { devLog } from '@/lib/logger';
 
 // Private key for the reward wallet (should be stored in environment variables)
 // This wallet needs to have custom tokens on testnet to send rewards
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!REWARD_WALLET_PRIVATE_KEY) {
-      console.error('❌ REWARD_WALLET_PRIVATE_KEY environment variable not set');
+      devLog.error('❌ REWARD_WALLET_PRIVATE_KEY environment variable not set');
       return NextResponse.json({ 
         success: false, 
         error: 'Reward system not configured' 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`🎁 Sending ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward to ${walletAddress} for quest: ${questId}`);
+    devLog.log(`🎁 Sending ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward to ${walletAddress} for quest: ${questId}`);
 
     // Create provider and wallet for Fuji testnet
     const provider = createFujiProvider();
@@ -57,20 +58,20 @@ export async function POST(request: NextRequest) {
 
     // Get token information
     const tokenInfo = await getTokenInfo(tokenContract);
-    console.log(`🪙 Token: ${tokenInfo.name} (${tokenInfo.symbol}) - Decimals: ${tokenInfo.decimals}`);
+    devLog.log(`🪙 Token: ${tokenInfo.name} (${tokenInfo.symbol}) - Decimals: ${tokenInfo.decimals}`);
 
     // Check reward wallet token balance
     const tokenBalance = await getTokenBalance(tokenContract, rewardWallet.address);
     const balanceInTokens = formatTokenAmount(tokenBalance, tokenInfo.decimals);
     
-    console.log(`💰 Reward wallet ${tokenInfo.symbol} balance: ${balanceInTokens} ${tokenInfo.symbol}`);
+    devLog.log(`💰 Reward wallet ${tokenInfo.symbol} balance: ${balanceInTokens} ${tokenInfo.symbol}`);
 
     // Calculate reward amount in wei
     const rewardAmountWei = parseTokenAmount(TOKEN_CONFIG.REWARD_AMOUNT, tokenInfo.decimals);
 
     // Check if reward wallet has enough token balance
     if (tokenBalance < rewardAmountWei) {
-      console.error(`❌ Insufficient ${tokenInfo.symbol} balance. Need ${TOKEN_CONFIG.REWARD_AMOUNT} ${tokenInfo.symbol}, have ${balanceInTokens} ${tokenInfo.symbol}`);
+      devLog.error(`❌ Insufficient ${tokenInfo.symbol} balance. Need ${TOKEN_CONFIG.REWARD_AMOUNT} ${tokenInfo.symbol}, have ${balanceInTokens} ${tokenInfo.symbol}`);
       return NextResponse.json({ 
         success: false, 
         error: `Insufficient ${tokenInfo.symbol} balance in reward wallet` 
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     const gasPrice = await getCurrentGasPrice(provider);
     const estimatedGas = await estimateTokenTransferGas(tokenContract, walletAddress, rewardAmountWei);
 
-    console.log(`⛽ Estimated gas: ${estimatedGas.toString()}, Gas price: ${ethers.formatUnits(gasPrice, 'gwei')} Gwei`);
+    devLog.log(`⛽ Estimated gas: ${estimatedGas.toString()}, Gas price: ${ethers.formatUnits(gasPrice, 'gwei')} Gwei`);
 
     // Send token reward
     const tx = await sendTokenReward(
@@ -92,13 +93,13 @@ export async function POST(request: NextRequest) {
       estimatedGas
     );
 
-    console.log(`📤 ${tokenInfo.symbol} reward transaction sent: ${tx.hash}`);
+    devLog.log(`📤 ${tokenInfo.symbol} reward transaction sent: ${tx.hash}`);
 
     // Wait for transaction confirmation
     const receipt = await waitForConfirmation(tx);
     
     if (receipt?.status === 1) {
-      console.log(`✅ ${tokenInfo.symbol} reward transaction confirmed: ${tx.hash}`);
+      devLog.log(`✅ ${tokenInfo.symbol} reward transaction confirmed: ${tx.hash}`);
       
       return NextResponse.json({
         success: true,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error(`❌ Error sending ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward:`, error);
+    devLog.error(`❌ Error sending ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward:`, error);
     
     return NextResponse.json({ 
       success: false, 
@@ -164,7 +165,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error(`❌ Error checking ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward wallet status:`, error);
+    devLog.error(`❌ Error checking ${TOKEN_CONFIG.TOKEN_SYMBOL} token reward wallet status:`, error);
     
     return NextResponse.json({ 
       success: false, 

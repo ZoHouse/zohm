@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncUserHomeCity, findOrCreateCity } from '@/lib/cityService';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Sync Home City] Request:', {
+    devLog.log('[Sync Home City] Request:', {
       userId,
       cityName,
       country,
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Sync Home City] City:', city.id, city.name);
+    devLog.log('[Sync Home City] City:', city.id, city.name);
 
     // Step 2: Sync user's home city and award points
     const result = await syncUserHomeCity(userId, city.id);
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Sync Home City] Success! Awarded', result.zoEarned, 'Zo');
+    devLog.log('[Sync Home City] Success! Awarded', result.zoEarned, 'Zo');
 
     // Step 3: Return success with city data
     return NextResponse.json({
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[Sync Home City] Error:', error);
+    devLog.error('[Sync Home City] Error:', error);
     return NextResponse.json(
       { 
         success: false, 

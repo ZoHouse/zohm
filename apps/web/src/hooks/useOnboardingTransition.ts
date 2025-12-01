@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { devLog } from '@/lib/logger';
 
 /**
  * Onboarding Transition Coordinator Hook
@@ -57,10 +58,10 @@ export function useOnboardingTransition() {
     location: { lat: number; lng: number } | null,
     reloadProfile: () => Promise<void>
   ) => {
-    console.log('🚀 prepareTransition called with:', { userId, hasLocation: !!location, location });
+    devLog.log('🚀 prepareTransition called with:', { userId, hasLocation: !!location, location });
     
     if (!userId) {
-      console.error('❌ Transition error: No user ID');
+      devLog.error('❌ Transition error: No user ID');
       setState(prev => ({
         ...prev,
         phase: 'error',
@@ -73,7 +74,7 @@ export function useOnboardingTransition() {
     let finalLocation = location;
     
     if (!finalLocation) {
-      console.log('⚠️ No location provided, reloading profile to check for saved location...');
+      devLog.log('⚠️ No location provided, reloading profile to check for saved location...');
       await reloadProfile();
       
       // Wait a moment for profile to update
@@ -85,9 +86,9 @@ export function useOnboardingTransition() {
       
       if (userProfile?.lat && userProfile?.lng) {
         finalLocation = { lat: userProfile.lat, lng: userProfile.lng };
-        console.log('✅ Got location from profile:', finalLocation);
+        devLog.log('✅ Got location from profile:', finalLocation);
       } else {
-        console.error('❌ Transition error: No location in profile either');
+        devLog.error('❌ Transition error: No location in profile either');
         setState(prev => ({
           ...prev,
           phase: 'error',
@@ -99,7 +100,7 @@ export function useOnboardingTransition() {
 
     try {
       // Phase 1: Update database
-      console.log('📝 Phase 1: Setting state to "preparing"');
+      devLog.log('📝 Phase 1: Setting state to "preparing"');
       setState({
         phase: 'preparing',
         progress: 10,
@@ -107,7 +108,7 @@ export function useOnboardingTransition() {
         data: null,
         error: null,
       });
-      console.log('✅ State set to preparing');
+      devLog.log('✅ State set to preparing');
 
       const { updateUserProfile } = await import('@/lib/userDb');
       await updateUserProfile(userId, { onboarding_completed: true });
@@ -175,7 +176,7 @@ export function useOnboardingTransition() {
       });
 
     } catch (error) {
-      console.error('Transition preparation failed:', error);
+      devLog.error('Transition preparation failed:', error);
       setState({
         phase: 'error',
         progress: 0,
@@ -221,10 +222,10 @@ async function fetchEvents(): Promise<any[]> {
     const calendarUrls = await getUrls();
     const events = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
     
-    console.log('✅ Pre-fetched', events.length, 'events for transition');
+    devLog.log('✅ Pre-fetched', events.length, 'events for transition');
     return events;
   } catch (error) {
-    console.error('Error pre-fetching events:', error);
+    devLog.error('Error pre-fetching events:', error);
     return [];
   }
 }
@@ -237,10 +238,10 @@ async function fetchNodes(): Promise<any[]> {
     const { getNodesFromDB } = await import('@/lib/supabase');
     const nodes = await getNodesFromDB();
     
-    console.log('✅ Pre-fetched', nodes?.length || 0, 'nodes for transition');
+    devLog.log('✅ Pre-fetched', nodes?.length || 0, 'nodes for transition');
     return nodes || [];
   } catch (error) {
-    console.error('Error pre-fetching nodes:', error);
+    devLog.error('Error pre-fetching nodes:', error);
     return [];
   }
 }

@@ -3,6 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { PrivyUserProfile } from '@/types/user';
+import { devLog } from '@/lib/logger';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('../MapCanvas'), {
@@ -28,7 +29,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
 
   // Debug logging
   React.useEffect(() => {
-    console.log('🗺️ MobileMiniMap: User location from profile:', {
+    devLog.log('🗺️ MobileMiniMap: User location from profile:', {
       userLat,
       userLng,
       hasLocation,
@@ -73,7 +74,7 @@ const MobileMiniMap: React.FC<MobileMiniMapProps> = ({ onOpenMap, userProfile })
                 className="w-full h-full"
                 userId={userProfile?.id}
                 onLocationSaved={(lat, lng) => {
-                  console.log('✅ Location saved! Reloading page to show map with location...');
+                  devLog.log('✅ Location saved! Reloading page to show map with location...');
                   // Reload the page to update the profile with the new location
                   window.location.reload();
                 }}

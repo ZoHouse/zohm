@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { devLog } from '@/lib/logger';
 
 // Avalanche Fuji Testnet configuration
 export const FUJI_CONFIG = {
@@ -64,7 +65,7 @@ export async function getCurrentGasPrice(provider: ethers.JsonRpcProvider): Prom
   try {
     return await provider.getFeeData().then(feeData => feeData.gasPrice || BigInt(0));
   } catch (error) {
-    console.warn('Failed to get current gas price, using default:', error);
+    devLog.warn('Failed to get current gas price, using default:', error);
     // Return a reasonable default gas price for Fuji testnet (20 Gwei)
     return ethers.parseUnits('20', 'gwei');
   }
@@ -91,7 +92,7 @@ export async function estimateTransferGas(
     });
     return gasEstimate;
   } catch (error) {
-    console.warn('Failed to estimate gas, using default:', error);
+    devLog.warn('Failed to estimate gas, using default:', error);
     return BigInt(REWARD_CONFIG.GAS_LIMIT);
   }
 }

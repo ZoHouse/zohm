@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { devLog } from '@/lib/logger';
 
 // Quest completion interface (using completed_quests table)
 export interface CompletedQuestRecord {
@@ -47,14 +48,14 @@ export async function getUserQuestStats(userId: string): Promise<UserQuestStats 
     if (error) {
       if (error.code === 'PGRST116') {
         // No stats found, return default
-        console.log('ℹ️ No quest stats found for user. They haven\'t completed any quests yet.');
+        devLog.log('ℹ️ No quest stats found for user. They haven\'t completed any quests yet.');
         return {
           user_id: userId,
           zo_points: 0,
           total_quests_completed: 0,
         };
       }
-      console.warn('⚠️ Error fetching user quest stats:', error.message || error);
+      devLog.warn('⚠️ Error fetching user quest stats:', error.message || error);
       return {
         user_id: userId,
         zo_points: 0,
@@ -64,7 +65,7 @@ export async function getUserQuestStats(userId: string): Promise<UserQuestStats 
 
     return data;
   } catch (error) {
-    console.warn('⚠️ Exception fetching user quest stats:', error);
+    devLog.warn('⚠️ Exception fetching user quest stats:', error);
     return {
       user_id: userId,
       zo_points: 0,
@@ -87,7 +88,7 @@ export async function recordQuestScore(
   metadata?: any
 ): Promise<CompletedQuestRecord | null> {
   try {
-    console.log('🔄 Recording quest score:', { userId, questId, score, tokensEarned, location });
+    devLog.log('🔄 Recording quest score:', { userId, questId, score, tokensEarned, location });
     
     const { data, error } = await supabase
       .from('completed_quests')
@@ -105,7 +106,7 @@ export async function recordQuestScore(
       .single();
 
     if (error) {
-      console.error('❌ Supabase error details:', {
+      devLog.error('❌ Supabase error details:', {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -113,19 +114,19 @@ export async function recordQuestScore(
       });
       
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.log('ℹ️ completed_quests table does not exist. Score not persisted.');
-        console.log('💡 Run migrations/002_foundation_individual_progression.sql');
-        console.log('📊 Score:', score, '| Tokens:', tokensEarned, '| Location:', location);
+        devLog.log('ℹ️ completed_quests table does not exist. Score not persisted.');
+        devLog.log('💡 Run migrations/002_foundation_individual_progression.sql');
+        devLog.log('📊 Score:', score, '| Tokens:', tokensEarned, '| Location:', location);
         return null;
       }
-      console.warn('⚠️ Error recording quest score:', error.message || error);
+      devLog.warn('⚠️ Error recording quest score:', error.message || error);
       return null;
     }
 
-    console.log('✅ Quest score recorded:', data);
+    devLog.log('✅ Quest score recorded:', data);
     return data as CompletedQuestRecord;
   } catch (error) {
-    console.error('⚠️ Exception recording quest score:', error);
+    devLog.error('⚠️ Exception recording quest score:', error);
     return null;
   }
 }
@@ -154,7 +155,7 @@ export async function canUserCompleteQuest(
         // No previous completion found
         return { canComplete: true };
       }
-      console.warn('⚠️ Error checking quest cooldown:', error.message);
+      devLog.warn('⚠️ Error checking quest cooldown:', error.message);
       // Allow completion on error
       return { canComplete: true };
     }
@@ -177,7 +178,7 @@ export async function canUserCompleteQuest(
       lastCompletedAt: lastCompletedAt.toISOString(),
     };
   } catch (error) {
-    console.warn('⚠️ Exception checking quest cooldown:', error);
+    devLog.warn('⚠️ Exception checking quest cooldown:', error);
     // Allow completion on exception
     return { canComplete: true };
   }
@@ -215,7 +216,7 @@ export async function getTimeUntilNextQuest(
 
     return `${hours}h : ${minutes}m`;
   } catch (error) {
-    console.error('Exception calculating time until next quest:', error);
+    devLog.error('Exception calculating time until next quest:', error);
     return 'Available now';
   }
 }
@@ -238,15 +239,15 @@ export async function getQuestLeaderboard(limit: number = 10): Promise<Leaderboa
 
     if (error) {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ leaderboards table not found.');
+        devLog.log('ℹ️ leaderboards table not found.');
         return [];
       }
-      console.error('Error fetching leaderboard:', error);
+      devLog.error('Error fetching leaderboard:', error);
       return [];
     }
 
     if (!data || data.length === 0) {
-      console.log('ℹ️ No leaderboard data found.');
+      devLog.log('ℹ️ No leaderboard data found.');
       return [];
     }
 
@@ -260,7 +261,7 @@ export async function getQuestLeaderboard(limit: number = 10): Promise<Leaderboa
       total_quests_completed: entry.total_quests_completed || 0,
     }));
   } catch (error) {
-    console.error('Exception fetching leaderboard:', error);
+    devLog.error('Exception fetching leaderboard:', error);
     return [];
   }
 }
@@ -284,13 +285,13 @@ export async function getUserQuestHistory(
       if (error.code === 'PGRST116') {
         return [];
       }
-      console.error('Error fetching quest history:', error);
+      devLog.error('Error fetching quest history:', error);
       return [];
     }
 
     return (data as CompletedQuestRecord[]) || [];
   } catch (error) {
-    console.error('Exception fetching quest history:', error);
+    devLog.error('Exception fetching quest history:', error);
     return [];
   }
 }

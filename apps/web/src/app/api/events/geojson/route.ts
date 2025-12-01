@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
     // Optional: Include node markers
     const includeNodes = searchParams.get('includeNodes') === 'true';
 
-    console.log('🗺️ GeoJSON request:', { bbox, from, to, includeNodes });
+    devLog.log('🗺️ GeoJSON request:', { bbox, from, to, includeNodes });
 
     // Fetch events within bbox (using canonical_events table)
     let eventsQuery = supabase
@@ -67,10 +68,10 @@ export async function GET(req: NextRequest) {
       .limit(500); // Safety limit
 
     if (eventsError) {
-      console.error('❌ Events query error:', eventsError);
+      devLog.error('❌ Events query error:', eventsError);
     }
 
-    console.log(`📅 Found ${events?.length || 0} events`);
+    devLog.log(`📅 Found ${events?.length || 0} events`);
 
     // Build GeoJSON FeatureCollection
     const features: GeoJSON.Feature[] = [];
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     // Optionally include nodes
     if (includeNodes) {
-      console.log('📍 Fetching nodes with bbox:', bbox);
+      devLog.log('📍 Fetching nodes with bbox:', bbox);
       
       //  Query nodes with bbox filtering
       const { data: nodes, error: nodesError } = await supabase
@@ -131,13 +132,13 @@ export async function GET(req: NextRequest) {
         .lte('longitude', bbox.east);
 
       if (nodesError) {
-        console.error('❌ Nodes query error:', nodesError);
+        devLog.error('❌ Nodes query error:', nodesError);
       } else {
-        console.log(`📍 Found ${nodes?.length || 0} nodes`);
+        devLog.log(`📍 Found ${nodes?.length || 0} nodes`);
         
         nodes?.forEach(node => {
           if (!node.latitude || !node.longitude) {
-            console.log('⚠️ Skipping node without coordinates:', node.id);
+            devLog.log('⚠️ Skipping node without coordinates:', node.id);
             return;
           }
 
@@ -168,7 +169,7 @@ export async function GET(req: NextRequest) {
       features
     };
 
-    console.log(`✅ Returning ${features.length} features (${events?.length || 0} events, ${includeNodes ? features.length - (events?.length || 0) : 0} nodes)`);
+    devLog.log(`✅ Returning ${features.length} features (${events?.length || 0} events, ${includeNodes ? features.length - (events?.length || 0) : 0} nodes)`);
 
     // Add caching headers
     return NextResponse.json(geojson, {
@@ -179,7 +180,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ GeoJSON API error:', error);
+    devLog.error('❌ GeoJSON API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch GeoJSON data' },
       { status: 500 }

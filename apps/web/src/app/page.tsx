@@ -16,6 +16,7 @@ import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { getCalendarUrls } from '@/lib/calendarConfig';
 import { isWithinRadius } from '@/lib/geoUtils';
 import mapboxgl from 'mapbox-gl';
+import { devLog } from '@/lib/logger';
 
 
 interface EventData {
@@ -44,7 +45,7 @@ export default function Home() {
 
   const [userProfileStatus, setUserProfileStatus] = useState<'loading' | 'exists' | 'not_exists' | null>(() => {
     // Log initial state
-    console.log('🎬 [ProfileStatus] Initial state: null');
+    devLog.log('🎬 [ProfileStatus] Initial state: null');
     return null;
   });
 
@@ -111,7 +112,7 @@ export default function Home() {
 
     const hasLocation = !!(userProfile?.lat && userProfile?.lng);
     if (onboardingComplete && hasLocation && !shouldAnimateFromSpace) {
-      console.log('🚀 Setting animation flag for returning user (mount)');
+      devLog.log('🚀 Setting animation flag for returning user (mount)');
       setShouldAnimateFromSpace(true);
       setAnimationFlagSet(true);
     }
@@ -165,23 +166,23 @@ export default function Home() {
   useEffect(() => {
     // 🔒 Prevent multiple initializations
     if (hasInitialized.current) {
-      console.log('⏭️ Skipping initApp - already initialized');
+      devLog.log('⏭️ Skipping initApp - already initialized');
       return;
     }
 
     // Initialize Supabase and check user profile
     const initApp = async () => {
-      console.log('🚀 Starting initApp...');
+      devLog.log('🚀 Starting initApp...');
       hasInitialized.current = true; // Mark as initialized immediately
 
       try {
         const basicConnection = await pingSupabase();
         if (basicConnection) {
-          console.log('🚀 Supabase basic connection ready!');
-          console.log('✅ Database connection verified');
+          devLog.log('🚀 Supabase basic connection ready!');
+          devLog.log('✅ Database connection verified');
         }
       } catch (error) {
-        console.error('Supabase initialization error:', error);
+        devLog.error('Supabase initialization error:', error);
       }
     };
 
@@ -202,7 +203,7 @@ export default function Home() {
       const newStatus = 'exists';
 
       if (userProfileStatus !== newStatus) {
-        console.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus} (onboarding: ${onboardingComplete})`);
+        devLog.log(`🔄 Updating profile status: ${userProfileStatus} → ${newStatus} (onboarding: ${onboardingComplete})`);
         setUserProfileStatus(newStatus);
       }
     }
@@ -211,82 +212,82 @@ export default function Home() {
   // Skip loading screen when auth is ready for returning users
   useEffect(() => {
     if (ready && authenticated && userProfileStatus === 'exists' && isLoading) {
-      console.log('⚡ Auth ready with existing profile, skipping loading screen');
+      devLog.log('⚡ Auth ready with existing profile, skipping loading screen');
       setIsLoading(false);
     }
   }, [ready, authenticated, userProfileStatus, isLoading]);
 
   // Load map data (events and nodes) only after onboarding is complete
   useEffect(() => {
-    console.log('🔍 Map data loading effect triggered - userProfileStatus:', userProfileStatus);
+    devLog.log('🔍 Map data loading effect triggered - userProfileStatus:', userProfileStatus);
 
     // Only load map data if user has completed onboarding
     if (userProfileStatus !== 'exists') {
-      console.log('⏸️ Skipping map data load - onboarding not complete (status:', userProfileStatus, ')');
+      devLog.log('⏸️ Skipping map data load - onboarding not complete (status:', userProfileStatus, ')');
       return;
     }
 
-    console.log('🗺️ ✅ Loading map data - user onboarding complete!');
+    devLog.log('🗺️ ✅ Loading map data - user onboarding complete!');
 
     // Load live events from iCal feeds
     const loadLiveEvents = async () => {
       try {
-        console.log('🔄 Starting to load events...');
+        devLog.log('🔄 Starting to load events...');
 
         // Get calendar URLs dynamically from database
         const calendarUrls = await getCalendarUrls();
-        console.log('📅 Got calendar URLs:', calendarUrls.length, 'calendars');
+        devLog.log('📅 Got calendar URLs:', calendarUrls.length, 'calendars');
 
-        console.log('🔄 Fetching live events from iCal feeds...');
+        devLog.log('🔄 Fetching live events from iCal feeds...');
         const liveEvents = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
 
         if (liveEvents.length > 0) {
-          console.log('✅ Loaded', liveEvents.length, 'live events from', calendarUrls.length, 'calendars');
-          console.log('📍 Setting events state with', liveEvents.length, 'events');
+          devLog.log('✅ Loaded', liveEvents.length, 'live events from', calendarUrls.length, 'calendars');
+          devLog.log('📍 Setting events state with', liveEvents.length, 'events');
           setEvents(liveEvents);
         } else {
-          console.log('⚠️ No live events found');
+          devLog.log('⚠️ No live events found');
           setEvents([]);
         }
 
       } catch (error) {
-        console.error('❌ Error loading live events:', error);
+        devLog.error('❌ Error loading live events:', error);
         setEvents([]);
       } finally {
-        console.log('🏁 Events loading complete - setting isLoading to false');
+        devLog.log('🏁 Events loading complete - setting isLoading to false');
         setIsLoading(false);
       }
     };
 
     // Start loading events
-    console.log('🚀 Initiating event loading...');
+    devLog.log('🚀 Initiating event loading...');
     loadLiveEvents();
 
     // Load nodes
     const loadNodes = async () => {
       try {
-        console.log('🏘️ Loading partner nodes...');
+        devLog.log('🏘️ Loading partner nodes...');
         const { getNodesFromDB } = await import('@/lib/supabase');
         const data = await getNodesFromDB();
         if (data) {
-          console.log('✅ Loaded', data.length, 'partner nodes');
+          devLog.log('✅ Loaded', data.length, 'partner nodes');
           setNodes(data);
         }
       } catch (e) {
-        console.error('❌ Error loading nodes:', e);
+        devLog.error('❌ Error loading nodes:', e);
       }
     };
     loadNodes();
 
     const loadQuestsCount = async () => {
       try {
-        console.log('🎯 Loading quests count...');
+        devLog.log('🎯 Loading quests count...');
         const quests = await getQuests();
         const count = Array.isArray(quests) ? quests.length : 0;
-        console.log('✅ Loaded', count, 'quests');
+        devLog.log('✅ Loaded', count, 'quests');
         setQuestCount(count);
       } catch (e) {
-        console.error('❌ Error loading quests:', e);
+        devLog.error('❌ Error loading quests:', e);
         setQuestCount(0);
       }
     };
@@ -294,20 +295,20 @@ export default function Home() {
 
     // Temporary: Set a timeout to prevent infinite loading during development
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Loading timeout reached (5s), proceeding anyway');
+      devLog.log('⏰ Loading timeout reached (5s), proceeding anyway');
       setIsLoading(false);
     }, 5000);
 
     // Cleanup timeout if component unmounts
     return () => {
-      console.log('🧹 Cleaning up map data loading effect');
+      devLog.log('🧹 Cleaning up map data loading effect');
       clearTimeout(timeoutId);
     };
   }, [userProfileStatus]);
 
   // 🐛 DEBUG: Log current state for debugging
   useEffect(() => {
-    console.log('🎯 App State:', {
+    devLog.log('🎯 App State:', {
       authenticated: authenticated,
       authMethod,
       isLoadingProfile,
@@ -326,7 +327,7 @@ export default function Home() {
   useEffect(() => {
     // Only run once when status is null AND profile loading is complete
     if (authenticated && !isLoadingProfile && userProfileStatus === null) {
-      console.log('🔍 User authenticated, checking profile...', {
+      devLog.log('🔍 User authenticated, checking profile...', {
         authMethod,
         hasProfile: !!userProfile,
         onboardingComplete: onboardingComplete,
@@ -336,7 +337,7 @@ export default function Home() {
 
       // If profile is already loaded, set status immediately
       if (userProfile) {
-        console.log('✅ Profile exists:', userProfile.name, '(onboarding_completed:', onboardingComplete, ')');
+        devLog.log('✅ Profile exists:', userProfile.name, '(onboarding_completed:', onboardingComplete, ')');
         setUserProfileStatus('exists');
         return;
       }
@@ -355,7 +356,7 @@ export default function Home() {
         // Defensive check: If profile loaded during polling, stop immediately
         // (Even though effect should re-run, this prevents race conditions)
         if (userProfileStatus !== null) {
-          console.log('✅ Profile status already determined, stopping poll');
+          devLog.log('✅ Profile status already determined, stopping poll');
           return; // Status was set by another effect, we're done
         }
 
@@ -366,14 +367,14 @@ export default function Home() {
 
         if (attempts >= maxAttempts) {
           // Timeout: assume profile doesn't exist after 5 seconds
-          console.warn('⚠️ Profile loading timeout - assuming new user (no profile in DB)');
+          devLog.warn('⚠️ Profile loading timeout - assuming new user (no profile in DB)');
           if (isActive && userProfileStatus === null) {
             // Double-check status is still null before setting (prevents race condition)
             setUserProfileStatus('not_exists');
           }
         } else {
           // Keep waiting - schedule another check
-          console.log(`⏳ Profile loading, waiting... (attempt ${attempts}/${maxAttempts})`);
+          devLog.log(`⏳ Profile loading, waiting... (attempt ${attempts}/${maxAttempts})`);
           timeoutId = setTimeout(checkUserProfile, 500);
         }
       };
@@ -390,7 +391,7 @@ export default function Home() {
 
   // Also check when profile loads (for ZO users)
   useEffect(() => {
-    console.log('🔍 [ProfileStatus] Effect triggered:', {
+    devLog.log('🔍 [ProfileStatus] Effect triggered:', {
       authenticated,
       authMethod,
       hasProfile: !!userProfile,
@@ -399,7 +400,7 @@ export default function Home() {
     });
 
     if (authenticated && userProfile && userProfileStatus === null) {
-      console.log('🔍 Profile loaded, checking status...', {
+      devLog.log('🔍 Profile loaded, checking status...', {
         authMethod,
         name: userProfile.name,
         id: userProfile.id,
@@ -408,7 +409,7 @@ export default function Home() {
       // If profile exists in database, status is 'exists' regardless of onboarding_completed
       // This is because user might be from another ZO app
       const newStatus = 'exists';
-      console.log(`✅ Setting userProfileStatus to: ${newStatus} (onboarding_completed: ${onboardingComplete})`);
+      devLog.log(`✅ Setting userProfileStatus to: ${newStatus} (onboarding_completed: ${onboardingComplete})`);
       setUserProfileStatus(newStatus);
     }
   }, [authenticated, userProfile, onboardingComplete, userProfileStatus, authMethod]);
@@ -419,7 +420,7 @@ export default function Home() {
       const hasLocation = !!userProfile.lat && !!userProfile.lng;
       const defaultMode = hasLocation ? 'local' : 'global';
 
-      console.log(`🗺️ Setting default map mode to ${defaultMode} (has location: ${hasLocation})`);
+      devLog.log(`🗺️ Setting default map mode to ${defaultMode} (has location: ${hasLocation})`);
       setMapViewMode(defaultMode);
     }
   }, [userProfileStatus, userProfile]);
@@ -429,7 +430,7 @@ export default function Home() {
   useEffect(() => {
     const hasLocation = !!(userProfile?.lat && userProfile?.lng);
 
-    console.log('🎬 Animation effect check (new users):', {
+    devLog.log('🎬 Animation effect check (new users):', {
       onboardingComplete,
       userProfileStatus,
       hasUserLocation: hasLocation,
@@ -440,11 +441,11 @@ export default function Home() {
     // Set flag for new users who just completed onboarding
     // Returning users get flag computed synchronously in useMemo
     if (onboardingComplete && userProfileStatus === 'exists' && !shouldAnimateFromSpace && hasLocation) {
-      console.log('🚀 Enabling space-to-location animation (new user post-onboarding)');
+      devLog.log('🚀 Enabling space-to-location animation (new user post-onboarding)');
       setShouldAnimateFromSpace(true);
       setAnimationFlagSet(true);
     } else if (!shouldAnimateFromSpace && !hasLocation) {
-      console.log('⏭️ No location available for animation');
+      devLog.log('⏭️ No location available for animation');
     }
   }, [onboardingComplete, userProfileStatus, shouldAnimateFromSpace]);
 
@@ -458,7 +459,7 @@ export default function Home() {
   // Check if we should show location permission modal
   // 📍 ALWAYS ask for current location on new session (hard refresh)
   useEffect(() => {
-    console.log('🔍 [LocationModal] Checking conditions:', {
+    devLog.log('🔍 [LocationModal] Checking conditions:', {
       authenticated,
       authMethod,
       userProfileStatus,
@@ -471,21 +472,21 @@ export default function Home() {
 
     // Only check after user is authenticated and profile exists
     if (!authenticated || userProfileStatus !== 'exists' || !userProfile) {
-      console.log('⏭️ [LocationModal] Skipping - not ready yet');
+      devLog.log('⏭️ [LocationModal] Skipping - not ready yet');
       return;
     }
 
     // Don't ask if we've already asked this session (prevents asking on every state change)
     if (typeof window !== 'undefined' && sessionStorage.getItem('location_permission_asked')) {
-      console.log('⏭️ [LocationModal] Already asked for location this session');
+      devLog.log('⏭️ [LocationModal] Already asked for location this session');
       return;
     }
 
     // Show modal after a short delay (let dashboard load first)
     // Note: This will ask EVERY new session (hard refresh) to update current location
-    console.log('📍 [LocationModal] Asking for current location - showing permission modal in 2s');
+    devLog.log('📍 [LocationModal] Asking for current location - showing permission modal in 2s');
     const timeoutId = setTimeout(() => {
-      console.log('✅ [LocationModal] Showing location modal NOW');
+      devLog.log('✅ [LocationModal] Showing location modal NOW');
       setShowLocationModal(true);
       // Mark as asked for this session
       if (typeof window !== 'undefined') {
@@ -499,11 +500,11 @@ export default function Home() {
   // Handle location granted from modal
   const handleLocationGranted = async (lat: number, lng: number) => {
     if (!userProfile?.id) {
-      console.error('❌ No user profile ID to save location');
+      devLog.error('❌ No user profile ID to save location');
       return;
     }
 
-    console.log('💾 Saving location to database:', { lat, lng });
+    devLog.log('💾 Saving location to database:', { lat, lng });
     try {
       const { updateUserProfile } = await import('@/lib/userDb');
       await updateUserProfile(userProfile.id, {
@@ -511,16 +512,16 @@ export default function Home() {
         lng,
       });
 
-      console.log('✅ Location saved to database');
+      devLog.log('✅ Location saved to database');
 
       // Reload profile to update derived values
       await reloadProfile();
-      console.log('🔄 Profile reloaded with new location');
+      devLog.log('🔄 Profile reloaded with new location');
 
       // Update map view mode to local now that we have location
       setMapViewMode('local');
     } catch (error) {
-      console.error('❌ Failed to save location:', error);
+      devLog.error('❌ Failed to save location:', error);
     }
   };
 
@@ -537,7 +538,7 @@ export default function Home() {
       const windowCoords = (window as any).userLocationCoords;
       if (!windowCoords?.lat || !windowCoords?.lng) return;
 
-      console.log('💾 Saving MapCanvas location for returning user...');
+      devLog.log('💾 Saving MapCanvas location for returning user...');
       try {
         const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userProfile.id, {
@@ -545,13 +546,13 @@ export default function Home() {
           lng: windowCoords.lng,
         });
 
-        console.log('✅ Location saved to database');
+        devLog.log('✅ Location saved to database');
 
         // Reload profile to update derived values
         await reloadProfile();
-        console.log('🔄 Profile reloaded with new location');
+        devLog.log('🔄 Profile reloaded with new location');
       } catch (error) {
-        console.error('❌ Failed to save location:', error);
+        devLog.error('❌ Failed to save location:', error);
       }
     };
 
@@ -565,13 +566,13 @@ export default function Home() {
       try {
         (window as any).clearRoute?.();
       } catch (e) {
-        console.warn('Could not clear route on section change:', e);
+        devLog.warn('Could not clear route on section change:', e);
       }
     }
   };
 
   const handleEventClick = (event: EventData) => {
-    console.log('Home page received event click:', event['Event Name']);
+    devLog.log('Home page received event click:', event['Event Name']);
     setFlyToEvent(event);
 
     // Clear the flyToEvent after a short delay to allow for future clicks on the same event
@@ -581,7 +582,7 @@ export default function Home() {
   };
 
   const handleNodeClick = (node: PartnerNodeRecord) => {
-    console.log('Home page received node click:', node.name);
+    devLog.log('Home page received node click:', node.name);
     setFlyToNode(node);
 
     setTimeout(() => {
@@ -591,7 +592,7 @@ export default function Home() {
 
   const handleMapReady = (map: mapboxgl.Map, closeAllPopups: () => void) => {
     setClosePopupsFn(() => closeAllPopups);
-    console.log('Map is ready!');
+    devLog.log('Map is ready!');
   };
 
   // Wrapper function for mobile view that matches the expected signature
@@ -602,14 +603,14 @@ export default function Home() {
 
   // Handle red pill click - opens phone login
   const handleRedPillClick = async () => {
-    console.log('🔴 Red pill clicked! Opening phone login...');
+    devLog.log('🔴 Red pill clicked! Opening phone login...');
     login();
   };
 
   // Debug auth state when dashboard is opened
   useEffect(() => {
     if (isDashboardOpen) {
-      console.log('🔍 Dashboard opened - Auth state:', {
+      devLog.log('🔍 Dashboard opened - Auth state:', {
         authenticated: authenticated,
         hasProfile: !!userProfile,
         onboardingComplete: onboardingComplete
@@ -619,10 +620,10 @@ export default function Home() {
 
   // 🎯 Handle transition completion atomically (moved to useEffect to avoid render loop)
   useEffect(() => {
-    console.log('🔍 Transition phase changed:', transitionPhase, { hasData: !!transitionData });
+    devLog.log('🔍 Transition phase changed:', transitionPhase, { hasData: !!transitionData });
 
     if (transitionPhase === 'ready' && transitionData) {
-      console.log('🎯 Transition ready - applying state atomically', {
+      devLog.log('🎯 Transition ready - applying state atomically', {
         transitionData,
         currentEvents: events.length,
         currentNodes: nodes.length
@@ -630,20 +631,20 @@ export default function Home() {
 
       // Update state atomically with transition data
       if (events.length === 0 && transitionData.events.length > 0) {
-        console.log('📊 Setting events:', transitionData.events.length);
+        devLog.log('📊 Setting events:', transitionData.events.length);
         setEvents(transitionData.events);
       }
       if (nodes.length === 0 && transitionData.nodes.length > 0) {
-        console.log('📍 Setting nodes:', transitionData.nodes.length);
+        devLog.log('📍 Setting nodes:', transitionData.nodes.length);
         setNodes(transitionData.nodes);
       }
       if (!onboardingLocation && transitionData.location) {
-        console.log('🗺️ Setting location:', transitionData.location);
+        devLog.log('🗺️ Setting location:', transitionData.location);
         setOnboardingLocation(transitionData.location);
       }
 
       // Apply state immediately - no delay needed since coin collection video is handling timing
-      console.log('✅ Clearing onboarding state and showing map');
+      devLog.log('✅ Clearing onboarding state and showing map');
       setUserProfileStatus('exists');
       setOnboardingStep(null);
       setShouldAnimateFromSpace(true);
@@ -656,8 +657,8 @@ export default function Home() {
 
   // Handle ritual completion
   const handleRitualComplete = () => {
-    console.log('✅ Ritual completed! Welcome to Zo World...');
-    console.log('✅ Profile setup completed');
+    devLog.log('✅ Ritual completed! Welcome to Zo World...');
+    devLog.log('✅ Profile setup completed');
 
     // Update the profile status to indicate user now has a profile
     setUserProfileStatus('exists');
@@ -665,7 +666,7 @@ export default function Home() {
 
   // Handle Onboarding2 complete (nickname + avatar saved)
   const handleOnboardingComplete = () => {
-    console.log('✅ Onboarding2 complete - moving to voice quest');
+    devLog.log('✅ Onboarding2 complete - moving to voice quest');
     setOnboardingStep('voice');
   };
 
@@ -675,7 +676,7 @@ export default function Home() {
 
   // Handle QuestAudio complete (voice + game done)
   const handleQuestAudioComplete = (score: number, tokensEarned: number) => {
-    console.log('✅ QuestAudio complete - moving to quest complete', { score, tokensEarned });
+    devLog.log('✅ QuestAudio complete - moving to quest complete', { score, tokensEarned });
     setQuestScore(score);
     setQuestTokens(tokensEarned);
     setOnboardingStep('complete');
@@ -689,17 +690,17 @@ export default function Home() {
     setIsTransitioningFromOnboarding(true);
 
     try {
-      console.log('🎉 Quest complete! Going home...');
+      devLog.log('🎉 Quest complete! Going home...');
       // Get userId from multiple sources (fallback chain)
       const userId = userProfile?.id || user?.id || (typeof window !== 'undefined' ? localStorage.getItem('zo_user_id') : null);
 
       if (!userId) {
-        console.error('❌ No user ID available - cannot complete quest transition');
+        devLog.error('❌ No user ID available - cannot complete quest transition');
         setIsTransitioningFromOnboarding(false);
         return;
       }
 
-      console.log('🔍 Starting transition with:', {
+      devLog.log('🔍 Starting transition with:', {
         userId,
         authMethod,
         hasLocation: !!onboardingLocation,
@@ -712,12 +713,12 @@ export default function Home() {
       // ✅ Mark onboarding as complete (user now becomes Type 3: Returning User)
       // This only applies to first-time users (Type 1 & 2)
       if (userId && !onboardingComplete) {
-        console.log('✅ Marking onboarding as complete for user:', userId);
+        devLog.log('✅ Marking onboarding as complete for user:', userId);
         const { updateUserProfile } = await import('@/lib/userDb');
         await updateUserProfile(userId, {
           onboarding_completed: true
         });
-        console.log('✅ User is now a returning user (Type 3)');
+        devLog.log('✅ User is now a returning user (Type 3)');
 
         // 🔄 CRITICAL: Set flag IMMEDIATELY so routing logic knows user is returning
         // This prevents race condition where component re-renders before profile reloads
@@ -728,13 +729,13 @@ export default function Home() {
       }
 
       // 🔄 Quest completed - reset quest step
-      console.log('🔄 Quest completed');
+      devLog.log('🔄 Quest completed');
       setOnboardingStep(null); // Reset quest step
 
       // 🚀 Start transition preparation (use unified auth user ID)
       await prepareTransition(userId, onboardingLocation, reloadProfile);
 
-      console.log('✅ prepareTransition completed, waiting for ready state...');
+      devLog.log('✅ prepareTransition completed, waiting for ready state...');
 
       // Wait for transition to reach 'ready' state AND map data to be applied
       return new Promise<void>((resolve) => {
@@ -743,15 +744,15 @@ export default function Home() {
 
         const checkReady = () => {
           attempts++;
-          console.log(`🔍 Check ${attempts}: transitionPhase=${transitionPhase}, hasData=${!!transitionData}, events=${events.length}, nodes=${nodes.length}`);
+          devLog.log(`🔍 Check ${attempts}: transitionPhase=${transitionPhase}, hasData=${!!transitionData}, events=${events.length}, nodes=${nodes.length}`);
 
           if (transitionPhase === 'ready' && transitionData && events.length > 0 && nodes.length > 0) {
-            console.log('✅ Map is ready - opening dashboard for new user');
+            devLog.log('✅ Map is ready - opening dashboard for new user');
             // Open dashboard immediately after onboarding
             setIsDashboardOpen(true);
             resolve();
           } else if (attempts >= maxAttempts) {
-            console.warn('⚠️ Timeout waiting for map ready, opening dashboard anyway');
+            devLog.warn('⚠️ Timeout waiting for map ready, opening dashboard anyway');
             setIsDashboardOpen(true);
             resolve();
           } else {
@@ -764,20 +765,20 @@ export default function Home() {
         setTimeout(checkReady, 100);
       });
     } catch (error) {
-      console.error('❌ Error during quest completion:', error);
+      devLog.error('❌ Error during quest completion:', error);
       // Don't prevent user from proceeding - they can retry
       throw error;
     } finally {
       // 🚧 CRITICAL: Always clear transition flag (even on error)
       // This ensures user isn't stuck on loading screen if something fails
-      console.log('🏁 Clearing transition flag');
+      devLog.log('🏁 Clearing transition flag');
       setIsTransitioningFromOnboarding(false);
 
       // Clear the onboardingJustCompleted flag after a delay to allow profile to reload
       // This ensures the flag is only used during the transition period
       setTimeout(() => {
         setOnboardingJustCompleted(false);
-        console.log('🔄 Cleared onboardingJustCompleted flag');
+        devLog.log('🔄 Cleared onboardingJustCompleted flag');
       }, 2000); // 2 seconds should be enough for profile to reload
     }
   };
@@ -807,7 +808,7 @@ export default function Home() {
     // Don't make routing decisions if profile status is still being determined
     // This prevents showing "new user" when we just haven't loaded the profile yet
     if (userProfileStatus === null) {
-      console.log('⏳ Waiting for profile status to be determined...', {
+      devLog.log('⏳ Waiting for profile status to be determined...', {
         isLoadingProfile,
         hasProfile: !!userProfile,
         authenticated
@@ -818,7 +819,7 @@ export default function Home() {
     if (!shouldShowOnboarding) return null;
 
     // Only log and make decisions when we have a determined status
-    console.log('🎯 Onboarding Screen Decision:', {
+    devLog.log('🎯 Onboarding Screen Decision:', {
       shouldShowOnboarding,
       isNewUser,
       isExistingUserFromAnotherApp,
@@ -856,8 +857,8 @@ export default function Home() {
     // - Just needs to complete THIS app's onboarding (voice quest)
     // - Skip Onboarding2 and go straight to QuestAudio
     if (isExistingUserFromAnotherApp) {
-      console.log('✅ Existing ZO user from another app - skipping to voice quest');
-      console.log('📋 User already has profile:', {
+      devLog.log('✅ Existing ZO user from another app - skipping to voice quest');
+      devLog.log('📋 User already has profile:', {
         name: userProfile?.name,
         email: userProfile?.email,
         phone: userProfile?.phone
@@ -871,7 +872,7 @@ export default function Home() {
     }
 
     // New user: Show full UnifiedOnboarding (nickname → avatar → portal)
-    console.log('✅ New ZO user - showing full onboarding');
+    devLog.log('✅ New ZO user - showing full onboarding');
     return (
       <UnifiedOnboarding
         onComplete={handleOnboardingComplete}
@@ -884,7 +885,7 @@ export default function Home() {
   // Returning users go straight to dashboard - no cooldown checks, no quest screens
   const returningUserQuestScreen = useMemo(() => {
     // Returning users ALWAYS see dashboard
-    console.log('🏠 [ReturningUser] Going straight to dashboard');
+    devLog.log('🏠 [ReturningUser] Going straight to dashboard');
     return null; // null = show main dashboard
   }, []);
 
@@ -976,7 +977,7 @@ export default function Home() {
   const userCity = userProfile?.city || null;
 
   // 🔍 DEBUG: Log render decision
-  console.log('🎬 Render Decision:', {
+  devLog.log('🎬 Render Decision:', {
     userProfileStatus,
     isTransitioningFromOnboarding,
     isMobileReady,
@@ -989,7 +990,7 @@ export default function Home() {
   const handleMapViewToggle = async (mode: 'local' | 'global') => {
     // If switching to local mode but no location, request it
     if (mode === 'local' && !userHomeLat && !userHomeLng) {
-      console.log('📍 Local mode requested but no location - requesting permission...');
+      devLog.log('📍 Local mode requested but no location - requesting permission...');
       setIsRequestingLocation(true);
 
       try {
@@ -1003,7 +1004,7 @@ export default function Home() {
         });
 
         const { latitude, longitude } = position.coords;
-        console.log('📍 Location obtained:', { latitude, longitude });
+        devLog.log('📍 Location obtained:', { latitude, longitude });
 
         // Update user profile with location
         const userId = userProfile?.id || user?.id;
@@ -1013,13 +1014,13 @@ export default function Home() {
             lat: latitude,
             lng: longitude,
           });
-          console.log('✅ User location saved to profile');
+          devLog.log('✅ User location saved to profile');
 
           // Reload the profile to get the updated location
           window.location.reload();
         }
       } catch (error: any) {
-        console.error('❌ Location request failed:', error);
+        devLog.error('❌ Location request failed:', error);
         let errorMessage = 'Failed to get your location';
 
         // Handle GeolocationPositionError
@@ -1046,7 +1047,7 @@ export default function Home() {
     }
 
     setMapViewMode(mode);
-    console.log(`🗺️ Map view changed to ${mode} mode`);
+    devLog.log(`🗺️ Map view changed to ${mode} mode`);
   };
 
   // Render mobile or desktop view based on screen size

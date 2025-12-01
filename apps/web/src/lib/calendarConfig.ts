@@ -1,5 +1,6 @@
 // Calendar Configuration - Using Supabase for scalable calendar management
 import { getActiveCalendars } from './supabase';
+import { devLog } from '@/lib/logger';
 
 // Minimal fallback for emergency cases only
 const EMERGENCY_FALLBACK_URLS = [
@@ -13,7 +14,7 @@ export async function getCalendarUrls(): Promise<string[]> {
   try {
     const calendars = await getActiveCalendars();
     if (!calendars || calendars.length === 0) {
-      console.log('📅 Database unavailable, using emergency fallback calendar URLs');
+      devLog.log('📅 Database unavailable, using emergency fallback calendar URLs');
       return EMERGENCY_FALLBACK_URLS;
     }
     
@@ -35,13 +36,13 @@ export async function getCalendarUrls(): Promise<string[]> {
       }
     });
     
-    console.log('📅 Loaded calendar URLs from database:', urls.length, 'calendars');
+    devLog.log('📅 Loaded calendar URLs from database:', urls.length, 'calendars');
     if (isServerSide) {
-      console.log('🔧 Server-side mode: using absolute URLs');
+      devLog.log('🔧 Server-side mode: using absolute URLs');
     }
     return urls;
   } catch (error) {
-    console.error('Error fetching calendar URLs, using emergency fallback:', error);
+    devLog.error('Error fetching calendar URLs, using emergency fallback:', error);
     return EMERGENCY_FALLBACK_URLS;
   }
 }

@@ -5,6 +5,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { supabase } from '@/lib/supabase';
 import { Edit, Save, Link } from 'lucide-react';
+import { devLog } from '@/lib/logger';
 
 const SideQuestCard = () => {
     const { address } = useWallet();
@@ -32,7 +33,7 @@ const SideQuestCard = () => {
             await loadMemberProfile();
             setIsEditing(false);
         } catch (error) {
-            console.error('Error updating side quest URL:', error);
+            devLog.error('Error updating side quest URL:', error);
         }
     };
     

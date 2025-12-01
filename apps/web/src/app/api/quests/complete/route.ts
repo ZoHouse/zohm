@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordQuestScore, canUserCompleteQuest } from '@/lib/questService';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
       metadata,
     } = body;
 
-    console.log('📥 Quest completion request:', { user_id, quest_id, score, location });
+    devLog.log('📥 Quest completion request:', { user_id, quest_id, score, location });
 
     // Validate required fields
     if (!user_id || !quest_id) {
@@ -33,14 +34,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (questError || !quest) {
-      console.error('❌ Quest not found:', { quest_id, error: questError });
+      devLog.error('❌ Quest not found:', { quest_id, error: questError });
       return NextResponse.json(
         { error: 'Quest not found' },
         { status: 404 }
       );
     }
 
-    console.log('✅ Quest found:', { id: quest.id, slug: quest.slug, cooldown_hours: quest.cooldown_hours });
+    devLog.log('✅ Quest found:', { id: quest.id, slug: quest.slug, cooldown_hours: quest.cooldown_hours });
 
     // Ensure user exists in users table
     const { data: user, error: userError } = await supabase
@@ -50,14 +51,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      console.error('❌ User not found in database:', { user_id, error: userError });
+      devLog.error('❌ User not found in database:', { user_id, error: userError });
       return NextResponse.json(
         { error: 'User not found. Please complete onboarding first.' },
         { status: 404 }
       );
     }
 
-    console.log('✅ User verified:', { user_id });
+    devLog.log('✅ User verified:', { user_id });
 
     // ============================================
     // SECURITY: Server-Side Token Calculation
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       const proximityFactor = Math.max(0, 1 - (distance / 1111));
       tokensEarned = Math.round(50 + (proximityFactor * 150));
       
-      console.log(`💰 Server token calculation: score=${score}, distance=${distance}, proximity=${proximityFactor.toFixed(4)}, tokens=${tokensEarned}`);
+      devLog.log(`💰 Server token calculation: score=${score}, distance=${distance}, proximity=${proximityFactor.toFixed(4)}, tokens=${tokensEarned}`);
     } else {
       // Fixed reward quest
       tokensEarned = rewards.zo_tokens || quest.reward || 0;
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Validate token range for game1111
     if (quest.slug === 'game-1111') {
       if (tokensEarned < 50 || tokensEarned > 200) {
-        console.error('❌ Invalid token calculation:', { score, tokensEarned });
+        devLog.error('❌ Invalid token calculation:', { score, tokensEarned });
         tokensEarned = Math.max(50, Math.min(200, tokensEarned)); // Clamp to valid range
       }
     }
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       
       // Allow 1 token difference due to rounding, anything more is suspicious
       if (difference > 1) {
-        console.warn('🚨 SECURITY ALERT: Token mismatch detected!', {
+        devLog.warn('🚨 SECURITY ALERT: Token mismatch detected!', {
           user_id,
           quest_id: quest.slug,
           score,
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (completionError) {
-      console.error('❌ Error in atomic quest completion:', completionError);
+      devLog.error('❌ Error in atomic quest completion:', completionError);
       return NextResponse.json(
         { error: 'Failed to complete quest' },
         { status: 500 }
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
       next_available_at: nextAvailableAt,
     });
   } catch (error) {
-    console.error('Error completing quest:', error);
+    devLog.error('Error completing quest:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

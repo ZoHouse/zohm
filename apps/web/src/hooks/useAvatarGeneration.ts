@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 type BodyType = 'bro' | 'bae';
 type Gender = 'male' | 'female';
@@ -92,7 +93,7 @@ export const useAvatarGeneration = () => {
       }, POLLING_INTERVAL);
 
     } catch (err) {
-      console.error('Polling error:', err);
+      devLog.error('Polling error:', err);
       
       // Retry on network errors (don't give up immediately)
       if (attemptCountRef.current < MAX_POLLING_ATTEMPTS) {
@@ -157,7 +158,7 @@ export const useAvatarGeneration = () => {
       pollAvatarStatus(userId);
 
     } catch (err) {
-      console.error('Generate avatar error:', err);
+      devLog.error('Generate avatar error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate avatar');
       setIsGenerating(false);
       cleanup();

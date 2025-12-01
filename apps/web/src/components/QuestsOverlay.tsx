@@ -9,6 +9,7 @@ import { useZoAuth } from '@/hooks/useZoAuth';
 import LeaderboardsOverlay from './LeaderboardsOverlay';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 import CooldownTimer from './CooldownTimer';
+import { devLog } from '@/lib/logger';
 
 interface QuestsOverlayProps {
   isVisible: boolean;
@@ -43,11 +44,11 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
         // Check completion status and cooldown for each quest
         const questsWithCompletion = await Promise.all(
           q.map(async (quest) => {
-            console.log('🔍 Quest data:', { id: quest.id, slug: quest.slug });
+            devLog.log('🔍 Quest data:', { id: quest.id, slug: quest.slug });
             
             // For repeatable quests (with cooldown)
             if (quest.cooldown_hours && quest.cooldown_hours > 0 && user) {
-              console.log('⏰ Checking cooldown for quest:', quest.id, 'slug:', quest.slug);
+              devLog.log('⏰ Checking cooldown for quest:', quest.id, 'slug:', quest.slug);
               const cooldownCheck = await canUserCompleteQuest(
                 user.id, 
                 quest.id, 
@@ -94,7 +95,7 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
       if (user && onLaunchGame) {
         // Call parent callback to launch game
         onLaunchGame(user.id);
-        console.log('🎮 Launching game1111 for user:', user.id);
+        devLog.log('🎮 Launching game1111 for user:', user.id);
         
         // Close quest overlay for seamless full-screen experience
         if (onClose) {
@@ -175,11 +176,11 @@ const QuestsOverlay: React.FC<QuestsOverlayProps> = ({ isVisible, onClose, onLau
             if (rewardResult.success) {
               setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO  reward! Welcome to the Zo World.`);
             } else {
-              console.warn('Quest completed but reward failed:', rewardResult.error);
+              devLog.warn('Quest completed but reward failed:', rewardResult.error);
               setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed: ${rewardResult.error} Welcome to the Zo World.`);
             }
           } catch (rewardError) {
-            console.warn('Quest completed but reward failed:', rewardError);
+            devLog.warn('Quest completed but reward failed:', rewardError);
                           setVerificationResult(`✅ Quest completed successfully! You earned 420 $ZO. Dollar Zo reward failed to send. Welcome to the Zo World.`);
           }
           

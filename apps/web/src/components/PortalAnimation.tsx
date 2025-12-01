@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { devLog } from '@/lib/logger';
 
 interface PortalAnimationProps {
   onComplete: () => void;
@@ -10,11 +11,11 @@ export default function PortalAnimation({ onComplete }: PortalAnimationProps) {
   const openingVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    console.log('🎬 Portal animation started - playing opening disks only');
+    devLog.log('🎬 Portal animation started - playing opening disks only');
     
     // Auto-complete after 2 seconds (duration of opening disks)
     const timer = setTimeout(() => {
-      console.log('✅ Opening disks complete, moving to mic permission');
+      devLog.log('✅ Opening disks complete, moving to mic permission');
       onComplete();
     }, 2000);
 
@@ -25,7 +26,7 @@ export default function PortalAnimation({ onComplete }: PortalAnimationProps) {
 
   // Handle opening video end
   const handleOpeningVideoEnd = () => {
-    console.log('✅ Opening disks video ended naturally');
+    devLog.log('✅ Opening disks video ended naturally');
     onComplete();
   };
 
@@ -50,11 +51,11 @@ export default function PortalAnimation({ onComplete }: PortalAnimationProps) {
         muted 
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-[2]"
-        onLoadedData={() => console.log('✅ Opening Disks video loaded')}
-        onPlay={() => console.log('▶️ Opening Disks video playing')}
+        onLoadedData={() => devLog.log('✅ Opening Disks video loaded')}
+        onPlay={() => devLog.log('▶️ Opening Disks video playing')}
         onEnded={handleOpeningVideoEnd}
         onError={(e) => {
-          console.error('❌ Opening Disks video error');
+          devLog.error('❌ Opening Disks video error');
           // Fallback: complete immediately
           onComplete();
         }}

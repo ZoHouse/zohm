@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReputations, getReputationDescription, getReputationIcon } from '@/lib/reputationService';
+import { devLog } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
       total_score: reputations.reduce((sum, rep) => sum + rep.score, 0),
     });
   } catch (error) {
-    console.error('Error fetching user reputations:', error);
+    devLog.error('Error fetching user reputations:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

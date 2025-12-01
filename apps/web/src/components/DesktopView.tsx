@@ -17,6 +17,7 @@ import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
+import { devLog } from '@/lib/logger';
 
 interface EventData {
   'Event Name': string;
@@ -85,7 +86,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   const [questTokens, setQuestTokens] = useState(0);
 
   const handleLaunchGame = (userId: string) => {
-    console.log('🎮 Launching game1111 for user:', userId);
+    devLog.log('🎮 Launching game1111 for user:', userId);
     setGame1111UserId(userId);
     setShowGame1111(true);
     // Close all overlays
@@ -94,7 +95,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   };
   
   const handleGameComplete = (score: number, tokensEarned: number) => {
-    console.log('🎮 Game completed:', { score, tokensEarned });
+    devLog.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
     setQuestScore(score);
@@ -104,7 +105,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   };
 
   const handleQuestCompleteGoHome = async (): Promise<void> => {
-    console.log('🏠 Going home from quest complete');
+    devLog.log('🏠 Going home from quest complete');
     setShowQuestComplete(false);
     // Open dashboard after viewing quest results
     setIsDashboardOpen(true);
@@ -116,7 +117,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
       try {
         (window as any).clearRoute?.();
       } catch (e) {
-        console.warn('Could not clear route on section change:', e);
+        devLog.warn('Could not clear route on section change:', e);
       }
     }
   };
@@ -124,7 +125,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   const handleMapReady = (map: mapboxgl.Map, closeAllPopups: () => void) => {
     setClosePopupsFn(() => closeAllPopups);
     onMapReady(map, closeAllPopups);
-    console.log('Desktop Map is ready!');
+    devLog.log('Desktop Map is ready!');
   };
 
   // 🎨 Show quest complete page after finishing quest
@@ -164,7 +165,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         userLocation={userLocation}
         userId={userId}
         onLocationSaved={(lat, lng) => {
-          console.log('✅ Location saved from full map! Reloading...');
+          devLog.log('✅ Location saved from full map! Reloading...');
           window.location.reload();
         }}
       />

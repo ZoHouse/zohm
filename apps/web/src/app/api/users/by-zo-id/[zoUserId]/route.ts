@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -10,10 +11,10 @@ export async function GET(
 ) {
   try {
     const { zoUserId } = await params;
-    console.log('🔍 [API /users/by-zo-id] Request for zo_user_id:', zoUserId);
+    devLog.log('🔍 [API /users/by-zo-id] Request for zo_user_id:', zoUserId);
 
     if (!zoUserId) {
-      console.log('❌ [API /users/by-zo-id] No zoUserId provided');
+      devLog.log('❌ [API /users/by-zo-id] No zoUserId provided');
       return NextResponse.json(
         { error: 'ZO user ID is required' },
         { status: 400 }
@@ -21,7 +22,7 @@ export async function GET(
     }
 
     // Find user by zo_user_id
-    console.log('🔍 [API /users/by-zo-id] Querying database...');
+    devLog.log('🔍 [API /users/by-zo-id] Querying database...');
     const { data: user, error } = await supabase
       .from('users')
       .select('id, zo_user_id, zo_pid, name, email, phone, onboarding_completed')
@@ -29,17 +30,17 @@ export async function GET(
       .single();
 
     if (error || !user) {
-      console.log('❌ [API /users/by-zo-id] User not found:', error?.code, error?.message);
+      devLog.log('❌ [API /users/by-zo-id] User not found:', error?.code, error?.message);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    console.log('✅ [API /users/by-zo-id] User found:', { id: user.id, name: user.name });
+    devLog.log('✅ [API /users/by-zo-id] User found:', { id: user.id, name: user.name });
     return NextResponse.json(user);
   } catch (error: any) {
-    console.error('❌ [API /users/by-zo-id] Error:', error);
+    devLog.error('❌ [API /users/by-zo-id] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

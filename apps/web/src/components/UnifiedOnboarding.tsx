@@ -5,6 +5,7 @@ import { useZoAuth } from '@/hooks/useZoAuth';
 import { upsertUser } from '@/lib/userDb';
 import { updateProfile, getProfile } from '@/lib/zo-api/profile';
 import PortalAnimation from './PortalAnimation';
+import { devLog } from '@/lib/logger';
 
 interface UnifiedOnboardingProps {
   onComplete: () => void;
@@ -100,7 +101,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     const userId = userProfile?.id || localStorage.getItem('zo_user_id');
 
     if (!canSubmit || !userId) {
-      console.error('❌ Cannot submit: missing userId or validation failed');
+      devLog.error('❌ Cannot submit: missing userId or validation failed');
       return;
     }
 
@@ -108,7 +109,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     setError('');
 
     try {
-      console.log('🎬 Saving user data...');
+      devLog.log('🎬 Saving user data...');
 
       // Construct user object for upsert (handle case where userProfile is null)
       const userObj = userProfile || {
@@ -128,7 +129,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       localStorage.setItem('zo_city', city);
       localStorage.setItem('zo_body_type', bodyType);
 
-      console.log('✅ User data saved, starting generation...');
+      devLog.log('✅ User data saved, starting generation...');
 
       // 3. Transition to generation step
       setStep('generating');
@@ -137,7 +138,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       triggerAvatarGeneration();
 
     } catch (err) {
-      console.error('❌ Error saving user:', err);
+      devLog.error('❌ Error saving user:', err);
       setError('Failed to save. Please try again.');
       setIsSaving(false);
     }
@@ -145,10 +146,10 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
   const triggerAvatarGeneration = async () => {
     const token = getAccessToken();
-    console.log('🔑 triggerAvatarGeneration: Token available?', !!token);
+    devLog.log('🔑 triggerAvatarGeneration: Token available?', !!token);
 
     if (!token) {
-      console.error('❌ No access token found for avatar generation');
+      devLog.error('❌ No access token found for avatar generation');
       // Fallback
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -159,12 +160,12 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     // This tells the backend to generate the avatar
     // Web approach: send all fields in one request for efficiency
     try {
-      console.log('🚀 Triggering avatar generation via API...');
+      devLog.log('🚀 Triggering avatar generation via API...');
 
       // Pass userId so device credentials can be fetched from Supabase
       const userId = userProfile?.id || localStorage.getItem('zo_user_id');
 
-      console.log('📝 Profile data payload:', {
+      devLog.log('📝 Profile data payload:', {
         first_name: nickname,
         body_type: bodyType,
         place_name: city,
@@ -177,19 +178,19 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         place_name: city
       }, userId || undefined);
 
-      console.log('📡 updateProfile result:', result);
+      devLog.log('📡 updateProfile result:', result);
 
       if (!result.success) {
-        console.error('❌ updateProfile failed with result:', result);
+        devLog.error('❌ updateProfile failed with result:', result);
         throw new Error(result.error || 'Profile update failed');
       }
 
       // Start polling
-      console.log('⏳ Starting avatar polling...');
+      devLog.log('⏳ Starting avatar polling...');
       setIsPolling(true);
       pollForAvatar(token);
     } catch (err) {
-      console.error('❌ Failed to trigger generation (catch block):', err);
+      devLog.error('❌ Failed to trigger generation (catch block):', err);
       // Fallback to default assets if API fails
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -200,10 +201,10 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
     attemptsRef.current += 1;
     const maxAttempts = 30; // 30 seconds timeout
 
-    console.log(`🔄 Polling attempt ${attemptsRef.current}/${maxAttempts}...`);
+    devLog.log(`🔄 Polling attempt ${attemptsRef.current}/${maxAttempts}...`);
 
     if (attemptsRef.current > maxAttempts) {
-      console.warn('⚠️ Avatar generation timeout after 30 seconds');
+      devLog.warn('⚠️ Avatar generation timeout after 30 seconds');
       setIsPolling(false);
       setAvatarUrl(bodyType === 'bro' ? '/bro.png' : '/bae.png');
       setStep('success');
@@ -215,7 +216,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       const userId = userProfile?.id || localStorage.getItem('zo_user_id');
       const result = await getProfile(token, userId || undefined);
 
-      console.log(`📊 Poll ${attemptsRef.current} result:`, {
+      devLog.log(`📊 Poll ${attemptsRef.current} result:`, {
         success: result.success,
         hasProfile: !!result.profile,
         hasAvatar: !!result.profile?.avatar,
@@ -224,12 +225,32 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       });
 
       if (result.success && result.profile?.avatar?.image) {
-        console.log('✅ Avatar ready:', result.profile.avatar.image);
+        devLog.log('✅ Avatar ready:', result.profile.avatar.image);
 
-        // Cache avatar URL for immediate use
-        localStorage.setItem('zo_avatar_url', result.profile.avatar.image);
+        const avatarUrl = result.profile.avatar.image;
 
-        setAvatarUrl(result.profile.avatar.image);
+        // 1. Cache in localStorage
+        localStorage.setItem('zo_avatar_url', avatarUrl);
+
+        // 2. ✨ CRITICAL FIX: Save to database immediately
+        // This ensures avatars persist across devices and sessions
+        const userId = userProfile?.id || localStorage.getItem('zo_user_id');
+        if (userId) {
+          try {
+            const { updateUserProfile } = await import('@/lib/userDb');
+            await updateUserProfile(userId, {
+              pfp: avatarUrl,
+              zo_synced_at: new Date().toISOString(),
+              zo_sync_status: 'synced'
+            });
+            devLog.log('✅ [Onboarding] Avatar persisted to database:', avatarUrl);
+          } catch (error) {
+            devLog.error('❌ [Onboarding] Failed to save avatar to database:', error);
+            // Don't block onboarding - localStorage cache will still work
+          }
+        }
+
+        setAvatarUrl(avatarUrl);
         setIsPolling(false);
 
         // Wait a moment for image to be ready/cached
@@ -242,7 +263,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       // Poll again in 1s
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     } catch (err) {
-      console.error(`❌ Polling error on attempt ${attemptsRef.current}:`, err);
+      devLog.error(`❌ Polling error on attempt ${attemptsRef.current}:`, err);
       // Continue polling despite error
       pollingRef.current = setTimeout(() => pollForAvatar(token), 1000);
     }

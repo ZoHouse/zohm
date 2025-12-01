@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 /**
  * POST /api/ar/scan
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (scanError) {
-      console.error('Error recording AR scan:', scanError);
+      devLog.error('Error recording AR scan:', scanError);
       // Don't fail the request if logging fails
     }
 
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('AR scan API error:', error);
+    devLog.error('AR scan API error:', error);
     return NextResponse.json(
       { error: 'Failed to process AR scan' },
       { status: 500 }
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('AR scan history API error:', error);
+    devLog.error('AR scan history API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch AR scan history' },
       { status: 500 }

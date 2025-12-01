@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useZoAuth } from './useZoAuth';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 interface MemberProfile {
   name?: string;
@@ -27,7 +28,7 @@ export function useProfileGate() {
 
   // Debug logging for showProfileSetup changes
   useEffect(() => {
-    console.log('🔧 showProfileSetup changed to:', showProfileSetup);
+    devLog.log('🔧 showProfileSetup changed to:', showProfileSetup);
   }, [showProfileSetup]);
 
   // Check if profile is complete (only name is mandatory for initial access)
@@ -37,7 +38,7 @@ export function useProfileGate() {
     
   // Debug logging for profile completion
   useEffect(() => {
-    console.log('🔧 Profile completion check:', {
+    devLog.log('🔧 Profile completion check:', {
       memberProfile,
       hasName: !!(memberProfile?.name),
       nameTrimmed: memberProfile?.name?.trim(),
@@ -49,7 +50,7 @@ export function useProfileGate() {
   const loadMemberProfile = useCallback(async () => {
     if (!primaryWalletAddress) return;
     
-    console.log('🔄 Loading profile for address:', primaryWalletAddress);
+    devLog.log('🔄 Loading profile for address:', primaryWalletAddress);
     setIsLoadingProfile(true);
     
     try {
@@ -59,25 +60,25 @@ export function useProfileGate() {
         .eq('wallet', primaryWalletAddress.toLowerCase())
         .single();
         
-      console.log('🔍 Database query details:', {
+      devLog.log('🔍 Database query details:', {
         queryAddress: primaryWalletAddress.toLowerCase(),
         resultData: data,
         error: error
       });
 
       if (error && error.code !== 'PGRST116') {
-        console.warn('⚠️ Profile query returned error (this is okay for new users):', error.message || 'Unknown error');
+        devLog.warn('⚠️ Profile query returned error (this is okay for new users):', error.message || 'Unknown error');
         return null;
       }
 
-      console.log('📊 Profile data loaded:', data);
+      devLog.log('📊 Profile data loaded:', data);
       setMemberProfile(data);
       
       // Return the profile data so the caller can use it immediately
       return data;
       
     } catch (error) {
-      console.warn('⚠️ Exception loading profile (this is okay for new users):', error);
+      devLog.warn('⚠️ Exception loading profile (this is okay for new users):', error);
       return null;
     } finally {
       setIsLoadingProfile(false);
@@ -121,12 +122,12 @@ export function useProfileGate() {
 
 
   const completeProfileSetup = (newData: Partial<MemberProfile> = {}) => {
-    console.log('✅ Completing profile setup with data:', newData);
+    devLog.log('✅ Completing profile setup with data:', newData);
     setShowProfileSetup(false);
     // Optimistically update the profile
     setMemberProfile(prev => {
       const updated = { ...prev, ...newData, name: newData.name || prev?.name || '' };
-      console.log('🔄 Updated member profile:', updated);
+      devLog.log('🔄 Updated member profile:', updated);
       return updated;
     });
   };

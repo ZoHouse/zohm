@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 /**
  * GET /api/avatar/status?userId=xxx&accessToken=xxx&deviceId=xxx&deviceSecret=xxx
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
 
     if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
-      console.error('Missing ZO API environment variables');
+      devLog.error('Missing ZO API environment variables');
       return NextResponse.json(
         { status: 'error', message: 'Server configuration error' },
         { status: 500 }
@@ -44,19 +45,19 @@ export async function GET(req: NextRequest) {
     // For new users: Avatar status polling happens during onboarding
     // Credentials are in localStorage and passed via query params
     // This is the PRIMARY path for avatar status checks
-    
+
     if (!accessToken || !deviceId || !deviceSecret) {
-      console.error('❌ Missing credentials in query params. Avatar status check requires credentials from localStorage (new users only).');
+      devLog.error('❌ Missing credentials in query params. Avatar status check requires credentials from localStorage (new users only).');
       return NextResponse.json(
-        { 
-          status: 'error', 
-          message: 'Device credentials required. Please ensure you are logged in and try again.' 
+        {
+          status: 'error',
+          message: 'Device credentials required. Please ensure you are logged in and try again.'
         },
         { status: 401 }
       );
     }
 
-    console.log('✅ Using credentials from query params (localStorage - new user)');
+    devLog.log('✅ Using credentials from query params (localStorage - new user)');
     const ZO_USER_TOKEN = accessToken;
     const finalDeviceId = deviceId;
     const finalDeviceSecret = deviceSecret;
@@ -76,12 +77,12 @@ export async function GET(req: NextRequest) {
 
     if (!zoResponse.ok) {
       const errorText = await zoResponse.text();
-      console.error('ZO API error:', zoResponse.status, errorText);
+      devLog.error('ZO API error:', zoResponse.status, errorText);
       return NextResponse.json(
-        { 
-          status: 'error', 
+        {
+          status: 'error',
           message: `ZO API error: ${zoResponse.status}`,
-          details: errorText 
+          details: errorText
         },
         { status: zoResponse.status }
       );
@@ -100,13 +101,14 @@ export async function GET(req: NextRequest) {
         .from('users')
         .update({
           pfp: avatarImage,                          // Use existing pfp column
-          profile_synced_at: new Date().toISOString(), // Track sync time
+          zo_synced_at: new Date().toISOString(),    // Track sync time (correct column)
+          zo_sync_status: 'synced',                  // Mark as synced
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
 
       if (updateError) {
-        console.error('Supabase update error:', updateError);
+        devLog.error('Supabase update error:', updateError);
         // Don't fail - just log it
       }
 
@@ -125,10 +127,10 @@ export async function GET(req: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Avatar status check error:', error);
+    devLog.error('Avatar status check error:', error);
     return NextResponse.json(
-      { 
-        status: 'error', 
+      {
+        status: 'error',
         message: 'Internal server error',
         error: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -156,7 +158,7 @@ export async function POST(req: NextRequest) {
     // Redirect to GET method by constructing URL
     const url = new URL(req.url);
     url.searchParams.set('userId', userId);
-    
+
     // Create a new request with the modified URL
     const newReq = new NextRequest(url, {
       method: 'GET',
@@ -166,10 +168,10 @@ export async function POST(req: NextRequest) {
     return GET(newReq);
 
   } catch (error) {
-    console.error('Avatar status POST error:', error);
+    devLog.error('Avatar status POST error:', error);
     return NextResponse.json(
-      { 
-        status: 'error', 
+      {
+        status: 'error',
         message: 'Internal server error',
         error: error instanceof Error ? error.message : 'Unknown error'
       },

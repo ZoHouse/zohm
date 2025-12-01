@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PrivyUserProfile } from '@/types/user';
 import { DashboardAssets } from '@/styles/dashboard-tokens';
+import { devLog } from '@/lib/logger';
 
 interface MobileDashboardHeaderProps {
   userProfile: PrivyUserProfile | null;
@@ -34,7 +35,7 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({
           }
         }
       } catch (error) {
-        console.warn('Could not fetch balance:', error);
+        devLog.warn('Could not fetch balance:', error);
       }
     }
 

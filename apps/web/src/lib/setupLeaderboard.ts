@@ -8,6 +8,7 @@
 import { supabase } from './supabase';
 import * as fs from 'fs';
 import * as path from 'path';
+import { devLog } from '@/lib/logger';
 
 /**
  * Run the leaderboard migration SQL
@@ -28,14 +29,14 @@ export async function setupLeaderboardTrigger(): Promise<boolean> {
     const { error } = await supabase.rpc('exec_sql', { sql_string: sql });
 
     if (error) {
-      console.error('❌ Error setting up leaderboard trigger:', error);
+      devLog.error('❌ Error setting up leaderboard trigger:', error);
       return false;
     }
 
-    console.log('✅ Leaderboard trigger setup complete!');
+    devLog.log('✅ Leaderboard trigger setup complete!');
     return true;
   } catch (error) {
-    console.error('❌ Exception setting up leaderboard trigger:', error);
+    devLog.error('❌ Exception setting up leaderboard trigger:', error);
     return false;
   }
 }
@@ -49,15 +50,15 @@ export async function recalculateLeaderboard(): Promise<boolean> {
     const { data, error } = await supabase.rpc('recalculate_leaderboard');
 
     if (error) {
-      console.error('❌ Error recalculating leaderboard:', error);
+      devLog.error('❌ Error recalculating leaderboard:', error);
       return false;
     }
 
-    console.log('✅ Leaderboard recalculated successfully!');
-    console.log(`   Updated ${data?.length || 0} entries`);
+    devLog.log('✅ Leaderboard recalculated successfully!');
+    devLog.log(`   Updated ${data?.length || 0} entries`);
     return true;
   } catch (error) {
-    console.error('❌ Exception recalculating leaderboard:', error);
+    devLog.error('❌ Exception recalculating leaderboard:', error);
     return false;
   }
 }
@@ -77,14 +78,14 @@ export async function syncLeaderboardUsername(
     });
 
     if (error) {
-      console.error('❌ Error syncing username to leaderboard:', error);
+      devLog.error('❌ Error syncing username to leaderboard:', error);
       return false;
     }
 
-    console.log('✅ Username synced to leaderboard');
+    devLog.log('✅ Username synced to leaderboard');
     return true;
   } catch (error) {
-    console.error('❌ Exception syncing username:', error);
+    devLog.error('❌ Exception syncing username:', error);
     return false;
   }
 }
@@ -119,7 +120,7 @@ export async function checkLeaderboardSetup(): Promise<{
       hasData
     };
   } catch (error) {
-    console.error('❌ Error checking leaderboard setup:', error);
+    devLog.error('❌ Error checking leaderboard setup:', error);
     return {
       tableExists: false,
       triggerExists: false,
@@ -142,7 +143,7 @@ export async function getLeaderboardStats(): Promise<{
       .select('zo_points, total_quests_completed');
 
     if (error) {
-      console.error('Error fetching leaderboard stats:', error);
+      devLog.error('Error fetching leaderboard stats:', error);
       return null;
     }
 
@@ -157,7 +158,7 @@ export async function getLeaderboardStats(): Promise<{
 
     return stats;
   } catch (error) {
-    console.error('Exception fetching leaderboard stats:', error);
+    devLog.error('Exception fetching leaderboard stats:', error);
     return null;
   }
 }

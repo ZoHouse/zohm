@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { devLog } from '@/lib/logger';
 
 interface UseMapGeoJSONOptions {
   map: mapboxgl.Map | null;
@@ -36,7 +37,7 @@ export function useMapGeoJSON({
       // Get map bounds if not provided
       const bounds = bbox || map.getBounds();
       if (!bounds) {
-        console.warn('⚠️ Map bounds not available yet');
+        devLog.warn('⚠️ Map bounds not available yet');
         setLoading(false);
         return;
       }
@@ -61,7 +62,7 @@ export function useMapGeoJSON({
       });
 
       const url = `/api/events/geojson?${params}`;
-      console.log('🔄 Fetching GeoJSON:', url);
+      devLog.log('🔄 Fetching GeoJSON:', url);
       const startTime = performance.now();
 
       const response = await fetch(url, {
@@ -75,7 +76,7 @@ export function useMapGeoJSON({
       const geojson = await response.json();
       const duration = performance.now() - startTime;
       
-      console.log(`✅ Loaded ${geojson.features.length} features in ${duration.toFixed(0)}ms`);
+      devLog.log(`✅ Loaded ${geojson.features.length} features in ${duration.toFixed(0)}ms`);
       setFeatureCount(geojson.features.length);
 
       // Update or create source
@@ -105,10 +106,10 @@ export function useMapGeoJSON({
 
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        console.log('🔄 GeoJSON request aborted');
+        devLog.log('🔄 GeoJSON request aborted');
         return;
       }
-      console.error('❌ GeoJSON fetch error:', err);
+      devLog.error('❌ GeoJSON fetch error:', err);
       setError(err.message);
       setLoading(false);
     }

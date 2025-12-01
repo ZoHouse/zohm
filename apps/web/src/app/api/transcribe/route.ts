@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/logger';
 
 /**
  * POST /api/transcribe
@@ -27,14 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (audioFile.size < 1000) {
-      console.warn('⚠️ Audio file too small:', audioFile.size, 'bytes');
+      devLog.warn('⚠️ Audio file too small:', audioFile.size, 'bytes');
       return NextResponse.json(
         { error: 'Audio file too small (empty recording)' },
         { status: 400 }
       );
     }
 
-    console.log('🎤 Transcribing audio file:', {
+    devLog.log('🎤 Transcribing audio file:', {
       name: audioFile.name,
       size: audioFile.size,
       type: audioFile.type,
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       { status: 503 }
     );
   } catch (error: any) {
-    console.error('❌ Transcription error:', error);
+    devLog.error('❌ Transcription error:', error);
     return NextResponse.json(
       { error: 'Transcription failed', details: error.message },
       { status: 500 }
@@ -91,7 +92,7 @@ async function transcribeWithAssemblyAI(audioFile: File, apiKey: string) {
   }
 
   const { upload_url } = await uploadResponse.json();
-  console.log('✅ Audio uploaded to AssemblyAI:', upload_url);
+  devLog.log('✅ Audio uploaded to AssemblyAI:', upload_url);
 
   // Step 2: Start transcription
   const transcriptResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
@@ -112,7 +113,7 @@ async function transcribeWithAssemblyAI(audioFile: File, apiKey: string) {
   }
 
   const { id } = await transcriptResponse.json();
-  console.log('📝 Transcription started, ID:', id);
+  devLog.log('📝 Transcription started, ID:', id);
 
   // Step 3: Poll for results (with timeout)
   const maxAttempts = 30; // 30 seconds max
@@ -130,7 +131,7 @@ async function transcribeWithAssemblyAI(audioFile: File, apiKey: string) {
     const status = await statusResponse.json();
 
     if (status.status === 'completed') {
-      console.log('✅ Transcription completed!');
+      devLog.log('✅ Transcription completed!');
       return NextResponse.json({
         success: true,
         text: status.text || '',
@@ -144,7 +145,7 @@ async function transcribeWithAssemblyAI(audioFile: File, apiKey: string) {
     }
 
     attempts++;
-    console.log(`⏳ Transcription in progress... (${attempts}/${maxAttempts})`);
+    devLog.log(`⏳ Transcription in progress... (${attempts}/${maxAttempts})`);
   }
 
   throw new Error('Transcription timeout - took too long');

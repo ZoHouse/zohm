@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { ethers } from 'ethers';
+import { devLog } from '@/lib/logger';
 
 // ZO Token Configuration
 const ZO_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_ZO_TOKEN_ADDRESS || '';
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Failed to fetch wallet balance:', error);
+    devLog.error('Failed to fetch wallet balance:', error);
     return NextResponse.json(
       { error: 'Failed to fetch balance', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -142,7 +143,7 @@ async function getTokenBalance(
     return humanBalance;
 
   } catch (error) {
-    console.error('Failed to query on-chain balance:', error);
+    devLog.error('Failed to query on-chain balance:', error);
     throw error;
   }
 }
@@ -208,7 +209,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Failed to refresh balance:', error);
+    devLog.error('Failed to refresh balance:', error);
     return NextResponse.json(
       { error: 'Failed to refresh balance', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

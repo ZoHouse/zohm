@@ -2,6 +2,7 @@
 // React hook to fetch and manage token balance
 
 import { useState, useEffect, useCallback } from 'react';
+import { devLog } from '@/lib/logger';
 
 interface TokenBalanceResponse {
   balance: number;
@@ -56,7 +57,7 @@ export function useTokenBalance(autoRefresh = true): UseTokenBalanceReturn {
       setIsCached(data.cached);
 
     } catch (err) {
-      console.error('Failed to fetch token balance:', err);
+      devLog.error('Failed to fetch token balance:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);

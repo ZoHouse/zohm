@@ -92,7 +92,7 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
 
     // Fallback to localStorage if available (matches DashboardHeader behavior)
     if (!avatar && typeof window !== 'undefined') {
-      const storedAvatar = localStorage.getItem('zo_avatar');
+      const storedAvatar = localStorage.getItem('zo_avatar_url');
       if (storedAvatar) {
         avatar = storedAvatar;
       }

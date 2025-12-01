@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
+import { devLog } from '@/lib/logger';
 
 interface DashboardHeaderProps {
   onClose?: () => void;
@@ -16,16 +17,16 @@ function getInitialAvatar(): string {
     const storedAvatar = localStorage.getItem('zo_avatar');
 
     if (newAvatar) {
-      console.log('🎨 Loading avatar from localStorage (zo_avatar_url):', newAvatar);
+      devLog.log('🎨 Loading avatar from localStorage (zo_avatar_url):', newAvatar);
       return newAvatar;
     }
 
     if (storedAvatar) {
-      console.log('🎨 Loading avatar from localStorage (zo_avatar):', storedAvatar);
+      devLog.log('🎨 Loading avatar from localStorage (zo_avatar):', storedAvatar);
       return storedAvatar;
     }
   }
-  console.log('🎨 No avatar in localStorage, using default');
+  devLog.log('🎨 No avatar in localStorage, using default');
   return '/quest-audio-assets/avatar.png';
 }
 
@@ -43,14 +44,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
     const cachedAvatar = typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null;
 
     if (cachedAvatar && cachedAvatar !== avatar) {
-      console.log('🎨 Using cached avatar (zo_avatar_url):', cachedAvatar);
+      devLog.log('🎨 Using cached avatar (zo_avatar_url):', cachedAvatar);
       setAvatar(cachedAvatar);
       return;
     }
 
     // Priority 2: Use profile avatar from API
     if (userProfile?.pfp && userProfile.pfp !== avatar) {
-      console.log('🎨 Updating avatar from API:', userProfile.pfp);
+      devLog.log('🎨 Updating avatar from API:', userProfile.pfp);
       setAvatar(userProfile.pfp);
       // Also update localStorage for next time
       localStorage.setItem('zo_avatar', userProfile.pfp);
@@ -75,7 +76,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onClose }) => {
           }
         }
       } catch (error) {
-        console.warn('Could not fetch balance:', error);
+        devLog.warn('Could not fetch balance:', error);
       }
     }
 

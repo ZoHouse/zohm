@@ -41,7 +41,7 @@ export default function ZoPassportPage() {
           }
         }
       } catch (error) {
-        console.warn('Could not fetch balance:', error);
+        devLog.warn('Could not fetch balance:', error);
       }
     }
 
@@ -125,7 +125,7 @@ Join me: ${baseUrl}/share/${userId}
         }, 1000);
       }, 500);
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Error:', error);
       alert('Failed to generate card. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -659,3 +659,4 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
 }
 
 import { ScaleContainer } from '@/components/ScaleContainer';
+import { devLog } from '@/lib/logger';

@@ -4,6 +4,7 @@
  */
 
 import mapboxgl from 'mapbox-gl';
+import { devLog } from '@/lib/logger';
 
 export const GEOJSON_SOURCE_ID = 'events-and-nodes';
 
@@ -16,7 +17,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
 
   // Check if source exists first
   if (!map.getSource(GEOJSON_SOURCE_ID)) {
-    console.warn('⚠️ GeoJSON source not loaded yet, skipping cluster layer setup');
+    devLog.warn('⚠️ GeoJSON source not loaded yet, skipping cluster layer setup');
     return;
   }
 
@@ -56,7 +57,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
           'circle-stroke-color': '#fff'
         }
       });
-      console.log('✅ Added clusters layer');
+      devLog.log('✅ Added clusters layer');
     }
 
     // 2. Cluster count labels
@@ -75,7 +76,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
           'text-color': '#ffffff'
         }
       });
-      console.log('✅ Added cluster-count layer');
+      devLog.log('✅ Added cluster-count layer');
     }
 
     // 3. Unclustered event points
@@ -95,7 +96,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
           'circle-stroke-color': '#fff'
         }
       });
-      console.log('✅ Added unclustered-events layer');
+      devLog.log('✅ Added unclustered-events layer');
     }
 
     // 4. Unclustered node points
@@ -115,12 +116,12 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
           'circle-stroke-color': '#fff'
         }
       });
-      console.log('✅ Added unclustered-nodes layer');
+      devLog.log('✅ Added unclustered-nodes layer');
     }
 
-    console.log('✅ All clustering layers added successfully');
+    devLog.log('✅ All clustering layers added successfully');
   } catch (error) {
-    console.error('❌ Error adding clustering layers:', error);
+    devLog.error('❌ Error adding clustering layers:', error);
   }
 }
 
@@ -230,7 +231,7 @@ export function setupClusterClickHandlers(map: mapboxgl.Map) {
     });
   });
 
-  console.log('✅ Cluster click handlers added');
+  devLog.log('✅ Cluster click handlers added');
 }
 
 /**
@@ -247,7 +248,7 @@ export function removeClusteringLayers(map: mapboxgl.Map) {
         map.removeLayer(layerId);
       }
     } catch (error) {
-      console.warn(`Could not remove layer ${layerId}:`, error);
+      devLog.warn(`Could not remove layer ${layerId}:`, error);
     }
   });
 
@@ -256,9 +257,9 @@ export function removeClusteringLayers(map: mapboxgl.Map) {
       map.removeSource(GEOJSON_SOURCE_ID);
     }
   } catch (error) {
-    console.warn(`Could not remove source ${GEOJSON_SOURCE_ID}:`, error);
+    devLog.warn(`Could not remove source ${GEOJSON_SOURCE_ID}:`, error);
   }
 
-  console.log('✅ Clustering layers removed');
+  devLog.log('✅ Clustering layers removed');
 }
 

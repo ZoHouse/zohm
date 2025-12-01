@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { devLog } from '@/lib/logger';
 
 export interface Reputation {
   id: string;
@@ -26,10 +27,10 @@ export async function getReputations(userId: string): Promise<ReputationWithLeve
 
     if (error) {
       if (error.code === 'PGRST116' || error.code === '42P01') {
-        console.log('ℹ️ No reputations found for user.');
+        devLog.log('ℹ️ No reputations found for user.');
         return getDefaultReputations(userId);
       }
-      console.warn('⚠️ Error fetching reputations:', error.message);
+      devLog.warn('⚠️ Error fetching reputations:', error.message);
       return getDefaultReputations(userId);
     }
 
@@ -44,7 +45,7 @@ export async function getReputations(userId: string): Promise<ReputationWithLeve
       progress: rep.score % 100,
     }));
   } catch (error) {
-    console.warn('⚠️ Exception fetching reputations:', error);
+    devLog.warn('⚠️ Exception fetching reputations:', error);
     return getDefaultReputations(userId);
   }
 }
@@ -84,7 +85,7 @@ export async function getReputation(
           updated_at: new Date().toISOString(),
         };
       }
-      console.warn(`⚠️ Error fetching ${trait} reputation:`, error.message);
+      devLog.warn(`⚠️ Error fetching ${trait} reputation:`, error.message);
       return null;
     }
 
@@ -94,7 +95,7 @@ export async function getReputation(
       progress: data.score % 100,
     };
   } catch (error) {
-    console.warn(`⚠️ Exception fetching ${trait} reputation:`, error);
+    devLog.warn(`⚠️ Exception fetching ${trait} reputation:`, error);
     return null;
   }
 }
@@ -149,7 +150,7 @@ export async function updateReputation(
     }
 
     if (error) {
-      console.warn(`⚠️ Error updating ${trait} reputation:`, error.message);
+      devLog.warn(`⚠️ Error updating ${trait} reputation:`, error.message);
       return null;
     }
 
@@ -161,7 +162,7 @@ export async function updateReputation(
       progress: data.score % 100,
     };
   } catch (error) {
-    console.warn(`⚠️ Exception updating ${trait} reputation:`, error);
+    devLog.warn(`⚠️ Exception updating ${trait} reputation:`, error);
     return null;
   }
 }
@@ -193,7 +194,7 @@ export async function getReputationLeaderboard(
       .limit(limit);
 
     if (error) {
-      console.error(`Error fetching ${trait} leaderboard:`, error);
+      devLog.error(`Error fetching ${trait} leaderboard:`, error);
       return [];
     }
 
@@ -207,7 +208,7 @@ export async function getReputationLeaderboard(
       progress: rep.score % 100,
     }));
   } catch (error) {
-    console.error(`Exception fetching ${trait} leaderboard:`, error);
+    devLog.error(`Exception fetching ${trait} leaderboard:`, error);
     return [];
   }
 }

@@ -7,6 +7,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 import DesktopLeaderboard from './DesktopLeaderboard';
+import { devLog } from '@/lib/logger';
 
 // Dynamically import MapCanvas to avoid SSR issues
 const MapCanvas = dynamic(() => import('@/components/MapCanvas'), {
@@ -56,7 +57,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
           setBalance(data.quests?.zo_points || 0);
         }
       } catch (error) {
-        console.error('Error fetching balance:', error);
+        devLog.error('Error fetching balance:', error);
       }
     }
 
@@ -94,10 +95,10 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
   // Handle game launch
   const handleGameClick = () => {
     if (countdown.isAvailable && userProfile?.id && onLaunchGame) {
-      console.log('🎮 Launching game1111 from dashboard');
+      devLog.log('🎮 Launching game1111 from dashboard');
       onLaunchGame(userProfile.id);
     } else if (!countdown.isAvailable) {
-      console.log('⏳ Game on cooldown, cannot launch yet');
+      devLog.log('⏳ Game on cooldown, cannot launch yet');
     }
   };
   
@@ -323,7 +324,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
               className="w-full h-full"
               userId={userProfile?.id}
               onLocationSaved={(lat, lng) => {
-                console.log('✅ Location saved! Reloading to show map...');
+                devLog.log('✅ Location saved! Reloading to show map...');
                 window.location.reload();
               }}
             />

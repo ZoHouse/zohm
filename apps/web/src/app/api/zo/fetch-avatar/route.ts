@@ -1,12 +1,13 @@
 // Simple endpoint to fetch avatar from ZO API using user's credentials
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { accessToken, deviceId, deviceSecret } = body;
 
-        console.log('🔍 Received credentials:', {
+        devLog.log('🔍 Received credentials:', {
             hasToken: !!accessToken,
             hasDeviceId: !!deviceId,
             hasDeviceSecret: !!deviceSecret,
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (!deviceId || !deviceSecret) {
-            console.error('❌ Missing device credentials:', { deviceId, deviceSecret });
+            devLog.error('❌ Missing device credentials:', { deviceId, deviceSecret });
             return NextResponse.json(
                 { success: false, error: 'deviceId and deviceSecret are required' },
                 { status: 400 }
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
             'client-device-secret': deviceSecret
         };
 
-        console.log('📤 Sending headers to ZO API:', {
+        devLog.log('📤 Sending headers to ZO API:', {
             hasAuth: !!headers['Authorization'],
             hasClientKey: !!headers['client-key'],
             hasDeviceId: !!headers['client-device-id'],
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('❌ Error fetching avatar:', error);
+        devLog.error('❌ Error fetching avatar:', error);
         return NextResponse.json(
             {
                 success: false,

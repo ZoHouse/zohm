@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { devLog } from '@/lib/logger';
 
 export interface City {
   id: string;
@@ -47,7 +48,7 @@ export async function getAllCities(): Promise<City[]> {
     .order('population_total', { ascending: false });
 
   if (error) {
-    console.error('Error fetching cities:', error);
+    devLog.error('Error fetching cities:', error);
     return [];
   }
 
@@ -65,7 +66,7 @@ export async function getCityById(cityId: string): Promise<City | null> {
     .single();
 
   if (error) {
-    console.error('Error fetching city:', error);
+    devLog.error('Error fetching city:', error);
     return null;
   }
 
@@ -133,7 +134,7 @@ export async function findOrCreateCity(
     .single();
 
   if (error) {
-    console.error('Error creating city:', error);
+    devLog.error('Error creating city:', error);
     return null;
   }
 
@@ -170,7 +171,7 @@ export async function syncUserHomeCity(
       .single();
 
     if (userError) {
-      console.error('Error updating user home city:', userError);
+      devLog.error('Error updating user home city:', userError);
       return { success: false, zoEarned: 0, city: null };
     }
 
@@ -188,7 +189,7 @@ export async function syncUserHomeCity(
       });
 
     if (repError) {
-      console.error('Error updating reputation:', repError);
+      devLog.error('Error updating reputation:', repError);
     }
 
     // Create or update city progress entry
@@ -203,7 +204,7 @@ export async function syncUserHomeCity(
       });
 
     if (progressError) {
-      console.error('Error updating city progress:', progressError);
+      devLog.error('Error updating city progress:', progressError);
     }
 
     // Fetch updated city data
@@ -215,7 +216,7 @@ export async function syncUserHomeCity(
       city: city
     };
   } catch (error) {
-    console.error('Error syncing home city:', error);
+    devLog.error('Error syncing home city:', error);
     return { success: false, zoEarned: 0, city: null };
   }
 }
@@ -239,7 +240,7 @@ export async function getUserCityProgress(
     if (error.code === 'PGRST116') {
       return null;
     }
-    console.error('Error fetching city progress:', error);
+    devLog.error('Error fetching city progress:', error);
     return null;
   }
 
@@ -261,7 +262,7 @@ export async function getCityLeaderboard(
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching city leaderboard:', error);
+    devLog.error('Error fetching city leaderboard:', error);
     return [];
   }
 

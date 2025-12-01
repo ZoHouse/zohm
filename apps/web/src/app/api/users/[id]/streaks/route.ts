@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStreaks, getStreakIcon, getStreakName, isStreakActive, getStreakStatus } from '@/lib/streakService';
+import { devLog } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
       total_active: enhancedStreaks.filter(s => s.is_active).length,
     });
   } catch (error) {
-    console.error('Error fetching user streaks:', error);
+    devLog.error('Error fetching user streaks:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

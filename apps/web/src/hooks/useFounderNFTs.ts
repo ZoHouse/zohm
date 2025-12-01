@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getProfile } from '@/lib/zo-api/profile';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export interface FounderNFT {
   token_id: string;
@@ -30,14 +31,14 @@ export function useFounderNFTs() {
         // Get user ID from localStorage
         const userId = localStorage.getItem('zo_user_id');
         if (!userId) {
-          console.log('No user ID, skipping founder NFTs fetch');
+          devLog.log('No user ID, skipping founder NFTs fetch');
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
         // Fetch user data from Supabase (includes device credentials and access token)
-        console.log('🔑 Fetching Founder NFTs with device credentials from localStorage');
+        devLog.log('🔑 Fetching Founder NFTs with device credentials from localStorage');
         
         // Get credentials from localStorage (they're now saved there after login)
         const accessToken = localStorage.getItem('zo_access_token');
@@ -45,21 +46,21 @@ export function useFounderNFTs() {
         const deviceSecret = localStorage.getItem('zo_device_secret');
           
         if (!accessToken) {
-          console.log('No access token, skipping founder NFTs fetch');
+          devLog.log('No access token, skipping founder NFTs fetch');
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
         if (!deviceId || !deviceSecret) {
-          console.log('No device credentials in localStorage, skipping founder NFTs fetch');
+          devLog.log('No device credentials in localStorage, skipping founder NFTs fetch');
           setNfts([]);
           setIsLoading(false);
           return;
         }
 
-        console.log('🔑 Fetching Founder NFTs with device credentials from localStorage');
-        console.log('📊 Credentials:', {
+        devLog.log('🔑 Fetching Founder NFTs with device credentials from localStorage');
+        devLog.log('📊 Credentials:', {
           hasAccessToken: !!accessToken,
           hasDeviceId: !!deviceId,
           hasDeviceSecret: !!deviceSecret,
@@ -73,7 +74,7 @@ export function useFounderNFTs() {
           { deviceId, deviceSecret }
         );
         
-        console.log('📡 ZO API Profile Result:', {
+        devLog.log('📡 ZO API Profile Result:', {
           success: result.success,
           hasProfile: !!result.profile,
           error: result.error,
@@ -81,7 +82,7 @@ export function useFounderNFTs() {
         });
         
         if (!result.success || !result.profile) {
-          console.warn('⚠️ Profile fetch failed:', result.error);
+          devLog.warn('⚠️ Profile fetch failed:', result.error);
           // Don't throw - just silently fail
           setNfts([]);
           setIsLoading(false);
@@ -98,12 +99,12 @@ export function useFounderNFTs() {
           video: `https://cdn.zo.xyz/nft/founders/${tokenId}.mp4`
         }));
 
-        console.log('✅ Loaded', nftsWithImages.length, 'Founder NFTs');
+        devLog.log('✅ Loaded', nftsWithImages.length, 'Founder NFTs');
         setNfts(nftsWithImages);
         hasFetchedRef.current = true;
 
       } catch (err) {
-        console.warn('⚠️ Could not fetch Founder NFTs:', err);
+        devLog.warn('⚠️ Could not fetch Founder NFTs:', err);
         // Don't show error to user, just silently fail
         setError(null);
         setNfts([]);
@@ -127,7 +128,7 @@ export function useFounderNFTs() {
 
     // Listen for login success event to re-fetch when user logs in
     const handleLoginSuccess = () => {
-      console.log('📢 zoLoginSuccess event received, re-fetching Founder NFTs');
+      devLog.log('📢 zoLoginSuccess event received, re-fetching Founder NFTs');
       hasFetchedRef.current = false; // Reset to allow re-fetch
       fetchFounderNFTs();
     };
@@ -143,7 +144,7 @@ export function useFounderNFTs() {
         localStorage.getItem('zo_device_secret');
       
       if (hasCreds && !hasFetchedRef.current) {
-        console.log('🔄 Credentials available, fetching Founder NFTs');
+        devLog.log('🔄 Credentials available, fetching Founder NFTs');
         fetchFounderNFTs();
       }
     }, 2000); // Check every 2 seconds

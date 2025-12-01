@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 /**
  * GET /api/vibe/:userId
@@ -34,7 +35,7 @@ export async function GET(
       .single();
 
     if (userError || !user) {
-      console.error('Error fetching user:', userError);
+      devLog.error('Error fetching user:', userError);
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
@@ -50,7 +51,7 @@ export async function GET(
       .order('completed_at', { ascending: false });
 
     if (completionsError) {
-      console.error('Error fetching quest completions:', completionsError);
+      devLog.error('Error fetching quest completions:', completionsError);
       return NextResponse.json(
         { success: false, error: 'Failed to fetch quest data' },
         { status: 500 }
@@ -92,7 +93,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Vibe score calculation error:', error);
+    devLog.error('Vibe score calculation error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

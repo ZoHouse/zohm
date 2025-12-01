@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const fileName = `${walletAddress.toLowerCase()}.${fileExtension}`;
 
-    console.log('📸 Uploading profile photo:', { walletAddress, fileName, fileSize: file.size });
+    devLog.log('📸 Uploading profile photo:', { walletAddress, fileName, fileSize: file.size });
 
     // Convert file to buffer
     const fileBuffer = await file.arrayBuffer();
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('❌ Upload error:', uploadError);
+      devLog.error('❌ Upload error:', uploadError);
       return NextResponse.json({ 
         error: 'Failed to upload file to storage' 
       }, { status: 500 });
@@ -74,10 +75,10 @@ export async function POST(request: NextRequest) {
       .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
 
     if (signedUrlError) {
-      console.warn('⚠️ Signed URL generation failed, falling back to public URL:', signedUrlError);
+      devLog.warn('⚠️ Signed URL generation failed, falling back to public URL:', signedUrlError);
     }
 
-    console.log('URL comparison:', {
+    devLog.log('URL comparison:', {
       publicUrl,
       signedUrl: signedUrlData?.signedUrl,
       fileName,
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
     // You can change this logic based on your bucket configuration
     const finalUrl = signedUrlData?.signedUrl || publicUrl; // Use signed URL if available, fallback to public
     
-    console.log('✅ Profile photo uploaded successfully:', { 
+    devLog.log('✅ Profile photo uploaded successfully:', { 
       fileName, 
       publicUrl: finalUrl,
       bucketName: 'Profile Photos',
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Profile photo upload error:', error);
+    devLog.error('❌ Profile photo upload error:', error);
     return NextResponse.json(
       { error: 'Internal server error' }, 
       { status: 500 }

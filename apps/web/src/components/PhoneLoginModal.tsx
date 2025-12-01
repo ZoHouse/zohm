@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { devLog } from '@/lib/logger';
 
 interface PhoneLoginModalProps {
   isOpen: boolean;
@@ -84,21 +85,21 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
         try {
           data = await response.json();
         } catch (parseError) {
-          console.error('❌ Failed to parse JSON response:', parseError);
+          devLog.error('❌ Failed to parse JSON response:', parseError);
           const text = await response.text();
-          console.error('❌ Response text:', text);
+          devLog.error('❌ Response text:', text);
           throw new Error(`Invalid response from server (${response.status})`);
         }
       } else {
         const text = await response.text();
-        console.error('❌ Non-JSON response:', text);
+        devLog.error('❌ Non-JSON response:', text);
         data = { error: text || `Server error (${response.status})` };
       }
 
       if (!response.ok) {
         // Only log errors in development
         if (process.env.NODE_ENV === 'development') {
-          console.error('❌ API Error:', {
+          devLog.error('❌ API Error:', {
             status: response.status,
             error: data.error || data.message,
           });
@@ -115,7 +116,7 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
     } catch (err: any) {
       // Only log in development
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ handleSendOTP error:', err?.message);
+        devLog.error('❌ handleSendOTP error:', err?.message);
       }
       const errorMessage = err?.message || err?.error || 'Failed to send verification code. Please try again.';
       setError(errorMessage);
@@ -171,13 +172,13 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
         if (data.deviceCredentials) {
           localStorage.setItem('zo_device_id', data.deviceCredentials.deviceId);
           localStorage.setItem('zo_device_secret', data.deviceCredentials.deviceSecret);
-          console.log('✅ Device credentials stored');
+          devLog.log('✅ Device credentials stored');
         }
-        console.log('✅ ZO session stored:', data.userId);
+        devLog.log('✅ ZO session stored:', data.userId);
 
         // Dispatch login success event for other components to pick up
         if (typeof window !== 'undefined') {
-          console.log('📢 Dispatching zoLoginSuccess event');
+          devLog.log('📢 Dispatching zoLoginSuccess event');
           window.dispatchEvent(new CustomEvent('zoLoginSuccess', {
             detail: { userId: data.userId }
           }));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
             .single();
 
         if (questError || !quest) {
-            console.error('❌ Quest not found:', { questSlug, error: questError });
+            devLog.error('❌ Quest not found:', { questSlug, error: questError });
             return NextResponse.json(
                 { error: 'Quest not found' },
                 { status: 404 }
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('❌ Error checking quest status:', error);
+        devLog.error('❌ Error checking quest status:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

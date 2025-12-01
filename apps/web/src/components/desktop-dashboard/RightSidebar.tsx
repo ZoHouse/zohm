@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
+import { devLog } from '@/lib/logger';
 
 interface EventData {
   'Event Name': string;
@@ -21,11 +22,11 @@ interface RightSidebarProps {
 const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEvents = [] }) => {
   // Convert EventData to dashboard format
   const events = useMemo(() => {
-    console.log('🎫 RightSidebar received events:', rawEvents.length);
+    devLog.log('🎫 RightSidebar received events:', rawEvents.length);
     
     // Log sample event structure for debugging
     if (rawEvents.length > 0) {
-      console.log('📋 Sample event structure:', {
+      devLog.log('📋 Sample event structure:', {
         'Event Name': rawEvents[0]['Event Name'],
         'Date & Time': rawEvents[0]['Date & Time'],
         'Location': rawEvents[0].Location,
@@ -41,7 +42,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
       const eventDate = new Date(event['Date & Time']);
       return eventDate > new Date();
     });
-    console.log('🎫 Upcoming events:', upcoming.length);
+    devLog.log('🎫 Upcoming events:', upcoming.length);
     
     return upcoming
       .map((event, index) => ({

@@ -8,6 +8,7 @@ import type {
   ZoAuthResponse,
   ZoErrorResponse,
 } from './types';
+import { devLog } from '@/lib/logger';
 
 // Helper to get device credentials (for logging)
 async function getOrCreateDeviceCredentials() {
@@ -26,14 +27,14 @@ export async function sendOTP(
   const baseURL = zoApiClient.defaults.baseURL;
   const fullURL = `${baseURL}${endpoint}`;
   const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB;
-  
+
   try {
     const payload: ZoAuthOTPRequest = {
       mobile_country_code: countryCode,
       mobile_number: phoneNumber,
       message_channel: '', // Empty string as per ZO API spec
     };
-    
+
     // Get device credentials for logging (server-side safe)
     let deviceId: string | undefined;
     let deviceSecret: string | undefined;
@@ -42,13 +43,13 @@ export async function sendOTP(
       deviceId = creds.deviceId;
       deviceSecret = creds.deviceSecret;
     } catch (credError) {
-      console.warn('⚠️ Failed to get device credentials for logging:', credError);
+      devLog.warn('⚠️ Failed to get device credentials for logging:', credError);
       // Continue anyway - credentials are set by interceptor
     }
-    
+
     // Log request details only in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('📤 ZO API Request:', {
+      devLog.log('📤 ZO API Request:', {
         endpoint,
         fullURL,
         payload: JSON.stringify(payload),
@@ -65,12 +66,12 @@ export async function sendOTP(
     if (response.status >= 200 && response.status < 300) {
       // Success - log only in development
       if (process.env.NODE_ENV === 'development') {
-        console.log('✅ ZO API Response:', {
+        devLog.log('✅ ZO API Response:', {
           status: response.status,
           data: response.data,
         });
       }
-      
+
       return {
         success: true,
         message: response.data?.message || response.data?.success || 'OTP sent successfully',
@@ -78,7 +79,7 @@ export async function sendOTP(
     }
 
     // If status is not 2xx, treat as error
-    console.error('❌ ZO API returned non-2xx status:', response.status);
+    devLog.error('❌ ZO API returned non-2xx status:', response.status);
     return {
       success: false,
       message: response.data?.message || response.data?.error || `Unexpected status: ${response.status}`,
@@ -86,16 +87,16 @@ export async function sendOTP(
   } catch (error: any) {
     // Only log errors in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('❌ ZO API Error:', {
+      devLog.error('❌ ZO API Error:', {
         status: error.response?.status,
         message: error.message,
         data: error.response?.data,
       });
     }
-    
+
     const errorData = error.response?.data as ZoErrorResponse;
     const errorMessage = errorData?.detail || errorData?.message || errorData?.error || error.message || 'Failed to send OTP';
-    
+
     return {
       success: false,
       message: errorMessage,
@@ -134,9 +135,9 @@ export async function verifyOTP(
     if (typeof response.data === 'string') {
       try {
         responseData = JSON.parse(response.data);
-        console.log('✅ Parsed string response to JSON');
+        devLog.log('✅ Parsed string response to JSON');
       } catch (parseError) {
-        console.error('❌ Failed to parse response data:', parseError);
+        devLog.error('❌ Failed to parse response data:', parseError);
         return {
           success: false,
           error: 'Invalid response format from authentication service',
@@ -147,7 +148,7 @@ export async function verifyOTP(
     }
 
     // Log the response for debugging
-    console.log('✅ ZO API Verify OTP Response (parsed):', {
+    devLog.log('✅ ZO API Verify OTP Response (parsed):', {
       status: response.status,
       hasUser: !!responseData?.user,
       hasAccessToken: !!responseData?.access_token,
@@ -159,7 +160,7 @@ export async function verifyOTP(
     // Validate response structure - check for required fields
     // Actual ZO API response has: access_token, refresh_token, user, device_id, device_secret at root level
     if (!responseData) {
-      console.error('❌ No data in response:', response);
+      devLog.error('❌ No data in response:', response);
       return {
         success: false,
         error: 'No data in response from authentication service',
@@ -168,7 +169,7 @@ export async function verifyOTP(
 
     // Check if response has user and access_token (required fields)
     if (!responseData.user || !responseData.access_token) {
-      console.error('❌ Missing required fields in response:', {
+      devLog.error('❌ Missing required fields in response:', {
         hasUser: !!responseData.user,
         hasAccessToken: !!responseData.access_token,
         hasRefreshToken: !!responseData.refresh_token,
@@ -184,7 +185,7 @@ export async function verifyOTP(
 
     // device_id and device_secret are returned in the response
     if (!responseData.device_id || !responseData.device_secret) {
-      console.warn('⚠️ Device credentials not in response, will need to handle this');
+      devLog.warn('⚠️ Device credentials not in response, will need to handle this');
     }
 
     return {
@@ -192,16 +193,16 @@ export async function verifyOTP(
       data: responseData,
     };
   } catch (error: any) {
-    console.error('❌ Failed to verify OTP:', {
+    devLog.error('❌ Failed to verify OTP:', {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
     });
-    
+
     // ZO API can return errors in different formats
     const errorData = error.response?.data;
     let errorMessage = 'Invalid OTP';
-    
+
     if (errorData) {
       // Format 1: { success: false, errors: [...] }
       if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -219,7 +220,7 @@ export async function verifyOTP(
         errorMessage = errorData.error;
       }
     }
-    
+
     return {
       success: false,
       error: errorMessage,
@@ -253,8 +254,8 @@ export async function refreshAccessToken(
       tokens: response.data,
     };
   } catch (error: any) {
-    console.error('Failed to refresh token:', error.response?.data || error);
-    
+    devLog.error('Failed to refresh token:', error.response?.data || error);
+
     return {
       success: false,
       error: 'Failed to refresh authentication',

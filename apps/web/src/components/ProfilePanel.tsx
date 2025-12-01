@@ -23,6 +23,7 @@ import {
     ChevronRight,
     Link as LinkIcon,
 } from 'lucide-react';
+import { devLog } from '@/lib/logger';
 
 interface ProfilePanelProps {
     onOpenWallet?: () => void;
@@ -40,12 +41,12 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
     const primaryWalletAddress = userProfile?.primary_wallet_address || null;
 
     // Email/Twitter linking not available with ZO auth
-    const linkEmail = () => console.warn('Email linking not available with ZO auth');
-    const linkTwitter = () => console.warn('Twitter linking not available with ZO auth');
-    const unlinkEmail = () => console.warn('Email unlinking not available with ZO auth');
-    const unlinkTwitter = () => console.warn('Twitter unlinking not available with ZO auth');
+    const linkEmail = () => devLog.warn('Email linking not available with ZO auth');
+    const linkTwitter = () => devLog.warn('Twitter linking not available with ZO auth');
+    const unlinkEmail = () => devLog.warn('Email unlinking not available with ZO auth');
+    const unlinkTwitter = () => devLog.warn('Twitter unlinking not available with ZO auth');
 
-    console.log('📊 ProfilePanel state:', {
+    devLog.log('📊 ProfilePanel state:', {
         hasUserProfile: !!userProfile,
         hasPrimaryWallet: !!primaryWalletAddress,
         isLoadingProfile,
@@ -113,7 +114,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
             setIsEditingName(false);
             showNotification('success', 'Name updated successfully!');
         } catch (error) {
-            console.error('Error updating name:', error);
+            devLog.error('Error updating name:', error);
             showNotification('error', 'Failed to update name. Please try again.');
         }
     };
@@ -134,7 +135,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
             setIsEditingCultures(false);
             showNotification('success', 'Cultures updated successfully!');
         } catch (error) {
-            console.error('Error updating cultures:', error);
+            devLog.error('Error updating cultures:', error);
             showNotification('error', 'Failed to update cultures. Please try again.');
         }
     };
@@ -185,7 +186,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
 
             if (!response.ok) {
                 // If upload service is not configured, just use the local preview
-                console.warn('Upload service not available, using local preview');
+                devLog.warn('Upload service not available, using local preview');
                 showNotification('error', 'Photo upload service not configured. Using default avatar.');
                 URL.revokeObjectURL(preview);
                 setPreviewUrl(null);
@@ -210,7 +211,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
 
             showNotification('success', 'Profile photo updated successfully!');
         } catch (error) {
-            console.error('Error uploading photo:', error);
+            devLog.error('Error uploading photo:', error);
             showNotification('error', 'Photo upload not available. Using unicorn avatar.');
 
             // Clean up preview URL on error
@@ -238,10 +239,10 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
 
         try {
             setIsLinkingAccount(true);
-            console.log('🔗 Attempting to link email...');
+            devLog.log('🔗 Attempting to link email...');
             await linkEmail();
 
-            console.log('✅ Email link initiated, waiting for completion...');
+            devLog.log('✅ Email link initiated, waiting for completion...');
             // Reload profile to show new email
             setTimeout(async () => {
                 await reloadProfile();
@@ -249,8 +250,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                 setIsLinkingAccount(false);
             }, 1000);
         } catch (error: any) {
-            console.error('❌ Error linking email:', error);
-            console.error('Error details:', {
+            devLog.error('❌ Error linking email:', error);
+            devLog.error('Error details:', {
                 message: error?.message,
                 code: error?.code,
                 name: error?.name,
@@ -277,7 +278,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                 setIsLinkingAccount(false);
             }, 1000);
         } catch (error) {
-            console.error('Error linking Twitter:', error);
+            devLog.error('Error linking Twitter:', error);
             showNotification('error', 'Failed to connect Twitter');
             setIsLinkingAccount(false);
         }
@@ -429,8 +430,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ onOpenWallet }) => {
                                                     key={cultureType}
                                                     onClick={() => toggleCulture(cultureType)}
                                                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-all text-left ${isSelected
-                                                            ? 'border-purple-500 bg-purple-50'
-                                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                                        ? 'border-purple-500 bg-purple-50'
+                                                        : 'border-gray-200 bg-white hover:border-gray-300'
                                                         }`}
                                                 >
                                                     <img src={icon} alt={displayName} className="w-6 h-6 object-contain flex-shrink-0" />

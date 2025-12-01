@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import mapboxgl from 'mapbox-gl';
 import { MAPBOX_TOKEN } from '@/lib/calendarConfig';
+import { devLog } from '@/lib/logger';
 
 interface City {
   id: string;
@@ -37,7 +38,7 @@ export default function MapSyncFlow({ onClose, onSync }: MapSyncFlowProps) {
     // Play background video
     if (videoRef.current) {
       videoRef.current.play().catch(err => {
-        console.log('Video autoplay prevented:', err);
+        devLog.log('Video autoplay prevented:', err);
       });
     }
   }, []);
@@ -136,7 +137,7 @@ export default function MapSyncFlow({ onClose, onSync }: MapSyncFlowProps) {
         setCities(data.cities || []);
       }
     } catch (error) {
-      console.error('Failed to fetch cities:', error);
+      devLog.error('Failed to fetch cities:', error);
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,7 @@ export default function MapSyncFlow({ onClose, onSync }: MapSyncFlowProps) {
         onSync(selectedCity.id);
       }
     } catch (error) {
-      console.error('Failed to sync city:', error);
+      devLog.error('Failed to sync city:', error);
     } finally {
       setSyncing(false);
     }

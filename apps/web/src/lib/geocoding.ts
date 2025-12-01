@@ -5,8 +5,10 @@
  * Used by OnboardingPage for "Use My Location" feature
  */
 
+import { devLog } from '@/lib/logger';
+
 // Get Mapbox token from environment
-const MAPBOX_TOKEN = 
+const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_GL_ACCESS_TOKEN ||
@@ -29,15 +31,15 @@ export async function getCityFromCoordinates(
   longitude: number
 ): Promise<GeocodeResult> {
   // Validate coordinates
-  if (!latitude || !longitude || 
-      latitude < -90 || latitude > 90 || 
-      longitude < -180 || longitude > 180) {
+  if (!latitude || !longitude ||
+    latitude < -90 || latitude > 90 ||
+    longitude < -180 || longitude > 180) {
     return { error: 'Invalid coordinates provided' };
   }
 
   // Check if Mapbox token is configured
   if (!MAPBOX_TOKEN) {
-    console.warn('⚠️ Mapbox token not configured for geocoding');
+    devLog.warn('⚠️ Mapbox token not configured for geocoding');
     return { error: 'Geocoding service not configured' };
   }
 
@@ -45,7 +47,7 @@ export async function getCityFromCoordinates(
   const cacheKey = `geocode_${latitude.toFixed(4)}_${longitude.toFixed(4)}`;
   const cached = getCachedCity(cacheKey);
   if (cached) {
-    console.log('✅ Using cached city:', cached);
+    devLog.log('✅ Using cached city:', cached);
     return { city: cached };
   }
 
@@ -54,10 +56,10 @@ export async function getCityFromCoordinates(
     // Using reverse geocoding: coordinates → place name
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}&types=place`;
 
-    console.log('🔄 Fetching city from Mapbox Geocoding API...');
-    
+    devLog.log('🔄 Fetching city from Mapbox Geocoding API...');
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`Geocoding API error: ${response.status} ${response.statusText}`);
     }
@@ -68,25 +70,25 @@ export async function getCityFromCoordinates(
     if (data.features && data.features.length > 0) {
       // Get the first place result
       const place = data.features.find((f: any) => f.place_type?.includes('place'));
-      
+
       if (place) {
         const cityName = place.text || place.place_name;
-        console.log('✅ Found city:', cityName);
-        
+        devLog.log('✅ Found city:', cityName);
+
         // Cache the result
         setCachedCity(cacheKey, cityName);
-        
+
         return { city: cityName };
       }
     }
 
     // No city found in response
-    console.warn('⚠️ No city found for coordinates:', { latitude, longitude });
+    devLog.warn('⚠️ No city found for coordinates:', { latitude, longitude });
     return { error: 'Could not determine city from location' };
 
   } catch (error) {
-    console.error('❌ Geocoding error:', error);
-    return { 
+    devLog.error('❌ Geocoding error:', error);
+    return {
       error: error instanceof Error ? error.message : 'Failed to get city name'
     };
   }
@@ -113,7 +115,7 @@ export async function getCurrentCity(): Promise<GeocodeResult & { coords?: { lat
     });
 
     const { latitude, longitude } = position.coords;
-    console.log('📍 Current position:', { latitude, longitude });
+    devLog.log('📍 Current position:', { latitude, longitude });
 
     // Get city name
     const result = await getCityFromCoordinates(latitude, longitude);
@@ -124,10 +126,10 @@ export async function getCurrentCity(): Promise<GeocodeResult & { coords?: { lat
     };
 
   } catch (error: any) {
-    console.error('❌ Geolocation error:', error);
-    
+    devLog.error('❌ Geolocation error:', error);
+
     let errorMessage = 'Failed to get your location';
-    
+
     if (error.code) {
       switch (error.code) {
         case error.PERMISSION_DENIED:
@@ -141,7 +143,7 @@ export async function getCurrentCity(): Promise<GeocodeResult & { coords?: { lat
           break;
       }
     }
-    
+
     return { error: errorMessage };
   }
 }
@@ -153,7 +155,7 @@ export async function getCurrentCity(): Promise<GeocodeResult & { coords?: { lat
 
 function getCachedCity(key: string): string | null {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const cached = localStorage.getItem(key);
     if (cached) {
@@ -164,15 +166,15 @@ function getCachedCity(key: string): string | null {
       }
     }
   } catch (error) {
-    console.warn('Cache read error:', error);
+    devLog.warn('Cache read error:', error);
   }
-  
+
   return null;
 }
 
 function setCachedCity(key: string, city: string): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const cacheData = {
       city,
@@ -180,7 +182,7 @@ function setCachedCity(key: string, city: string): void {
     };
     localStorage.setItem(key, JSON.stringify(cacheData));
   } catch (error) {
-    console.warn('Cache write error:', error);
+    devLog.warn('Cache write error:', error);
   }
 }
 
@@ -189,7 +191,7 @@ function setCachedCity(key: string, city: string): void {
  */
 export function clearGeocodeCache(): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
@@ -197,9 +199,9 @@ export function clearGeocodeCache(): void {
         localStorage.removeItem(key);
       }
     });
-    console.log('🧹 Geocoding cache cleared');
+    devLog.log('🧹 Geocoding cache cleared');
   } catch (error) {
-    console.warn('Cache clear error:', error);
+    devLog.warn('Cache clear error:', error);
   }
 }
 
@@ -223,11 +225,11 @@ export function getCoordinatesForCity(cityName: string): { lat: number; lng: num
   const city = FALLBACK_CITIES.find(
     c => c.name.toLowerCase() === cityName.toLowerCase()
   );
-  
+
   if (city) {
     return { lat: city.lat, lng: city.lng };
   }
-  
+
   return null;
 }
 

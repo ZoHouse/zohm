@@ -243,25 +243,7 @@ export async function GET(
                                 </div>
                             </div>
 
-                            {/* ZO PASSPORT label */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '30px',
-                                left: 0,
-                                right: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <div style={{
-                                    fontSize: '18px',
-                                    color: textColor,
-                                    opacity: 0.5,
-                                    letterSpacing: '2px',
-                                }}>
-                                    ZO PASSPORT
-                                </div>
-                            </div>
+
                         </div>
                     </div>
 

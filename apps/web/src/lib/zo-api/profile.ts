@@ -3,6 +3,7 @@
 
 import { zoApiClient, getZoAuthHeaders } from './client';
 import type { ZoProfileResponse, ZoProfileUpdatePayload, ZoErrorResponse } from './types';
+import { devLog } from '@/lib/logger';
 
 /**
  * Fetch user profile from ZO API
@@ -25,7 +26,7 @@ export async function getProfile(
     
     // Log device credentials being used (for debugging)
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 getProfile using device credentials:', {
+      devLog.log('🔍 getProfile using device credentials:', {
         deviceId: headers['client-device-id'],
         deviceSecret: headers['client-device-secret']?.substring(0, 10) + '...',
         fromAuthData: !!deviceCredentials,
@@ -55,7 +56,7 @@ export async function getProfile(
       profile: response.data,
     };
   } catch (error: any) {
-    console.error('❌ getProfile error details:', {
+    devLog.error('❌ getProfile error details:', {
       message: error.message,
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -92,7 +93,7 @@ export async function updateProfile(
   error?: string;
 }> {
   try {
-    console.log('📞 [updateProfile] Starting API call...', {
+    devLog.log('📞 [updateProfile] Starting API call...', {
       endpoint: '/api/v1/profile/me/',
       method: 'POST',
       updates: JSON.stringify(updates),
@@ -104,7 +105,7 @@ export async function updateProfile(
     const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
     
     // Log device credentials being used (for debugging)
-    console.log('🔍 [updateProfile] Using device credentials:', {
+    devLog.log('🔍 [updateProfile] Using device credentials:', {
       deviceId: headers['client-device-id'] || 'MISSING',
       deviceSecret: headers['client-device-secret'] ? headers['client-device-secret'].substring(0, 10) + '...' : 'MISSING',
       hasClientKey: !!headers['client-key'],
@@ -124,7 +125,7 @@ export async function updateProfile(
       },
     };
     
-    console.log('📡 [updateProfile] Making POST request to ZO API...');
+    devLog.log('📡 [updateProfile] Making POST request to ZO API...');
     const apiStartTime = Date.now();
     
     const response = await zoApiClient.post<ZoProfileResponse>(
@@ -134,7 +135,7 @@ export async function updateProfile(
     );
     
     const apiDuration = Date.now() - apiStartTime;
-    console.log(`✅ [updateProfile] API call succeeded in ${apiDuration}ms`, {
+    devLog.log(`✅ [updateProfile] API call succeeded in ${apiDuration}ms`, {
       status: response.status,
       hasData: !!response.data,
       hasAvatar: !!response.data?.avatar,
@@ -147,7 +148,7 @@ export async function updateProfile(
       profile: response.data,
     };
   } catch (error: any) {
-    console.error('❌ [updateProfile] API call failed:', {
+    devLog.error('❌ [updateProfile] API call failed:', {
       message: error.message,
       status: error.response?.status,
       statusText: error.response?.statusText,

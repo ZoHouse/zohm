@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { devLog } from '@/lib/logger';
 
 // Fetch user progress function
 async function fetchUserProgress(userId: string) {
@@ -18,11 +19,11 @@ async function fetchUserProgress(userId: string) {
       return data;
     } else {
       // Silently fail for non-critical data
-      console.warn(`⚠️ User progress fetch returned ${response.status}`);
+      devLog.warn(`⚠️ User progress fetch returned ${response.status}`);
     }
   } catch (error) {
     // Silently fail - header should still render without live balance
-    console.warn('⚠️ Could not fetch user progress (non-critical):', error instanceof Error ? error.message : 'Unknown error');
+    devLog.warn('⚠️ Could not fetch user progress (non-critical):', error instanceof Error ? error.message : 'Unknown error');
   }
   return null;
 }
@@ -34,17 +35,17 @@ async function fetchUserProgress(userId: string) {
 // Get initial avatar synchronously to prevent flash
 function getInitialAvatar(avatarSrc?: string): string {
   if (avatarSrc) {
-    console.log('🎨 Using avatar from props:', avatarSrc);
+    devLog.log('🎨 Using avatar from props:', avatarSrc);
     return avatarSrc;
   }
   if (typeof window !== 'undefined') {
     const storedAvatar = localStorage.getItem('zo_avatar');
     if (storedAvatar) {
-      console.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      devLog.log('🎨 Loading avatar from localStorage:', storedAvatar);
       return storedAvatar;
     }
   }
-  console.log('🎨 No avatar found, using default');
+  devLog.log('🎨 No avatar found, using default');
   return '/quest-audio-assets/avatar.png';
 }
 
@@ -65,7 +66,7 @@ export default function QuantumSyncHeader({
   // Update avatar if avatarSrc prop changes
   useEffect(() => {
     if (avatarSrc && avatarSrc !== avatar) {
-      console.log('🎨 Updating avatar from props:', avatarSrc);
+      devLog.log('🎨 Updating avatar from props:', avatarSrc);
       setAvatar(avatarSrc);
       // Also update localStorage for next time
       localStorage.setItem('zo_avatar', avatarSrc);
@@ -84,7 +85,7 @@ export default function QuantumSyncHeader({
         }
       // Update avatar from API if available and different
       if (progress?.user?.pfp && progress.user.pfp !== avatar) {
-        console.log('🎨 Updating avatar from API:', progress.user.pfp);
+        devLog.log('🎨 Updating avatar from API:', progress.user.pfp);
         setAvatar(progress.user.pfp);
         // Also update localStorage for next time
         localStorage.setItem('zo_avatar', progress.user.pfp);

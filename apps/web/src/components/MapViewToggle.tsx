@@ -1,6 +1,7 @@
 'use client';
 
 import { Globe, MapPin } from 'lucide-react';
+import { devLog } from '@/lib/logger';
 
 interface MapViewToggleProps {
   viewMode: 'local' | 'global';
@@ -20,7 +21,7 @@ const MapViewToggle: React.FC<MapViewToggleProps> = ({
   isLoading = false,
 }) => {
   const handleToggle = (mode: 'local' | 'global') => {
-    console.log('🎯 MapViewToggle clicked:', mode);
+    devLog.log('🎯 MapViewToggle clicked:', mode);
     onToggle(mode);
   };
 

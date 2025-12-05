@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error('Error updating user:', error);
+      devLog.error('Error updating user:', error);
       return NextResponse.json(
         { error: 'Failed to update user', details: error.message },
         { status: 500 }
@@ -27,7 +28,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Exception updating user:', error);
+    devLog.error('Exception updating user:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

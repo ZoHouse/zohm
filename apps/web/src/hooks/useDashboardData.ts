@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useZoAuth } from './useZoAuth';
+import { devLog } from '@/lib/logger';
 
 export interface DashboardEvent {
   id: string;
@@ -66,7 +67,7 @@ export function useDashboardData() {
             east: userProfile.lng + radiusDegrees,
           };
 
-          console.log('📍 Fetching local events around:', {
+          devLog.log('📍 Fetching local events around:', {
             lat: userProfile.lat,
             lng: userProfile.lng,
             city: userProfile.city,
@@ -79,12 +80,12 @@ export function useDashboardData() {
             .gte('lng', bbox.west)
             .lte('lng', bbox.east);
         } else {
-          console.log('⚠️ No user location, fetching all upcoming events');
+          devLog.log('⚠️ No user location, fetching all upcoming events');
         }
 
         const { data: eventsData, error: eventsError } = await eventsQuery.limit(10);
 
-        console.log('📊 Events query result:', { 
+        devLog.log('📊 Events query result:', { 
           count: eventsData?.length, 
           error: eventsError?.message,
           sampleEvents: eventsData?.slice(0, 3).map(e => ({ 
@@ -96,7 +97,7 @@ export function useDashboardData() {
         });
 
         if (eventsError) {
-          console.warn('Unable to fetch events:', eventsError.message);
+          devLog.warn('Unable to fetch events:', eventsError.message);
           // Keep empty array as fallback
         } else if (eventsData && eventsData.length > 0) {
           // Map the data to match the DashboardEvent interface
@@ -121,7 +122,7 @@ export function useDashboardData() {
           .limit(3);
 
         if (questsError) {
-          console.warn('Unable to fetch quests:', questsError.message);
+          devLog.warn('Unable to fetch quests:', questsError.message);
           // Provide fallback quest data for UI display
           setQuests([{
             id: 'default-1',
@@ -156,7 +157,7 @@ export function useDashboardData() {
             .limit(5);
 
           if (nodesError) {
-            console.warn('Unable to fetch nodes:', nodesError.message);
+            devLog.warn('Unable to fetch nodes:', nodesError.message);
             // Keep empty array as fallback
           } else if (nodesData) {
             // Map latitude/longitude to lat/lng for consistency
@@ -171,7 +172,7 @@ export function useDashboardData() {
           }
         }
       } catch (error) {
-        console.warn('Unable to fetch dashboard data:', error);
+        devLog.warn('Unable to fetch dashboard data:', error);
       } finally {
         setLoading(false);
       }

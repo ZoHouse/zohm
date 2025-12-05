@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
+import { devLog } from '@/lib/logger';
 
 /**
  * Haversine distance calculation (km)
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
     const { data: events, error } = await query;
     
     if (error) {
-      console.error('❌ Database error:', error);
+      devLog.error('❌ Database error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch events', details: error.message },
         { status: 500 }
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    devLog.error('❌ Unexpected error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

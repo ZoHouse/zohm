@@ -5,6 +5,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useProfileGate } from '@/hooks/useProfileGate';
 import { supabase } from '@/lib/supabase';
 import { Edit, Save, BookOpen } from 'lucide-react';
+import { devLog } from '@/lib/logger';
 
 const MainQuestCard = () => {
     const { address } = useWallet();
@@ -32,7 +33,7 @@ const MainQuestCard = () => {
             await loadMemberProfile();
             setIsEditing(false);
         } catch (error) {
-            console.error('Error updating main quest URL:', error);
+            devLog.error('Error updating main quest URL:', error);
         }
     };
 

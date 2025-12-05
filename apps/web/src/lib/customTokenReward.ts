@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { devLog } from '@/lib/logger';
 
 // Custom Token configuration
 export const TOKEN_CONFIG = {
@@ -97,7 +98,7 @@ export async function getCurrentGasPrice(provider: ethers.JsonRpcProvider): Prom
   try {
     return await provider.getFeeData().then(feeData => feeData.gasPrice || BigInt(0));
   } catch (error) {
-    console.warn('Failed to get current gas price, using default:', error);
+    devLog.warn('Failed to get current gas price, using default:', error);
     // Return a reasonable default gas price for Fuji testnet (20 Gwei)
     return ethers.parseUnits('20', 'gwei');
   }
@@ -118,7 +119,7 @@ export async function estimateTokenTransferGas(
     const gasEstimate = await contract.transfer.estimateGas(to, value);
     return gasEstimate;
   } catch (error) {
-    console.warn('Failed to estimate gas for token transfer, using default:', error);
+    devLog.warn('Failed to estimate gas for token transfer, using default:', error);
     return BigInt(TOKEN_CONFIG.GAS_LIMIT);
   }
 }
@@ -181,7 +182,7 @@ export async function getTokenInfo(contract: ethers.Contract) {
     
     return { symbol, decimals, name };
   } catch (error) {
-    console.warn('Failed to get token info:', error);
+    devLog.warn('Failed to get token info:', error);
     return {
       symbol: TOKEN_CONFIG.TOKEN_SYMBOL,
       decimals: TOKEN_CONFIG.TOKEN_DECIMALS,
@@ -199,7 +200,7 @@ export async function getTokenBalance(contract: ethers.Contract, address: string
   try {
     return await contract.balanceOf(address);
   } catch (error) {
-    console.error('Failed to get token balance:', error);
+    devLog.error('Failed to get token balance:', error);
     throw new Error('Failed to get token balance');
   }
 }

@@ -9,6 +9,8 @@
  * P0-2: Network Retry Mechanism
  */
 
+import { devLog } from '@/lib/logger';
+
 const QUEUE_KEY = 'zo_quest_queue';
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
@@ -42,12 +44,12 @@ interface QueuedRequest {
  */
 function getQueue(): QueuedRequest[] {
   if (typeof window === 'undefined') return [];
-  
+
   try {
     const stored = localStorage.getItem(QUEUE_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.error('❌ Error reading quest queue:', error);
+    devLog.error('❌ Error reading quest queue:', error);
     return [];
   }
 }
@@ -57,11 +59,11 @@ function getQueue(): QueuedRequest[] {
  */
 function saveQueue(queue: QueuedRequest[]): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch (error) {
-    console.error('❌ Error saving quest queue:', error);
+    devLog.error('❌ Error saving quest queue:', error);
   }
 }
 
@@ -71,7 +73,7 @@ function saveQueue(queue: QueuedRequest[]): void {
 export function addToQueue(data: QuestCompletionData): string {
   const id = `quest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const queue = getQueue();
-  
+
   const request: QueuedRequest = {
     id,
     data,
@@ -79,11 +81,11 @@ export function addToQueue(data: QuestCompletionData): string {
     retries: 0,
     nextRetry: Date.now(), // Retry immediately
   };
-  
+
   queue.push(request);
   saveQueue(queue);
-  
-  console.log(`📦 Added quest to offline queue: ${id}`, data);
+
+  devLog.log(`📦 Added quest to offline queue: ${id}`, data);
   return id;
 }
 
@@ -94,7 +96,7 @@ function removeFromQueue(id: string): void {
   const queue = getQueue();
   const filtered = queue.filter(req => req.id !== id);
   saveQueue(filtered);
-  console.log(`✅ Removed from queue: ${id}`);
+  devLog.log(`✅ Removed from queue: ${id}`);
 }
 
 /**
@@ -116,22 +118,22 @@ async function submitQuestCompletion(data: QuestCompletionData): Promise<boolean
       },
       body: JSON.stringify(data),
     });
-    
+
     if (response.ok) {
       const result = await response.json();
-      console.log('✅ Quest completion submitted:', result);
+      devLog.log('✅ Quest completion submitted:', result);
       return true;
     } else if (response.status === 429) {
       // Cooldown - this is expected, not a failure
       const error = await response.json();
-      console.warn('⏳ Quest on cooldown (will retry):', error.next_available_at);
+      devLog.warn('⏳ Quest on cooldown (will retry):', error.next_available_at);
       return false; // Retry later
     } else {
-      console.error('❌ Error submitting quest:', response.status, await response.text());
+      devLog.error('❌ Error submitting quest:', response.status, await response.text());
       return false;
     }
   } catch (error) {
-    console.error('❌ Network error submitting quest:', error);
+    devLog.error('❌ Network error submitting quest:', error);
     return false;
   }
 }
@@ -143,31 +145,31 @@ async function submitQuestCompletion(data: QuestCompletionData): Promise<boolean
 export async function processQueue(): Promise<void> {
   const queue = getQueue();
   const now = Date.now();
-  
+
   if (queue.length === 0) {
     return;
   }
-  
-  console.log(`🔄 Processing quest queue (${queue.length} items)...`);
-  
+
+  devLog.log(`🔄 Processing quest queue (${queue.length} items)...`);
+
   for (const request of queue) {
     // Check if it's time to retry this request
     if (request.nextRetry > now) {
-      console.log(`⏳ Skipping ${request.id} (next retry in ${Math.round((request.nextRetry - now) / 1000)}s)`);
+      devLog.log(`⏳ Skipping ${request.id} (next retry in ${Math.round((request.nextRetry - now) / 1000)}s)`);
       continue;
     }
-    
+
     // Check if we've exceeded max retries
     if (request.retries >= MAX_RETRIES) {
-      console.error(`❌ Max retries exceeded for ${request.id}, removing from queue`);
+      devLog.error(`❌ Max retries exceeded for ${request.id}, removing from queue`);
       removeFromQueue(request.id);
       continue;
     }
-    
-    console.log(`🔄 Retrying quest completion: ${request.id} (attempt ${request.retries + 1}/${MAX_RETRIES})`);
-    
+
+    devLog.log(`🔄 Retrying quest completion: ${request.id} (attempt ${request.retries + 1}/${MAX_RETRIES})`);
+
     const success = await submitQuestCompletion(request.data);
-    
+
     if (success) {
       // Success! Remove from queue
       removeFromQueue(request.id);
@@ -175,18 +177,18 @@ export async function processQueue(): Promise<void> {
       // Failed, update retry count and schedule next retry
       request.retries += 1;
       request.nextRetry = now + getBackoffDelay(request.retries);
-      
+
       // Update the queue
-      const updatedQueue = getQueue().map(req => 
+      const updatedQueue = getQueue().map(req =>
         req.id === request.id ? request : req
       );
       saveQueue(updatedQueue);
-      
-      console.log(`⏰ Scheduled retry for ${request.id} in ${Math.round(getBackoffDelay(request.retries) / 1000)}s`);
+
+      devLog.log(`⏰ Scheduled retry for ${request.id} in ${Math.round(getBackoffDelay(request.retries) / 1000)}s`);
     }
   }
-  
-  console.log(`✅ Queue processing complete. ${getQueue().length} items remaining.`);
+
+  devLog.log(`✅ Queue processing complete. ${getQueue().length} items remaining.`);
 }
 
 /**
@@ -208,7 +210,7 @@ export function getQueueStats() {
 export function clearQueue(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(QUEUE_KEY);
-    console.log('🗑️ Quest queue cleared');
+    devLog.log('🗑️ Quest queue cleared');
   }
 }
 
@@ -219,12 +221,12 @@ export function clearQueue(): void {
 export function initQueueProcessing(): void {
   // Process queue immediately
   processQueue();
-  
+
   // Set up periodic processing (every 30 seconds)
   const interval = setInterval(() => {
     processQueue();
   }, 30000);
-  
+
   // Return cleanup function
   if (typeof window !== 'undefined') {
     (window as any).__questQueueInterval = interval;

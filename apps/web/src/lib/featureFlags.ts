@@ -5,6 +5,8 @@
  * All flags default to safe/conservative values.
  */
 
+import { devLog } from '@/lib/logger';
+
 /**
  * Canonical Events Store Flags
  * 
@@ -29,7 +31,7 @@ export const FEATURE_FLAGS = {
    * Default: false (safe)
    */
   CANONICAL_EVENTS_READ: process.env.FEATURE_CANONICAL_EVENTS_READ === 'true',
-  
+
   /**
    * CANONICAL_EVENTS_WRITE
    * 
@@ -45,7 +47,7 @@ export const FEATURE_FLAGS = {
    * Default: false (safe)
    */
   CANONICAL_EVENTS_WRITE: process.env.FEATURE_CANONICAL_EVENTS_WRITE === 'true',
-  
+
   /**
    * CANONICAL_DRY_RUN
    * 
@@ -97,7 +99,7 @@ export function getFeatureFlagState() {
 if (typeof window === 'undefined') {
   // Server-side only logging
   const state = getFeatureFlagState();
-  console.log('🚩 Feature Flags Initialized:', JSON.stringify(state, null, 2));
+  devLog.log('🚩 Feature Flags Initialized:', JSON.stringify(state, null, 2));
 }
 
 

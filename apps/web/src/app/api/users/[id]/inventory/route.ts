@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInventory, getInventorySummary, getItemDisplayInfo } from '@/lib/inventoryService';
+import { devLog } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
       items: enhancedItems,
     });
   } catch (error) {
-    console.error('Error fetching user inventory:', error);
+    devLog.error('Error fetching user inventory:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

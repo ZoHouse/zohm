@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncCanonicalEvents } from '@/lib/eventWorker';
 import { getFeatureFlagState } from '@/lib/featureFlags';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const verbose = searchParams.get('verbose') === 'true';
     
     // Log worker start
-    console.log('🔄 Event worker triggered via API', {
+    devLog.log('🔄 Event worker triggered via API', {
       forceApply,
       calendarId,
       verbose,
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
     
     // Log completion
-    console.log('✅ Event worker completed', {
+    devLog.log('✅ Event worker completed', {
       stats,
       duration_ms: duration,
     });
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Event worker failed:', error);
+    devLog.error('❌ Event worker failed:', error);
     
     return NextResponse.json({
       success: false,

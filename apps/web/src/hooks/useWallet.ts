@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 interface WalletState {
   isConnected: boolean;
@@ -107,7 +108,7 @@ export function useWallet() {
       const data = await response.json();
       return data.hasNFT || false;
     } catch (error) {
-      console.error('Error checking founder NFT:', error);
+      devLog.error('Error checking founder NFT:', error);
       return false;
     }
   }, []);
@@ -131,7 +132,7 @@ export function useWallet() {
         last_seen: new Date().toISOString()
       };
 
-      console.log('💾 Syncing with Supabase:', finalMemberData);
+      devLog.log('💾 Syncing with Supabase:', finalMemberData);
 
       // Use upsert to handle both insert and update
       const { data, error } = await supabase
@@ -143,13 +144,13 @@ export function useWallet() {
         .select();
 
       if (error) {
-        console.error('Supabase upsert error:', error);
+        devLog.error('Supabase upsert error:', error);
         return false;
       }
-      console.log('✅ Successfully synced with Supabase:', data);
+      devLog.log('✅ Successfully synced with Supabase:', data);
       return true;
     } catch (error) {
-      console.error('Error syncing with Supabase:', error);
+      devLog.error('Error syncing with Supabase:', error);
       return false;
     }
   }, []);
@@ -167,7 +168,7 @@ export function useWallet() {
 
       // Check NFT balance and get count
       const hasNFT = await checkFounderNFT(address);
-      console.log('🔍 NFT Check Result:', { address, hasNFT });
+      devLog.log('🔍 NFT Check Result:', { address, hasNFT });
       
       // Use default avatar - user will select NFT via gallery
       const defaultAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&backgroundColor=1a1a1a`;
@@ -182,7 +183,7 @@ export function useWallet() {
 
       // Determine the correct role
       const newRole = hasNFT ? 'Founder' : 'Member';
-      console.log('🎯 Setting Role:', { hasNFT, newRole });
+      devLog.log('🎯 Setting Role:', { hasNFT, newRole });
       
       // Sync with Supabase with the correct role
       await syncWithSupabase(address, newRole, memberData);
@@ -238,12 +239,12 @@ export function useWallet() {
         .eq('wallet', walletState.address.toLowerCase());
       
       if (error) {
-        console.error('Error updating role in database:', error);
+        devLog.error('Error updating role in database:', error);
       } else {
-        console.log('✅ Role updated in database:', role);
+        devLog.log('✅ Role updated in database:', role);
       }
     } catch (error) {
-      console.error('Exception updating role:', error);
+      devLog.error('Exception updating role:', error);
     }
   }, [walletState.address]);
 
@@ -262,7 +263,7 @@ export function useWallet() {
 
         if (accounts.length > 0) {
           const address = accounts[0];
-          console.log('🔍 Found existing wallet connection:', address);
+          devLog.log('🔍 Found existing wallet connection:', address);
           
           setWalletState(prev => ({
             ...prev,
@@ -282,7 +283,7 @@ export function useWallet() {
         }
       } catch (error) {
         // Improved error logging
-        console.warn('⚠️ Could not check existing wallet connection (this is okay):', 
+        devLog.warn('⚠️ Could not check existing wallet connection (this is okay):', 
           error instanceof Error ? error.message : String(error)
         );
       }

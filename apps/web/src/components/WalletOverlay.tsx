@@ -7,6 +7,7 @@ import { getUnicornForAddress } from '@/lib/unicornAvatars';
 import { GlowCard } from '@/components/ui';
 import { ethers } from 'ethers';
 import { setPrimaryWallet } from '@/lib/userDb';
+import { devLog } from '@/lib/logger';
 
 interface WalletOverlayProps {
   isVisible: boolean;
@@ -78,7 +79,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
         setBalance(displayBalance);
         setTokenSymbol(symbol || '$ZO');
       } catch (error) {
-        console.error('Error fetching token balance:', error);
+        devLog.error('Error fetching token balance:', error);
         // Fallback or keep existing
       } finally {
         setIsLoadingBalance(false);
@@ -95,7 +96,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
       // TODO: Implement wallet linking via ZO API
       showNotification('error', 'Wallet linking coming soon');
     } catch (error) {
-      console.error('Failed to link wallet:', error);
+      devLog.error('Failed to link wallet:', error);
       showNotification('error', 'Failed to link wallet');
     } finally {
       setIsLinkingWallet(false);
@@ -116,7 +117,7 @@ const WalletOverlay: React.FC<WalletOverlayProps> = ({ isVisible, onClose }) => 
         throw new Error('Failed to set primary wallet');
       }
     } catch (error) {
-      console.error('Failed to set primary wallet:', error);
+      devLog.error('Failed to set primary wallet:', error);
       showNotification('error', 'Failed to update primary wallet');
     } finally {
       setSettingPrimaryFor(null);

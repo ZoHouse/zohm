@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 const COOLDOWN_KEY_PREFIX = 'quest_cooldown_';
 
@@ -59,7 +60,7 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
           clearQuestCooldown(questId, userId);
         }
       } catch (err) {
-        console.error('Failed to sync cooldown with server:', err);
+        devLog.error('Failed to sync cooldown with server:', err);
         // Fallback to localStorage if server check fails
       }
     };
@@ -109,7 +110,7 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
           });
         }
       } catch (error) {
-        console.error('Error parsing cooldown timestamp:', error);
+        devLog.error('Error parsing cooldown timestamp:', error);
         localStorage.removeItem(storageKey);
         setCooldownState({
           canPlay: true,
@@ -139,7 +140,7 @@ export function useQuestCooldown(questId: string, userId?: string): QuestCooldow
 export function setQuestCooldown(questId: string, userId: string, nextAvailableAt: string) {
   const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
   localStorage.setItem(storageKey, nextAvailableAt);
-  console.log(`🔒 Cooldown set for ${questId} until:`, nextAvailableAt);
+  devLog.log(`🔒 Cooldown set for ${questId} until:`, nextAvailableAt);
 }
 
 /**
@@ -148,7 +149,7 @@ export function setQuestCooldown(questId: string, userId: string, nextAvailableA
 export function clearQuestCooldown(questId: string, userId: string) {
   const storageKey = `${COOLDOWN_KEY_PREFIX}${userId}_${questId}`;
   localStorage.removeItem(storageKey);
-  console.log(`✅ Cooldown cleared for ${questId}`);
+  devLog.log(`✅ Cooldown cleared for ${questId}`);
 }
 
 /**

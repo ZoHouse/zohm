@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useZoAuth } from '@/hooks/useZoAuth';
+import { devLog } from '@/lib/logger';
 
 // ==========================================
 // Types
@@ -92,29 +93,29 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
             if (!userId) return;
 
             try {
-                console.log('🔍 Checking quest status for:', userId);
+                devLog.log('🔍 Checking quest status for:', userId);
                 const res = await fetch(`/api/quests/status?userId=${userId}&questId=${QUEST_SLUG}`);
                 const data = await res.json();
 
                 if (!mounted) return;
 
                 if (data.error) {
-                    console.error('❌ Status check failed:', data.error);
+                    devLog.error('❌ Status check failed:', data.error);
                     // Default to IDLE on error to not block new users
                     setPhase('IDLE');
                     return;
                 }
 
                 if (!data.canComplete && data.nextAvailableAt) {
-                    console.log('⏳ User is on cooldown until:', data.nextAvailableAt);
+                    devLog.log('⏳ User is on cooldown until:', data.nextAvailableAt);
                     setCooldownEndsAt(new Date(data.nextAvailableAt));
                     setPhase('COOLDOWN');
                 } else {
-                    console.log('✅ User is ready to play');
+                    devLog.log('✅ User is ready to play');
                     setPhase('IDLE');
                 }
             } catch (err) {
-                console.error('❌ Error checking status:', err);
+                devLog.error('❌ Error checking status:', err);
                 if (mounted) setPhase('IDLE');
             }
         };
@@ -179,7 +180,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
     const startGameLoop = useCallback(() => {
         if (isPlayingRef.current) return;
 
-        console.log('🚀 Starting Game Loop');
+        devLog.log('🚀 Starting Game Loop');
         isPlayingRef.current = true;
         startTimeRef.current = 0; // Reset start time
         setPhase('PLAYING');
@@ -189,7 +190,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
     const stopGameLoop = useCallback(() => {
         if (!isPlayingRef.current) return;
 
-        console.log('🛑 Stopping Game Loop at:', counter);
+        devLog.log('🛑 Stopping Game Loop at:', counter);
         isPlayingRef.current = false;
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
 
@@ -238,7 +239,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-            console.log('🎙️ Microphone active');
+            devLog.log('🎙️ Microphone active');
             setIsMicPermissionGranted(true);
         };
 
@@ -248,17 +249,17 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
                 .join('')
                 .toLowerCase();
 
-            console.log('🗣️ Heard:', transcript);
+            devLog.log('🗣️ Heard:', transcript);
 
             if (transcript.includes('zo') || transcript.includes('zone') || transcript.includes('go')) {
-                console.log('✅ "Zo" detected! Starting game...');
+                devLog.log('✅ "Zo" detected! Starting game...');
                 recognition.stop();
                 startGameLoop();
             }
         };
 
         recognition.onerror = (event: any) => {
-            console.error('❌ Speech recognition error:', event.error);
+            devLog.error('❌ Speech recognition error:', event.error);
             if (event.error === 'not-allowed') {
                 setError('Microphone access denied. Please enable permissions.');
                 setPhase('IDLE');
@@ -266,7 +267,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
         };
 
         recognition.onend = () => {
-            console.log('🎙️ Microphone stopped');
+            devLog.log('🎙️ Microphone stopped');
             // If we stopped but didn't start playing, go back to IDLE
             if (!isPlayingRef.current && phaseRef.current === 'RECORDING') {
                 // Optional: Auto-retry or just go idle
@@ -280,7 +281,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
         // Safety timeout: If nothing heard in 5 seconds, stop
         silenceTimerRef.current = setTimeout(() => {
             if (phaseRef.current === 'RECORDING') {
-                console.log('⏰ Voice timeout');
+                devLog.log('⏰ Voice timeout');
                 recognition.stop();
                 setPhase('IDLE');
                 setError('No voice detected. Try again!');
@@ -306,7 +307,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
         if (!userId) return;
 
         try {
-            console.log('📤 Submitting score:', finalScore);
+            devLog.log('📤 Submitting score:', finalScore);
 
             const res = await fetch('/api/quests/complete', {
                 method: 'POST',
@@ -329,7 +330,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
                 throw new Error(data.error || 'Submission failed');
             }
 
-            console.log('✅ Submission successful:', data);
+            devLog.log('✅ Submission successful:', data);
 
             // Notify parent
             if (onComplete) {
@@ -337,7 +338,7 @@ export function useGame1111Engine({ onComplete, onExit }: UseGame1111EngineProps
             }
 
         } catch (err: any) {
-            console.error('❌ Submission error:', err);
+            devLog.error('❌ Submission error:', err);
             setError(err.message);
             // Even if submission fails, we showed the result.
             // We might want to queue a retry here in a real app.

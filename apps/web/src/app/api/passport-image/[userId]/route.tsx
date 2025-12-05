@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export const runtime = 'edge';
 
@@ -20,13 +21,13 @@ async function fetchImage(url: string) {
         });
 
         if (!res.ok) {
-            console.error(`Failed to fetch image ${url}: ${res.status} ${res.statusText}`);
+            devLog.error(`Failed to fetch image ${url}: ${res.status} ${res.statusText}`);
             return null;
         }
 
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('avif')) {
-            console.warn(`Received AVIF despite requesting PNG for ${url}`);
+            devLog.warn(`Received AVIF despite requesting PNG for ${url}`);
             // If we still get AVIF, we might be stuck, but let's try to proceed or return null to avoid crashing
             // returning null will just show no image instead of crashing the whole route
             return null;
@@ -34,7 +35,7 @@ async function fetchImage(url: string) {
 
         return await res.arrayBuffer();
     } catch (e) {
-        console.error(`Error fetching image ${url}:`, e);
+        devLog.error(`Error fetching image ${url}:`, e);
         return null;
     }
 }

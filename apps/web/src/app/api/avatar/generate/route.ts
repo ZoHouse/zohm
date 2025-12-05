@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 /**
  * POST /api/avatar/generate
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
 
     if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
-      console.error('Missing ZO API environment variables');
+      devLog.error('Missing ZO API environment variables');
       return NextResponse.json(
         { success: false, message: 'Server configuration error' },
         { status: 500 }
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     // This is the PRIMARY path for avatar generation
     
     if (!accessToken || !deviceId || !deviceSecret) {
-      console.error('❌ Missing credentials in request body. Avatar generation requires credentials from localStorage (new users only).');
+      devLog.error('❌ Missing credentials in request body. Avatar generation requires credentials from localStorage (new users only).');
       return NextResponse.json(
         { 
           success: false, 
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('✅ Using credentials from request body (localStorage - new user)');
+    devLog.log('✅ Using credentials from request body (localStorage - new user)');
     const ZO_USER_TOKEN = accessToken;
     const finalDeviceId = deviceId;
     const finalDeviceSecret = deviceSecret;
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     if (!zoResponse.ok) {
       const errorText = await zoResponse.text();
-      console.error('ZO API error:', zoResponse.status, errorText);
+      devLog.error('ZO API error:', zoResponse.status, errorText);
       return NextResponse.json(
         { 
           success: false, 
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       .eq('id', userId);
 
     if (updateError) {
-      console.error('Supabase update error:', updateError);
+      devLog.error('Supabase update error:', updateError);
       // Don't fail the request - ZO API succeeded
     }
 
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Avatar generation error:', error);
+    devLog.error('Avatar generation error:', error);
     return NextResponse.json(
       { 
         success: false, 

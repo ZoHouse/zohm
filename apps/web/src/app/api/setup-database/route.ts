@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error creating table:', error);
+      devLog.error('Error creating table:', error);
       return NextResponse.json({ 
         success: false, 
         error: error.message 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Exception during database setup:', error);
+    devLog.error('Exception during database setup:', error);
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -79,7 +80,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Exception checking table:', error);
+    devLog.error('Exception checking table:', error);
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

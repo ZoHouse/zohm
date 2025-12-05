@@ -1,9 +1,12 @@
 /**
- * 8th Wall Loader Utility
- * 
- * Dynamically loads 8th Wall XR8 script and initializes AR session.
- * This utility handles script loading, initialization, and cleanup.
+ * 8th Wall Loading for AR Features
+ * This file is responsible for loading 8th Wall's XR8 SDK which handles:
+ * - AR camera access and tracking
+ * - 3D scene rendering
+ * - Image/Face target detection
  */
+
+import { devLog } from '@/lib/logger';
 
 declare global {
   interface Window {
@@ -27,7 +30,7 @@ export function load8thWallScript(appKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Check if already loaded
     if (typeof window !== 'undefined' && window.XR8) {
-      console.log('✅ 8th Wall XR8 already loaded');
+      devLog.log('✅ 8th Wall XR8 already loaded');
       resolve();
       return;
     }
@@ -35,7 +38,7 @@ export function load8thWallScript(appKey: string): Promise<void> {
     // Check if script is already being loaded
     const existingScript = document.querySelector('script[src*="xrweb"]');
     if (existingScript) {
-      console.log('⏳ 8th Wall script already loading...');
+      devLog.log('⏳ 8th Wall script already loading...');
       // Wait for it to load
       existingScript.addEventListener('load', () => resolve());
       existingScript.addEventListener('error', () => reject(new Error('Failed to load 8th Wall script')));
@@ -49,12 +52,12 @@ export function load8thWallScript(appKey: string): Promise<void> {
     script.defer = true;
 
     script.onload = () => {
-      console.log('✅ 8th Wall XR8 script loaded');
+      devLog.log('✅ 8th Wall XR8 script loaded');
       resolve();
     };
 
     script.onerror = () => {
-      console.error('❌ Failed to load 8th Wall XR8 script');
+      devLog.error('❌ Failed to load 8th Wall XR8 script');
       reject(new Error('Failed to load 8th Wall script'));
     };
 
@@ -74,7 +77,7 @@ export function initializeXR8(config: XR8Config): Promise<void> {
 
     try {
       const XR8 = window.XR8;
-      
+
       // Configure XR8
       const xr8Config = {
         allowedDevices: config.allowedDevices || XR8.XrConfig.device().ANY,
@@ -92,15 +95,15 @@ export function initializeXR8(config: XR8Config): Promise<void> {
 
       // Start XR8 session
       XR8.addCameraPipelineModule(xr8Config.cameraPipelineModule || {});
-      
+
       if (xr8Config.worldPipelineModule) {
         XR8.addWorldPipelineModule(xr8Config.worldPipelineModule);
       }
 
-      console.log('✅ 8th Wall XR8 initialized');
+      devLog.log('✅ 8th Wall XR8 initialized');
       resolve();
     } catch (error) {
-      console.error('❌ Failed to initialize XR8:', error);
+      devLog.error('❌ Failed to initialize XR8:', error);
       reject(error);
     }
   });
@@ -113,9 +116,9 @@ export function stopXR8(): void {
   if (typeof window !== 'undefined' && window.XR8) {
     try {
       window.XR8.stop();
-      console.log('🛑 8th Wall XR8 stopped');
+      devLog.log('🛑 8th Wall XR8 stopped');
     } catch (error) {
-      console.error('❌ Error stopping XR8:', error);
+      devLog.error('❌ Error stopping XR8:', error);
     }
   }
 }

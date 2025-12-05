@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,11 +12,11 @@ export async function GET(request: NextRequest) {
     if (directUrl) {
       // Direct URL provided (for external iCal feeds)
       fetchUrl = decodeURIComponent(directUrl);
-      console.log('🔄 Fetching direct calendar:', fetchUrl);
+      devLog.log('🔄 Fetching direct calendar:', fetchUrl);
     } else if (calendarId) {
       // Luma calendar ID provided (legacy format)
       fetchUrl = `https://api.lu.ma/ics/get?entity=calendar&id=${calendarId}`;
-      console.log('🔄 Fetching Luma calendar:', fetchUrl);
+      devLog.log('🔄 Fetching Luma calendar:', fetchUrl);
     } else {
       return NextResponse.json({ error: 'Calendar ID or URL is required' }, { status: 400 });
     }
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     });
     
     if (!response.ok) {
-      console.error('❌ Failed to fetch calendar:', response.status, response.statusText);
+      devLog.error('❌ Failed to fetch calendar:', response.status, response.statusText);
       return NextResponse.json(
         { error: `Failed to fetch calendar: ${response.status}` }, 
         { status: response.status }
@@ -38,14 +39,14 @@ export async function GET(request: NextRequest) {
     const icalData = await response.text();
     
     if (!icalData.includes('BEGIN:VCALENDAR')) {
-      console.error('❌ Invalid iCal data received');
+      devLog.error('❌ Invalid iCal data received');
       return NextResponse.json(
         { error: 'Invalid calendar data received' }, 
         { status: 500 }
       );
     }
     
-    console.log('✅ Successfully fetched calendar data:', icalData.length, 'characters');
+    devLog.log('✅ Successfully fetched calendar data:', icalData.length, 'characters');
     
     return new NextResponse(icalData, {
       status: 200,
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Calendar API error:', error);
+    devLog.error('❌ Calendar API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' }, 
       { status: 500 }

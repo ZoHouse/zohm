@@ -6,6 +6,7 @@ import { verifyOTP } from '@/lib/zo-api/auth';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
 import { generateAvatar } from '@/lib/zo-api/avatar';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !existingUser) {
-      console.error('User not found:', userError);
+      devLog.error('User not found:', userError);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!syncResult.success) {
-      console.error('Failed to sync ZO profile:', syncResult.error);
+      devLog.error('Failed to sync ZO profile:', syncResult.error);
       // Continue anyway - can retry sync later
     }
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         );
         avatarTaskId = avatarResult.task_id ?? null;
       } catch (avatarError: any) {
-        console.error('Failed to generate avatar:', avatarError);
+        devLog.error('Failed to generate avatar:', avatarError);
         // Don't fail the whole request - avatar can be generated later
       }
     }
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error in /api/zo/auth/link-account:', error);
+    devLog.error('Error in /api/zo/auth/link-account:', error);
     return NextResponse.json(
       {
         error: 'Failed to link phone',

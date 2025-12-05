@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { load8thWallScript, stopXR8, is8thWallAvailable } from '@/lib/8thwall-loader';
+import { devLog } from '@/lib/logger';
 
 /**
  * ARQuest - 8th Wall XR8 AR Testing Component
@@ -53,7 +54,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
   }, []);
 
   const cleanup = () => {
-    console.log('🧹 ARQuest: Cleaning up...');
+    devLog.log('🧹 ARQuest: Cleaning up...');
     
     // Stop XR8
     if (isXR8RunningRef.current) {
@@ -80,7 +81,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
 
   const initializeAR = async () => {
     try {
-      console.log('🎯 ARQuest: Starting AR initialization...');
+      devLog.log('🎯 ARQuest: Starting AR initialization...');
       setArStatus('loading');
       setErrorMessage('');
 
@@ -91,7 +92,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
 
       // Check if 8th Wall is already available
       if (!is8thWallAvailable()) {
-        console.log('📦 ARQuest: Loading 8th Wall script...');
+        devLog.log('📦 ARQuest: Loading 8th Wall script...');
         await load8thWallScript(appKey);
       }
 
@@ -106,7 +107,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
       const XR8 = (window as any).XR8;
       const XRExtras = (window as any).XRExtras;
 
-      console.log('✅ ARQuest: 8th Wall XR8 loaded');
+      devLog.log('✅ ARQuest: 8th Wall XR8 loaded');
 
       // Initialize Three.js scene
       if (!canvasRef.current) {
@@ -146,7 +147,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
       const worldTrackingModule = () => ({
         name: 'worldtracking',
         onStart: () => {
-          console.log('🌍 ARQuest: World tracking started');
+          devLog.log('🌍 ARQuest: World tracking started');
           setArStatus('scanning');
         },
         onUpdate: () => {
@@ -155,7 +156,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
             // Try hit test at center of screen
             const hitTest = XR8.Threejs.hitTest(0.5, 0.5);
             if (hitTest) {
-              console.log('✅ ARQuest: Surface detected via hit test');
+              devLog.log('✅ ARQuest: Surface detected via hit test');
               surfaceDetectedRef.current = true;
               setSurfaceDetected(true);
             }
@@ -174,10 +175,10 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
 
       isXR8RunningRef.current = true;
       setArStatus('ready');
-      console.log('✅ ARQuest: AR session started');
+      devLog.log('✅ ARQuest: AR session started');
 
     } catch (error: any) {
-      console.error('❌ ARQuest: Initialization error', error);
+      devLog.error('❌ ARQuest: Initialization error', error);
       setErrorMessage(error.message || 'Failed to initialize AR. Please check your 8th Wall app key.');
       setArStatus('error');
     }
@@ -186,13 +187,13 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
   const initializeThreeJS = () => {
     // Three.js will be initialized by 8th Wall's XR8Threejs pipeline
     // This is just a placeholder for cleanup/reset scenarios
-    console.log('🎨 ARQuest: Three.js will be initialized by 8th Wall');
+    devLog.log('🎨 ARQuest: Three.js will be initialized by 8th Wall');
   };
 
   const createZoPortal = (position: THREE.Vector3) => {
     if (!sceneRef.current) return;
 
-    console.log('🎯 ARQuest: Creating Zo Portal at', position);
+    devLog.log('🎯 ARQuest: Creating Zo Portal at', position);
 
     // Remove existing portal if any
     if (portalObjectRef.current) {
@@ -259,7 +260,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
     };
     animate();
 
-    console.log('✅ ARQuest: Zo Portal created');
+    devLog.log('✅ ARQuest: Zo Portal created');
   };
 
   const handlePlaceObject = () => {
@@ -268,7 +269,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
       return;
     }
 
-    console.log('🎯 ARQuest: Placing 3D object...');
+    devLog.log('🎯 ARQuest: Placing 3D object...');
     setArStatus('placing');
 
     // Get camera position for session data
@@ -290,13 +291,13 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
           hitTest.position.y,
           hitTest.position.z
         );
-        console.log('✅ ARQuest: Using hit test position:', placementPosition);
+        devLog.log('✅ ARQuest: Using hit test position:', placementPosition);
       } else {
         // Fallback: place in front of camera
         placementPosition = cameraPosition.clone().add(
           cameraDirection.multiplyScalar(1.0)
         );
-        console.log('⚠️ ARQuest: Using fallback position:', placementPosition);
+        devLog.log('⚠️ ARQuest: Using fallback position:', placementPosition);
       }
     } else {
       // Fallback if XR8 not available
@@ -332,7 +333,7 @@ export default function ARQuest({ onComplete, onClose }: ARQuestProps) {
     // Mark as complete
     setTimeout(() => {
       setArStatus('complete');
-      console.log('✅ ARQuest: Object placed successfully!');
+      devLog.log('✅ ARQuest: Object placed successfully!');
       
       if (onComplete) {
         onComplete(sessionData);

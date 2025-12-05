@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { devLog } from '@/lib/logger';
 
 export interface InventoryItem {
   id: string;
@@ -28,16 +29,16 @@ export async function getInventory(userId: string, type?: 'badge' | 'nft' | 'col
 
     if (error) {
       if (error.code === 'PGRST116' || error.code === '42P01') {
-        console.log('ℹ️ No inventory found for user.');
+        devLog.log('ℹ️ No inventory found for user.');
         return [];
       }
-      console.warn('⚠️ Error fetching inventory:', error.message);
+      devLog.warn('⚠️ Error fetching inventory:', error.message);
       return [];
     }
 
     return (data as InventoryItem[]) || [];
   } catch (error) {
-    console.warn('⚠️ Exception fetching inventory:', error);
+    devLog.warn('⚠️ Exception fetching inventory:', error);
     return [];
   }
 }
@@ -84,13 +85,13 @@ export async function hasItem(
       if (error.code === 'PGRST116') {
         return false;
       }
-      console.warn('⚠️ Error checking item:', error.message);
+      devLog.warn('⚠️ Error checking item:', error.message);
       return false;
     }
 
     return !!data;
   } catch (error) {
-    console.warn('⚠️ Exception checking item:', error);
+    devLog.warn('⚠️ Exception checking item:', error);
     return false;
   }
 }
@@ -146,21 +147,21 @@ export async function addItem(
           .single();
 
         if (updateError) {
-          console.warn('⚠️ Error updating item quantity:', updateError.message);
+          devLog.warn('⚠️ Error updating item quantity:', updateError.message);
           return null;
         }
 
         return updateData as InventoryItem;
       }
 
-      console.warn('⚠️ Error adding item:', error.message);
+      devLog.warn('⚠️ Error adding item:', error.message);
       return null;
     }
 
-    console.log(`✅ Added ${itemType} "${itemId}" to inventory`);
+    devLog.log(`✅ Added ${itemType} "${itemId}" to inventory`);
     return data as InventoryItem;
   } catch (error) {
-    console.warn('⚠️ Exception adding item:', error);
+    devLog.warn('⚠️ Exception adding item:', error);
     return null;
   }
 }
@@ -185,7 +186,7 @@ export async function removeItem(
       .single();
 
     if (fetchError) {
-      console.warn('⚠️ Error fetching item:', fetchError.message);
+      devLog.warn('⚠️ Error fetching item:', fetchError.message);
       return false;
     }
 
@@ -201,11 +202,11 @@ export async function removeItem(
         .eq('item_id', itemId);
 
       if (deleteError) {
-        console.warn('⚠️ Error deleting item:', deleteError.message);
+        devLog.warn('⚠️ Error deleting item:', deleteError.message);
         return false;
       }
 
-      console.log(`✅ Removed ${itemType} "${itemId}" from inventory`);
+      devLog.log(`✅ Removed ${itemType} "${itemId}" from inventory`);
       return true;
     }
 
@@ -218,14 +219,14 @@ export async function removeItem(
       .eq('item_id', itemId);
 
     if (updateError) {
-      console.warn('⚠️ Error updating item quantity:', updateError.message);
+      devLog.warn('⚠️ Error updating item quantity:', updateError.message);
       return false;
     }
 
-    console.log(`✅ Reduced ${itemType} "${itemId}" quantity to ${newQuantity}`);
+    devLog.log(`✅ Reduced ${itemType} "${itemId}" quantity to ${newQuantity}`);
     return true;
   } catch (error) {
-    console.warn('⚠️ Exception removing item:', error);
+    devLog.warn('⚠️ Exception removing item:', error);
     return false;
   }
 }
@@ -270,7 +271,7 @@ export async function getInventorySummary(userId: string): Promise<{
 
     return summary;
   } catch (error) {
-    console.warn('⚠️ Exception getting inventory summary:', error);
+    devLog.warn('⚠️ Exception getting inventory summary:', error);
     return {
       badges: 0,
       nfts: 0,

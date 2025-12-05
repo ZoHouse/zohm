@@ -14,7 +14,7 @@ interface MobileStatsCardProps {
   milestones: number[];
 }
 
-const MobileStatsCard: React.FC<MobileStatsCardProps> = ({ 
+const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
   balance,
   quantumSyncs,
   bestScore,
@@ -26,9 +26,9 @@ const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
 }) => {
   // Calculate progress percentage
   const progressPercent = (currentProgress / nextMilestone) * 100;
-  
+
   return (
-    <div 
+    <div
       className="w-[238px] mx-auto flex flex-col gap-3 px-6 py-4"
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -36,11 +36,11 @@ const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
       }}
     >
       {/* Balance Display with Coin */}
-      <div 
-        className="flex items-center justify-end gap-[5.8px] px-[11.7px] py-[5.8px] rounded-full"
+      <div
+        className="flex items-center justify-center gap-[5.8px] px-[11.7px] py-[5.8px] rounded-full"
         style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
       >
-        <span 
+        <span
           className="font-rubik font-normal text-white text-right"
           style={{
             fontSize: '17.538px',
@@ -52,36 +52,36 @@ const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
         </span>
         {/* Multi-layer coin (reuse from desktop) */}
         <div className="relative w-[23.4px] h-[23.4px] rounded-full overflow-hidden">
-          <img 
+          <img
             src={DashboardAssets.statIcons.coin1}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <img 
+          <img
             src={DashboardAssets.statIcons.coin2}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <img 
+          <img
             src={DashboardAssets.statIcons.coin3}
             className="absolute inset-0 w-full h-full object-cover"
           />
         </div>
       </div>
-      
+
       {/* Stats Rows */}
       <div className="flex flex-col gap-1">
         <StatRow label="Quantum Syncs" value={quantumSyncs} />
         <StatRow label="Best Score" value={bestScore} />
         <StatRow label="Unique Locations" value={uniqueLocations} />
       </div>
-      
+
       {/* Multiplier Tag */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-end">
-          <div 
+          <div
             className="flex items-center justify-end px-2 py-1 rounded-full"
             style={{ border: '1px solid rgba(255, 255, 255, 0.16)' }}
           >
-            <span 
+            <span
               className="font-rubik font-normal text-white text-right"
               style={{
                 fontSize: '12px',
@@ -93,36 +93,36 @@ const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
             </span>
           </div>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="flex flex-col gap-1">
           {/* Bar */}
           <div className="flex w-full h-1">
-            <div 
+            <div
               className="bg-white h-full rounded-l-2xl"
               style={{ width: `${progressPercent}%` }}
             />
-            <div 
+            <div
               className="bg-white/10 h-full rounded-r-2xl"
               style={{ width: `${100 - progressPercent}%` }}
             />
           </div>
-          
+
           {/* Milestone labels */}
           <div className="flex items-center justify-between font-rubik font-medium">
-            <span 
+            <span
               className="text-white/44"
               style={{ fontSize: '10px', lineHeight: '18px', letterSpacing: '0.1px' }}
             >
               {milestones[0]}
             </span>
-            <span 
+            <span
               className="text-white"
               style={{ fontSize: '12px', lineHeight: '18px', letterSpacing: '0.12px' }}
             >
               {milestones[1]}
             </span>
-            <span 
+            <span
               className="text-white/44"
               style={{ fontSize: '10px', lineHeight: '18px', letterSpacing: '0.1px' }}
             >
@@ -138,7 +138,7 @@ const MobileStatsCard: React.FC<MobileStatsCardProps> = ({
 // Helper component for stat rows
 const StatRow: React.FC<{ label: string; value: number }> = ({ label, value }) => (
   <div className="flex items-end justify-between gap-3 h-[18px]">
-    <span 
+    <span
       className="font-rubik font-normal text-white/44"
       style={{
         fontSize: '12px',
@@ -148,7 +148,7 @@ const StatRow: React.FC<{ label: string; value: number }> = ({ label, value }) =
     >
       {label}
     </span>
-    <span 
+    <span
       className="font-rubik font-medium text-white text-right"
       style={{
         fontSize: '12px',

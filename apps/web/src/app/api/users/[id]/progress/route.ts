@@ -4,6 +4,7 @@ import { getReputations, getTotalReputationScore } from '@/lib/reputationService
 import { getStreaks } from '@/lib/streakService';
 import { getInventorySummary } from '@/lib/inventoryService';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -66,7 +67,7 @@ export async function GET(
 
     return NextResponse.json(progress);
   } catch (error) {
-    console.error('Error fetching user progress:', error);
+    devLog.error('Error fetching user progress:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

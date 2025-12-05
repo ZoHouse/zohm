@@ -7,16 +7,17 @@ import { PartnerNodeRecord } from '@/lib/supabase';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
 import { getNodeTypeColor } from '@/lib/nodeTypes';
 import { useMapGeoJSON } from '@/hooks/useMapGeoJSON';
-import { 
-  GEOJSON_SOURCE_ID, 
-  setupClusteringLayers, 
+import {
+  GEOJSON_SOURCE_ID,
+  setupClusteringLayers,
   setupClusterClickHandlers,
-  removeClusteringLayers 
+  removeClusteringLayers
 } from '@/lib/mapClustering';
+import { devLog } from '@/lib/logger';
 
 // 🔇 DISABLE VERBOSE LOGGING (causing console spam)
 const VERBOSE_LOGGING = false;
-const mapLog = VERBOSE_LOGGING ? console.log : () => {};
+const mapLog = VERBOSE_LOGGING ? console.log : () => { };
 
 // 🎨 MAP STYLE CONFIGURATION
 // Change this to test different Mapbox styles:
@@ -98,11 +99,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   // 🎯 Setup clustering layers AFTER GeoJSON source is loaded
   useEffect(() => {
     if (!map.current || !mapLoaded || geoJSONLoading) return;
-    
+
     // Check if source exists and clustering layers don't
     const source = map.current.getSource(GEOJSON_SOURCE_ID);
     const clustersLayer = map.current.getLayer('clusters');
-    
+
     if (source && !clustersLayer) {
       mapLog('🗺️ GeoJSON source ready - setting up clustering layers...');
       try {
@@ -110,7 +111,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         setupClusterClickHandlers(map.current);
         mapLog('✅ Clustering layers setup complete');
       } catch (error) {
-        console.error('❌ Error setting up clustering layers:', error);
+        devLog.error('❌ Error setting up clustering layers:', error);
       }
     }
   }, [mapLoaded, geoJSONLoading]);
@@ -130,18 +131,18 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             popup.remove();
           }
         } catch (error) {
-          console.warn('Error closing individual popup:', error);
+          devLog.warn('Error closing individual popup:', error);
         }
       });
-      
+
       // Clear the set
       activePopups.current.clear();
-      
+
       // Reset current popup state
       setCurrentOpenPopup(null);
       mapLog('✅ All popups closed');
     } catch (error) {
-      console.warn('Error closing popups:', error);
+      devLog.warn('Error closing popups:', error);
     }
   };
 
@@ -160,7 +161,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const data = await resp.json();
       const route = data?.routes?.[0]?.geometry;
       if (!route) {
-        console.warn('No route received from Directions API');
+        devLog.warn('No route received from Directions API');
         return;
       }
 
@@ -175,16 +176,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         if (map.current.getLayer(currentRouteLayerId.current)) {
           map.current.removeLayer(currentRouteLayerId.current);
         }
-      } catch {}
+      } catch { }
       try {
         if (map.current.getSource(currentRouteSourceId.current)) {
           map.current.removeSource(currentRouteSourceId.current);
         }
-      } catch {}
+      } catch { }
 
       // Clear existing origin/destination markers
       currentRouteMarkers.current.forEach(m => {
-        try { m.remove(); } catch {}
+        try { m.remove(); } catch { }
       });
       currentRouteMarkers.current = [];
 
@@ -204,7 +205,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           break;
         }
       }
-      
+
       map.current.addLayer({
         id: currentRouteLayerId.current,
         type: 'line',
@@ -241,7 +242,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // Start traversal animation after bounds fit
       startRouteTraversal(route.coordinates as [number, number][]);
     } catch (error) {
-      console.warn('Error drawing route:', error);
+      devLog.warn('Error drawing route:', error);
     }
   };
 
@@ -264,11 +265,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
     // Cancel any existing traversal
     if (traversalFrameRef.current) {
-      try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
+      try { cancelAnimationFrame(traversalFrameRef.current); } catch { }
       traversalFrameRef.current = null;
     }
     if (traversalMarkerRef.current) {
-      try { traversalMarkerRef.current.remove(); } catch {}
+      try { traversalMarkerRef.current.remove(); } catch { }
       traversalMarkerRef.current = null;
     }
     // Remove all rainbow layers (7 layers for rainbow gradient)
@@ -277,11 +278,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         if (map.current.getLayer(`${progressLayerIdRef.current}-rainbow-${i}`)) {
           map.current.removeLayer(`${progressLayerIdRef.current}-rainbow-${i}`);
         }
-      } catch {}
+      } catch { }
     }
     try {
       if (map.current.getSource(progressSourceIdRef.current)) map.current.removeSource(progressSourceIdRef.current);
-    } catch {}
+    } catch { }
 
     // Add progress source/layer (rainbow trail that appears behind unicorn)
     const progressGeojson: GeoJSON.Feature<GeoJSON.LineString> = {
@@ -304,7 +305,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       { color: '#4B0082', width: 8, opacity: 0.95, blur: 0.3 }, // Indigo
       { color: '#9400D3', width: 4, opacity: 0.9, blur: 0 }    // Violet (inner)
     ];
-    
+
     rainbowLayers.forEach((layer, i) => {
       // Add layer absolutely on top of everything - no beforeId means it goes on top
       const layerId = `${progressLayerIdRef.current}-rainbow-${i}`;
@@ -320,7 +321,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           'line-blur': layer.blur
         }
       }); // No beforeId - this puts it on top of EVERYTHING
-      
+
       // Add pulsing animation to the outer layers
       if (i === 0 || i === 1) {
         let pulseDirection = 1;
@@ -345,19 +346,19 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     unicornEl.style.fontSize = '50px';
     unicornEl.style.lineHeight = '1';
     unicornEl.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 15px rgba(255,200,0,0.6))';
-    
+
     const unicornMarker = new mapboxgl.Marker(unicornEl)
       .setLngLat(coordinates[0])
       .addTo(map.current);
-    
+
     // Force the marker container to be on top with high z-index
     const markerElement = unicornMarker.getElement();
     if (markerElement) {
       markerElement.style.zIndex = '9999';
     }
-    
+
     traversalMarkerRef.current = unicornMarker;
-    
+
     mapLog('🦄 Unicorn marker created at:', coordinates[0]);
 
     // Precompute cumulative distances
@@ -391,17 +392,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const lat = lat1 + (lat2 - lat1) * segT;
 
       // Update marker and progress line
-      try { traversalMarkerRef.current?.setLngLat([lng, lat]); } catch {}
+      try { traversalMarkerRef.current?.setLngLat([lng, lat]); } catch { }
       try {
         const progressed = coordinates.slice(0, i);
         progressed.push([lng, lat]);
         (map.current.getSource(progressSourceIdRef.current) as mapboxgl.GeoJSONSource)?.setData({
           type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: progressed }
         } as any);
-      } catch {}
+      } catch { }
 
       // Keep camera centered without changing angle
-      try { map.current.setCenter([lng, lat]); } catch {}
+      try { map.current.setCenter([lng, lat]); } catch { }
 
       if (t < 1) {
         traversalFrameRef.current = requestAnimationFrame(step);
@@ -413,7 +414,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             traversalMarkerRef.current.remove();
             traversalMarkerRef.current = null;
           } catch (e) {
-            console.warn('Error removing unicorn marker:', e);
+            devLog.warn('Error removing unicorn marker:', e);
           }
         }
       }
@@ -433,7 +434,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const style = map.current.getStyle();
       if (style && style.layers) {
         const layersUsingSource = style.layers.filter((layer: any) => layer.source === sourceId);
-        
+
         // Remove all layers using this source
         layersUsingSource.forEach((layer: any) => {
           try {
@@ -441,8 +442,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               map.current!.removeLayer(layer.id);
             }
           } catch (e) {
-            console.warn(`Could not remove layer ${layer.id}:`, e);
-        }
+            devLog.warn(`Could not remove layer ${layer.id}:`, e);
+          }
         });
       }
 
@@ -452,11 +453,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           map.current.removeSource(sourceId);
         }
       } catch (e) {
-        console.warn(`Could not remove source ${sourceId}:`, e);
+        devLog.warn(`Could not remove source ${sourceId}:`, e);
       }
     } catch (e) {
-      console.warn(`Error in removeMapsourceWithLayers for ${sourceId}:`, e);
-        }
+      devLog.warn(`Error in removeMapsourceWithLayers for ${sourceId}:`, e);
+    }
   };
 
   // Clear any drawn route and its markers
@@ -465,17 +466,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     try {
       // Remove route markers
       currentRouteMarkers.current.forEach(m => {
-        try { m.remove(); } catch {}
+        try { m.remove(); } catch { }
       });
       currentRouteMarkers.current = [];
 
       // Cancel traversal and remove marker
       if (traversalFrameRef.current) {
-        try { cancelAnimationFrame(traversalFrameRef.current); } catch {}
+        try { cancelAnimationFrame(traversalFrameRef.current); } catch { }
         traversalFrameRef.current = null;
       }
       if (traversalMarkerRef.current) {
-        try { traversalMarkerRef.current.remove(); } catch {}
+        try { traversalMarkerRef.current.remove(); } catch { }
         traversalMarkerRef.current = null;
       }
 
@@ -485,17 +486,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // Remove progress source and all its layers (including rainbow layers)
       removeMapsourceWithLayers(progressSourceIdRef.current);
     } catch (e) {
-      console.warn('Error clearing route:', e);
+      devLog.warn('Error clearing route:', e);
     }
   };
 
   const clearAllPopupsAndRoute = () => {
     try {
       closeAllPopups();
-    } catch {}
+    } catch { }
     try {
       clearRoute();
-    } catch {}
+    } catch { }
   };
 
   // Add Zo House markers with custom animated icon
@@ -511,7 +512,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       try {
         marker.remove();
       } catch (error) {
-        console.warn('Error removing existing partner node marker:', error);
+        devLog.warn('Error removing existing partner node marker:', error);
       }
     });
     partnerNodeMarkers.current = [];
@@ -525,24 +526,24 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         const fetchedNodes = await getNodesFromDB();
         nodesToDisplay = fetchedNodes || undefined; // Convert null to undefined
       } catch (error) {
-        console.error('Error loading nodes:', error);
+        devLog.error('Error loading nodes:', error);
         return;
       }
     }
-    
+
     if (!nodesToDisplay || nodesToDisplay.length === 0) {
       mapLog('🦄 No partner nodes to display');
       return;
     }
-    
+
     mapLog(`🦄 Adding ${nodesToDisplay.length} partner node markers...`);
-    
+
     nodesToDisplay.forEach((node) => {
       if (!node.latitude || !node.longitude) {
-        console.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
+        devLog.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
         return;
       }
-      
+
       try {
         // 🦄 UNICORN: All nodes use the Zo flexing white logo
         const markerElement = document.createElement('img');
@@ -553,16 +554,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         markerElement.style.cursor = 'pointer';
         markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
         markerElement.title = node.name;
-        
+
         const nodeMarker = new mapboxgl.Marker(markerElement)
           .setLngLat([node.longitude, node.latitude])
           .addTo(map.current!);
-        
+
         mapLog(`🦄 Added marker for ${node.name}`);
-        
+
         // Store marker reference
         partnerNodeMarkers.current.push(nodeMarker);
-        
+
         // Create popup for the node
         const popupContent = `
           <div style="padding: 0;">
@@ -574,7 +575,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             </div>
           </div>
         `;
-        
+
         const popup = new mapboxgl.Popup({
           className: 'node-popup-clean',
           closeButton: false,
@@ -583,11 +584,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           maxWidth: '280px',
           anchor: 'bottom'
         })
-        .setHTML(popupContent);
-        
+          .setHTML(popupContent);
+
         // Attach popup to marker
         nodeMarker.setPopup(popup);
-        
+
         // Handle marker click to track popup state
         markerElement.addEventListener('click', () => {
           if (currentOpenPopup && currentOpenPopup !== popup) {
@@ -595,12 +596,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               currentOpenPopup.remove();
               activePopups.current.delete(currentOpenPopup);
             } catch (error) {
-              console.warn('Error closing previous popup:', error);
+              devLog.warn('Error closing previous popup:', error);
             }
           }
           setCurrentOpenPopup(popup);
           activePopups.current.add(popup);
-          
+
           popup.once('close', () => {
             if (currentOpenPopup === popup) {
               setCurrentOpenPopup(null);
@@ -608,14 +609,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             activePopups.current.delete(popup);
           });
         });
-        
+
       } catch (error) {
-        console.error(`❌ Error creating marker for ${node.name}:`, error);
+        devLog.error(`❌ Error creating marker for ${node.name}:`, error);
       }
     });
-    
+
     mapLog(`✅ Added ${partnerNodeMarkers.current.length} partner node markers to map`);
-    
+
     /* Legacy example code removed
       try {
         const nodePopup = new mapboxgl.Popup({
@@ -669,7 +670,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               currentOpenPopup.remove();
               activePopups.current.delete(currentOpenPopup);
             } catch (error) {
-              console.warn('Error removing popup:', error);
+              devLog.warn('Error removing popup:', error);
             }
           }
           setCurrentOpenPopup(nodePopup);
@@ -687,7 +688,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
         mapLog('✅ Partner node marker (legacy)');
       } catch (error) {
-        console.warn('Error creating partner node marker:', error);
+        devLog.warn('Error creating partner node marker:', error);
       }
     */
   };
@@ -695,18 +696,18 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   // Initialize map with proper error handling
   const initializeMap = () => {
     if (!mapContainer.current || map.current) return;
-    
+
     // 🔧 FIX: Ensure container has dimensions before initializing map
     const containerWidth = mapContainer.current.offsetWidth;
     const containerHeight = mapContainer.current.offsetHeight;
-    
+
     if (containerWidth === 0 || containerHeight === 0) {
-      console.warn('⚠️ Map container has no dimensions yet, waiting...');
+      devLog.warn('⚠️ Map container has no dimensions yet, waiting...');
       // Retry after a short delay
       setTimeout(initializeMap, 100);
       return;
     }
-    
+
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -714,14 +715,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // - shouldAnimateFromSpace = true → Start at zoom 0 (will animate)
       // - Has location + NO animation → Start at zoom 17 (returning user)
       // - No location → Start at zoom 0 (space view, no specific location)
-      
+
       const hasUserLocation = userLocation?.lat && userLocation?.lng;
-      
+
       let initialZoom: number;
       let initialPitch: number;
       let initialBearing: number;
       let initialCenter: [number, number];
-      
+
       if (shouldAnimateFromSpace) {
         // Animation requested: Start from space at user location
         initialZoom = 0;
@@ -737,9 +738,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           initialPitch = 45; // Less tilted for mini map
           initialBearing = -20;
         } else {
-        initialZoom = isMobile() ? 17.5 : 17;
-        initialPitch = isMobile() ? 65 : 65;
-        initialBearing = -30;
+          initialZoom = isMobile() ? 17.5 : 17;
+          initialPitch = isMobile() ? 65 : 65;
+          initialBearing = -30;
         }
         initialCenter = [userLocation.lng, userLocation.lat];
         mapLog('🏠 Returning user: Starting at street level:', initialCenter, isMiniMap ? '(mini map)' : '');
@@ -751,7 +752,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         initialCenter = [0, 0]; // Neutral center, zoom 0 shows whole world
         mapLog('🌌 No location: Starting at space view (0, 0)');
       }
-      
+
       mapLog('🗺️ Map initializing:', {
         center: initialCenter,
         zoom: initialZoom,
@@ -760,9 +761,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         shouldAnimateFromSpace,
         containerDimensions: { width: containerWidth, height: containerHeight }
       });
-      
+
       mapLog('🔑 Mapbox token:', MAPBOX_TOKEN ? `${MAPBOX_TOKEN.substring(0, 20)}...` : 'MISSING!');
-      
+
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         center: initialCenter,
@@ -783,28 +784,28 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       // Add comprehensive error handlers
       map.current.on('error', (e) => {
-        console.error('❌ Mapbox error:', e.error);
-        console.error('❌ Error details:', e);
+        devLog.error('❌ Mapbox error:', e.error);
+        devLog.error('❌ Error details:', e);
       });
-      
+
       map.current.on('styledata', () => {
         mapLog('🎨 Map style loaded successfully');
       });
-      
+
       map.current.on('style.load', () => {
         mapLog('🎨 Map style load event fired');
       });
-      
+
       map.current.on('sourcedataloading', (e) => {
         mapLog('📦 Source data loading:', e.sourceId);
       });
-      
+
       map.current.on('sourcedata', (e) => {
         if (e.isSourceLoaded) {
           mapLog('📦 Source data loaded:', e.sourceId);
         }
       });
-      
+
       map.current.on('dataloading', (e) => {
         mapLog('🔄 Map data loading...');
       });
@@ -814,7 +815,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         try {
           map.current?.resize();
         } catch (error) {
-          console.warn('Map resize error:', error);
+          devLog.warn('Map resize error:', error);
         }
       };
       resizeHandlerRef.current = handleResize;
@@ -824,12 +825,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       mapLog('📡 Attaching map load event listener...');
       const isAlreadyLoaded = map.current.loaded();
       mapLog('📡 Map state before load:', { loaded: isAlreadyLoaded, isMoving: map.current.isMoving() });
-      
+
       // Function to set up map features (called when map is loaded)
       const setupMapFeatures = () => {
         mapLog('🎉 Setting up map features...');
         if (!map.current) return;
-        
+
         setMapLoaded(true);
         mapLog('✅ setMapLoaded(true) called');
 
@@ -839,9 +840,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           setTimeout(() => map.current && map.current.resize(), 50);
           setTimeout(() => map.current && map.current.resize(), 250);
         } catch (error) {
-          console.warn('Post-load resize error:', error);
+          devLog.warn('Post-load resize error:', error);
         }
-        
+
         // Set up lighting - use DAY mode so colors stay bright!
         try {
           map.current.setConfigProperty('basemap', 'lightPreset', 'day');  // Changed from 'night' to 'day'
@@ -850,7 +851,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           map.current.setConfigProperty('basemap', 'showRoadLabels', false);
           map.current.setConfigProperty('basemap', 'showTransitLabels', false);
         } catch (error) {
-          console.warn('Could not set map configuration:', error);
+          devLog.warn('Could not set map configuration:', error);
         }
 
         // Add 3D buildings layer
@@ -898,7 +899,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             mapLog('ℹ️ 3D buildings layer already exists, skipping');
           }
         } catch (error) {
-          console.warn('Could not add 3D buildings:', error);
+          devLog.warn('Could not add 3D buildings:', error);
         }
 
         // Notify parent that map is ready
@@ -910,7 +911,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         if (userLocation?.lat && userLocation?.lng) {
           mapLog('📍 Using saved user location:', userLocation);
           mapLog('🎬 Should animate from space?', shouldAnimateFromSpace);
-          
+
           // Create marker and trigger animation if needed
           createUserLocationMarker(userLocation.lat, userLocation.lng);
         } else if (!shouldAnimateFromSpace) {
@@ -920,7 +921,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         } else {
           mapLog('⏭️ Animating from space - waiting for location...');
         }
-        
+
         // Note: All node markers (including Zo Houses) are added via useEffect when nodes prop is available
         // No hardcoded markers - everything managed from database
 
@@ -935,12 +936,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               clearAllPopupsAndRoute();
             };
           }
-        } catch {}
+        } catch { }
 
         // 🗺️ GeoJSON clustering is now handled by dedicated useEffect
         // that waits for the GeoJSON source to be loaded first
       };
-      
+
       // If map is already loaded, set up features immediately
       // Otherwise, wait for load or idle event
       if (isAlreadyLoaded) {
@@ -948,87 +949,87 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         setupMapFeatures();
       } else {
         mapLog('⏳ Waiting for map load event...');
-        
+
         let hasSetup = false;
-        
+
         const doSetup = (source: string) => {
           if (hasSetup) return;
           hasSetup = true;
           mapLog(`🎉 MAP LOADED (via ${source})!`);
           setupMapFeatures();
         };
-        
+
         // Listen for load event (primary)
         map.current.on('load', () => doSetup('load'));
-        
+
         // Listen for idle event (backup - fires when map is fully loaded and idle)
         map.current.on('idle', () => doSetup('idle'));
-        
+
         // Fallback: Force setup after 3 seconds if style is loaded
         setTimeout(() => {
           if (!hasSetup && map.current && map.current.isStyleLoaded()) {
-            console.warn('⚠️ Load event timeout - forcing setup (style is loaded)');
+            devLog.warn('⚠️ Load event timeout - forcing setup (style is loaded)');
             doSetup('timeout');
           }
         }, 3000);
       }
 
     } catch (error) {
-      console.error('Error initializing map:', error);
+      devLog.error('Error initializing map:', error);
     }
   };
 
   // Create user location marker (reusable for both saved location and geolocation)
   const createUserLocationMarker = (lat: number, lng: number) => {
     if (!map.current) return;
-    
+
     const coords: [number, number] = [lng, lat];
-    
+
     // Store coordinates in window for wallet sync
     if (typeof window !== 'undefined') {
       window.userLocationCoords = { lat, lng };
       mapLog('📍 User location set:', window.userLocationCoords);
     }
-    
+
     try {
       // 🚀 Animate from space to user location if requested
       mapLog('🎬 Animation check:', {
         shouldAnimateFromSpace,
         hasAnimatedFromSpace: hasAnimatedFromSpace.current
       });
-      
+
       if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current) {
         mapLog('🚀🚀🚀 STARTING SPACE-TO-LOCATION ANIMATION 🚀🚀🚀');
         mapLog('📍 Target:', coords);
         mapLog('🎯 Duration: 8 seconds');
         hasAnimatedFromSpace.current = true;
-        
+
         // Wait for map to be fully ready before animating
         const startAnimation = () => {
           if (!map.current) {
-            console.error('❌ Map not available for animation!');
+            devLog.error('❌ Map not available for animation!');
             return;
           }
-          
+
           // Verify map is loaded and has valid dimensions
           const mapLoaded = map.current.loaded();
           const container = map.current.getContainer();
           const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
-          
+
           mapLog('🔍 Animation readiness:', { mapLoaded, hasValidDimensions });
-          
+
           if (!mapLoaded || !hasValidDimensions) {
-            console.warn('⏳ Map not ready, retrying in 200ms...');
+            devLog.warn('⏳ Map not ready, retrying in 200ms...');
             setTimeout(startAnimation, 200);
             return;
           }
-          
+
           mapLog('✈️ Executing flyTo animation...');
           // Mini maps use slightly zoomed out view for better visibility
           const targetZoom = isMiniMap ? (isMobile() ? 15.5 : 15) : (isMobile() ? 17.5 : 17);
           const targetPitch = isMiniMap ? 45 : (isMobile() ? 65 : 65);
           const targetBearing = isMiniMap ? -20 : -30;
-          
+
           map.current.flyTo({
             center: coords,
             zoom: targetZoom,
@@ -1043,7 +1044,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           });
           mapLog('🎬 Animation started successfully!');
         };
-        
+
         // Start the animation
         startAnimation();
       } else {
@@ -1091,7 +1092,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       // Note: User location marker popup removed - no popup on click
     } catch (error) {
-      console.warn('Error setting user location:', error);
+      devLog.warn('Error setting user location:', error);
     }
   };
 
@@ -1103,36 +1104,36 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        
-        console.log('📍 Got user location:', { lat, lng });
+
+        devLog.log('📍 Got user location:', { lat, lng });
         createUserLocationMarker(lat, lng);
-        
+
         // Save to database if userId is provided
         if (userId) {
           try {
-            console.log('💾 Saving location to database for user:', userId);
+            devLog.log('💾 Saving location to database for user:', userId);
             const response = await fetch(`/api/users/${userId}/location`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ lat, lng })
             });
-            
+
             if (response.ok) {
-              console.log('✅ Location saved to database');
+              devLog.log('✅ Location saved to database');
               // Call callback if provided
               if (onLocationSaved) {
                 onLocationSaved(lat, lng);
               }
             } else {
-              console.error('❌ Failed to save location:', await response.text());
+              devLog.error('❌ Failed to save location:', await response.text());
             }
           } catch (error) {
-            console.error('❌ Error saving location:', error);
+            devLog.error('❌ Error saving location:', error);
           }
         }
       },
       (error) => {
-        console.warn('⚠️ Geolocation permission denied or unavailable:', error.message);
+        devLog.warn('⚠️ Geolocation permission denied or unavailable:', error.message);
         mapLog('💡 To enable location: Click the location icon in your browser address bar');
       },
       {
@@ -1150,7 +1151,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       hasUserLocation: !!(userLocation?.lat && userLocation?.lng),
       userLocation
     });
-    
+
     initializeMap();
 
     return () => {
@@ -1159,9 +1160,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         try {
           removeClusteringLayers(map.current);
         } catch (error) {
-          console.warn('Error removing clustering layers:', error);
+          devLog.warn('Error removing clustering layers:', error);
         }
-        
+
         map.current.remove();
         map.current = null;
         setMapLoaded(false);
@@ -1185,27 +1186,27 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       hasMap: !!map.current,
       hasUserMarker: !!userLocationMarker.current
     });
-    
+
     if (shouldAnimateFromSpace && !hasAnimatedFromSpace.current && map.current && userLocationMarker.current) {
       // Ensure map is fully loaded and has valid dimensions before animating
       const mapLoaded = map.current.loaded();
       const container = map.current.getContainer();
       const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
-      
+
       if (!mapLoaded || !hasValidDimensions) {
         mapLog(`⏳ Map/marker ready but map not fully loaded (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
         return; // Wait for retry mechanism below
       }
-      
+
       // If location was already obtained before animation flag was set, animate now
       const userCoords = userLocationMarker.current.getLngLat();
       mapLog('🚀 Animation flag changed - flying from space to existing location:', userCoords);
       hasAnimatedFromSpace.current = true;
-      
+
       // Add small delay to ensure map is stable
       setTimeout(() => {
         if (!map.current) return;
-        
+
         map.current.flyTo({
           center: [userCoords.lng, userCoords.lat],
           zoom: isMobile() ? 17.5 : 17,
@@ -1222,35 +1223,35 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       mapLog('⏭️ Animation already played this session');
     } else if (shouldAnimateFromSpace && !userLocationMarker.current) {
       mapLog('⏳ Animation flag set but waiting for user location marker...');
-      
+
       // Retry every 500ms until marker is ready (max 10 seconds)
       const maxRetries = 20;
       let retryCount = 0;
-      
+
       const retryInterval = setInterval(() => {
         retryCount++;
         mapLog(`🔄 Retry ${retryCount}/${maxRetries}: Checking for user location marker...`);
-        
+
         if (userLocationMarker.current && map.current && !hasAnimatedFromSpace.current) {
           // Extra checks: ensure map is fully loaded and has valid dimensions
           const mapLoaded = map.current.loaded();
           const container = map.current.getContainer();
           const hasValidDimensions = container && container.offsetWidth > 0 && container.offsetHeight > 0;
-          
+
           if (!mapLoaded || !hasValidDimensions) {
             mapLog(`⏳ Map not ready yet (loaded: ${mapLoaded}, valid dims: ${hasValidDimensions})`);
             return; // Keep retrying
           }
-          
+
           clearInterval(retryInterval);
           const userCoords = userLocationMarker.current.getLngLat();
           mapLog('🚀 Marker ready and map loaded - starting animation:', userCoords);
           hasAnimatedFromSpace.current = true;
-          
+
           // Use setTimeout to ensure map has one more render cycle
           setTimeout(() => {
             if (!map.current) return;
-            
+
             map.current.flyTo({
               center: [userCoords.lng, userCoords.lat],
               zoom: isMobile() ? 17.5 : 17,
@@ -1265,10 +1266,10 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           }, 100);
         } else if (retryCount >= maxRetries) {
           clearInterval(retryInterval);
-          console.warn('⚠️ Animation timeout: User marker not ready after 10 seconds');
+          devLog.warn('⚠️ Animation timeout: User marker not ready after 10 seconds');
         }
       }, 500);
-      
+
       // Cleanup on unmount
       return () => clearInterval(retryInterval);
     }
@@ -1280,7 +1281,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     mapLog('Map current:', !!map.current);
     mapLog('Map loaded:', mapLoaded);
     mapLog('Events length:', events.length);
-    
+
     if (!map.current || !mapLoaded || !events.length) {
       mapLog('❌ Skipping event markers - conditions not met');
       return;
@@ -1291,16 +1292,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       try {
         marker.remove();
       } catch (error) {
-        console.warn('Error removing marker:', error);
+        devLog.warn('Error removing marker:', error);
       }
     });
-    
+
     const newMarkersMap = new Map<string, mapboxgl.Marker>();
 
     mapLog('📋 Processing events:', events.length);
     events.forEach((event, index) => {
       mapLog(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
-      
+
       if (!event.Latitude || !event.Longitude || !map.current) {
         mapLog(`❌ Skipping event ${index + 1} - missing coordinates or map`);
         return;
@@ -1321,14 +1322,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         markerElement.style.borderRadius = '50%';
         markerElement.style.cursor = 'pointer';
         markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-        
+
         const marker = new mapboxgl.Marker(markerElement)
           .setLngLat([lng, lat])
           .addTo(map.current!);
 
         const formattedDate = new Date(event['Date & Time']).toLocaleDateString('en-US', {
           weekday: 'short',
-          month: 'short', 
+          month: 'short',
           day: 'numeric',
           year: 'numeric'
         });
@@ -1337,7 +1338,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // Determine the event URL - check Event URL field first, then Location if it contains luma.com
         const eventUrl = event['Event URL'] || (event.Location?.includes('luma.com') ? event.Location : null);
         const displayLocation = event.Location?.includes('luma.com') ? '' : event.Location;
-        
+
         const popupContent = `
           <div style="padding: 0;">
             <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${event['Event Name'] || "N/A"}</h3>
@@ -1352,13 +1353,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
         // Create popup once and reuse it
         const popup = new mapboxgl.Popup({
-            className: 'node-popup-clean',
-            closeButton: false,
-            closeOnClick: true,
-            offset: [0, -15],
-            maxWidth: '280px',
-            anchor: 'bottom'
-          })
+          className: 'node-popup-clean',
+          closeButton: false,
+          closeOnClick: true,
+          offset: [0, -15],
+          maxWidth: '280px',
+          anchor: 'bottom'
+        })
           .setLngLat([lng, lat])
           .setHTML(popupContent);
 
@@ -1366,7 +1367,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         markerElement.addEventListener('click', (e) => {
           e.stopPropagation();
           mapLog('🖱️ Event marker clicked:', event['Event Name']);
-          
+
           try {
             // Close all other popups first
             activePopups.current.forEach(p => {
@@ -1375,15 +1376,15 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               }
             });
             activePopups.current.clear();
-            
+
             // Open this popup if not already open
             if (!popup.isOpen() && map.current) {
               popup.addTo(map.current);
               activePopups.current.add(popup);
               setCurrentOpenPopup(popup);
-              
+
               mapLog('✅ Event popup opened for:', event['Event Name']);
-              
+
               // Handle popup close
               popup.once('close', () => {
                 activePopups.current.delete(popup);
@@ -1392,9 +1393,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                 }
               });
             }
-            
+
           } catch (error) {
-            console.error('❌ Error opening event popup:', error);
+            devLog.error('❌ Error opening event popup:', error);
           }
         });
 
@@ -1402,13 +1403,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         const eventKey = `${event['Event Name']}-${event.Latitude}-${event.Longitude}`;
         newMarkersMap.set(eventKey, marker);
       } catch (error) {
-        console.error('❌ Error creating marker for event:', event['Event Name'], error);
-        console.error('Event details:', event);
+        devLog.error('❌ Error creating marker for event:', event['Event Name'], error);
+        devLog.error('Event details:', event);
       }
     });
 
     setMarkersMap(newMarkersMap);
-    
+
     // Debug: Add a test marker to see if markers work at all
     if (map.current && newMarkersMap.size === 0) {
       mapLog('🧪 Adding test marker since no events were processed');
@@ -1424,7 +1425,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
     const lat = parseFloat(flyToEvent.Latitude);
     const lng = parseFloat(flyToEvent.Longitude);
-    
+
     if (isNaN(lat) || isNaN(lng)) return;
 
     try {
@@ -1432,11 +1433,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       if (currentOpenPopup) {
         currentOpenPopup.remove();
       }
-      
+
       // Find the marker for this event first
       const eventKey = `${flyToEvent['Event Name']}-${flyToEvent.Latitude}-${flyToEvent.Longitude}`;
       const marker = markersMap.get(eventKey);
-      
+
       // Fly to the event location with smooth animation
       map.current.flyTo({
         center: [lng, lat],
@@ -1456,7 +1457,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               popup.addTo(map.current!);
               setCurrentOpenPopup(popup);
               activePopups.current.add(popup); // Add to tracked popups
-              
+
               popup.on('close', () => {
                 if (currentOpenPopup === popup) {
                   setCurrentOpenPopup(null);
@@ -1464,17 +1465,17 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                 }
               });
             }, 150); // Small delay for polish
-            
+
             // Remove the event listener after use
             map.current?.off('moveend', onMoveEnd);
           };
-          
+
           // Listen for fly animation completion
           map.current.on('moveend', onMoveEnd);
         }
       }
     } catch (error) {
-      console.warn('Error flying to event:', error);
+      devLog.warn('Error flying to event:', error);
     }
   }, [flyToEvent, markersMap, mapLoaded, currentOpenPopup]);
 
@@ -1513,8 +1514,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         maxWidth: '280px',
         anchor: 'bottom'
       })
-      .setLngLat([lng, lat])
-      .setHTML(popupContent);
+        .setLngLat([lng, lat])
+        .setHTML(popupContent);
 
       // Animate camera to node location
       map.current.flyTo({
@@ -1544,14 +1545,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       map.current.on('moveend', onMoveEnd);
     } catch (error) {
-      console.warn('Error flying to node:', error);
+      devLog.warn('Error flying to node:', error);
     }
   }, [flyToNode, mapLoaded, currentOpenPopup]);
 
   // Re-render node markers when nodes prop changes (e.g., switching between local/global mode)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
-    
+
     mapLog('🔄 Nodes changed, updating markers...');
     addPartnerNodeMarkers();
   }, [nodes, mapLoaded]);
@@ -1559,7 +1560,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   return (
     <div className="relative w-full h-full" style={{ minHeight: '100vh' }}>
       {/* ✨ Star field background */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundColor: '#0a0e27',
@@ -1580,12 +1581,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           opacity: 0.6
         }}
       />
-      
+
       {/* 🗺️ Map container */}
-      <div 
-        ref={mapContainer} 
+      <div
+        ref={mapContainer}
         className={className || "w-full h-full"}
-        style={{ 
+        style={{
           minHeight: '100vh',
           position: 'relative',
           zIndex: 1
@@ -1612,16 +1613,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             maxWidth: isMiniMap ? '260px' : '380px',
           }}
         >
-          <div style={{ 
-            fontSize: isMiniMap ? '32px' : '56px', 
+          <div style={{
+            fontSize: isMiniMap ? '32px' : '56px',
             marginBottom: isMiniMap ? '8px' : '20px',
             filter: 'drop-shadow(0 4px 12px rgba(255, 255, 255, 0.1))'
           }}>
             📍
           </div>
-          <h3 style={{ 
-            color: '#FFFFFF', 
-            fontSize: isMiniMap ? '14px' : '20px', 
+          <h3 style={{
+            color: '#FFFFFF',
+            fontSize: isMiniMap ? '14px' : '20px',
             fontWeight: '700',
             letterSpacing: '-0.02em',
             marginBottom: isMiniMap ? '6px' : '12px',
@@ -1631,8 +1632,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             Enable Location to Explore
           </h3>
           {!isMiniMap && (
-            <p style={{ 
-              color: 'rgba(255, 255, 255, 0.5)', 
+            <p style={{
+              color: 'rgba(255, 255, 255, 0.5)',
               fontSize: '13px',
               marginBottom: '28px',
               lineHeight: '1.5',
@@ -1644,7 +1645,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           )}
           <button
             onClick={() => {
-              console.log('📍 Manual location request triggered');
+              devLog.log('📍 Manual location request triggered');
               getUserLocation();
             }}
             style={{

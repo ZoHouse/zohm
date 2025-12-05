@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -36,7 +37,7 @@ export async function POST(
       );
     }
 
-    console.log(`📍 Saving location for user ${id}:`, { lat, lng });
+    devLog.log(`📍 Saving location for user ${id}:`, { lat, lng });
 
     // Update user profile with location
     const { data, error } = await supabase
@@ -51,14 +52,14 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error('❌ Failed to save location:', error);
+      devLog.error('❌ Failed to save location:', error);
       return NextResponse.json(
         { error: 'Failed to save location', details: error.message },
         { status: 500 }
       );
     }
 
-    console.log('✅ Location saved successfully:', data);
+    devLog.log('✅ Location saved successfully:', data);
 
     return NextResponse.json({
       success: true,
@@ -66,7 +67,7 @@ export async function POST(
     });
 
   } catch (error: any) {
-    console.error('❌ Error in /api/users/[id]/location:', error);
+    devLog.error('❌ Error in /api/users/[id]/location:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { MapPin, X } from 'lucide-react';
+import { devLog } from '@/lib/logger';
 
 interface LocationPermissionModalProps {
   onLocationGranted: (lat: number, lng: number) => void;
@@ -47,7 +48,7 @@ export default function LocationPermissionModal({
       });
 
       const { latitude, longitude } = position.coords;
-      console.log('📍 Location obtained:', { latitude, longitude });
+      devLog.log('📍 Location obtained:', { latitude, longitude });
 
       // Save to database via callback
       await onLocationGranted(latitude, longitude);
@@ -59,7 +60,7 @@ export default function LocationPermissionModal({
       onClose();
 
     } catch (err: any) {
-      console.error('❌ Location request failed:', err);
+      devLog.error('❌ Location request failed:', err);
       
       let errorMessage = 'Failed to get your location';
       

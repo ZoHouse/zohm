@@ -15,6 +15,7 @@ import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import mapboxgl from 'mapbox-gl';
+import { devLog } from '@/lib/logger';
 
 interface EventData {
   'Event Name': string;
@@ -87,7 +88,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   };
 
   const handleLaunchGame = (userId: string) => {
-    console.log('🎮 Launching game1111 for user:', userId);
+    devLog.log('🎮 Launching game1111 for user:', userId);
     setGame1111UserId(userId);
     setShowGame1111(true);
     // Close all overlays
@@ -96,7 +97,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   };
 
   const handleGameComplete = (score: number, tokensEarned: number) => {
-    console.log('🎮 Game completed:', { score, tokensEarned });
+    devLog.log('🎮 Game completed:', { score, tokensEarned });
     setShowGame1111(false);
     setGame1111UserId(undefined);
     setQuestScore(score);
@@ -106,7 +107,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   };
 
   const handleQuestCompleteGoHome = async (): Promise<void> => {
-    console.log('🏠 Going home from quest complete');
+    devLog.log('🏠 Going home from quest complete');
     setShowQuestComplete(false);
     // Open dashboard after viewing quest results
     setActiveList('dashboard');

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { refreshAccessToken } from '@/lib/zo-api/auth';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const isTokenExpired = tokenExpiry && new Date(tokenExpiry) < new Date();
     
     if (isTokenExpired && userData.zo_refresh_token) {
-      console.log('🔄 [sync-profile] Token expired, refreshing...');
+      devLog.log('🔄 [sync-profile] Token expired, refreshing...');
       const refreshResult = await refreshAccessToken(userData.zo_refresh_token);
       
       if (refreshResult.success && refreshResult.tokens) {
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', userId);
           
-          console.log('✅ [sync-profile] Token refreshed and updated');
+          devLog.log('✅ [sync-profile] Token refreshed and updated');
         } else {
           return NextResponse.json(
             { 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error in manual profile sync:', error);
+    devLog.error('❌ Error in manual profile sync:', error);
     return NextResponse.json(
       { 
         success: false, 

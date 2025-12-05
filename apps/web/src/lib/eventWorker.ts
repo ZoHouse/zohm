@@ -20,6 +20,7 @@ import { canonicalUid } from './canonicalUid';
 import { geocodeLocation } from './icalParser';
 import type { ParsedEvent } from './icalParser';
 import { shouldWorkerWrite, FEATURE_FLAGS } from './featureFlags';
+import { devLog } from '@/lib/logger';
 
 /**
  * Worker configuration
@@ -73,7 +74,7 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
   
   try {
     // Log worker start
-    console.log('🔄 Starting canonical event sync', {
+    devLog.log('🔄 Starting canonical event sync', {
       dryRun: isDryRun,
       writeEnabled: FEATURE_FLAGS.CANONICAL_EVENTS_WRITE,
       calendarId: config.calendarId,
@@ -83,9 +84,9 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
     let calendarUrls = await getCalendarUrls();
     
     // Log what we got
-    console.log(`📅 Fetched ${calendarUrls.length} calendar URLs from config`);
+    devLog.log(`📅 Fetched ${calendarUrls.length} calendar URLs from config`);
     if (verbose) {
-      console.log('📋 Calendar URLs:', calendarUrls);
+      devLog.log('📋 Calendar URLs:', calendarUrls);
     }
     
     // Filter to single calendar if specified
@@ -97,15 +98,15 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
     }
     
     if (calendarUrls.length === 0) {
-      console.warn('⚠️  No calendar URLs configured! Check calendars table in database.');
+      devLog.warn('⚠️  No calendar URLs configured! Check calendars table in database.');
       return stats;
     }
     
-    console.log(`📅 Processing ${calendarUrls.length} calendar(s)`);
+    devLog.log(`📅 Processing ${calendarUrls.length} calendar(s)`);
     
     // Fetch all events
     const events = await fetchAllCalendarEvents(calendarUrls);
-    console.log(`📋 Fetched ${events.length} events from iCal feeds`);
+    devLog.log(`📋 Fetched ${events.length} events from iCal feeds`);
     
     // Process each event
     for (const event of events) {
@@ -118,7 +119,7 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
           stats.skipped++;
         }
       } catch (error) {
-        console.error(`❌ Error processing event "${event['Event Name']}":`, error);
+        devLog.error(`❌ Error processing event "${event['Event Name']}":`, error);
         stats.errors++;
       }
     }
@@ -126,12 +127,12 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
     stats.duration_ms = Date.now() - startTime;
     
     // Log summary
-    console.log('✅ Sync complete', stats);
+    devLog.log('✅ Sync complete', stats);
     
     return stats;
     
   } catch (error) {
-    console.error('❌ Fatal error during sync:', error);
+    devLog.error('❌ Fatal error during sync:', error);
     stats.duration_ms = Date.now() - startTime;
     throw error;
   }
@@ -148,7 +149,7 @@ async function processEvent(
   const uid = canonicalUid(event);
   
   if (verbose) {
-    console.log(`🔍 Processing event: "${event['Event Name']}" (UID: ${uid})`);
+    devLog.log(`🔍 Processing event: "${event['Event Name']}" (UID: ${uid})`);
   }
   
   // Check if event already exists
@@ -159,7 +160,7 @@ async function processEvent(
     .maybeSingle();
   
   if (queryError) {
-    console.error('Database query error:', queryError);
+    devLog.error('Database query error:', queryError);
     throw queryError;
   }
   
@@ -201,7 +202,7 @@ async function logDryRun(
       },
     });
   
-  console.log(`🧪 DRY-RUN: ${uid} - ${action}`);
+  devLog.log(`🧪 DRY-RUN: ${uid} - ${action}`);
 }
 
 /**
@@ -242,7 +243,7 @@ async function insertNewEvent(
     .single();
   
   if (error) {
-    console.error('Insert error:', error);
+    devLog.error('Insert error:', error);
     throw error;
   }
   
@@ -256,7 +257,7 @@ async function insertNewEvent(
     });
   
   if (verbose) {
-    console.log(`✅ Inserted: ${uid} - "${event['Event Name']}"`);
+    devLog.log(`✅ Inserted: ${uid} - "${event['Event Name']}"`);
   }
 }
 
@@ -276,7 +277,7 @@ async function updateExistingEvent(
   
   if (!shouldRetryGeocode) {
     if (verbose) {
-      console.log(`⏭️  Skipped (already complete or recently attempted): "${event['Event Name']}"`);
+      devLog.log(`⏭️  Skipped (already complete or recently attempted): "${event['Event Name']}"`);
     }
     return;
   }
@@ -297,7 +298,7 @@ async function updateExistingEvent(
     .eq('id', existing.id);
   
   if (error) {
-    console.error('Update error:', error);
+    devLog.error('Update error:', error);
     throw error;
   }
   
@@ -311,7 +312,7 @@ async function updateExistingEvent(
     });
   
   if (verbose) {
-    console.log(`🔄 Updated: ${existing.id} - "${event['Event Name']}"`);
+    devLog.log(`🔄 Updated: ${existing.id} - "${event['Event Name']}"`);
   }
 }
 
@@ -351,7 +352,7 @@ async function geocodeEventLocation(event: ParsedEvent): Promise<GeocodeResult> 
       };
     }
   } catch (error) {
-    console.warn(`Geocoding failed for "${event.Location}":`, error);
+    devLog.warn(`Geocoding failed for "${event.Location}":`, error);
   }
   
   return {
@@ -382,19 +383,19 @@ export async function runWorkerCLI() {
     verbose: args.includes('--verbose') || args.includes('-v'),
   };
   
-  console.log('🚀 Canonical Event Worker CLI');
-  console.log('================================');
-  console.log('Config:', config);
-  console.log('');
+  devLog.log('🚀 Canonical Event Worker CLI');
+  devLog.log('================================');
+  devLog.log('Config:', config);
+  devLog.log('');
   
   try {
     const stats = await syncCanonicalEvents(config);
-    console.log('');
-    console.log('📊 Final Statistics:');
-    console.log(JSON.stringify(stats, null, 2));
+    devLog.log('');
+    devLog.log('📊 Final Statistics:');
+    devLog.log(JSON.stringify(stats, null, 2));
     process.exit(0);
   } catch (error) {
-    console.error('💥 Worker failed:', error);
+    devLog.error('💥 Worker failed:', error);
     process.exit(1);
   }
 }

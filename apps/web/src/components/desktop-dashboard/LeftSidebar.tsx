@@ -8,6 +8,7 @@ import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur, DashboardAssets } from '@/styles/dashboard-tokens';
 import ZoPassport from './ZoPassport';
 import { useFounderNFTs } from '@/hooks/useFounderNFTs';
+import { devLog } from '@/lib/logger';
 
 interface LeftSidebarProps {
   userProfile: PrivyUserProfile | null;
@@ -45,7 +46,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           }
         }
       } catch (error) {
-        console.warn('Could not fetch balance:', error);
+        devLog.warn('Could not fetch balance:', error);
       }
     }
 
@@ -72,7 +73,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
           }
         }
       } catch (error) {
-        console.warn('Could not fetch vibe score:', error);
+        devLog.warn('Could not fetch vibe score:', error);
       }
     }
 
@@ -124,10 +125,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
       if (response.ok) {
         setIsEditingBio(false);
       } else {
-        console.error('Failed to update bio');
+        devLog.error('Failed to update bio');
       }
     } catch (error) {
-      console.error('Error updating bio:', error);
+      devLog.error('Error updating bio:', error);
     }
   };
 
@@ -145,12 +146,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
         });
 
         if (!response.ok) {
-          console.error('Failed to update cultures');
+          devLog.error('Failed to update cultures');
           // Revert on error
           setSelectedCultures(selectedCultures);
         }
       } catch (error) {
-        console.error('Error updating cultures:', error);
+        devLog.error('Error updating cultures:', error);
         // Revert on error
         setSelectedCultures(selectedCultures);
       }
@@ -173,12 +174,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ userProfile }) => {
       });
 
       if (!response.ok) {
-        console.error('Failed to update cultures');
+        devLog.error('Failed to update cultures');
         // Revert on error
         setSelectedCultures(selectedCultures);
       }
     } catch (error) {
-      console.error('Error updating cultures:', error);
+      devLog.error('Error updating cultures:', error);
       // Revert on error
       setSelectedCultures(selectedCultures);
     }

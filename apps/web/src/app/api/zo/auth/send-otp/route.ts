@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOTP } from '@/lib/zo-api/auth';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!result.success) {
       // Only log actual errors (not in production unless critical)
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ OTP send failed:', result.message);
+        devLog.error('❌ OTP send failed:', result.message);
       }
       
       // Return error response
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     // Only log in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error in /api/zo/auth/send-otp:', error?.message);
+      devLog.error('Error in /api/zo/auth/send-otp:', error?.message);
     }
     return NextResponse.json(
       { error: 'Failed to send OTP' },

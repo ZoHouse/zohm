@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import QuantumSyncHeader from './QuantumSyncHeader';
 import QuantumSyncLogo from './QuantumSyncLogo';
 import { useQuestCooldown } from '@/hooks/useQuestCooldown';
+import { devLog } from '@/lib/logger';
 
 interface QuestCompleteProps {
   onGoHome: () => Promise<void>; // Now returns a promise that resolves when map is ready
@@ -106,7 +107,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
         const leaderboardData = await getQuestLeaderboard(10);
           setLeaderboard(leaderboardData);
       } catch (error) {
-        console.error('Error fetching quest data:', error);
+        devLog.error('Error fetching quest data:', error);
       }
     }
 
@@ -117,11 +118,11 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
     // Show loading overlay with Coin Collection video
     setIsLoading(true);
     
-    console.log('🎬 MapYourSync clicked - starting transition flow');
+    devLog.log('🎬 MapYourSync clicked - starting transition flow');
     
     // Get user's location first (required for transition)
     try {
-      console.log('📍 Requesting user location...');
+      devLog.log('📍 Requesting user location...');
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -135,7 +136,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
         lng: position.coords.longitude
       };
       
-      console.log('✅ Got location:', location);
+      devLog.log('✅ Got location:', location);
       
       // Save location to user profile
       if (userId) {
@@ -144,11 +145,11 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
           lat: location.lat,
           lng: location.lng
         });
-        console.log('✅ Saved location to profile');
+        devLog.log('✅ Saved location to profile');
       }
       
       // Start BOTH the video (4s minimum) AND the map preparation in PARALLEL
-      console.log('⏱️ Starting video (4s) and map preparation in parallel...');
+      devLog.log('⏱️ Starting video (4s) and map preparation in parallel...');
       
       const videoPromise = new Promise(resolve => setTimeout(resolve, 4000));
       const mapReadyPromise = onGoHome(); // This will prepare the map
@@ -156,11 +157,11 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
       // Wait for BOTH to complete
       await Promise.all([videoPromise, mapReadyPromise]);
       
-      console.log('✅ Video complete AND map ready - hiding loading screen');
+      devLog.log('✅ Video complete AND map ready - hiding loading screen');
       setIsLoading(false);
       
     } catch (error) {
-      console.error('❌ Error in transition:', error);
+      devLog.error('❌ Error in transition:', error);
       // Still wait for video, then hide loading
       await new Promise(resolve => setTimeout(resolve, 4000));
       setIsLoading(false);

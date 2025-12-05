@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { devLog } from '@/lib/logger';
 
 /**
  * Service Worker Registration Component
@@ -12,14 +13,14 @@ export default function ServiceWorkerRegistration() {
   useEffect(() => {
     // Only register service worker in production
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔧 [SW] Skipping service worker registration in development');
+      devLog.log('🔧 [SW] Skipping service worker registration in development');
       
       // Clear any production service worker cache that might persist
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           registrations.forEach((registration) => {
             registration.unregister();
-            console.log('🗑️ [SW] Unregistered service worker from dev environment');
+            devLog.log('🗑️ [SW] Unregistered service worker from dev environment');
           });
         });
         
@@ -28,7 +29,7 @@ export default function ServiceWorkerRegistration() {
           caches.keys().then((cacheNames) => {
             cacheNames.forEach((cacheName) => {
               caches.delete(cacheName);
-              console.log('🗑️ [SW] Deleted cache:', cacheName);
+              devLog.log('🗑️ [SW] Deleted cache:', cacheName);
             });
           });
         }
@@ -38,7 +39,7 @@ export default function ServiceWorkerRegistration() {
 
     // Check if service workers are supported
     if (!('serviceWorker' in navigator)) {
-      console.warn('⚠️ [SW] Service workers not supported in this browser');
+      devLog.warn('⚠️ [SW] Service workers not supported in this browser');
       return;
     }
 
@@ -49,19 +50,19 @@ export default function ServiceWorkerRegistration() {
           scope: '/',
         });
 
-        console.log('✅ [SW] Service worker registered successfully');
-        console.log('📍 [SW] Scope:', registration.scope);
+        devLog.log('✅ [SW] Service worker registered successfully');
+        devLog.log('📍 [SW] Scope:', registration.scope);
 
         // Check for updates on page load
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
-          console.log('🔄 [SW] Update found, installing new version...');
+          devLog.log('🔄 [SW] Update found, installing new version...');
 
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New service worker installed, but old one still controls the page
-                console.log('🆕 [SW] New version available! Refresh to update.');
+                devLog.log('🆕 [SW] New version available! Refresh to update.');
                 
                 // Optionally, you could show a toast notification here
                 // telling the user a new version is available
@@ -76,7 +77,7 @@ export default function ServiceWorkerRegistration() {
         }, 60 * 60 * 1000);
 
       } catch (error) {
-        console.error('❌ [SW] Service worker registration failed:', error);
+        devLog.error('❌ [SW] Service worker registration failed:', error);
       }
     };
 
@@ -89,7 +90,7 @@ export default function ServiceWorkerRegistration() {
 
     // Listen for service worker messages
     navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log('📬 [SW] Message received:', event.data);
+      devLog.log('📬 [SW] Message received:', event.data);
     });
 
     // Cleanup

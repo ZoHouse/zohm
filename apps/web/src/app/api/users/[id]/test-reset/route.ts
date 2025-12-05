@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 /**
  * 🧪 TEST-ONLY ENDPOINT
@@ -24,7 +25,7 @@ export async function POST(
     const body = await request.json();
     const { resetType } = body;
 
-    console.log(`🧪 [TEST] Reset request for user ${userId}: ${resetType}`);
+    devLog.log(`🧪 [TEST] Reset request for user ${userId}: ${resetType}`);
 
     // Validate reset type
     if (!['cross-app', 'existing'].includes(resetType)) {
@@ -50,14 +51,14 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error('❌ [TEST] Failed to reset user:', error);
+      devLog.error('❌ [TEST] Failed to reset user:', error);
       return NextResponse.json(
         { error: 'Failed to reset user', details: error.message },
         { status: 500 }
       );
     }
 
-    console.log('✅ [TEST] User reset successful:', data);
+    devLog.log('✅ [TEST] User reset successful:', data);
 
     return NextResponse.json({
       success: true,
@@ -66,7 +67,7 @@ export async function POST(
     });
 
   } catch (error: any) {
-    console.error('❌ [TEST] Error in test-reset:', error);
+    devLog.error('❌ [TEST] Error in test-reset:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -13,7 +14,7 @@ export async function GET() {
 
     return NextResponse.json({ cities });
   } catch (error) {
-    console.error('Failed to fetch cities:', error);
+    devLog.error('Failed to fetch cities:', error);
     return NextResponse.json(
       { error: 'Failed to fetch cities' },
       { status: 500 }

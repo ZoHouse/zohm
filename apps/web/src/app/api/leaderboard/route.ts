@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       // Handle case where leaderboards table doesn't exist yet
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-        console.log('ℹ️ leaderboards table not found, returning empty leaderboard');
+        devLog.log('ℹ️ leaderboards table not found, returning empty leaderboard');
         return NextResponse.json({
           leaderboard: [],
           scope,
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       total: leaderboard.length,
     });
   } catch (error) {
-    console.error('Failed to fetch leaderboard:', error);
+    devLog.error('Failed to fetch leaderboard:', error);
     return NextResponse.json(
       { error: 'Failed to fetch leaderboard' },
       { status: 500 }

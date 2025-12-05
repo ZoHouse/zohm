@@ -12,6 +12,7 @@ import MobileCooldownTimer from './MobileCooldownTimer';
 import MobileStatsCard from './MobileStatsCard';
 import MobileLeaderboard from './MobileLeaderboard';
 import MobileMiniMap from './MobileMiniMap';
+import { devLog } from '@/lib/logger';
 
 interface MobileDashboardProps {
   isVisible: boolean;
@@ -74,7 +75,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
           });
         }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        devLog.error('Error fetching stats:', error);
       }
     }
     

@@ -1,4 +1,5 @@
 import { MAPBOX_TOKEN } from './calendarConfig';
+import { devLog } from '@/lib/logger';
 
 export interface ParsedEvent {
   'Event Name': string;
@@ -30,7 +31,7 @@ export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<Pa
       });
       
       if (!response.ok) {
-        console.warn(`⚠️ Failed to fetch calendar ${url}:`, response.status, response.statusText);
+        devLog.warn(`⚠️ Failed to fetch calendar ${url}:`, response.status, response.statusText);
         continue;
       }
 
@@ -38,7 +39,7 @@ export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<Pa
       
       // Check if response is actually iCal data
       if (!icalData.includes('BEGIN:VCALENDAR')) {
-        console.warn(`⚠️ Response doesn't appear to be iCal data from ${url}`);
+        devLog.warn(`⚠️ Response doesn't appear to be iCal data from ${url}`);
         continue;
       }
       
@@ -46,7 +47,7 @@ export async function fetchAllCalendarEvents(calendarUrls: string[]): Promise<Pa
       allEvents.push(...events);
       
     } catch (error) {
-      console.error(`❌ Error fetching calendar ${url}:`, error);
+      devLog.error(`❌ Error fetching calendar ${url}:`, error);
     }
   }
 
@@ -137,7 +138,7 @@ export function parseICS(icsData: string): ParsedEvent[] {
     return events;
     
   } catch (error) {
-    console.error('Error parsing ICS data:', error);
+    devLog.error('Error parsing ICS data:', error);
     return [];
   }
 }
@@ -188,7 +189,7 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
           
           eventDate = new Date(year, month, day, hour, minute);
         } else {
-          console.warn('⚠️ Could not parse date:', value);
+          devLog.warn('⚠️ Could not parse date:', value);
           break;
         }
       }
@@ -234,7 +235,7 @@ function processEventProperty(key: string, value: string, event: Partial<ParsedE
 export async function geocodeLocation(locationName: string): Promise<{ lat: number; lng: number } | null> {
   try {
     if (!MAPBOX_TOKEN) {
-      console.warn('⚠️ Mapbox token not available for geocoding');
+      devLog.warn('⚠️ Mapbox token not available for geocoding');
       return null;
     }
 
@@ -243,7 +244,7 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.warn(`⚠️ Geocoding API error: ${response.status} ${response.statusText}`);
+      devLog.warn(`⚠️ Geocoding API error: ${response.status} ${response.statusText}`);
       return null;
     }
     
@@ -251,7 +252,7 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
     
     // Check if response is valid JSON
     if (!responseText.trim()) {
-      console.warn('⚠️ Empty response from geocoding API');
+      devLog.warn('⚠️ Empty response from geocoding API');
       return null;
     }
     
@@ -259,7 +260,7 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.warn('⚠️ Invalid JSON from geocoding API:', responseText.substring(0, 200));
+      devLog.warn('⚠️ Invalid JSON from geocoding API:', responseText.substring(0, 200));
       return null;
     }
     
@@ -270,7 +271,7 @@ export async function geocodeLocation(locationName: string): Promise<{ lat: numb
     
     return null;
   } catch (error) {
-    console.error('Geocoding error:', error);
+    devLog.error('Geocoding error:', error);
     return null;
   }
 }
@@ -323,10 +324,10 @@ export async function fetchAllCalendarEventsWithGeocoding(calendarUrls: string[]
               Longitude: coords.lng.toString()
             };
           } else {
-            console.warn(`❌ Geocoding failed for: ${event.Location}`);
+            devLog.warn(`❌ Geocoding failed for: ${event.Location}`);
           }
         } catch (geocodeError) {
-          console.warn(`⚠️ Geocoding error for ${event.Location}:`, geocodeError);
+          devLog.warn(`⚠️ Geocoding error for ${event.Location}:`, geocodeError);
         }
       }
       

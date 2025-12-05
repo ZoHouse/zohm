@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 const CITY_SYNC_REWARD = 200; // +200 Zo for syncing home city
 
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully synced ${city.name}! +${CITY_SYNC_REWARD} $Zo`,
     });
   } catch (error) {
-    console.error('Failed to sync city:', error);
+    devLog.error('Failed to sync city:', error);
     return NextResponse.json(
       { error: 'Failed to sync city' },
       { status: 500 }

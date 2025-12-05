@@ -2,6 +2,7 @@
 // ZO API HTTP client configuration
 
 import axios, { AxiosInstance } from 'axios';
+import { devLog } from '@/lib/logger';
 
 // Base URL: Use env var if set, otherwise default to correct URL
 let baseUrl = process.env.ZO_API_BASE_URL || process.env.NEXT_PUBLIC_ZO_API_BASE_URL;
@@ -42,7 +43,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
           };
         }
       } catch (error) {
-        console.warn('⚠️ Failed to fetch device credentials from database:', error);
+        devLog.warn('⚠️ Failed to fetch device credentials from database:', error);
       }
     }
     // Fallback: generate temporary credentials for server-side
@@ -66,7 +67,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
         };
       }
     } catch (error) {
-      console.warn('Failed to fetch device credentials from database:', error);
+      devLog.warn('Failed to fetch device credentials from database:', error);
     }
   }
 
@@ -81,7 +82,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
         return parsed;
       }
     } catch (e) {
-      console.warn('Failed to parse stored device credentials');
+      devLog.warn('Failed to parse stored device credentials');
     }
   }
 
@@ -94,7 +95,7 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
 
 // Validate configuration (only in development)
 if (!ZO_CLIENT_KEY_WEB && process.env.NODE_ENV === 'development') {
-  console.error('⚠️ ZO_CLIENT_KEY_WEB is not set! Phone auth will fail.');
+  devLog.error('⚠️ ZO_CLIENT_KEY_WEB is not set! Phone auth will fail.');
 }
 
 // Create axios instance for ZO API
@@ -119,7 +120,7 @@ zoApiClient.interceptors.request.use(async (config) => {
   if (ZO_CLIENT_KEY_WEB) {
     config.headers['client-key'] = ZO_CLIENT_KEY_WEB;
   } else {
-    console.warn('⚠️ client-key header not set - request may fail');
+    devLog.warn('⚠️ client-key header not set - request may fail');
   }
 
   // Check if device credentials are already set in headers (from getZoAuthHeaders)
@@ -133,7 +134,7 @@ zoApiClient.interceptors.request.use(async (config) => {
       config.headers['client-device-id'] = metadata.deviceId;
       config.headers['client-device-secret'] = metadata.deviceSecret;
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Interceptor: Using device credentials from metadata');
+        devLog.log('🔍 Interceptor: Using device credentials from metadata');
       }
     } else {
       // Priority 2: Fetch from database or generate new
@@ -142,13 +143,13 @@ zoApiClient.interceptors.request.use(async (config) => {
       config.headers['client-device-id'] = deviceId;
       config.headers['client-device-secret'] = deviceSecret;
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Interceptor: Fetched/generated device credentials');
+        devLog.log('🔍 Interceptor: Fetched/generated device credentials');
       }
     }
   } else {
     // Headers already set - don't override (they came from getZoAuthHeaders)
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Interceptor: Device credentials already in headers, not overriding');
+      devLog.log('🔍 Interceptor: Device credentials already in headers, not overriding');
     }
   }
 
@@ -222,7 +223,7 @@ export async function updateDeviceCredentials(
         })
         .eq('id', userId);
     } catch (error) {
-      console.warn('Failed to update device credentials in database:', error);
+      devLog.warn('Failed to update device credentials in database:', error);
     }
   }
 }

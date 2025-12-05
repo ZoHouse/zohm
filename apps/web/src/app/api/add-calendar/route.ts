@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addCalendar } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     });
     
   } catch (error) {
-    console.error('❌ Add calendar error:', error);
+    devLog.error('❌ Add calendar error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error',

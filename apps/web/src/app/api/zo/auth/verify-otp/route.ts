@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/lib/zo-api/auth';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
 import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     const result = await verifyOTP(countryCode, phoneNumber, otp);
 
     if (!result.success || !result.data) {
-      console.error('❌ OTP verification failed:', result.error);
+      devLog.error('❌ OTP verification failed:', result.error);
       return NextResponse.json(
         { error: result.error || 'Invalid OTP' },
         { status: 400 }
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the response structure for debugging
-    console.log('✅ OTP verified, response data:', JSON.stringify(result.data, null, 2));
+    devLog.log('✅ OTP verified, response data:', JSON.stringify(result.data, null, 2));
 
     // Extract ALL data from ZO API response (actual structure)
     const { 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Validate response structure
     if (!user || !access_token || !refresh_token || !device_id || !device_secret) {
-      console.error('❌ Invalid response structure:', {
+      devLog.error('❌ Invalid response structure:', {
         hasUser: !!user,
         hasAccessToken: !!access_token,
         hasRefreshToken: !!refresh_token,
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
 
       if (existingByZoId) {
         targetUserId = existingByZoId.id;
-        console.log('✅ Found existing user by zo_user_id:', targetUserId);
+        devLog.log('✅ Found existing user by zo_user_id:', targetUserId);
       } else {
         // Step 2: Check if user exists by phone number
         const { data: existingByPhone } = await supabase
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
 
         if (existingByPhone) {
           targetUserId = existingByPhone.id;
-          console.log('✅ Found existing user by phone:', targetUserId);
+          devLog.log('✅ Found existing user by phone:', targetUserId);
         } else {
           // Step 3: Create new user with ZO identity
           // For ZO users, use zo_user_id as the primary id
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
           if (createError || !newUser) {
             // If unique constraint violation (user already exists), try to find them
             if (createError?.code === '23505') {
-              console.warn('⚠️ User already exists (unique constraint), trying to find...');
+              devLog.warn('⚠️ User already exists (unique constraint), trying to find...');
               
               // Try to find by zo_user_id again
               const { data: foundUser } = await supabase
@@ -133,16 +134,16 @@ export async function POST(request: NextRequest) {
 
               if (foundUser) {
                 targetUserId = foundUser.id;
-                console.log('✅ Found user after constraint violation:', targetUserId);
+                devLog.log('✅ Found user after constraint violation:', targetUserId);
               } else {
-                console.error('Failed to create or find user:', createError);
+                devLog.error('Failed to create or find user:', createError);
                 return NextResponse.json(
                   { error: 'Failed to create user account. Please try again.' },
                   { status: 500 }
                 );
               }
             } else {
-              console.error('Failed to create user:', createError);
+              devLog.error('Failed to create user:', createError);
               return NextResponse.json(
                 { error: 'Failed to create user account' },
                 { status: 500 }
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
             }
           } else {
             targetUserId = newUser.id;
-            console.log('✅ Created new user:', targetUserId);
+            devLog.log('✅ Created new user:', targetUserId);
           }
         }
       }
@@ -168,10 +169,10 @@ export async function POST(request: NextRequest) {
       .eq('id', targetUserId);
 
     if (deviceError) {
-      console.error('⚠️ Failed to save device credentials:', deviceError);
+      devLog.error('⚠️ Failed to save device credentials:', deviceError);
       // Continue anyway - we'll use them from the response
     } else {
-      console.log('✅ Device credentials saved to database');
+      devLog.log('✅ Device credentials saved to database');
     }
 
     // STEP 2: Save basic ZO auth data to Supabase (fast)
@@ -196,15 +197,15 @@ export async function POST(request: NextRequest) {
       .eq('id', targetUserId);
 
     if (authUpdateError) {
-      console.warn('⚠️ Failed to save ZO auth data:', authUpdateError);
+      devLog.warn('⚠️ Failed to save ZO auth data:', authUpdateError);
     } else {
-      console.log('✅ ZO auth data saved to Supabase');
+      devLog.log('✅ ZO auth data saved to Supabase');
     }
 
     // STEP 3: Sync full profile (BLOCKING - ensures avatar is saved)
     // This fetches the latest profile from ZO API and syncs all fields to Supabase
     // Including: avatar.image, cultures, founder_tokens, etc.
-    console.log('🔄 Syncing full profile from ZO API...');
+    devLog.log('🔄 Syncing full profile from ZO API...');
     const syncResult = await syncZoProfileToSupabase(
       targetUserId,
       access_token,
@@ -226,16 +227,16 @@ export async function POST(request: NextRequest) {
     );
     
     if (!syncResult.success) {
-      console.error('❌ Profile sync failed:', syncResult.error);
+      devLog.error('❌ Profile sync failed:', syncResult.error);
       // Log warning if it's a service role key issue
       if (syncResult.error?.includes('admin access not available') || syncResult.error?.includes('Database admin')) {
-        console.error('🚨 CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing in production! Avatar sync will fail.');
-        console.error('🚨 Set SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables');
+        devLog.error('🚨 CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing in production! Avatar sync will fail.');
+        devLog.error('🚨 Set SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables');
       }
       // Continue anyway - basic auth data is already saved
       // But avatar won't be synced, so user will see fallback
     } else {
-      console.log('✅ Full profile synced from ZO API (including avatar)');
+      devLog.log('✅ Full profile synced from ZO API (including avatar)');
     }
 
     return NextResponse.json({
@@ -260,7 +261,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Error in /api/zo/auth/verify-otp:', {
+    devLog.error('❌ Error in /api/zo/auth/verify-otp:', {
       message: error?.message,
       stack: error?.stack,
       code: error?.code,

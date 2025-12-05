@@ -16,13 +16,14 @@
  * <ARScanner 
  *   userId={userId} 
  *   nodeId={nodeId}
- *   onScanSuccess={(reward) => console.log('Earned:', reward)}
+ *   onScanSuccess={(reward) => devLog.log('Earned:', reward)}
  *   onClose={() => setShowAR(false)}
  * />
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { devLog } from '@/lib/logger';
 
 interface ARScannerProps {
   userId?: string;
@@ -87,13 +88,13 @@ export default function ARScanner({
         }, 1000);
       }
     } catch (error) {
-      console.error('Failed to load AR libraries:', error);
+      devLog.error('Failed to load AR libraries:', error);
       setIsLoading(false);
     }
   };
 
   const handleMarkerFound = () => {
-    console.log('🎯 AR Marker detected!');
+    devLog.log('🎯 AR Marker detected!');
     setMarkerFound(true);
     
     // Auto-complete scan after 2 seconds of stable tracking
@@ -105,7 +106,7 @@ export default function ARScanner({
   };
 
   const handleMarkerLost = () => {
-    console.log('👀 AR Marker lost');
+    devLog.log('👀 AR Marker lost');
     setMarkerFound(false);
   };
 
@@ -130,7 +131,7 @@ export default function ARScanner({
           onScanSuccess?.({ tokens: data.tokens || 50, xp: data.xp || 10 });
         }
       } catch (error) {
-        console.error('Failed to record AR scan:', error);
+        devLog.error('Failed to record AR scan:', error);
       }
     } else {
       // Demo mode

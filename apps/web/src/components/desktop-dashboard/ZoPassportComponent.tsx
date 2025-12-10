@@ -60,7 +60,7 @@ const CircularProgress = ({ size = 140, progress = 0, strokeWidth = 4, secondary
 const ZoPassportComponent: React.FC<ZoPassportComponentProps> = ({ profile, completion, className }) => {
   const isFounder = profile?.isFounder || false;
   const name = profile?.name || "New Citizen";
-  const avatar = profile?.avatar || "/images/rank1.jpeg"; // Default fallback
+  const avatar = profile?.avatar || "/quest-audio-assets/avatar.png"; // Default fallback (matches QuantumSyncHeader)
   const done = completion?.done || 0;
   const total = completion?.total || 1;
   const progress = Math.min(100, Math.max(0, (done / total) * 100));

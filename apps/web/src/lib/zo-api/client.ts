@@ -71,7 +71,15 @@ async function getOrCreateDeviceCredentials(userId?: string): Promise<{ deviceId
     }
   }
 
-  // Fallback to localStorage (for pre-login requests)
+  // Priority 1: Check individual localStorage keys (set by PhoneLoginModal)
+  const deviceId = localStorage.getItem('zo_device_id');
+  const deviceSecret = localStorage.getItem('zo_device_secret');
+  if (deviceId && deviceSecret) {
+    devLog.log('🔑 Using device credentials from localStorage (zo_device_id/zo_device_secret)');
+    return { deviceId, deviceSecret };
+  }
+
+  // Priority 2: Check legacy JSON object key
   const storageKey = 'zo_device_credentials';
   const stored = localStorage.getItem(storageKey);
 

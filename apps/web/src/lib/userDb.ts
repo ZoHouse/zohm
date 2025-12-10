@@ -39,21 +39,21 @@ export interface UserRecord {
   onboarding_step: number;
   body_type: 'bro' | 'bae' | null;  // ZO API avatar generation body type
   profile_synced_at: string | null;  // Legacy field (deprecated, use zo_synced_at)
-  
+
   // ZO Identity fields (from migration 010)
   zo_user_id: string | null;  // ZO API user.id (unique identifier)
   zo_pid: string | null;  // ZO API user.pid (passport ID)
-  
+
   // ZO Auth tokens
   zo_token: string | null;  // JWT access token
   zo_token_expiry: string | null;  // Access token expiry timestamp
   zo_refresh_token: string | null;  // Refresh token
   zo_refresh_token_expiry: string | null;  // Refresh token expiry timestamp
-  
+
   // ZO Device credentials (required for API calls)
   zo_device_id: string | null;  // Device ID from ZO API response
   zo_device_secret: string | null;  // Device secret from ZO API response
-  
+
   // Additional ZO auth fields (from verify-otp response)
   zo_legacy_token: string | null;  // Legacy token from ZO API (deprecated, use zo_token)
   zo_legacy_token_valid_till: string | null;  // Legacy token expiry timestamp
@@ -61,12 +61,12 @@ export interface UserRecord {
   zo_device_info: Record<string, any> | null;  // Device info JSON from ZO API response
   zo_roles: string[] | null;  // Array of user roles from ZO API (e.g., ["property-manager", "housekeeping-admin"])
   zo_membership: string | null;  // ZO API membership: 'founder' | 'citizen' | 'none' (stored as-is, separate from role column)
-  
+
   // Wallet tracking (for token balance)
   primary_wallet_address: string | null;  // Primary wallet for balance fetching
   wallet_chain_id: number | null;  // Chain ID (default: 8453 for Base)
   balance_last_synced_at: string | null;  // Last time balance was synced
-  
+
   // Cultures (JSONB array - replaces culture TEXT field)
   cultures: Array<{
     key: string;
@@ -74,11 +74,11 @@ export interface UserRecord {
     icon?: string;
     description?: string;
   }> | null;
-  
+
   // ZO Sync metadata
   zo_synced_at: string | null;  // Last sync timestamp from ZO API
   zo_sync_status: 'never' | 'synced' | 'stale' | 'error' | null;  // Sync status
-  
+
   // Timestamps
   created_at: string;
   last_seen: string | null;
@@ -146,7 +146,7 @@ export async function getUserById(userId: string): Promise<UserRecord | null> {
           .select('*')
           .eq('zo_user_id', userId)
           .single();
-        
+
         if (zoError) {
           devLog.log('🔍 [getUserById] Query by zo_user_id error:', zoError.code, zoError.message);
           if (zoError.code === 'PGRST116') {
@@ -155,7 +155,7 @@ export async function getUserById(userId: string): Promise<UserRecord | null> {
           }
           throw zoError;
         }
-        
+
         devLog.log('✅ [getUserById] Found user by zo_user_id:', {
           id: userByZoId?.id,
           zo_user_id: userByZoId?.zo_user_id,
@@ -250,35 +250,35 @@ export async function getFullUserProfile(userId: string): Promise<FullUserProfil
 export async function checkDatabaseMigrationStatus(): Promise<boolean> {
   try {
     devLog.log('🔍 Checking if users table exists...');
-    
+
     // Try to query the users table
     const { data, error } = await supabase
       .from('users')
       .select('id')
       .limit(1);
-    
+
     if (error) {
       devLog.error('❌ Users table check failed - Full error:', error);
       devLog.error('❌ Error code:', error.code);
       devLog.error('❌ Error message:', error.message);
       devLog.error('❌ Error details:', error.details);
       devLog.error('❌ Error hint:', error.hint);
-      
+
       // Check if it's a "relation does not exist" error
       if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
         devLog.error('💡 The "users" table does not exist. Please run the migration SQL in Supabase Dashboard.');
         devLog.error('💡 See: migrations/README.md for instructions');
       }
-      
+
       // Check if it's an RLS policy error
       if (error.code === '42501' || error.message?.includes('policy')) {
         devLog.error('💡 This might be a Row Level Security (RLS) policy issue.');
         devLog.error('💡 Try disabling RLS temporarily: ALTER TABLE users DISABLE ROW LEVEL SECURITY;');
       }
-      
+
       return false;
     }
-    
+
     devLog.log('✅ Users table exists - migration has been run');
     devLog.log('✅ Sample data:', data);
     return true;
@@ -297,8 +297,8 @@ export async function upsertUser(
 ): Promise<UserRecord | null> {
   try {
     const userId = user.id;
-    const userEmail = typeof user.email === 'string' 
-      ? user.email 
+    const userEmail = typeof user.email === 'string'
+      ? user.email
       : (user.email as any)?.address || null;
 
     devLog.log('🔄 Upserting user:', {
@@ -311,10 +311,14 @@ export async function upsertUser(
     const isNewUser = !existingUser;
 
     // Assign a default unicorn PFP for new users or existing users without a PFP
+    // BUT skip if body_type is provided (avatar generation is in progress)
     let defaultPfp: string | null = null;
-    if (isNewUser || (!existingUser?.pfp && !profileData?.pfp)) {
+    const isAvatarGenerationInProgress = !!profileData?.body_type;
+    if ((isNewUser || (!existingUser?.pfp && !profileData?.pfp)) && !isAvatarGenerationInProgress) {
       defaultPfp = getUnicornForAddress(userId);
       devLog.log('🦄 Assigning default unicorn avatar:', defaultPfp);
+    } else if (isAvatarGenerationInProgress) {
+      devLog.log('🎨 Skipping unicorn avatar - avatar generation in progress');
     }
 
     const userData: Partial<UserRecord> = {
@@ -326,7 +330,7 @@ export async function upsertUser(
     };
 
     devLog.log('📝 Attempting to upsert user:', userData);
-    
+
     const { data, error } = await supabase
       .from('users')
       .upsert(userData, { onConflict: 'id' })
@@ -372,7 +376,7 @@ export async function updateUserProfile(
 ): Promise<UserRecord | null> {
   try {
     devLog.log('🔄 Updating user profile:', { userId, updates });
-    
+
     const { data, error } = await supabase
       .from('users')
       .update(updates)
@@ -389,7 +393,7 @@ export async function updateUserProfile(
       });
       throw error;
     }
-    
+
     devLog.log('✅ Profile updated successfully:', data);
     return data;
   } catch (error) {
@@ -457,7 +461,7 @@ export async function syncUserWalletsFromPrivy(privyUser: any): Promise<void> {
 
     for (let i = 0; i < walletAccounts.length; i++) {
       const account = walletAccounts[i] as any; // Type assertion for wallet account
-      
+
       await supabase
         .from('user_wallets')
         .upsert({
@@ -471,9 +475,9 @@ export async function syncUserWalletsFromPrivy(privyUser: any): Promise<void> {
           is_verified: true, // Privy wallets are always verified
           verified_at: new Date().toISOString(),
           last_used_at: new Date().toISOString(),
-        }, { 
+        }, {
           onConflict: 'address',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         });
     }
   } catch (error) {
@@ -579,7 +583,7 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: any): Promise<void
 
     for (const account of linkedAccounts) {
       const authType = account.type.replace('_oauth', '') as UserAuthMethodRecord['auth_type'];
-      
+
       let identifier = '';
       let displayName = null;
       let oauthSubject = null;
@@ -611,9 +615,9 @@ export async function syncUserAuthMethodsFromPrivy(privyUser: any): Promise<void
           is_verified: true, // Privy accounts are always verified
           verified_at: new Date().toISOString(),
           last_used_at: new Date().toISOString(),
-        }, { 
+        }, {
           onConflict: 'user_id,auth_type,identifier',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         });
     }
   } catch (error) {

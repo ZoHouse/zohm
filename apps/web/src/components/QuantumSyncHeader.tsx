@@ -13,7 +13,7 @@ async function fetchUserProgress(userId: string) {
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       return data;
@@ -39,9 +39,15 @@ function getInitialAvatar(avatarSrc?: string): string {
     return avatarSrc;
   }
   if (typeof window !== 'undefined') {
+    // Check new cache first (from avatar generation), then fallback to old cache
+    const newAvatar = localStorage.getItem('zo_avatar_url');
+    if (newAvatar) {
+      devLog.log('🎨 Loading avatar from localStorage (zo_avatar_url):', newAvatar);
+      return newAvatar;
+    }
     const storedAvatar = localStorage.getItem('zo_avatar');
     if (storedAvatar) {
-      devLog.log('🎨 Loading avatar from localStorage:', storedAvatar);
+      devLog.log('🎨 Loading avatar from localStorage (zo_avatar):', storedAvatar);
       return storedAvatar;
     }
   }
@@ -81,8 +87,8 @@ export default function QuantumSyncHeader({
     async function getBalanceAndAvatar(id: string) {
       const progress = await fetchUserProgress(id);
       if (progress?.quests?.zo_points !== undefined) {
-          setBalance(progress.quests.zo_points);
-        }
+        setBalance(progress.quests.zo_points);
+      }
       // Update avatar from API if available and different
       if (progress?.user?.pfp && progress.user.pfp !== avatar) {
         devLog.log('🎨 Updating avatar from API:', progress.user.pfp);
@@ -115,7 +121,7 @@ export default function QuantumSyncHeader({
           height="40"
         />
       </div>
-      
+
       {!withoutProfile && (
         /* Profile Container */
         <div className="quantum-sync-header__profile">
@@ -128,7 +134,7 @@ export default function QuantumSyncHeader({
               height="36"
             />
           </div>
-          
+
           {/* Tags Container */}
           <div className="profile-tokens">
             <span>{balance}</span>

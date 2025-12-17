@@ -49,7 +49,7 @@ export function useDashboardData() {
         // Fetch upcoming events using lat/lng bounding box (same as map)
         let eventsQuery = supabase
           .from('canonical_events')
-          .select('id, title, description, starts_at, location_raw, lat, lng, raw_payload, is_free')
+          .select('id, title, description, starts_at, location_raw, lat, lng, raw_payload')
           .gte('starts_at', new Date().toISOString())
           .not('lat', 'is', null)
           .not('lng', 'is', null)
@@ -85,11 +85,11 @@ export function useDashboardData() {
 
         const { data: eventsData, error: eventsError } = await eventsQuery.limit(10);
 
-        devLog.log('📊 Events query result:', { 
-          count: eventsData?.length, 
+        devLog.log('📊 Events query result:', {
+          count: eventsData?.length,
           error: eventsError?.message,
-          sampleEvents: eventsData?.slice(0, 3).map(e => ({ 
-            title: e.title, 
+          sampleEvents: eventsData?.slice(0, 3).map(e => ({
+            title: e.title,
             location: e.location_raw,
             lat: e.lat,
             lng: e.lng,
@@ -109,7 +109,7 @@ export function useDashboardData() {
             location: event.location_raw,
             category: event.raw_payload?.category || 'event',
             image_url: event.raw_payload?.image_url || '/dashboard-assets/rectangle-738.png',
-            is_free: event.is_free ?? true,
+            is_free: true,
           })));
         }
 
@@ -153,7 +153,7 @@ export function useDashboardData() {
           const { data: nodesData, error: nodesError } = await supabase
             .from('nodes')
             .select('id, name, city, latitude, longitude')
-            .order('created_at', { ascending: false })
+            .order('inserted_at', { ascending: false })
             .limit(5);
 
           if (nodesError) {

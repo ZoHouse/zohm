@@ -232,18 +232,23 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         // 1. Cache in localStorage
         localStorage.setItem('zo_avatar_url', avatarUrl);
 
-        // 2. ✨ CRITICAL FIX: Save to database immediately
+        // 2. ✨ CRITICAL FIX: Save to database via API route (bypasses RLS)
         // This ensures avatars persist across devices and sessions
         const userId = userProfile?.id || localStorage.getItem('zo_user_id');
         if (userId) {
           try {
-            const { updateUserProfile } = await import('@/lib/userDb');
-            await updateUserProfile(userId, {
-              pfp: avatarUrl,
-              zo_synced_at: new Date().toISOString(),
-              zo_sync_status: 'synced'
+            const response = await fetch(`/api/users/${userId}/avatar`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ avatarUrl }),
             });
-            devLog.log('✅ [Onboarding] Avatar persisted to database:', avatarUrl);
+
+            if (response.ok) {
+              devLog.log('✅ [Onboarding] Avatar persisted to database:', avatarUrl);
+            } else {
+              const errorData = await response.json();
+              devLog.error('❌ [Onboarding] Failed to save avatar to database:', errorData);
+            }
           } catch (error) {
             devLog.error('❌ [Onboarding] Failed to save avatar to database:', error);
             // Don't block onboarding - localStorage cache will still work

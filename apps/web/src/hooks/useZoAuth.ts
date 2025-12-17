@@ -222,9 +222,18 @@ export function useZoAuth() {
   const logout = useCallback(() => {
     devLog.log('🚪 [ZoAuth] Logging out...');
     if (typeof window !== 'undefined') {
+      // Clear all ZO-related localStorage keys
       localStorage.removeItem('zo_user_id');
       localStorage.removeItem('zo_token');
+      localStorage.removeItem('zo_access_token');
+      localStorage.removeItem('zo_device_id');
+      localStorage.removeItem('zo_device_secret');
       localStorage.removeItem('zo_device_credentials');
+      localStorage.removeItem('zo_avatar_url');
+      localStorage.removeItem('zo_avatar');
+      localStorage.removeItem('zo_nickname');
+      localStorage.removeItem('zo_city');
+      localStorage.removeItem('zo_body_type');
     }
     setUserProfile(null);
   }, []);
@@ -254,11 +263,24 @@ export function useZoAuth() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('zoLoginSuccess', handleLoginSuccess);
 
+    // Listen for session expiry
+    const handleSessionExpired = (e: Event) => {
+      devLog.warn('🔐 [ZoAuth] Session expired event received');
+      logout();
+      // Show alert to user
+      if (typeof window !== 'undefined') {
+        alert('Your session has expired. Please login again.');
+        window.location.reload();
+      }
+    };
+    window.addEventListener('zoSessionExpired', handleSessionExpired);
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('zoLoginSuccess', handleLoginSuccess);
+      window.removeEventListener('zoSessionExpired', handleSessionExpired);
     };
-  }, [loadUserProfile]);
+  }, [loadUserProfile, logout]);
 
   // ============================================
   // Return Values

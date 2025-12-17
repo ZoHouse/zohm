@@ -167,6 +167,39 @@ zoApiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Response interceptor: Handle 403 "Session expired" errors
+// This triggers logout/refresh flow when token expires
+zoApiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error.response?.status;
+    const errorDetail = error.response?.data?.detail;
+
+    // Check for session expired error
+    if (status === 403 && errorDetail === 'Session expired.') {
+      devLog.warn('🔐 Session expired! Token needs refresh or re-login.');
+
+      // Dispatch event for frontend to handle (logout, show login modal, etc.)
+      if (typeof window !== 'undefined') {
+        devLog.log('📢 Dispatching zoSessionExpired event');
+        window.dispatchEvent(new CustomEvent('zoSessionExpired', {
+          detail: {
+            message: 'Your session has expired. Please login again.',
+            status: 403,
+          }
+        }));
+
+        // Clear expired tokens from localStorage to force re-login
+        localStorage.removeItem('zo_access_token');
+        localStorage.removeItem('zo_token');
+        devLog.log('🗑️ Cleared expired tokens from localStorage');
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // Helper to get authenticated request headers
 export async function getZoAuthHeaders(
   accessToken: string,

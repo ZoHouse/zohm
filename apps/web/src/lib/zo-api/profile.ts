@@ -23,16 +23,21 @@ export async function getProfile(
 }> {
   try {
     const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
-    
-    // Log device credentials being used (for debugging)
+
+    // 🔍 DEBUG: Log headers being sent (excluding secrets)
     if (process.env.NODE_ENV === 'development') {
-      devLog.log('🔍 getProfile using device credentials:', {
-        deviceId: headers['client-device-id'],
-        deviceSecret: headers['client-device-secret']?.substring(0, 10) + '...',
+      devLog.log('🔐 [getProfile] Request headers:', {
+        hasClientKey: !!headers['client-key'],
+        clientKeyPreview: headers['client-key']?.substring(0, 8) + '...',
+        hasDeviceId: !!headers['client-device-id'],
+        deviceIdPreview: headers['client-device-id']?.substring(0, 15) + '...',
+        hasDeviceSecret: !!headers['client-device-secret'],
+        hasAuth: !!headers['Authorization'],
+        tokenPreview: headers['Authorization']?.substring(0, 20) + '...',
         fromAuthData: !!deviceCredentials,
       });
     }
-    
+
     // Pass device credentials in metadata so interceptor can use them if headers aren't set
     const config: any = {
       headers,
@@ -44,7 +49,7 @@ export async function getProfile(
         }),
       },
     };
-    
+
     const response = await zoApiClient.get<ZoProfileResponse>(
       '/api/v1/profile/me/',
       config
@@ -65,7 +70,7 @@ export async function getProfile(
       hasResponse: !!error.response,
       isNetworkError: !error.response,
     });
-    
+
     const errorData = error.response?.data as ZoErrorResponse;
     return {
       success: false,
@@ -101,9 +106,9 @@ export async function updateProfile(
       hasUserId: !!userId,
       hasDeviceCredentials: !!deviceCredentials,
     });
-    
+
     const headers = await getZoAuthHeaders(accessToken, userId, deviceCredentials);
-    
+
     // Log device credentials being used (for debugging)
     devLog.log('🔍 [updateProfile] Using device credentials:', {
       deviceId: headers['client-device-id'] || 'MISSING',
@@ -112,7 +117,7 @@ export async function updateProfile(
       hasAuth: !!headers['Authorization'],
       fromAuthData: !!deviceCredentials,
     });
-    
+
     // Pass device credentials in metadata so interceptor can use them if headers aren't set
     const config: any = {
       headers,
@@ -124,16 +129,16 @@ export async function updateProfile(
         }),
       },
     };
-    
+
     devLog.log('📡 [updateProfile] Making POST request to ZO API...');
     const apiStartTime = Date.now();
-    
+
     const response = await zoApiClient.post<ZoProfileResponse>(
       '/api/v1/profile/me/',
       updates,
       config
     );
-    
+
     const apiDuration = Date.now() - apiStartTime;
     devLog.log(`✅ [updateProfile] API call succeeded in ${apiDuration}ms`, {
       status: response.status,
@@ -157,7 +162,7 @@ export async function updateProfile(
       isNetworkError: !error.response,
       fullError: error,
     });
-    
+
     const errorData = error.response?.data as ZoErrorResponse;
     return {
       success: false,

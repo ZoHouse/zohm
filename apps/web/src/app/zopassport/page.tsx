@@ -424,7 +424,7 @@ Join me: ${baseUrl}/share/${userId}
                       <div style={{ transform: 'scale(1.4)', transformOrigin: 'center' }}>
                         <ZoPassportComponent
                           profile={{
-                            avatar: userProfile?.pfp || "/images/rank1.jpeg",
+                            avatar: userProfile?.pfp || (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || undefined,
                             name: userProfile?.name || "New Citizen",
                             isFounder: isFounder,
                           }}

@@ -794,6 +794,64 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       map.current.on('style.load', () => {
         mapLog('🎨 Map style load event fired');
+
+        // 🔧 FIX: Remove 'mapbox-incidents' source causing 404s
+        // Defer removal to next tick to avoid "reading 'get' of undefined" errors during style load
+        setTimeout(() => {
+          try {
+            if (!map.current) return;
+            const style = map.current.getStyle();
+            if (style && style.sources) {
+              Object.keys(style.sources).forEach(sourceId => {
+                const source = style.sources[sourceId];
+                // Check if source url or tiles contain mapbox-incidents
+                if ((source as any).url?.includes('mapbox-incidents') ||
+                  (source as any).tiles?.[0]?.includes('mapbox-incidents')) {
+
+                  // Find and remove all layers using this source
+                  style.layers?.forEach(layer => {
+                    if (layer.source === sourceId) {
+                      if (map.current?.getLayer(layer.id)) {
+                        map.current.removeLayer(layer.id);
+                        mapLog(`🔧 Removed incidents layer: ${layer.id}`);
+                      }
+                    }
+                  });
+
+                  // Remove the source
+                  if (map.current?.getSource(sourceId)) {
+                    map.current.removeSource(sourceId);
+                    mapLog(`🔧 Removed incidents source: ${sourceId}`);
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            devLog.warn('Error removing incidents source:', e);
+          }
+        }, 100);
+      });
+
+      // 🖼️ Handle missing images (like "in-state-4") by providing a transparent placeholder
+      map.current.on('styleimagemissing', (e) => {
+        const id = e.id;
+        if (!map.current) return;
+
+        // Check if we already handled this image to avoid infinite loops
+        if (map.current.hasImage(id)) return;
+
+        mapLog(`🖼️ Handling missing image: ${id}`);
+
+        // Create a 1x1 transparent pixel
+        const width = 1;
+        const height = 1;
+        const data = new Uint8Array(width * height * 4); // Transparent by default (all zeros)
+
+        try {
+          map.current.addImage(id, { width, height, data });
+        } catch (err) {
+          devLog.warn(`Failed to add placeholder for ${id}:`, err);
+        }
       });
 
       map.current.on('sourcedataloading', (e) => {

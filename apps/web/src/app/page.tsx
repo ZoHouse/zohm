@@ -7,7 +7,7 @@ import QuestAudio from '@/components/QuestAudio';
 import QuestComplete from '@/components/QuestComplete';
 import MobileView from '@/components/MobileView';
 import DesktopView from '@/components/DesktopView';
-import LocationPermissionModal from '@/components/LocationPermissionModal';
+
 import { pingSupabase, PartnerNodeRecord, getQuests } from '@/lib/supabase';
 import { useZoAuth } from '@/hooks/useZoAuth';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -15,6 +15,7 @@ import { useOnboardingTransition } from '@/hooks/useOnboardingTransition';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { getCalendarUrls } from '@/lib/calendarConfig';
 import { isWithinRadius } from '@/lib/geoUtils';
+import { isWithinBangalore, getBangaloreNodesForLocalView } from '@/lib/bangaloreNodes';
 import mapboxgl from 'mapbox-gl';
 import { devLog } from '@/lib/logger';
 
@@ -62,8 +63,7 @@ export default function Home() {
   // This prevents returning users from being treated as new users during the transition
   const [onboardingJustCompleted, setOnboardingJustCompleted] = useState(false);
 
-  // Location permission modal state
-  const [showLocationModal, setShowLocationModal] = useState(false);
+
 
   // 🔒 Race condition fix: Prevent multiple profile status updates during auth
   const hasSetProfileStatus = useRef(false);
@@ -133,6 +133,7 @@ export default function Home() {
   }, [events, userHomeLat, userHomeLng]);
 
   // Calculate local nodes (always, regardless of mode) - MUST be before conditional returns
+  // Also includes Bangalore destination POIs when user is within Bangalore
   const localNodes = useMemo(() => {
     if (!userHomeLat || !userHomeLng) return nodes;
 
@@ -152,11 +153,24 @@ export default function Home() {
       return { lat, lng };
     };
 
-    return nodes.filter(node => {
+    // Filter nodes within local radius
+    const filteredNodes = nodes.filter(node => {
       const { lat, lng } = extractCoords(node);
       if (lat === null || lng === null) return false;
       return isWithinRadius(userHomeLat, userHomeLng, lat, lng, LOCAL_RADIUS_KM);
     });
+
+    // 🏙️ Add Bangalore destination nodes when user is in Bangalore
+    if (isWithinBangalore(userHomeLat, userHomeLng)) {
+      devLog.log('🏙️ User is in Bangalore - adding destination POIs to local view');
+      const bangaloreNodes = getBangaloreNodesForLocalView();
+      // Merge Bangalore nodes with filtered nodes, avoiding duplicates by ID
+      const existingIds = new Set(filteredNodes.map(n => n.id));
+      const newNodes = bangaloreNodes.filter(n => !existingIds.has(n.id));
+      return [...filteredNodes, ...newNodes];
+    }
+
+    return filteredNodes;
   }, [nodes, userHomeLat, userHomeLng]);
 
   // Get the events and nodes to display based on current mode
@@ -456,74 +470,9 @@ export default function Home() {
   // Returning users go straight to dashboard
   // useEffect removed - no cooldown checks needed
 
-  // Check if we should show location permission modal
-  // 📍 ALWAYS ask for current location on new session (hard refresh)
-  useEffect(() => {
-    devLog.log('🔍 [LocationModal] Checking conditions:', {
-      authenticated,
-      authMethod,
-      userProfileStatus,
-      hasProfile: !!userProfile,
-      hasLocation: !!(userProfile?.lat && userProfile?.lng),
-      lat: userProfile?.lat,
-      lng: userProfile?.lng,
-      onboardingComplete: onboardingComplete,
-    });
 
-    // Only check after user is authenticated and profile exists
-    if (!authenticated || userProfileStatus !== 'exists' || !userProfile) {
-      devLog.log('⏭️ [LocationModal] Skipping - not ready yet');
-      return;
-    }
 
-    // Don't ask if we've already asked this session (prevents asking on every state change)
-    if (typeof window !== 'undefined' && sessionStorage.getItem('location_permission_asked')) {
-      devLog.log('⏭️ [LocationModal] Already asked for location this session');
-      return;
-    }
 
-    // Show modal after a short delay (let dashboard load first)
-    // Note: This will ask EVERY new session (hard refresh) to update current location
-    devLog.log('📍 [LocationModal] Asking for current location - showing permission modal in 2s');
-    const timeoutId = setTimeout(() => {
-      devLog.log('✅ [LocationModal] Showing location modal NOW');
-      setShowLocationModal(true);
-      // Mark as asked for this session
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('location_permission_asked', 'true');
-      }
-    }, 2000); // 2 second delay to let dashboard load
-
-    return () => clearTimeout(timeoutId);
-  }, [authenticated, userProfileStatus, userProfile, authMethod, onboardingComplete]);
-
-  // Handle location granted from modal
-  const handleLocationGranted = async (lat: number, lng: number) => {
-    if (!userProfile?.id) {
-      devLog.error('❌ No user profile ID to save location');
-      return;
-    }
-
-    devLog.log('💾 Saving location to database:', { lat, lng });
-    try {
-      const { updateUserProfile } = await import('@/lib/userDb');
-      await updateUserProfile(userProfile.id, {
-        lat,
-        lng,
-      });
-
-      devLog.log('✅ Location saved to database');
-
-      // Reload profile to update derived values
-      await reloadProfile();
-      devLog.log('🔄 Profile reloaded with new location');
-
-      // Update map view mode to local now that we have location
-      setMapViewMode('local');
-    } catch (error) {
-      devLog.error('❌ Failed to save location:', error);
-    }
-  };
 
   // Auto-save location from MapCanvas to user profile (for returning users without location)
   useEffect(() => {
@@ -1054,14 +1003,7 @@ export default function Home() {
   if (isMobile) {
     return (
       <>
-        {/* Location Permission Modal */}
-        {showLocationModal && (
-          <LocationPermissionModal
-            onLocationGranted={handleLocationGranted}
-            onClose={() => setShowLocationModal(false)}
-            userProfile={userProfile}
-          />
-        )}
+
 
         <MobileView
           events={displayedEvents}
@@ -1091,14 +1033,7 @@ export default function Home() {
 
   return (
     <>
-      {/* Location Permission Modal */}
-      {showLocationModal && (
-        <LocationPermissionModal
-          onLocationGranted={handleLocationGranted}
-          onClose={() => setShowLocationModal(false)}
-          userProfile={userProfile}
-        />
-      )}
+
 
       <DesktopView
         events={displayedEvents}

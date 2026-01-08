@@ -266,12 +266,12 @@ export function useZoAuth() {
     // Listen for session expiry
     const handleSessionExpired = (e: Event) => {
       devLog.warn('🔐 [ZoAuth] Session expired event received');
-      logout();
-      // Show alert to user
+      // First show the alert, then logout (which clears state and redirects)
+      // Don't reload page - logout() already clears the session and triggers re-render
       if (typeof window !== 'undefined') {
         alert('Your session has expired. Please login again.');
-        window.location.reload();
       }
+      logout();
     };
     window.addEventListener('zoSessionExpired', handleSessionExpired);
 

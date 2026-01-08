@@ -167,6 +167,15 @@ zoApiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Flag to prevent multiple session expired events from being dispatched
+// (multiple API calls may fail with 403 simultaneously)
+let sessionExpiredHandled = false;
+
+// Reset the flag when tokens are set (user logs in again)
+export function resetSessionExpiredFlag() {
+  sessionExpiredHandled = false;
+}
+
 // Response interceptor: Handle 403 "Session expired" errors
 // This triggers logout/refresh flow when token expires
 zoApiClient.interceptors.response.use(
@@ -178,6 +187,13 @@ zoApiClient.interceptors.response.use(
     // Check for session expired error
     if (status === 403 && errorDetail === 'Session expired.') {
       devLog.warn('🔐 Session expired! Token needs refresh or re-login.');
+
+      // Only handle session expiry once (prevent multiple alerts from parallel API calls)
+      if (sessionExpiredHandled) {
+        devLog.log('⏭️ Session expiry already handled, skipping duplicate');
+        return Promise.reject(error);
+      }
+      sessionExpiredHandled = true;
 
       // Dispatch event for frontend to handle (logout, show login modal, etc.)
       if (typeof window !== 'undefined') {

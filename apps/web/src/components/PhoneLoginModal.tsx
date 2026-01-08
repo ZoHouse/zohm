@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { devLog } from '@/lib/logger';
+import { resetSessionExpiredFlag } from '@/lib/zo-api/client';
 
 interface PhoneLoginModalProps {
   isOpen: boolean;
@@ -175,6 +176,9 @@ export default function PhoneLoginModal({ isOpen, onClose, onSuccess }: PhoneLog
           devLog.log('✅ Device credentials stored');
         }
         devLog.log('✅ ZO session stored:', data.userId);
+
+        // Reset the session expired flag so future session expiry events work properly
+        resetSessionExpiredFlag();
 
         // Dispatch login success event for other components to pick up
         if (typeof window !== 'undefined') {

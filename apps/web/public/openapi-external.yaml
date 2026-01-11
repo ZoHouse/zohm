@@ -36,6 +36,11 @@ components:
         - `client-key`: Platform API key (contact ZO team)
         - `client-device-id`: Unique device identifier
         - `client-device-secret`: Device secret
+        - `Accept: */*` (CRITICAL: NOT `application/json`)
+        - `Accept-Encoding: gzip, deflate`
+        - `Connection: keep-alive`
+        
+        ⚠️ **CRITICAL**: Using `Accept: application/json` will result in a "Missing captcha response" error.
         
         ⚠️ **Security Warning**: Never expose these credentials in public repositories.
 

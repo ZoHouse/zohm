@@ -372,6 +372,10 @@ Navigate to: **http://localhost:3000/api-docs/zo**
 > - `client-device-id`
 > - `client-device-secret`
 
+> 🚨 **CRITICAL**: When making direct API calls (curl/Postman), the `Accept` header MUST be `*/*` (NOT `application/json`). Using `Accept: application/json` will result in a "Missing captcha response" error. Also include:
+> - `Accept-Encoding: gzip, deflate`
+> - `Connection: keep-alive`
+
 ### Setting Up Authentication
 
 1. **Click "Authorize"** (top-right)

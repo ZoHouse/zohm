@@ -11,6 +11,16 @@ info:
     - 👤 Profile management - User profiles with cultures, locations, and metadata
     - 🎨 Avatar generation - Zo backend generated avatars (bro/bae body types)
     - 🔐 Device credentials - Session-based device tracking
+    
+    **⚠️ CRITICAL - Required Headers:**
+    - `client-key`: Your API key (contact dev@zo.xyz)
+    - `client-device-id`: Unique device identifier (format: `web-{timestamp}-{random}`)
+    - `client-device-secret`: Device secret
+    - `Accept: */*` - **MUST be `*/*`, NOT `application/json`**
+    - `Accept-Encoding: gzip, deflate`
+    - `Connection: keep-alive`
+    
+    Using `Accept: application/json` will result in a "Missing captcha response" error.
   version: 1.1
   contact:
     email: dev@zo.xyz

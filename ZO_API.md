@@ -79,8 +79,12 @@ client-key: <YOUR_CLIENT_KEY>
 client-device-id: <DEVICE_ID>
 client-device-secret: <DEVICE_SECRET>
 Content-Type: application/json
-Accept: application/json
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
 ```
+
+> ⚠️ **CRITICAL**: The `Accept` header MUST be `*/*` (not `application/json`). Using `Accept: application/json` will result in a captcha error. This is a known quirk of the ZO API.
 
 **Authenticated requests** also require:
 
@@ -97,7 +101,9 @@ Authorization: Bearer <ACCESS_TOKEN>
 | `client-device-secret` | ✅ Always | Device secret (generated per session) |
 | `Authorization` | For authenticated endpoints | Bearer token with access_token |
 | `Content-Type` | For POST/PATCH | `application/json` |
-| `Accept` | ✅ Always | `application/json` |
+| `Accept` | ✅ Always | `*/*` (NOT `application/json`) |
+| `Accept-Encoding` | Recommended | `gzip, deflate` |
+| `Connection` | Recommended | `keep-alive` |
 
 ### Device Credentials
 

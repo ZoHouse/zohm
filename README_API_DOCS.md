@@ -116,6 +116,28 @@ pnpm swagger-cli validate public/openapi-internal.yaml
 pnpm swagger-cli validate public/openapi-external.yaml
 ```
 
+## ⚠️ Critical: Accept Header Requirement
+
+When making direct API calls (curl, Postman, or programmatically), you **MUST** use the correct `Accept` header:
+
+```bash
+# ✅ CORRECT - This works
+curl -X POST 'https://api.io.zo.xyz/api/v1/auth/login/mobile/otp/' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: */*' \
+  -H 'Accept-Encoding: gzip, deflate' \
+  -H 'Connection: keep-alive' \
+  -H 'client-key: YOUR_CLIENT_KEY' \
+  -H 'client-device-id: web-1234567890-abc123' \
+  -H 'client-device-secret: your-device-secret' \
+  -d '{"mobile_country_code": "91", "mobile_number": "9876543210", "message_channel": ""}'
+
+# ❌ WRONG - This causes "Missing captcha response" error
+curl -X POST ... -H 'Accept: application/json' ...
+```
+
+**Why?** The ZO API backend checks the `Accept` header and requires captcha for requests with `Accept: application/json`. Using `Accept: */*` bypasses this check.
+
 ## Security Considerations
 
 ### Internal APIs

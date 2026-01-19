@@ -37,12 +37,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get environment variables
-    const ZO_API_BASE_URL = process.env.ZO_API_BASE_URL;
+    // Get environment variables - use new ZOHM proxy API
+    const ZOHM_API_BASE_URL = process.env.ZOHM_API_BASE_URL || 'https://zohm-api.up.railway.app/api/v1';
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
 
-    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
-      devLog.error('Missing ZO API environment variables');
+    if (!ZO_CLIENT_KEY) {
+      devLog.error('Missing ZO_CLIENT_KEY_WEB environment variable');
       return NextResponse.json(
         { success: false, message: 'Server configuration error' },
         { status: 500 }
@@ -52,13 +52,13 @@ export async function POST(req: NextRequest) {
     // For new users: Avatar generation happens immediately after login
     // Credentials are in localStorage and passed via request body
     // This is the PRIMARY path for avatar generation
-    
+
     if (!accessToken || !deviceId || !deviceSecret) {
       devLog.error('❌ Missing credentials in request body. Avatar generation requires credentials from localStorage (new users only).');
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Device credentials required. Please ensure you are logged in and try again.' 
+        {
+          success: false,
+          message: 'Device credentials required. Please ensure you are logged in and try again.'
         },
         { status: 401 }
       );
@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
     const finalDeviceId = deviceId;
     const finalDeviceSecret = deviceSecret;
 
-    // Call ZO API to trigger avatar generation with user-specific device credentials
-    const zoResponse = await fetch(`${ZO_API_BASE_URL}/api/v1/profile/me/`, {
-      method: 'POST',
+    // Call ZOHM proxy API to trigger avatar generation with user-specific device credentials
+    devLog.log('📤 Calling ZOHM proxy API for avatar generation:', `${ZOHM_API_BASE_URL}/profile/me`);
+    const zoResponse = await fetch(`${ZOHM_API_BASE_URL}/profile/me`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -89,10 +90,10 @@ export async function POST(req: NextRequest) {
       const errorText = await zoResponse.text();
       devLog.error('ZO API error:', zoResponse.status, errorText);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: `ZO API error: ${zoResponse.status}`,
-          details: errorText 
+          details: errorText
         },
         { status: zoResponse.status }
       );
@@ -123,8 +124,8 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     devLog.error('Avatar generation error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Internal server error',
         error: error instanceof Error ? error.message : 'Unknown error'
       },

@@ -108,14 +108,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Trigger avatar generation (if bodyType provided)
-    let avatarTaskId: string | null = null;
+    let avatarUrl: string | null = null;
     if (bodyType) {
       try {
         const avatarResult = await generateAvatar(
           tokens.access,
           bodyType as 'bro' | 'bae'
         );
-        avatarTaskId = avatarResult.task_id ?? null;
+        avatarUrl = avatarResult.avatarUrl ?? null;
       } catch (avatarError: any) {
         devLog.error('Failed to generate avatar:', avatarError);
         // Don't fail the whole request - avatar can be generated later
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         name: `${user.first_name} ${user.last_name}`.trim(),
         phone: user.mobile_number,
       },
-      avatarTaskId,
+      avatarUrl,
       message: 'Phone linked successfully',
     });
 

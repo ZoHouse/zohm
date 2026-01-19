@@ -30,12 +30,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get environment variables
-    const ZO_API_BASE_URL = process.env.ZO_API_BASE_URL;
+    // Get environment variables - use new ZOHM proxy API
+    const ZOHM_API_BASE_URL = process.env.ZOHM_API_BASE_URL || 'https://zohm-api.up.railway.app/api/v1';
     const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB;
 
-    if (!ZO_API_BASE_URL || !ZO_CLIENT_KEY) {
-      devLog.error('Missing ZO API environment variables');
+    if (!ZO_CLIENT_KEY) {
+      devLog.error('Missing ZO_CLIENT_KEY_WEB environment variable');
       return NextResponse.json(
         { status: 'error', message: 'Server configuration error' },
         { status: 500 }
@@ -62,8 +62,9 @@ export async function GET(req: NextRequest) {
     const finalDeviceId = deviceId;
     const finalDeviceSecret = deviceSecret;
 
-    // Poll ZO API for profile status with user-specific device credentials
-    const zoResponse = await fetch(`${ZO_API_BASE_URL}/api/v1/profile/me/`, {
+    // Poll ZOHM proxy API for profile status with user-specific device credentials
+    devLog.log('🔍 Polling ZOHM proxy API for avatar status:', `${ZOHM_API_BASE_URL}/profile/me`);
+    const zoResponse = await fetch(`${ZOHM_API_BASE_URL}/profile/me`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

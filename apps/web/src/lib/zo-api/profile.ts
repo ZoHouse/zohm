@@ -51,14 +51,17 @@ export async function getProfile(
     };
 
     const response = await zoApiClient.get<ZoProfileResponse>(
-      '/api/v1/profile/me/',
+      '/profile/me',
       config
     );
 
+    // Handle proxy API wrapper: { success: true, data: {...} }
+    const rawData = response.data as any;
+    const profileData = rawData?.data || rawData;
 
     return {
       success: true,
-      profile: response.data,
+      profile: profileData,
     };
   } catch (error: any) {
     devLog.error('❌ getProfile error details:', {
@@ -99,8 +102,8 @@ export async function updateProfile(
 }> {
   try {
     devLog.log('📞 [updateProfile] Starting API call...', {
-      endpoint: '/api/v1/profile/me/',
-      method: 'POST',
+      endpoint: '/profile/me',
+      method: 'PATCH',
       updates: JSON.stringify(updates),
       hasAccessToken: !!accessToken,
       hasUserId: !!userId,
@@ -130,27 +133,32 @@ export async function updateProfile(
       },
     };
 
-    devLog.log('📡 [updateProfile] Making POST request to ZO API...');
+    devLog.log('📡 [updateProfile] Making PATCH request to ZOHM API...');
     const apiStartTime = Date.now();
 
-    const response = await zoApiClient.post<ZoProfileResponse>(
-      '/api/v1/profile/me/',
+    const response = await zoApiClient.patch<ZoProfileResponse>(
+      '/profile/me',
       updates,
       config
     );
 
     const apiDuration = Date.now() - apiStartTime;
+
+    // Handle proxy API wrapper: { success: true, data: {...} }
+    const rawData = response.data as any;
+    const profileData = rawData?.data || rawData;
+
     devLog.log(`✅ [updateProfile] API call succeeded in ${apiDuration}ms`, {
       status: response.status,
-      hasData: !!response.data,
-      hasAvatar: !!response.data?.avatar,
-      avatarStatus: response.data?.avatar?.status || 'unknown',
-      avatarImage: response.data?.avatar?.image ? 'EXISTS' : 'NULL',
+      hasData: !!profileData,
+      hasAvatar: !!profileData?.avatar,
+      avatarStatus: profileData?.avatar?.status || 'unknown',
+      avatarImage: profileData?.avatar?.image ? 'EXISTS' : 'NULL',
     });
 
     return {
       success: true,
-      profile: response.data,
+      profile: profileData,
     };
   } catch (error: any) {
     devLog.error('❌ [updateProfile] API call failed:', {

@@ -1,13 +1,11 @@
 // apps/web/src/lib/zo-api/client.ts
-// ZO API HTTP client configuration
+// ZO API HTTP client configuration - Uses ZOHM proxy API
 
 import axios, { AxiosInstance } from 'axios';
 import { devLog } from '@/lib/logger';
 
-// Base URL: Use env var if set, otherwise default to correct URL
-let baseUrl = process.env.ZO_API_BASE_URL || process.env.NEXT_PUBLIC_ZO_API_BASE_URL;
-
-const ZO_API_BASE_URL = baseUrl;
+// Base URL: Always use ZOHM proxy API (never call api.io.zo.xyz directly)
+const ZO_API_BASE_URL = process.env.ZOHM_API_BASE_URL || process.env.ZO_API_BASE_URL || 'https://zohm-api.up.railway.app/api/v1';
 const ZO_CLIENT_KEY_WEB = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB;
 
 /**

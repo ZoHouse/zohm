@@ -23,7 +23,7 @@ export async function sendOTP(
   countryCode: string,
   phoneNumber: string
 ): Promise<{ success: boolean; message: string }> {
-  const endpoint = '/api/v1/auth/login/mobile/otp/';
+  const endpoint = '/auth/login/mobile/otp';
   const baseURL = zoApiClient.defaults.baseURL;
   const fullURL = `${baseURL}${endpoint}`;
   const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB;
@@ -126,15 +126,15 @@ export async function verifyOTP(
     };
 
     const response = await zoApiClient.post(
-      '/api/v1/auth/login/mobile/',
+      '/auth/login/mobile',
       payload
     );
 
     // Parse response data if it's a string (axios sometimes returns strings)
-    let responseData: ZoAuthResponse;
+    let rawData: any;
     if (typeof response.data === 'string') {
       try {
-        responseData = JSON.parse(response.data);
+        rawData = JSON.parse(response.data);
         devLog.log('✅ Parsed string response to JSON');
       } catch (parseError) {
         devLog.error('❌ Failed to parse response data:', parseError);
@@ -144,7 +144,17 @@ export async function verifyOTP(
         };
       }
     } else {
-      responseData = response.data as ZoAuthResponse;
+      rawData = response.data;
+    }
+
+    // Handle proxy API wrapper: { success: true, data: {...} }
+    // The proxy API wraps responses in this format
+    let responseData: ZoAuthResponse;
+    if (rawData?.data && (rawData.success === true || rawData.success === undefined)) {
+      responseData = rawData.data as ZoAuthResponse;
+      devLog.log('✅ Unwrapped proxy API response (found data wrapper)');
+    } else {
+      responseData = rawData as ZoAuthResponse;
     }
 
     // Log the response for debugging
@@ -245,7 +255,7 @@ export async function refreshAccessToken(
   error?: string;
 }> {
   try {
-    const response = await zoApiClient.post('/api/v1/auth/token/refresh/', {
+    const response = await zoApiClient.post('/auth/login/refresh', {
       refresh_token: refreshToken,
     });
 
@@ -274,7 +284,7 @@ export async function checkLoginStatus(
   isAuthenticated: boolean;
 }> {
   try {
-    const response = await zoApiClient.get('/api/v1/auth/login/check/', {
+    const response = await zoApiClient.get('/auth/login/check', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

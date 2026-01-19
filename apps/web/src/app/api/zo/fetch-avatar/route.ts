@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/logger';
 
+// Use the new proxy API instead of direct ZO API calls
+const ZOHM_API_BASE_URL = process.env.ZOHM_API_BASE_URL || 'https://zohm-api.up.railway.app/api/v1';
+const ZO_CLIENT_KEY = process.env.ZO_CLIENT_KEY_WEB || process.env.NEXT_PUBLIC_ZO_CLIENT_KEY_WEB || '1482d843137574f36f74';
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -32,19 +36,20 @@ export async function POST(request: NextRequest) {
 
         const headers: Record<string, string> = {
             'Authorization': `Bearer ${accessToken}`,
-            'client-key': '1482d843137574f36f74',
+            'client-key': ZO_CLIENT_KEY,
             'client-device-id': deviceId,
             'client-device-secret': deviceSecret
         };
 
-        devLog.log('📤 Sending headers to ZO API:', {
+        devLog.log('📤 Sending headers to ZOHM proxy API:', {
             hasAuth: !!headers['Authorization'],
             hasClientKey: !!headers['client-key'],
             hasDeviceId: !!headers['client-device-id'],
-            hasDeviceSecret: !!headers['client-device-secret']
+            hasDeviceSecret: !!headers['client-device-secret'],
+            apiUrl: `${ZOHM_API_BASE_URL}/profile/me`
         });
 
-        const response = await fetch('https://api.io.zo.xyz/api/v1/profile/me/', {
+        const response = await fetch(`${ZOHM_API_BASE_URL}/profile/me`, {
             headers
         });
 

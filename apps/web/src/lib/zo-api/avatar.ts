@@ -1,17 +1,13 @@
 // apps/web/src/lib/zo-api/avatar.ts
-// ZO API avatar generation functions
+// ZO API avatar generation functions - Uses ZOHM proxy /profile/me endpoint
 
 import { zoApiClient, getZoAuthHeaders } from './client';
-import type {
-  ZoAvatarGenerateRequest,
-  ZoAvatarGenerateResponse,
-  ZoAvatarStatusResponse,
-  ZoErrorResponse,
-} from './types';
+import type { ZoErrorResponse } from './types';
 import { devLog } from '@/lib/logger';
 
 /**
- * Generate avatar for user
+ * Generate avatar for user by setting body_type
+ * Uses PATCH /profile/me endpoint as per Postman collection
  * Requires authenticated ZO user
  */
 export async function generateAvatar(
@@ -19,28 +15,27 @@ export async function generateAvatar(
   bodyType: 'bro' | 'bae'
 ): Promise<{
   success: boolean;
-  task_id?: string;
-  status?: string;
+  profile?: any;
+  avatarUrl?: string;
   error?: string;
 }> {
   try {
-    const payload: ZoAvatarGenerateRequest = {
-      body_type: bodyType,
-    };
-
     const headers = await getZoAuthHeaders(accessToken);
-    const response = await zoApiClient.post<ZoAvatarGenerateResponse>(
-      '/api/v1/avatar/generate/',
-      payload,
-      {
-        headers,
-      }
+
+    // Use PATCH /profile/me to set body_type and trigger avatar generation
+    const response = await zoApiClient.patch(
+      '/profile/me',
+      { body_type: bodyType },
+      { headers }
     );
+
+    const profile = response.data?.data || response.data;
+    const avatarUrl = profile?.avatar?.image;
 
     return {
       success: true,
-      task_id: response.data.task_id,
-      status: response.data.status,
+      profile,
+      avatarUrl: avatarUrl && avatarUrl.trim() !== '' ? avatarUrl : undefined,
     };
   } catch (error: any) {
     devLog.error('Failed to generate avatar:', error.response?.data || error);
@@ -54,31 +49,33 @@ export async function generateAvatar(
 }
 
 /**
- * Check avatar generation status
- * Poll this endpoint until status is 'completed'
+ * Check avatar status by fetching profile
+ * Uses GET /profile/me endpoint - avatar is ready when avatar.image is populated
  */
 export async function getAvatarStatus(
-  accessToken: string,
-  taskId: string
+  accessToken: string
 ): Promise<{
   success: boolean;
-  status?: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'ready' | 'error';
   avatarUrl?: string;
+  profile?: any;
   error?: string;
 }> {
   try {
     const headers = await getZoAuthHeaders(accessToken);
-    const response = await zoApiClient.get<ZoAvatarStatusResponse>(
-      `/api/v1/avatar/status/${taskId}/`,
-      {
-        headers,
-      }
-    );
+
+    // Use GET /profile/me to check avatar status
+    const response = await zoApiClient.get('/profile/me', { headers });
+
+    const profile = response.data?.data || response.data;
+    const avatarImage = profile?.avatar?.image;
+    const isAvatarReady = avatarImage && avatarImage.trim() !== '' && avatarImage !== 'null';
 
     return {
       success: true,
-      status: response.data.status,
-      avatarUrl: response.data.result?.avatar_url,
+      status: isAvatarReady ? 'ready' : 'pending',
+      avatarUrl: isAvatarReady ? avatarImage : undefined,
+      profile,
     };
   } catch (error: any) {
     devLog.error('Failed to get avatar status:', error.response?.data || error);
@@ -86,6 +83,7 @@ export async function getAvatarStatus(
     const errorData = error.response?.data as ZoErrorResponse;
     return {
       success: false,
+      status: 'error',
       error: errorData?.detail || errorData?.message || 'Failed to get avatar status',
     };
   }
@@ -97,7 +95,6 @@ export async function getAvatarStatus(
  */
 export async function pollAvatarStatus(
   accessToken: string,
-  taskId: string,
   options: {
     onProgress?: (status: string) => void;
     onComplete?: (avatarUrl: string) => void;
@@ -126,21 +123,21 @@ export async function pollAvatarStatus(
       return;
     }
 
-    const result = await getAvatarStatus(accessToken, taskId);
+    const result = await getAvatarStatus(accessToken);
 
     if (!result.success) {
       onError?.(result.error || 'Unknown error');
       return;
     }
 
-    onProgress?.(result.status || 'unknown');
+    onProgress?.(result.status);
 
-    if (result.status === 'completed' && result.avatarUrl) {
+    if (result.status === 'ready' && result.avatarUrl) {
       onComplete?.(result.avatarUrl);
       return;
     }
 
-    if (result.status === 'failed') {
+    if (result.status === 'error') {
       onError?.('Avatar generation failed');
       return;
     }
@@ -151,4 +148,3 @@ export async function pollAvatarStatus(
 
   poll();
 }
-

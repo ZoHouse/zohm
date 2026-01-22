@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { PrivyUserProfile } from '@/types/user';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
 import { devLog } from '@/lib/logger';
+import MyEventsCard from './MyEventsCard';
+import { HostEventModal } from '@/components/events';
 
 interface EventData {
   'Event Name': string;
@@ -20,6 +22,8 @@ interface RightSidebarProps {
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEvents = [] }) => {
+  const [showHostModal, setShowHostModal] = useState(false);
+
   // Convert EventData to dashboard format
   const events = useMemo(() => {
     devLog.log('🎫 RightSidebar received events:', rawEvents.length);
@@ -88,7 +92,24 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
   };
   return (
     <div className="flex flex-col w-[360px] flex-shrink-0" style={{ gap: DashboardSpacing.xl }}>
-      {/* Events */}
+      {/* My Events - User's hosted events */}
+      <MyEventsCard 
+        userId={userProfile?.id} 
+        onHostEvent={() => setShowHostModal(true)} 
+      />
+
+      {/* Host Event Modal */}
+      <HostEventModal
+        isOpen={showHostModal}
+        onClose={() => setShowHostModal(false)}
+        userId={userProfile?.id}
+        onSuccess={() => {
+          setShowHostModal(false);
+          // TODO: Refresh my events list
+        }}
+      />
+
+      {/* Local Events */}
       <div 
         className="flex flex-col border border-solid"
         style={{

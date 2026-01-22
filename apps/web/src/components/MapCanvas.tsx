@@ -123,9 +123,37 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const style = document.createElement('style');
       style.id = styleId;
       style.textContent = `
+        /* Zo House marker pulse animation - uses box-shadow only to avoid overriding Mapbox transform */
         @keyframes zoPulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(255, 77, 109, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4); }
-          50% { transform: scale(1.05); box-shadow: 0 6px 24px rgba(255, 77, 109, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5); }
+          0%, 100% { box-shadow: 0 0 20px rgba(255, 77, 109, 0.8), 0 0 40px rgba(255, 77, 109, 0.4); }
+          50% { box-shadow: 0 0 30px rgba(255, 77, 109, 1), 0 0 50px rgba(255, 77, 109, 0.6); }
+        }
+        /* Zo House marker pulse animation */
+        .zo-house-marker-pulse {
+          animation: zoPulse 2s ease-in-out infinite;
+        }
+        @keyframes eventBadgePulse {
+          0%, 100% { 
+            transform: scale(1); 
+            box-shadow: 0 2px 8px rgba(255, 77, 109, 0.5);
+          }
+          50% { 
+            transform: scale(1.15); 
+            box-shadow: 0 3px 12px rgba(255, 77, 109, 0.8);
+          }
+        }
+        /* Hide event badges when zoomed out */
+        .map-zoomed-out .node-event-badge,
+        .map-zoomed-out .node-event-count {
+          opacity: 0 !important;
+          transform: scale(0) !important;
+          pointer-events: none !important;
+        }
+        /* Hide all custom markers when very zoomed out */
+        .map-zoomed-out .mapboxgl-marker {
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
         }
       `;
       document.head.appendChild(style);
@@ -363,7 +391,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     unicornEl.style.lineHeight = '1';
     unicornEl.style.filter = 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 15px rgba(255,200,0,0.6))';
 
-    const unicornMarker = new mapboxgl.Marker(unicornEl)
+    const unicornMarker = new mapboxgl.Marker({
+      element: unicornEl,
+      anchor: 'center',
+      offset: [0, 0]
+    })
       .setLngLat(coordinates[0])
       .addTo(map.current);
 
@@ -555,8 +587,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     mapLog(`🦄 Adding ${nodesToDisplay.length} partner node markers...`);
 
     nodesToDisplay.forEach((node) => {
-      if (!node.latitude || !node.longitude) {
-        devLog.warn(`⚠️ Skipping ${node.name} - missing coordinates`);
+      // Parse coordinates as numbers (same as event markers)
+      const nodeLat = typeof node.latitude === 'number' ? node.latitude : parseFloat(String(node.latitude));
+      const nodeLng = typeof node.longitude === 'number' ? node.longitude : parseFloat(String(node.longitude));
+      
+      if (!nodeLat || !nodeLng || isNaN(nodeLat) || isNaN(nodeLng)) {
+        devLog.warn(`⚠️ Skipping ${node.name} - missing or invalid coordinates: lat=${node.latitude}, lng=${node.longitude}`);
         return;
       }
 
@@ -565,83 +601,87 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         const nodeIcon = getNodeIcon(node.type as NodeType);
         const nodeColor = getNodeTypeColor(node.type as NodeType);
         
-        let markerElement: HTMLElement;
-        
-        if (nodeIcon.type === 'logo') {
-          // Use logo for zo_house and zostel
-          const container = document.createElement('div');
-          container.style.cssText = `
-            width: 70px;
-            height: 70px;
-            cursor: pointer;
-          `;
-          container.title = node.name;
+        // Simple flat marker element - EXACT same pattern as working event markers
+        let markerElement: HTMLDivElement;
+
+        if (nodeIcon.type === 'logo' && node.type === 'zo_house') {
+          // Zo House marker - animated with glow
+          markerElement = document.createElement('div');
+          markerElement.style.width = '70px';
+          markerElement.style.height = '70px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.cursor = 'pointer';
+          markerElement.style.display = 'flex';
+          markerElement.style.alignItems = 'center';
+          markerElement.style.justifyContent = 'center';
+          markerElement.style.overflow = 'hidden';
+          markerElement.style.background = '#000';
+          markerElement.style.boxShadow = '0 0 20px rgba(255, 77, 109, 0.8), 0 0 40px rgba(255, 77, 109, 0.4)';
+          markerElement.style.border = '3px solid #ff4d6d';
+          markerElement.className = 'zo-house-marker-pulse zo-node-marker';
+          markerElement.title = node.name;
           
-          if (node.type === 'zo_house') {
-            // Zo House: Animated GIF with glow effect
-            container.innerHTML = `
-              <div style="
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                background: #000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 0 20px rgba(255, 77, 109, 0.8), 0 0 40px rgba(255, 77, 109, 0.4);
-                animation: zoPulse 2s ease-in-out infinite;
-                border: 3px solid #ff4d6d;
-                overflow: hidden;
-              ">
-                <img 
-                  src="/zo.gif" 
-                  alt="${node.name}"
-                  style="width: 60px; height: 60px; object-fit: contain;"
-                />
-              </div>
-            `;
-          } else {
-            // For zostel and other logo nodes
-            container.innerHTML = `
-              <img 
-                src="${nodeIcon.value}" 
-                alt="${node.name}"
-                style="
-                  width: 56px;
-                  height: 56px;
-                  border-radius: 50%;
-                  object-fit: contain;
-                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                  border: 2px solid rgba(255, 255, 255, 0.9);
-                  background: white;
-                "
-              />
-            `;
-          }
+          const img = document.createElement('img');
+          img.src = '/zo.gif';
+          img.alt = node.name;
+          img.style.width = '60px';
+          img.style.height = '60px';
+          img.style.objectFit = 'contain';
+          markerElement.appendChild(img);
+        } else if (nodeIcon.type === 'logo') {
+          // For zostel and other logo nodes
+          markerElement = document.createElement('div');
+          markerElement.style.width = '56px';
+          markerElement.style.height = '56px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.cursor = 'pointer';
+          markerElement.style.display = 'flex';
+          markerElement.style.alignItems = 'center';
+          markerElement.style.justifyContent = 'center';
+          markerElement.style.overflow = 'hidden';
+          markerElement.style.background = 'white';
+          markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+          markerElement.style.border = '2px solid rgba(255, 255, 255, 0.9)';
+          markerElement.className = 'zo-node-marker';
+          markerElement.title = node.name;
           
-          markerElement = container;
+          const img = document.createElement('img');
+          img.src = nodeIcon.value;
+          img.alt = node.name;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'contain';
+          markerElement.appendChild(img);
         } else {
           // Use emoji for all other node types
-          const emojiContainer = document.createElement('div');
-          emojiContainer.style.width = '44px';
-          emojiContainer.style.height = '44px';
-          emojiContainer.style.borderRadius = '50%';
-          emojiContainer.style.backgroundColor = nodeColor;
-          emojiContainer.style.display = 'flex';
-          emojiContainer.style.alignItems = 'center';
-          emojiContainer.style.justifyContent = 'center';
-          emojiContainer.style.cursor = 'pointer';
-          emojiContainer.style.boxShadow = `0 4px 12px ${nodeColor}66, 0 2px 4px rgba(0, 0, 0, 0.3)`;
-          emojiContainer.style.border = '2px solid rgba(255, 255, 255, 0.9)';
-          emojiContainer.style.fontSize = '22px';
-          emojiContainer.innerHTML = nodeIcon.value;
-          emojiContainer.title = node.name;
-          markerElement = emojiContainer;
+          markerElement = document.createElement('div');
+          markerElement.style.width = '44px';
+          markerElement.style.height = '44px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.cursor = 'pointer';
+          markerElement.style.display = 'flex';
+          markerElement.style.alignItems = 'center';
+          markerElement.style.justifyContent = 'center';
+          markerElement.style.overflow = 'hidden';
+          markerElement.style.backgroundColor = nodeColor;
+          markerElement.style.boxShadow = `0 4px 12px ${nodeColor}66, 0 2px 4px rgba(0, 0, 0, 0.3)`;
+          markerElement.style.border = '2px solid rgba(255, 255, 255, 0.9)';
+          markerElement.style.fontSize = '22px';
+          markerElement.className = 'zo-node-marker';
+          markerElement.title = node.name;
+          markerElement.textContent = nodeIcon.value;
         }
 
-        const nodeMarker = new mapboxgl.Marker(markerElement)
-          .setLngLat([node.longitude, node.latitude])
+        // Create node marker using parsed coordinates
+        const nodeMarker = new mapboxgl.Marker({
+          element: markerElement,
+          anchor: 'center',
+          offset: [0, 0]
+        })
+          .setLngLat([nodeLng, nodeLat])
           .addTo(map.current!);
+        
+        devLog.log(`📍 Node marker for ${node.name} at [${nodeLng}, ${nodeLat}]`);
 
         mapLog(`🦄 Added marker for ${node.name}`);
 
@@ -655,7 +695,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${node.city}, ${node.country}</p>
             <div style="display: flex; gap: 8px;">
               ${node.website ? `<a href="${node.website}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Visit</a>` : ''}
-              <button onclick="window.showRouteTo(${node.longitude}, ${node.latitude})" class="glow-popup-button" style="flex: 1;">Directions</button>
+              <button onclick="window.showRouteTo(${nodeLng}, ${nodeLat})" class="glow-popup-button" style="flex: 1;">Directions</button>
             </div>
           </div>
         `;
@@ -985,6 +1025,29 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           devLog.warn('Post-load resize error:', error);
         }
 
+        // Add zoom listener to show/hide markers based on zoom level
+        const MARKER_MIN_ZOOM = 10; // Markers only visible at zoom 10+
+        const container = mapContainer.current;
+        
+        // Set initial state to zoomed-out (hidden) - markers will fade in as we zoom
+        if (container) {
+          container.classList.add('map-zoomed-out');
+        }
+        
+        const updateMarkerVisibility = () => {
+          if (!map.current || !container) return;
+          const zoom = map.current.getZoom();
+          if (zoom < MARKER_MIN_ZOOM) {
+            container.classList.add('map-zoomed-out');
+          } else {
+            container.classList.remove('map-zoomed-out');
+          }
+        };
+        
+        // Listen for zoom changes
+        map.current.on('zoom', updateMarkerVisibility);
+        map.current.on('zoomend', updateMarkerVisibility);
+
         // Set up lighting - use DAY mode so colors stay bright!
         try {
           map.current.setConfigProperty('basemap', 'lightPreset', 'day');  // Changed from 'night' to 'day'
@@ -1217,7 +1280,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       userMarkerElement.style.border = '3px solid #ff69b4'; // Pink border
       userMarkerElement.title = 'Your Location 🦄';
 
-      const userMarker = new mapboxgl.Marker(userMarkerElement)
+      const userMarker = new mapboxgl.Marker({
+        element: userMarkerElement,
+        anchor: 'center',
+        offset: [0, 0]
+      })
         .setLngLat(coords)
         .addTo(map.current!);
 
@@ -1453,9 +1520,22 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
     const newMarkersMap = new Map<string, mapboxgl.Marker>();
 
-    mapLog('📋 Processing events:', events.length);
+    devLog.log('📋 Processing events for markers:', events.length);
+    devLog.log('📋 Events data:', events.map((e: any) => ({ 
+      name: e['Event Name'], 
+      lat: e.Latitude, 
+      lng: e.Longitude,
+      zo_property_id: e._zo_property_id,
+      category: e._category 
+    })));
+    
     events.forEach((event, index) => {
-      mapLog(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
+      devLog.log(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
+
+      // All events get standalone markers (including community events at Zo Nodes)
+      // Badge-on-node approach disabled for now due to positioning issues
+      const eventAny = event as any;
+      devLog.log(`📍 Creating standalone marker for "${event['Event Name']}" at [${event.Longitude}, ${event.Latitude}]`);
 
       if (!event.Latitude || !event.Longitude || !map.current) {
         mapLog(`❌ Skipping event ${index + 1} - missing coordinates or map`);
@@ -1469,16 +1549,76 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
       try {
         // Create custom image marker element
-        const markerElement = document.createElement('img');
-        markerElement.src = '/event-marker.jpg';
-        markerElement.alt = 'Event location';
-        markerElement.style.width = '36px';
-        markerElement.style.height = '36px';
+        // Event markers are smaller than node markers and layered above them
+        const markerElement = document.createElement('div');
+        markerElement.style.width = '32px';
+        markerElement.style.height = '32px';
         markerElement.style.borderRadius = '50%';
         markerElement.style.cursor = 'pointer';
+        markerElement.style.display = 'flex';
+        markerElement.style.alignItems = 'center';
+        markerElement.style.justifyContent = 'center';
+        markerElement.style.overflow = 'hidden';
+        markerElement.className = 'zo-event-marker';
+        
+        // Check if this is a community event with a culture
+        const culture = eventAny._culture;
+        const isCommunityEvent = eventAny._category === 'community';
+        
+        if (isCommunityEvent && culture && culture !== 'default') {
+          // Use culture PNG as marker for community events
+          const cultureAssets: Record<string, string> = {
+            'science_technology': 'Science&Technology.png',
+            'business': 'Business.png',
+            'design': 'Design.png',
+            'food': 'Food.png',
+            'game': 'Game.png',
+            'health_fitness': 'Health&Fitness.png',
+            'home_lifestyle': 'Home&Lifestyle.png',
+            'law': 'Law.png',
+            'literature_stories': 'Literature&Stories.png',
+            'music_entertainment': 'Music&Entertainment.png',
+            'nature_wildlife': 'Nature&Wildlife.png',
+            'photography': 'Photography.png',
+            'spiritual': 'Spiritual.png',
+            'travel_adventure': 'Travel&Adventure.png',
+            'television_cinema': 'Television&Cinema.png',
+            'stories_journal': 'Stories&Journal.png',
+            'sport': 'Sport.png',
+            'follow_your_heart': 'FollowYourHeart.png',
+          };
+          const assetFile = cultureAssets[culture] || 'Default%20(2).jpg';
+          
+          markerElement.style.backgroundColor = '#fff';
+          markerElement.style.border = '3px solid #ff4d6d';
+          markerElement.style.boxShadow = '0 4px 12px rgba(255, 77, 109, 0.4)';
+          
+          const img = document.createElement('img');
+          img.src = `/Cultural%20Stickers/${assetFile}`;
+          img.style.width = '85%';
+          img.style.height = '85%';
+          img.style.objectFit = 'contain';
+          markerElement.appendChild(img);
+        } else {
+          // Default event marker for sponsored/iCal events
+          markerElement.style.backgroundColor = '#000';
         markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+          
+          const img = document.createElement('img');
+          img.src = '/event-marker.jpg';
+          img.alt = 'Event location';
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '50%';
+          markerElement.appendChild(img);
+        }
 
-        const marker = new mapboxgl.Marker(markerElement)
+        const marker = new mapboxgl.Marker({
+          element: markerElement,
+          anchor: 'center',
+          offset: [0, 0]
+        })
           .setLngLat([lng, lat])
           .addTo(map.current!);
 
@@ -1593,13 +1733,15 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       const eventKey = `${flyToEvent['Event Name']}-${flyToEvent.Latitude}-${flyToEvent.Longitude}`;
       const marker = markersMap.get(eventKey);
 
-      // Fly to the event location with smooth animation
+      // Fly to the event location with smooth animation at 40° tilt
       map.current.flyTo({
         center: [lng, lat],
-        zoom: 18,
+        zoom: 17.5,
+        pitch: 40,        // 40 degree tilt as requested
+        bearing: -15,     // Slight rotation
         speed: 1.2,
         curve: 1.4,
-        easing: (t: number) => t
+        easing: (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
       });
 
       // Show popup only after fly animation completes
@@ -1672,12 +1814,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         .setLngLat([lng, lat])
         .setHTML(popupContent);
 
-      // Animate camera to node location with cinematic tilt
+      // Animate camera to node location with 40° tilt
       map.current.flyTo({
         center: [lng, lat],
         zoom: 17.5,
-        pitch: 60,        // Tilted angle for 3D effect
-        bearing: -20,     // Slight rotation for dramatic view
+        pitch: 40,        // 40 degree tilt as requested
+        bearing: -15,     // Slight rotation for dramatic view
         speed: 1.0,
         curve: 1.6,
         easing: (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2 // Smooth ease-in-out
@@ -1710,9 +1852,9 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
-    mapLog('🔄 Nodes changed, updating markers...');
+    mapLog('🔄 Nodes or events changed, updating markers...');
     addPartnerNodeMarkers();
-  }, [nodes, mapLoaded]);
+  }, [nodes, mapLoaded, events]); // Added events dependency so badges update when events load
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: '100vh' }}>

@@ -7,6 +7,7 @@ import mapboxgl from 'mapbox-gl';
 import { devLog } from '@/lib/logger';
 
 export const GEOJSON_SOURCE_ID = 'events-and-nodes';
+const CUSTOM_MARKER_MIN_ZOOM = 10;
 
 /**
  * Setup clustering layers on the map
@@ -28,6 +29,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
         id: 'clusters',
         type: 'circle',
         source: GEOJSON_SOURCE_ID,
+        maxzoom: CUSTOM_MARKER_MIN_ZOOM,
         filter: ['has', 'point_count'],
         paint: {
           // Graduated circle sizes and colors based on point count
@@ -66,6 +68,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
         id: 'cluster-count',
         type: 'symbol',
         source: GEOJSON_SOURCE_ID,
+        maxzoom: CUSTOM_MARKER_MIN_ZOOM,
         filter: ['has', 'point_count'],
         layout: {
           'text-field': '{point_count_abbreviated}',
@@ -85,6 +88,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
         id: 'unclustered-events',
         type: 'circle',
         source: GEOJSON_SOURCE_ID,
+        maxzoom: CUSTOM_MARKER_MIN_ZOOM,
         filter: ['all', 
           ['!', ['has', 'point_count']], 
           ['==', ['get', 'type'], 'event']
@@ -105,6 +109,7 @@ export function setupClusteringLayers(map: mapboxgl.Map) {
         id: 'unclustered-nodes',
         type: 'circle',
         source: GEOJSON_SOURCE_ID,
+        maxzoom: CUSTOM_MARKER_MIN_ZOOM,
         filter: ['all', 
           ['!', ['has', 'point_count']], 
           ['==', ['get', 'type'], 'node']

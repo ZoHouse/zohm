@@ -243,6 +243,7 @@ const MobileView: React.FC<MobileViewProps> = ({
         onClose={handleCloseAll}
         events={events}
         onEventClick={onEventClick}
+        userId={userId}
       />
 
       {/* Nodes List */}

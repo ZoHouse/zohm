@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
+import { HostEventModal } from '@/components/events';
 
 interface EventData {
   'Event Name': string;
@@ -18,15 +19,18 @@ interface MobileEventsListOverlayProps {
   onClose: () => void;
   events: EventData[];
   onEventClick?: (event: EventData) => void;
+  userId?: string;
 }
 
 const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({ 
   isVisible, 
   onClose, 
   events,
-  onEventClick 
+  onEventClick,
+  userId
 }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isHostModalOpen, setIsHostModalOpen] = React.useState(false);
 
   const formatDate = (date: string) => {
     const eventDate = new Date(date);
@@ -55,9 +59,21 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
     });
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
+    <>
+      {/* Host Event Modal - rendered outside AnimatePresence so it persists */}
+      <HostEventModal
+        isOpen={isHostModalOpen}
+        onClose={() => setIsHostModalOpen(false)}
+        userId={userId}
+        onSuccess={(response) => {
+          console.log('Event created:', response);
+          setIsHostModalOpen(false);
+        }}
+      />
+
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
@@ -100,25 +116,43 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredAndSortedEvents.map((event, index) => (
-                  <motion.div
-                    key={index}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <GlowCard
-                      onClick={() => {
-                        onEventClick?.(event);
-                        onClose();
-                      }}
-                      hoverable
-                      className="cursor-pointer"
+                {filteredAndSortedEvents.map((event, index) => {
+                  const eventAny = event as any;
+                  const isCommunityEvent = eventAny._category === 'community';
+                  const culture = eventAny._culture;
+                  
+                  return (
+                    <motion.div
+                      key={eventAny._id || index}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <h3 className="font-bold text-black mb-1">{event['Event Name']}</h3>
-                      <p className="text-sm text-gray-700">📍 {event.Location}</p>
-                      <p className="text-xs text-gray-600 mt-1">🕐 {formatDate(event['Date & Time'])}</p>
-                    </GlowCard>
-                  </motion.div>
-                ))}
+                      <GlowCard
+                        onClick={() => {
+                          onEventClick?.(event);
+                          onClose();
+                        }}
+                        hoverable
+                        className="cursor-pointer"
+                      >
+                        {isCommunityEvent && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full">
+                              🌱 Community
+                            </span>
+                            {culture && culture !== 'default' && (
+                              <span className="text-[10px] text-gray-500 capitalize">
+                                {culture.replace('_', ' ')}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <h3 className="font-bold text-black mb-1">{event['Event Name']}</h3>
+                        <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                        <p className="text-xs text-gray-600 mt-1">🕐 {formatDate(event['Date & Time'])}</p>
+                      </GlowCard>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -127,15 +161,20 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
           <div className="px-6 py-4 border-t border-white/20">
             <GlowButton
               variant="primary"
-              onClick={() => window.open('https://zostel.typeform.com/to/LgcBfa0M', '_blank')}
+              onClick={() => {
+                setIsHostModalOpen(true);
+                // Close the events list so it doesn't overlap with the modal
+                onClose();
+              }}
               className="w-full"
             >
-              Host Your Event
+              Host an Event
             </GlowButton>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

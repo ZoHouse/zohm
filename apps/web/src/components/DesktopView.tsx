@@ -215,6 +215,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
             events={events}
             onEventClick={onEventClick}
             closeMapPopups={closePopupsFn}
+            userId={userId}
           />
           <NodesOverlay 
             isVisible={activeSection === 'nodes'}

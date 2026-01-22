@@ -252,7 +252,7 @@ export default function Home() {
 
     devLog.log('🗺️ ✅ Loading map data - user onboarding complete!');
 
-    // Load live events from iCal feeds
+    // Load live events from iCal feeds AND community events from database
     const loadLiveEvents = async () => {
       try {
         devLog.log('🔄 Starting to load events...');
@@ -263,13 +263,70 @@ export default function Home() {
 
         devLog.log('🔄 Fetching live events from iCal feeds...');
         const liveEvents = await fetchAllCalendarEventsWithGeocoding(calendarUrls);
+        devLog.log('✅ Loaded', liveEvents.length, 'live events from iCal');
 
-        if (liveEvents.length > 0) {
-          devLog.log('✅ Loaded', liveEvents.length, 'live events from', calendarUrls.length, 'calendars');
-          devLog.log('📍 Setting events state with', liveEvents.length, 'events');
-          setEvents(liveEvents);
+        // Also fetch community events from database
+        devLog.log('🌱 Fetching community events from database...');
+        let communityEvents: typeof liveEvents = [];
+        try {
+          const res = await fetch('/api/events?category=all&status=approved');
+          if (res.ok) {
+            const data = await res.json();
+            
+            // Also fetch nodes to get coordinates for zo_property events
+            let nodesMap: Record<string, { lat: number; lng: number }> = {};
+            try {
+              const nodesRes = await fetch('/api/nodes/list');
+              if (nodesRes.ok) {
+                const nodesData = await nodesRes.json();
+                (nodesData.nodes || []).forEach((node: any) => {
+                  nodesMap[node.id] = { lat: node.latitude, lng: node.longitude };
+                });
+              }
+            } catch (e) {
+              devLog.warn('Could not fetch nodes for coordinate lookup');
+            }
+            
+            // Convert community events to the same format as iCal events
+            communityEvents = (data.events || []).map((event: any) => {
+              // If event has zo_property_id but no coords, look up from node
+              let lat = event.lat;
+              let lng = event.lng;
+              if ((!lat || !lng) && event.zo_property_id && nodesMap[event.zo_property_id]) {
+                lat = nodesMap[event.zo_property_id].lat;
+                lng = nodesMap[event.zo_property_id].lng;
+                devLog.log(`📍 Using node coords for ${event.title}: ${lat}, ${lng}`);
+              }
+              
+              return {
+                'Event Name': event.title,
+                'Date & Time': event.starts_at,
+                'Location': event.location_name || event.location_raw || 'TBA',
+                'Latitude': lat?.toString() || '',
+                'Longitude': lng?.toString() || '',
+                'Event URL': event.external_rsvp_url || `/events/${event.id}`,
+                // Extra fields for community events
+                '_id': event.id,
+                '_category': event.category,
+                '_culture': event.culture,
+                '_host': event.host,
+                '_zo_property_id': event.zo_property_id,
+              };
+            });
+            devLog.log('✅ Loaded', communityEvents.length, 'community events from database');
+          }
+        } catch (err) {
+          devLog.warn('⚠️ Could not fetch community events:', err);
+        }
+
+        // Merge events (community events + iCal events)
+        const allEvents = [...communityEvents, ...liveEvents];
+        
+        if (allEvents.length > 0) {
+          devLog.log('📍 Setting events state with', allEvents.length, 'total events');
+          setEvents(allEvents);
         } else {
-          devLog.log('⚠️ No live events found');
+          devLog.log('⚠️ No events found');
           setEvents([]);
         }
 

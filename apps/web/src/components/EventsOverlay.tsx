@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
+import { HostEventModal } from '@/components/events';
 
 interface EventData {
   'Event Name': string;
@@ -18,16 +19,20 @@ interface EventsOverlayProps {
   onEventClick?: (event: EventData) => void;
   closeMapPopups?: (() => void) | null;
   onClose?: () => void;
+  userId?: string;  // For event creation
 }
 
 const EventsOverlay: React.FC<EventsOverlayProps> = ({ 
   isVisible, 
   events, 
   onEventClick,
-  closeMapPopups 
+  closeMapPopups,
+  onClose,
+  userId
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEvents, setFilteredEvents] = useState<EventData[]>(events);
+  const [isHostModalOpen, setIsHostModalOpen] = useState(false);
 
   useEffect(() => {
     let filtered = events;
@@ -63,11 +68,25 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
     onEventClick?.(event);
   };
 
-  if (!isVisible) return null;
-
+  // Render modal always (outside conditional), overlay conditionally
   return (
-    <GlowCard className="hidden md:flex fixed top-[100px] right-5 bottom-10 w-[380px] z-[10001] flex-col">
-      {/* Header - compact with inline search */}
+    <>
+      {/* Host Event Modal - rendered outside overlay so it persists when overlay closes */}
+      <HostEventModal
+        isOpen={isHostModalOpen}
+        onClose={() => setIsHostModalOpen(false)}
+        userId={userId}
+        onSuccess={(response) => {
+          console.log('Event created:', response);
+          setIsHostModalOpen(false);
+          // TODO: Refresh events list or show success toast
+        }}
+      />
+
+      {/* Events List Overlay */}
+      {isVisible && (
+        <GlowCard className="hidden md:flex fixed top-[100px] right-5 bottom-10 w-[380px] z-[10001] flex-col">
+          {/* Header - compact with inline search */}
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-4">
           <img src="/events.png" alt="Events" className="w-7 h-7 object-contain" />
@@ -88,45 +107,70 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
           <div className="text-center text-gray-600 py-8">No events found.</div>
         ) : (
           <div className="space-y-3">
-            {filteredEvents.map((event, index) => (
-              <GlowCard
-                key={index}
-                hoverable
-                onClick={() => handleEventClick(event)}
-                className="cursor-pointer"
-              >
-                <h3 className="font-semibold text-base mb-2 text-black">{event['Event Name']}</h3>
-                <div className="space-y-1 mb-3">
-                  <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
-                  <p className="text-sm text-gray-700">📍 {event.Location}</p>
-                </div>
-                {event['Event URL'] && (
-                  <a 
-                    href={event['Event URL']} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#ff4d6d] hover:underline inline-flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+            {filteredEvents.map((event, index) => {
+              const eventAny = event as any;
+              const isCommunityEvent = eventAny._category === 'community';
+              const culture = eventAny._culture;
+              
+              return (
+                <GlowCard
+                  key={eventAny._id || index}
+                  hoverable
+                  onClick={() => handleEventClick(event)}
+                  className="cursor-pointer"
+                >
+                  {/* Community event badge */}
+                  {isCommunityEvent && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full border border-green-500/30">
+                        🌱 Community
+                      </span>
+                      {culture && culture !== 'default' && (
+                        <span className="text-xs text-gray-500 capitalize">
+                          {culture.replace('_', ' ')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-base mb-2 text-black">{event['Event Name']}</h3>
+                  <div className="space-y-1 mb-3">
+                    <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
+                    <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                  </div>
+                  {event['Event URL'] && (
+                    <a 
+                      href={event['Event URL']} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#ff4d6d] hover:underline inline-flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                     View Details →
                   </a>
                 )}
               </GlowCard>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="mt-4 flex justify-center">
-        <GlowButton
-          variant="primary"
-          onClick={() => window.open('https://zostel.typeform.com/to/LgcBfa0M', '_blank')}
-        >
-          Host Your Event
-        </GlowButton>
-      </div>
-    </GlowCard>
+        {/* Footer */}
+        <div className="mt-4 flex justify-center">
+          <GlowButton
+            variant="primary"
+            onClick={() => {
+              setIsHostModalOpen(true);
+              // Close the events overlay so it doesn't overlap with the modal
+              onClose?.();
+            }}
+          >
+            Host an Event
+          </GlowButton>
+        </div>
+      </GlowCard>
+      )}
+    </>
   );
 };
 

@@ -1,0 +1,141 @@
+/**
+ * My Events API
+ * 
+ * GET /api/events/mine - Get user's hosted events and RSVPs
+ * 
+ * For the "My Events" section in Zo Passport
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { devLog } from '@/lib/logger';
+import type { MyEventsResponse } from '@/types/events';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Get user ID
+    const userId = request.headers.get('x-user-id') || 
+                   request.cookies.get('zo_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const now = new Date().toISOString();
+
+    // 1. Fetch events user is hosting
+    const { data: hosted, error: hostedError } = await supabase
+      .from('canonical_events')
+      .select('*')
+      .eq('host_id', userId)
+      .eq('source_type', 'community')
+      .order('starts_at', { ascending: true });
+
+    if (hostedError) {
+      devLog.error('Failed to fetch hosted events:', hostedError);
+    }
+
+    // 2. Fetch user's RSVPs with event details
+    const { data: rsvps, error: rsvpsError } = await supabase
+      .from('event_rsvps')
+      .select(`
+        id,
+        event_id,
+        status,
+        rsvp_type,
+        checked_in,
+        checked_in_at,
+        created_at
+      `)
+      .eq('user_id', userId)
+      .in('status', ['going', 'interested', 'waitlist'])
+      .order('created_at', { ascending: false });
+
+    if (rsvpsError) {
+      devLog.error('Failed to fetch RSVPs:', rsvpsError);
+    }
+
+    // Fetch event details for RSVPs
+    const rsvpsWithEvents = await Promise.all(
+      (rsvps || []).map(async (rsvp) => {
+        const { data: event } = await supabase
+          .from('canonical_events')
+          .select(`
+            id,
+            title,
+            category,
+            culture,
+            starts_at,
+            ends_at,
+            location_name,
+            lat,
+            lng,
+            submission_status
+          `)
+          .eq('id', rsvp.event_id)
+          .single();
+        return { ...rsvp, event };
+      })
+    );
+
+    // Filter out past events for upcoming RSVPs
+    const upcomingRsvps = rsvpsWithEvents.filter(
+      r => r.event && new Date(r.event.starts_at) >= new Date()
+    );
+
+    // 3. Fetch past attended events (checked_in = true)
+    const { data: pastRsvps } = await supabase
+      .from('event_rsvps')
+      .select('event_id')
+      .eq('user_id', userId)
+      .eq('checked_in', true);
+
+    let pastEvents: any[] = [];
+    if (pastRsvps && pastRsvps.length > 0) {
+      const eventIds = pastRsvps.map(r => r.event_id);
+      const { data } = await supabase
+        .from('canonical_events')
+        .select('*')
+        .in('id', eventIds)
+        .lt('starts_at', now)
+        .order('starts_at', { ascending: false })
+        .limit(20);
+      pastEvents = data || [];
+    }
+
+    // Calculate stats
+    const stats = {
+      total_hosted: hosted?.length || 0,
+      total_attended: pastEvents.length,
+      upcoming_count: upcomingRsvps.length,
+    };
+
+    // Separate upcoming and past hosted events
+    const upcomingHosted = (hosted || []).filter(
+      e => new Date(e.starts_at) >= new Date()
+    );
+    const pastHosted = (hosted || []).filter(
+      e => new Date(e.starts_at) < new Date()
+    );
+
+    const response: MyEventsResponse = {
+      hosted: upcomingHosted as any,
+      rsvps: upcomingRsvps as any,  // Type assertion for joined data
+      past: [...pastEvents, ...pastHosted].sort(
+        (a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
+      ).slice(0, 20) as any,
+      stats,
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    devLog.error('Error fetching my events:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

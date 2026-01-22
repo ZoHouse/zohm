@@ -314,12 +314,24 @@ next-route-announcer,
   z-index: 10000 !important;
 }
 
-/* Ensure user location marker container has highest z-index */
+/* Marker z-index layering: user location > events > nodes */
 .mapboxgl-marker {
-  z-index: 1000;
+  z-index: 50; /* Default for node markers */
 }
 
-.mapboxgl-marker[style*="z-index: 10000"] {
+/* Event markers layer above node markers */
+.mapboxgl-marker:has(.zo-event-marker) {
+  z-index: 100 !important;
+}
+
+/* Node markers explicitly below events */
+.mapboxgl-marker:has(.zo-node-marker) {
+  z-index: 50 !important;
+}
+
+/* User location marker - always on top */
+.mapboxgl-marker[style*="z-index: 10000"],
+.mapboxgl-marker:has([style*="z-index: 9999"]) {
   z-index: 10000 !important;
 }
 

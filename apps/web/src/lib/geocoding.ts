@@ -206,6 +206,57 @@ export function clearGeocodeCache(): void {
 }
 
 /**
+ * Search for addresses using Mapbox Geocoding API (forward geocoding)
+ * Used for address autocomplete in event creation
+ */
+export interface AddressSearchResult {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  context?: string;
+}
+
+export async function searchAddresses(
+  query: string,
+  proximity?: { lat: number; lng: number }
+): Promise<AddressSearchResult[]> {
+  if (!query || query.length < 3) return [];
+  
+  if (!MAPBOX_TOKEN) {
+    devLog.warn('⚠️ Mapbox token not configured for address search');
+    return [];
+  }
+
+  try {
+    // Build URL with optional proximity bias
+    let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=address,poi,place&limit=5`;
+    
+    if (proximity) {
+      url += `&proximity=${proximity.lng},${proximity.lat}`;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Address search failed');
+
+    const data = await response.json();
+    
+    return (data.features || []).map((feature: any) => ({
+      id: feature.id,
+      name: feature.text || feature.place_name?.split(',')[0] || '',
+      address: feature.place_name || '',
+      lat: feature.center?.[1] || 0,
+      lng: feature.center?.[0] || 0,
+      context: feature.context?.map((c: any) => c.text).join(', ') || '',
+    }));
+  } catch (error) {
+    devLog.error('Address search error:', error);
+    return [];
+  }
+}
+
+/**
  * Fallback city list (used if geocoding fails)
  * Same as SimpleOnboarding for consistency
  */

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
+
+// Use admin client to bypass RLS
+const client = supabaseAdmin || supabase;
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -44,16 +48,20 @@ export async function GET(req: NextRequest) {
 
     devLog.log('🗺️ GeoJSON request:', { bbox, from, to, includeNodes });
 
-    // Fetch events within bbox (using canonical_events table)
-    let eventsQuery = supabase
+    // Fetch nodes first to look up coordinates for events at zo_property
+    const { data: allNodes } = await client.from('nodes').select('id, latitude, longitude');
+    const nodesMap: Record<string, { lat: number; lng: number }> = {};
+    allNodes?.forEach(node => {
+      if (node.latitude && node.longitude) {
+        nodesMap[node.id] = { lat: node.latitude, lng: node.longitude };
+      }
+    });
+
+    // Fetch ALL events first (to handle zo_property coordinate lookup)
+    let eventsQuery = client
       .from('canonical_events')
-      .select('id, title, lat, lng, starts_at, ends_at, location_raw, source_refs, raw_payload')
-      .gte('lat', bbox.south)
-      .lte('lat', bbox.north)
-      .gte('lng', bbox.west)
-      .lte('lng', bbox.east)
-      .not('lat', 'is', null)
-      .not('lng', 'is', null);
+      .select('id, title, lat, lng, starts_at, ends_at, location_raw, source_refs, raw_payload, zo_property_id, category, culture, submission_status')
+      .eq('submission_status', 'approved');
 
     // Add time filters if provided
     if (from) {
@@ -63,7 +71,7 @@ export async function GET(req: NextRequest) {
       eventsQuery = eventsQuery.lte('ends_at', to);
     }
 
-    const { data: events, error: eventsError } = await eventsQuery
+    const { data: rawEvents, error: eventsError } = await eventsQuery
       .order('starts_at', { ascending: true })
       .limit(500); // Safety limit
 
@@ -71,7 +79,27 @@ export async function GET(req: NextRequest) {
       devLog.error('❌ Events query error:', eventsError);
     }
 
-    devLog.log(`📅 Found ${events?.length || 0} events`);
+    // Process events - fill in missing coordinates from zo_property
+    const events = (rawEvents || []).map(event => {
+      let lat = event.lat;
+      let lng = event.lng;
+      
+      // If no coords but has zo_property_id, look up from node
+      if ((!lat || !lng) && event.zo_property_id && nodesMap[event.zo_property_id]) {
+        lat = nodesMap[event.zo_property_id].lat;
+        lng = nodesMap[event.zo_property_id].lng;
+        devLog.log(`📍 Using node coords for ${event.title}: ${lat}, ${lng}`);
+      }
+      
+      return { ...event, lat, lng };
+    }).filter(event => {
+      // Only include events with valid coordinates within bbox
+      if (!event.lat || !event.lng) return false;
+      return event.lat >= bbox.south && event.lat <= bbox.north &&
+             event.lng >= bbox.west && event.lng <= bbox.east;
+    });
+
+    devLog.log(`📅 Found ${events?.length || 0} events (after coord lookup)`);
 
     // Build GeoJSON FeatureCollection
     const features: GeoJSON.Feature[] = [];
@@ -87,7 +115,7 @@ export async function GET(req: NextRequest) {
         if (sourceRefs.length > 0 && sourceRefs[0].event_url) {
           eventUrl = sourceRefs[0].event_url;
         }
-      } catch (e) {
+      } catch {
         // Ignore parsing errors
       }
 
@@ -107,6 +135,9 @@ export async function GET(req: NextRequest) {
           event_url: eventUrl,
           location: event.location_raw,
           metadata: event.raw_payload,
+          // Community event fields
+          category: event.category,
+          culture: event.culture,
           // Add formatted date for popup
           formatted_date: new Date(event.starts_at).toLocaleDateString('en-US', {
             weekday: 'short',
@@ -123,7 +154,7 @@ export async function GET(req: NextRequest) {
       devLog.log('📍 Fetching nodes with bbox:', bbox);
       
       //  Query nodes with bbox filtering
-      const { data: nodes, error: nodesError } = await supabase
+      const { data: nodes, error: nodesError } = await client
         .from('nodes')
         .select('*')
         .gte('latitude', bbox.south)

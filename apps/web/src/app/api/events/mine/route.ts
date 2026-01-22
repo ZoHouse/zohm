@@ -8,8 +8,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
 import type { MyEventsResponse } from '@/types/events';
+
+// Use admin client to bypass RLS
+const client = supabaseAdmin || supabase;
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,8 +30,10 @@ export async function GET(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 1. Fetch events user is hosting
-    const { data: hosted, error: hostedError } = await supabase
+    devLog.log('🎫 Fetching events for user:', userId);
+
+    // 1. Fetch events user is hosting (use admin client to bypass RLS)
+    const { data: hosted, error: hostedError } = await client
       .from('canonical_events')
       .select('*')
       .eq('host_id', userId)
@@ -38,8 +44,10 @@ export async function GET(request: NextRequest) {
       devLog.error('Failed to fetch hosted events:', hostedError);
     }
 
+    devLog.log('🎫 Found hosted events:', hosted?.length || 0, hosted?.map(e => ({ id: e.id, title: e.title, status: e.submission_status })));
+
     // 2. Fetch user's RSVPs with event details
-    const { data: rsvps, error: rsvpsError } = await supabase
+    const { data: rsvps, error: rsvpsError } = await client
       .from('event_rsvps')
       .select(`
         id,
@@ -61,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Fetch event details for RSVPs
     const rsvpsWithEvents = await Promise.all(
       (rsvps || []).map(async (rsvp) => {
-        const { data: event } = await supabase
+        const { data: event } = await client
           .from('canonical_events')
           .select(`
             id,
@@ -87,7 +95,7 @@ export async function GET(request: NextRequest) {
     );
 
     // 3. Fetch past attended events (checked_in = true)
-    const { data: pastRsvps } = await supabase
+    const { data: pastRsvps } = await client
       .from('event_rsvps')
       .select('event_id')
       .eq('user_id', userId)
@@ -96,7 +104,7 @@ export async function GET(request: NextRequest) {
     let pastEvents: any[] = [];
     if (pastRsvps && pastRsvps.length > 0) {
       const eventIds = pastRsvps.map(r => r.event_id);
-      const { data } = await supabase
+      const { data } = await client
         .from('canonical_events')
         .select('*')
         .in('id', eventIds)

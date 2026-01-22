@@ -91,13 +91,19 @@ export function useFounderNFTs() {
 
         const founderTokens = result.profile.founder_tokens || [];
         
-        // founder_tokens is an array of strings like ["523", "204", "158", "151"]
+        // founder_tokens can be either:
+        // - Array of strings: ["523", "204", "158", "151"]
+        // - Array of objects: [{ token_id: "523" }, { token_id: "204" }]
         // Map to our NFT format with video URLs from CDN
-        const nftsWithImages: FounderNFT[] = founderTokens.map((tokenId: string) => ({
-          token_id: tokenId,
-          name: `#${tokenId}`,
-          video: `https://cdn.zo.xyz/nft/founders/${tokenId}.mp4`
-        }));
+        const nftsWithImages: FounderNFT[] = founderTokens.map((token) => {
+          // Handle both string and object formats
+          const tokenId = typeof token === 'string' ? token : (token.token_id || '');
+          return {
+            token_id: tokenId,
+            name: `#${tokenId}`,
+            video: `https://cdn.zo.xyz/nft/founders/${tokenId}.mp4`
+          };
+        }).filter(nft => nft.token_id); // Filter out any empty token_ids
 
         devLog.log('✅ Loaded', nftsWithImages.length, 'Founder NFTs');
         setNfts(nftsWithImages);
@@ -135,19 +141,18 @@ export function useFounderNFTs() {
 
     window.addEventListener('zoLoginSuccess', handleLoginSuccess);
 
-    // Also check periodically if credentials become available (for cases where login happens before mount)
+    // Check every 1 minute if credentials become available
     const checkInterval = setInterval(() => {
-      const hasCreds = 
+      const hasCreds =
         localStorage.getItem('zo_user_id') &&
         localStorage.getItem('zo_access_token') &&
         localStorage.getItem('zo_device_id') &&
         localStorage.getItem('zo_device_secret');
-      
+
       if (hasCreds && !hasFetchedRef.current) {
-        devLog.log('🔄 Credentials available, fetching Founder NFTs');
         fetchFounderNFTs();
       }
-    }, 2000); // Check every 2 seconds
+    }, 60000); // 1 minute
 
     return () => {
       window.removeEventListener('zoLoginSuccess', handleLoginSuccess);

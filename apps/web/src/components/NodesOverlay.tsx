@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
+import { NodeType, getNodeTypeEmoji, getNodeTypeDisplayName } from '@/lib/nodeTypes';
 
 interface NodesOverlayProps {
   isVisible: boolean;
@@ -12,6 +13,9 @@ interface NodesOverlayProps {
   closeMapPopups?: (() => void) | null;
   onClose?: () => void;
 }
+
+// Primary filters for the UI (most common types)
+const FILTER_TYPES: NodeType[] = ['zo_house', 'zostel', 'food', 'bar', 'stay', 'startup_hub'];
 
 const NodesOverlay: React.FC<NodesOverlayProps> = ({ 
   isVisible, 
@@ -23,7 +27,7 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
   const [nodes, setNodes] = useState<PartnerNodeRecord[]>(providedNodes || allNodes || []);
   const [loading, setLoading] = useState(!(providedNodes || allNodes));
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | NodeType>('all');
 
   // Update nodes when provided via props (local/global filtering)
   useEffect(() => {
@@ -64,22 +68,8 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
     )
   );
 
-  const getTypeIcon = (type: 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode' | 'house' | 'collective' | 'protocol' | 'space' | 'festival' | 'dao'): string => {
-    switch (type) {
-      case 'hacker_space': return '⚡';
-      case 'culture_house': return '🏠';
-      case 'schelling_point': return '🎯';
-      case 'flo_zone': return '🧭';
-      case 'staynode': return '🛏️';
-      case 'house': return '🏠';
-      case 'collective': return '🌐';
-      case 'protocol': return '⚡';
-      case 'space': return '🏢';
-      case 'festival': return '🎪';
-      case 'dao': return '🏛️';
-      default: return '🔗';
-    }
-  };
+  // Use centralized icon function from nodeTypes.ts
+  const getTypeIcon = (type: NodeType): string => getNodeTypeEmoji(type);
 
   const handleNodeClick = (node: PartnerNodeRecord) => {
     closeMapPopups?.();
@@ -111,20 +101,14 @@ const NodesOverlay: React.FC<NodesOverlayProps> = ({
           >
             All
           </GlowButton>
-          {(['hacker_space','culture_house','schelling_point','flo_zone','staynode'] as const).map(type => (
+          {FILTER_TYPES.map(type => (
             <GlowButton
               key={type}
               variant={activeFilter === type ? 'primary' : 'secondary'}
               onClick={() => setActiveFilter(type)}
               className="text-xs px-3 py-1.5 whitespace-nowrap"
             >
-              {getTypeIcon(type)} {(
-                type === 'hacker_space' ? 'Hacker' :
-                type === 'culture_house' ? 'Culture' :
-                type === 'schelling_point' ? 'Schelling' :
-                type === 'flo_zone' ? 'Flo' :
-                type === 'staynode' ? 'Stay' : type
-              )}
+              {getTypeIcon(type)} {getNodeTypeDisplayName(type)}
             </GlowButton>
           ))}
         </div>

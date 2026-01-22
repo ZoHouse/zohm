@@ -26,7 +26,7 @@ export type PoiCategory = 'base' | 'activity' | 'food' | 'shopping' | 'stay';
 
 // Extended node type with POI category
 export interface DestinationNode extends Omit<PartnerNodeRecord, 'type'> {
-    type: 'staynode';
+    type: 'stay';
     poi_category: PoiCategory;
     destination_id: string;
     themes?: string[];
@@ -38,7 +38,7 @@ export interface DestinationNode extends Omit<PartnerNodeRecord, 'type'> {
 export const BANGALORE_DESTINATION: DestinationNode = {
     id: 'destination-bangalore',
     name: 'Bengaluru',
-    type: 'staynode',
+    type: 'stay',
     poi_category: 'base',
     destination_id: 'destination-bangalore',
     description: 'India\'s Silicon Valley - a vibrant hub for startups, craft beer, and cosmopolitan culture.',
@@ -56,7 +56,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-indiranagar',
         name: 'Indiranagar',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Bengaluru\'s most cosmopolitan neighborhood with tree-lined avenues, craft breweries, boutique cafes, and upscale shopping.',
@@ -71,7 +71,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-koramangala',
         name: 'Koramangala',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'The startup capital of India, buzzing with young energy, co-working spaces, and endless eateries.',
@@ -86,7 +86,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-mgroad',
         name: 'MG Road & CBD',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'The historic heart of the city with colonial architecture, major museums, and Cubbon Park.',
@@ -101,7 +101,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-malleswaram',
         name: 'Malleswaram',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'One of the oldest planned neighborhoods offering traditional \'Old Bangalore\' with ancient temples and legendary breakfast spots.',
@@ -116,7 +116,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-whitefield',
         name: 'Whitefield',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Massive tech hub with glass-facade IT parks, luxury malls, and premium residential complexes.',
@@ -131,7 +131,7 @@ export const BANGALORE_BASES: DestinationNode[] = [
     {
         id: 'blr-base-basavanagudi',
         name: 'Basavanagudi',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Wide tree-lined streets, heritage homes, and proximity to the famous Lalbagh Botanical Garden.',
@@ -150,7 +150,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-golf',
         name: 'Golf at Bangalore Golf Club',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Bangalore is known as a golfer\'s paradise with some of the country\'s finest golf courses.',
@@ -164,7 +164,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-savanadurga',
         name: 'Savanadurga Hills Trek',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'One of Asia\'s largest monolith hills, perfect for hiking and rock climbing.',
@@ -178,7 +178,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-devarayanadurga',
         name: 'Devarayanadurga Hills Trek',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'A rocky hill station with temples (~2 hr, 73 km away).',
@@ -192,7 +192,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-shivaganga',
         name: 'Shivaganga Hills Trek',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'A sacred peak shaped like a Shivalinga (~2 hr, 65 km away).',
@@ -206,7 +206,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-skandgiri',
         name: 'Skandagiri Hills Night Trek',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Famous for night treks and cloud beds (~1.5 hr, 60 km away).',
@@ -220,7 +220,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-kanakpura',
         name: 'Kanakpura Waterfalls Exploration',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Go for hikes & treks and explore waterfalls.',
@@ -234,7 +234,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-ramanagara',
         name: 'Rock Climbing at Ramanagara',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Famous filming location of Sholay, perfect for rock climbing and bouldering.',
@@ -248,7 +248,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-kuntibetta',
         name: 'Kuntibetta Trek',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Trek across boulders & granite outcrops (~125 km away).',
@@ -262,7 +262,7 @@ export const BANGALORE_ACTIVITIES: DestinationNode[] = [
     {
         id: 'blr-activity-hogenakkal',
         name: 'Hogenakkal Falls Coracle Ride',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Go boating & coracle riding on the river (~125 km away).',
@@ -280,7 +280,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-ctr',
         name: 'CTR (Central Tiffin Room)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Legendary breakfast spot famous for its crispy Benne Masala Dosa.',
@@ -294,7 +294,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-veena',
         name: 'Veena Stores',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Famous for its crispy vadas and filter coffee.',
@@ -308,7 +308,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-icehouse',
         name: 'Indian Coffee House',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Iconic coffee house with old-world charm.',
@@ -322,7 +322,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-vidyarthi',
         name: 'Vidyarthi Bhavan',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Iconic 1943-era restaurant known for its signature crispy masala dosa.',
@@ -336,7 +336,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-shivaji',
         name: 'Shivaji Military Hotel',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Famous for non-veg Bangalore-style dishes.',
@@ -350,7 +350,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-onlyplace',
         name: 'The Only Place',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Classic restaurant famous for steaks and sizzlers.',
@@ -364,7 +364,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-cornerhouse',
         name: 'Corner House',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Legendary ice cream parlor famous for Death by Chocolate.',
@@ -378,7 +378,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-koshys',
         name: 'Koshy\'s',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'An iconic 1940s cafe frequented by journalists, artists, and politicians.',
@@ -392,7 +392,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-mtr',
         name: 'Mavalli Tiffin Room (MTR)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'A 100-year-old institution famous for Rava Idli and traditional South Indian meals.',
@@ -406,7 +406,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-brahmin',
         name: 'Brahmin\'s Coffee Bar',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'No-frills standing-only spot for soft idlis dipped in chutney with filter coffee.',
@@ -420,7 +420,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-hallimane',
         name: 'Halli Mane',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Traditional Karnataka cuisine in a rustic setting.',
@@ -434,7 +434,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-janata',
         name: 'Janata Hotel',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Popular for authentic South Indian breakfast.',
@@ -448,7 +448,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-udupikrishna',
         name: 'Udupi Krishna Hotel',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Authentic Udupi-style vegetarian fare.',
@@ -462,7 +462,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-dailysushi',
         name: 'Daily Sushi',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Popular spot for fresh sushi and Japanese cuisine.',
@@ -476,7 +476,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-magnolia',
         name: 'Magnolia Bakery',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Famous NYC bakery known for cupcakes and banana pudding.',
@@ -490,7 +490,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-rameshwaram',
         name: 'Rameshwaram Cafe',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Trending South Indian cafe known for its authentic filter coffee and ghee dosas.',
@@ -504,7 +504,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-truffles',
         name: 'Truffles',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Famous for its burgers, steaks, and American-style comfort food.',
@@ -518,7 +518,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-moochmarod',
         name: 'Mooch Marod',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Quirky restaurant with North Indian and fusion dishes.',
@@ -532,7 +532,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-boteco',
         name: 'Boteco',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Brazilian-themed bar and restaurant.',
@@ -546,7 +546,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-pecos',
         name: 'Pecos',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Legendary rock bar with live music and cold beer.',
@@ -560,7 +560,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-toit',
         name: 'Toit Brewpub',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Bangalore\'s iconic craft brewery with fresh microbrews and great food.',
@@ -574,7 +574,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-watsons',
         name: 'Watson\'s',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Popular pub with great cocktails and ambiance.',
@@ -588,7 +588,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-bobsbar',
         name: 'Bob\'s Bar',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Casual bar chain known for affordable drinks and snacks.',
@@ -602,7 +602,7 @@ export const BANGALORE_FOOD: DestinationNode[] = [
     {
         id: 'blr-food-abc',
         name: 'Arbor Brewing Company (ABC)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'food',
         destination_id: 'destination-bangalore',
         description: 'Microbrewery with craft beers and American-style food.',
@@ -620,7 +620,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-commercial',
         name: 'Commercial Street',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A bustling shopping street famous for clothes, jewelry, shoes, and accessories.',
@@ -634,7 +634,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-brigade',
         name: 'Brigade Road',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A vibrant hub with high-street brands, street stalls, and a lively atmosphere.',
@@ -648,7 +648,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-chickpet',
         name: 'Chickpet Market',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'One of the oldest wholesale markets, known for silk sarees, textiles, and gold.',
@@ -662,7 +662,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-jayanagar',
         name: 'Jayanagar 4th Block Shopping Complex',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A massive complex offering everything from budget clothing and footwear to groceries and local goods.',
@@ -676,7 +676,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-blossom',
         name: 'Blossom Book House',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'An iconic bookstore on Church Street with a vast collection of new, used, and rare books.',
@@ -690,7 +690,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-antscraft',
         name: 'The Ants Craft',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A sustainable store and cafe offering authentic handicrafts, textiles, and home decor from North East India.',
@@ -704,7 +704,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-gonative',
         name: 'Go Native',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A lifestyle store featuring sustainable fashion, home decor, and farm-fresh products.',
@@ -718,7 +718,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-cauvery',
         name: 'Cauvery Handicrafts Emporium',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'Government-run emporium famous for authentic sandalwood carvings and Karnataka artifacts.',
@@ -732,7 +732,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-mysoresaree',
         name: 'Mysore Saree Udyog',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A legendary store renowned for its massive collection of authentic silk sarees and fabrics.',
@@ -746,7 +746,7 @@ export const BANGALORE_SHOPPING: DestinationNode[] = [
     {
         id: 'blr-shop-krmarket',
         name: 'K R Market (City Market)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'A vibrant wholesale flower and vegetable market offering a sensory local experience.',
@@ -767,7 +767,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-palace',
         name: 'Bengaluru Palace',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Home to the royal splendour, featuring Tudor-style architecture.',
@@ -781,7 +781,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-vidhana-soudha',
         name: 'Vidhana Soudha',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'State Legislature building and an impressive architectural landmark.',
@@ -795,7 +795,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-attara-kacheri',
         name: 'Attara Kacheri',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'State High Court housed in a magnificent red brick building.',
@@ -809,7 +809,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-tipu-palace',
         name: 'Tipu Sultan\'s Summer Palace',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Historical structure featuring Indo-Islamic architecture.',
@@ -823,7 +823,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-fort',
         name: 'Bengaluru Fort',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Remains of a 16th-century fort built by Kempe Gowda.',
@@ -838,7 +838,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-st-marys',
         name: 'St. Mary\'s Basilica',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Among the oldest churches in the city.',
@@ -852,7 +852,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-st-marks',
         name: 'St. Mark\'s Cathedral',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Ornate cathedral built in 1812.',
@@ -866,7 +866,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-gavi-gangadhareshwara',
         name: 'Sri Gavi Gangadhareshwara Swamy Devasthana',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Fascinating cave temple known for its astronomical significance.',
@@ -880,7 +880,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-anjaneya-temple',
         name: 'Sri Karya Siddhi Anjaneya Swamy Temple',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Spiritual spot known for its large Hanuman statue.',
@@ -894,7 +894,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-bull-temple',
         name: 'Bull Temple',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Home to a huge bull-shaped stone monolith.',
@@ -908,7 +908,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-venkatramana-temple',
         name: 'Venkatramana Temple',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Temple featuring Vijayanagara architecture.',
@@ -923,7 +923,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-hal-museum',
         name: 'HAL Aerospace Museum',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'India\'s first aviation museum.',
@@ -937,7 +937,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-planetarium',
         name: 'Jawaharlal Nehru Planetarium',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A heaven for space enthusiasts.',
@@ -951,7 +951,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-ngma',
         name: 'National Gallery of Modern Art',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'An art & culture haven.',
@@ -965,7 +965,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-chitrakala',
         name: 'Karnataka Chitrakala Parishath',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A comprehensive visual arts complex.',
@@ -980,7 +980,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-lalbagh',
         name: 'Lalbagh Botanical Gardens',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A sprawling botanical garden and iconic city landmark.',
@@ -994,7 +994,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-cubbon-park',
         name: 'Cubbon Park',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'The central green lung of the city.',
@@ -1008,7 +1008,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-lumbini-gardens',
         name: 'Lumbini Gardens',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A waterfront leisure park.',
@@ -1022,7 +1022,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-bugle-rock',
         name: 'Bugle Rock Park',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A park featuring massive rock formations.',
@@ -1036,7 +1036,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-banyan-tree',
         name: 'Dodda Alada Mara (Big Banyan Tree)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A ~400 year old banyan tree located ~27 km from the city.',
@@ -1051,7 +1051,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-ulsoor-lake',
         name: 'Ulsoor Lake',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A prominent lake located in central Bangalore.',
@@ -1065,7 +1065,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-hebbal-lake',
         name: 'Hebbal Lake',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A scenic lake located in the north of the city.',
@@ -1079,7 +1079,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-btm-lake',
         name: 'BTM Lake',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A popular lake for locals.',
@@ -1093,7 +1093,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-agara-lake',
         name: 'Agara Lake',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'A scenic water body in the city.',
@@ -1107,7 +1107,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-bellandur-lake',
         name: 'Bellandur Lake',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'One of the largest lakes in the city.',
@@ -1122,7 +1122,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-nandi-hills',
         name: 'Nandi Hills',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'A popular hill fortress to catch a sunrise view (~60 km away).',
@@ -1137,7 +1137,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-shivasamudram',
         name: 'Shivasamudram Falls',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'activity',
         destination_id: 'destination-bangalore',
         description: 'Spot Gaganachukki & Barachukki Waterfalls (~134 km away).',
@@ -1152,7 +1152,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-channapatna',
         name: 'Channapatna Toys Town',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'shopping',
         destination_id: 'destination-bangalore',
         description: 'Town famous for wooden toys & handicraft (~60 km away).',
@@ -1166,7 +1166,7 @@ export const BANGALORE_POIS: DestinationNode[] = [
     {
         id: 'blr-poi-groundnut-festival',
         name: 'Kadalekayi Parishe (Groundnut Festival)',
-        type: 'staynode',
+        type: 'stay',
         poi_category: 'base',
         destination_id: 'destination-bangalore',
         description: 'Held in December in Basavanagudi to celebrate the crop yield.',

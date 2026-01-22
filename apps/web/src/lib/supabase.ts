@@ -281,9 +281,9 @@ CREATE INDEX IF NOT EXISTS idx_members_wallet ON members(wallet);
 CREATE INDEX IF NOT EXISTS idx_members_location ON members(lat, lng);
 `;
 
-// Nodes schema and helpers
-export type NodeType = 'hacker_space' | 'culture_house' | 'schelling_point' | 'flo_zone' | 'staynode';
-export type NodeStatus = 'active' | 'developing' | 'planning';
+// Nodes schema and helpers - Types imported from nodeTypes.ts for single source of truth
+import { NodeType, NodeStatus } from './nodeTypes';
+export type { NodeType, NodeStatus };
 
 export interface PartnerNodeRecord {
   id: string;
@@ -296,17 +296,47 @@ export interface PartnerNodeRecord {
   longitude: number | null;
   website?: string | null;
   twitter?: string | null;
-  features: string[]; // stored as array in Postgres
+  /** @deprecated Use node_zones table instead */
+  features?: string[] | null; // DEPRECATED - use node_zones table
   status: NodeStatus;
   image?: string | null;
   contact_email?: string | null;
+  // New fields from nodes-zones-v2 migration
+  address?: string | null;
+  instagram?: string | null;
+  phone?: string | null;
+  logo?: string | null;
+  opening_hours?: Record<string, string>;
+  metadata?: Record<string, unknown>;
 }
 
+// Zone record from node_zones table
+export interface NodeZoneRecord {
+  id: string;
+  node_id: string;
+  zone_type: import('./nodeTypes').ZoneType;
+  name?: string | null;
+  description?: string | null;
+  capacity?: number | null;
+  floor?: string | null;
+  is_available: boolean;
+  availability_notes?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// NOTE: This SQL is deprecated - schema now managed via migrations
+// See scripts/migrations/20260121-nodes-zones-v2.sql for current schema
 export const createNodesTableSQL = `
+-- DEPRECATED: Use migrations instead
+-- Current schema supports 18 node types:
+-- zo_house, zostel, food, stay, park, hospital, fire_station, post_office,
+-- bar, metro, airport, shopping, art, sports_arena, arcade, library, gym, startup_hub
 create table if not exists nodes (
   id text primary key,
   name text not null,
-  type text not null check (type in ('hacker_space','culture_house','schelling_point','flo_zone','staynode')),
+  type text not null,
   description text not null,
   city text not null,
   country text not null,
@@ -318,6 +348,12 @@ create table if not exists nodes (
   status text not null check (status in ('active','developing','planning')),
   image text,
   contact_email text,
+  address text,
+  instagram text,
+  phone text,
+  logo text,
+  opening_hours jsonb default '{}',
+  metadata jsonb default '{}',
   inserted_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
@@ -343,6 +379,79 @@ export async function getNodesFromDB(): Promise<PartnerNodeRecord[] | null> {
     return (data as PartnerNodeRecord[]) || [];
   } catch (e) {
     devLog.warn('Unable to fetch nodes:', e);
+    return [];
+  }
+}
+
+/**
+ * Get zones for a specific node
+ */
+export async function getNodeZones(nodeId: string): Promise<NodeZoneRecord[]> {
+  try {
+    const { data, error } = await supabase
+      .from('node_zones')
+      .select('*')
+      .eq('node_id', nodeId)
+      .order('zone_type');
+    
+    if (error) {
+      devLog.warn('Unable to fetch zones for node:', nodeId, error);
+      return [];
+    }
+    return (data as NodeZoneRecord[]) || [];
+  } catch (e) {
+    devLog.warn('Unable to fetch zones:', e);
+    return [];
+  }
+}
+
+/**
+ * Get all zones (for all nodes)
+ */
+export async function getAllNodeZones(): Promise<NodeZoneRecord[]> {
+  try {
+    const { data, error } = await supabase
+      .from('node_zones')
+      .select('*')
+      .order('node_id, zone_type');
+    
+    if (error) {
+      devLog.warn('Unable to fetch all zones:', error);
+      return [];
+    }
+    return (data as NodeZoneRecord[]) || [];
+  } catch (e) {
+    devLog.warn('Unable to fetch zones:', e);
+    return [];
+  }
+}
+
+/**
+ * Get nodes with their zones (joined)
+ */
+export async function getNodesWithZones(): Promise<(PartnerNodeRecord & { zones: NodeZoneRecord[] })[]> {
+  try {
+    const [nodes, zones] = await Promise.all([
+      getNodesFromDB(),
+      getAllNodeZones()
+    ]);
+    
+    if (!nodes) return [];
+    
+    // Group zones by node_id
+    const zonesByNode = zones.reduce((acc, zone) => {
+      if (!acc[zone.node_id]) acc[zone.node_id] = [];
+      acc[zone.node_id].push(zone);
+      return acc;
+    }, {} as Record<string, NodeZoneRecord[]>);
+    
+    // Attach zones to nodes
+    return nodes.map(node => ({
+      ...node,
+      zones: zonesByNode[node.id] || []
+    }));
+  } catch (e) {
+    devLog.warn('Unable to fetch nodes with zones:', e);
     return [];
   }
 }

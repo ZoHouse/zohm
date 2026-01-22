@@ -25,29 +25,63 @@ export interface ZoUser {
   pid: string;  // PID123
   first_name: string;
   last_name: string;
+  middle_name?: string;
+  // Nickname fields (from Swagger)
+  nickname?: string;
+  custom_nickname?: string;
+  selected_nickname?: string;  // Currently active nickname (preferred for display)
+  ens_nickname?: string;
   mobile_number: string;
+  mobile_verified?: boolean;
   email_address: string;
+  email_verified?: boolean;
   date_of_birth: string | null;
+  gender?: string;
   bio: string;
   pfp_image: string;
+  pfp_metadata?: {
+    contract_address?: string;
+    token_id?: string;
+    metadata?: string;
+    is_valid?: boolean;
+  };
   wallet_address: string;
-  membership: 'founder' | 'none';
+  web3_verified?: boolean;
+  membership: 'founder' | 'none' | 'citizen';
+  relationship_status?: string;
   body_type: 'bro' | 'bae';
+  address?: string;
+  pincode?: string;
   place_name: string;
+  place_ref_id?: string;
   home_location: {
     lat: number;
     lng: number;
   } | null;
+  country?: {
+    code: string;
+    flag?: string;
+    name: string;
+    mobile_code?: string;
+    local_currency?: string;
+  };
   cultures: Array<{
     key: string;
     name: string;
     icon: string;
     description: string;
   }>;
-  founder_tokens: string[]; // Array of token IDs like ["523", "204", "158"]
+  socials?: Array<{
+    category: string;
+    link: string;
+    verified?: boolean;
+  }>;
+  founder_tokens: string[] | Array<{ token_id?: string }>; // Array of token IDs or token objects
   avatar?: {
     image: string;
-    status: 'pending' | 'processing' | 'completed' | 'failed';
+    metadata?: string;
+    ref_id?: number;
+    status?: 'pending' | 'processing' | 'completed' | 'failed';
   };
 }
 
@@ -73,30 +107,64 @@ export interface ZoProfileResponse {
   pid: string;
   first_name: string;
   last_name: string;
-  mobile_country_code: string; // Added
+  middle_name?: string;
+  // Nickname fields (from Swagger)
+  nickname?: string;
+  custom_nickname?: string;
+  selected_nickname?: string;  // Currently active nickname (preferred for display)
+  ens_nickname?: string;
+  mobile_country_code?: string;
   mobile_number: string;
+  mobile_verified?: boolean;
   email_address: string;
+  email_verified?: boolean;
   date_of_birth: string | null;
+  gender?: string;
   bio: string;
   pfp_image: string;
+  pfp_metadata?: {
+    contract_address?: string;
+    token_id?: string;
+    metadata?: string;
+    is_valid?: boolean;
+  };
   wallet_address: string;
-  membership: 'founder' | 'none' | 'citizen'; // Added 'citizen'
+  web3_verified?: boolean;
+  membership: 'founder' | 'none' | 'citizen';
+  relationship_status?: string;
   body_type: 'bro' | 'bae';
+  address?: string;
+  pincode?: string;
   place_name: string;
+  place_ref_id?: string;
   home_location: {
     lat: number;
     lng: number;
   } | null;
+  country?: {
+    code: string;
+    flag?: string;
+    name: string;
+    mobile_code?: string;
+    local_currency?: string;
+  };
   cultures: Array<{
     key: string;
     name: string;
     icon: string;
     description: string;
   }>;
-  founder_tokens: string[]; // Array of token IDs like ["523", "204", "158"]
+  socials?: Array<{
+    category: string;
+    link: string;
+    verified?: boolean;
+  }>;
+  founder_tokens: string[] | Array<{ token_id?: string }>;
   avatar?: {
     image: string;
-    status: string;
+    metadata?: string;
+    ref_id?: number;
+    status?: string;
   };
 }
 

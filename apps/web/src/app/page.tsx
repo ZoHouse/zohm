@@ -98,10 +98,18 @@ export default function Home() {
     prepareTransition,
   } = useOnboardingTransition();
 
-  // Get user's home location for distance calculations (before any conditional returns)
-  // Priority: onboarding location (immediate) > profile location (persisted)
-  const userHomeLat = onboardingLocation?.lat || userProfile?.lat || null;
-  const userHomeLng = onboardingLocation?.lng || userProfile?.lng || null;
+  // Get user's CURRENT location (for map centering - always use most recent GPS)
+  // Priority: lat/lng (current GPS) > onboarding location (temporary)
+  // This is what the map should center on - the user's actual current position
+  const userCurrentLat = userProfile?.lat || onboardingLocation?.lat || null;
+  const userCurrentLng = userProfile?.lng || onboardingLocation?.lng || null;
+  
+  // Get user's HOME location (for local/global radius calculations)
+  // Priority: current location (if available) > zo_home_location (permanent home) > onboarding location
+  // When in "local" mode, filter events/nodes based on this location
+  // If user has current GPS, use that. Otherwise fall back to their permanent home.
+  const userHomeLat = userCurrentLat || userProfile?.zo_home_location?.lat || onboardingLocation?.lat || null;
+  const userHomeLng = userCurrentLng || userProfile?.zo_home_location?.lng || onboardingLocation?.lng || null;
 
   // Local radius in kilometers
   const LOCAL_RADIUS_KM = 100;
@@ -160,15 +168,16 @@ export default function Home() {
       return isWithinRadius(userHomeLat, userHomeLng, lat, lng, LOCAL_RADIUS_KM);
     });
 
-    // 🏙️ Add Bangalore destination nodes when user is in Bangalore
-    if (isWithinBangalore(userHomeLat, userHomeLng)) {
-      devLog.log('🏙️ User is in Bangalore - adding destination POIs to local view');
-      const bangaloreNodes = getBangaloreNodesForLocalView();
-      // Merge Bangalore nodes with filtered nodes, avoiding duplicates by ID
-      const existingIds = new Set(filteredNodes.map(n => n.id));
-      const newNodes = bangaloreNodes.filter(n => !existingIds.has(n.id));
-      return [...filteredNodes, ...newNodes];
-    }
+    // 🏙️ DISABLED: Hardcoded Bangalore destination nodes
+    // This was adding 160+ hardcoded POIs. Only showing nodes from database now.
+    // if (isWithinBangalore(userHomeLat, userHomeLng)) {
+    //   devLog.log('🏙️ User is in Bangalore - adding destination POIs to local view');
+    //   const bangaloreNodes = getBangaloreNodesForLocalView();
+    //   // Merge Bangalore nodes with filtered nodes, avoiding duplicates by ID
+    //   const existingIds = new Set(filteredNodes.map(n => n.id));
+    //   const newNodes = bangaloreNodes.filter(n => !existingIds.has(n.id));
+    //   return [...filteredNodes, ...newNodes];
+    // }
 
     return filteredNodes;
   }, [nodes, userHomeLat, userHomeLng]);
@@ -1013,7 +1022,7 @@ export default function Home() {
           totalNodesCount={nodes.length}
           questCount={questCount}
           userCity={userCity}
-          userLocation={userHomeLat && userHomeLng ? { lat: userHomeLat, lng: userHomeLng } : null}
+          userLocation={userCurrentLat && userCurrentLng ? { lat: userCurrentLat, lng: userCurrentLng } : null}
           userId={userProfile?.id || user?.id}
           onMapReady={handleMapReadyMobile}
           flyToEvent={flyToEvent}
@@ -1026,6 +1035,15 @@ export default function Home() {
           globalCount={events.length}
           isRequestingLocation={isRequestingLocation}
           shouldAnimateFromSpace={shouldAnimateFromSpace}
+          onLocationSaved={async (lat, lng) => {
+            devLog.log('📍 Location saved, reloading profile...', { lat, lng });
+            // Clear stale onboarding location so fresh DB location is used
+            setOnboardingLocation(null);
+            await reloadProfile();
+            devLog.log('✅ Profile reloaded with new location');
+            // Switch to local mode now that we have location
+            setMapViewMode('local');
+          }}
         />
       </>
     );
@@ -1056,6 +1074,15 @@ export default function Home() {
         globalCount={events.length}
         isRequestingLocation={isRequestingLocation}
         shouldAnimateFromSpace={shouldAnimateFromSpace}
+        onLocationSaved={async (lat, lng) => {
+          devLog.log('📍 Location saved, reloading profile...', { lat, lng });
+          // Clear stale onboarding location so fresh DB location is used
+          setOnboardingLocation(null);
+          await reloadProfile();
+          devLog.log('✅ Profile reloaded with new location');
+          // Switch to local mode now that we have location
+          setMapViewMode('local');
+        }}
       />
     </>
   );

@@ -354,7 +354,7 @@ export default function QuestComplete({ onGoHome, userId, score = 1111, tokensEa
                       <div className="w-[60%] flex items-center gap-2">
                         <div className="w-6 h-6 rounded-[24px] overflow-hidden">
                           <img 
-                            src={entry.avatar || `/images/rank${entry.rank}.jpeg`} 
+                            src={entry.avatar || `/images/rank${Math.min(entry.rank, 3)}.jpeg`} 
                             alt={entry.nickname} 
                             className="w-full h-full object-cover" 
                           />

@@ -47,6 +47,7 @@ interface MobileViewProps {
   globalCount: number;
   isRequestingLocation?: boolean;
   shouldAnimateFromSpace?: boolean;
+  onLocationSaved?: (lat: number, lng: number) => void;
 }
 
 const MobileView: React.FC<MobileViewProps> = ({
@@ -70,6 +71,7 @@ const MobileView: React.FC<MobileViewProps> = ({
   globalCount,
   isRequestingLocation = false,
   shouldAnimateFromSpace = false,
+  onLocationSaved,
 }) => {
   const [showTileModal, setShowTileModal] = useState(false);
   const [activeList, setActiveList] = useState<'events' | 'nodes' | 'quests' | 'dashboard' | null>('dashboard');
@@ -162,6 +164,8 @@ const MobileView: React.FC<MobileViewProps> = ({
           nodes={nodes}
           shouldAnimateFromSpace={shouldAnimateFromSpace}
           userLocation={userLocation}
+          userId={userId}
+          onLocationSaved={onLocationSaved}
         />
       </div>
 

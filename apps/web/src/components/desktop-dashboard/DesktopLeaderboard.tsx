@@ -225,8 +225,8 @@ const DesktopLeaderboard: React.FC<DesktopLeaderboardProps> = ({ userId, userBal
                       <img
                         src={
                           isCurrentUser
-                            ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || entry.avatar || `/images/rank${entry.rank}.jpeg`
-                            : entry.avatar || `/images/rank${entry.rank}.jpeg`
+                            ? (typeof window !== 'undefined' ? localStorage.getItem('zo_avatar_url') : null) || entry.avatar || `/images/rank${Math.min(entry.rank, 3)}.jpeg`
+                            : entry.avatar || `/images/rank${Math.min(entry.rank, 3)}.jpeg`
                         }
                         alt={entry.nickname}
                         className="w-full h-full object-cover"

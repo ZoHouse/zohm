@@ -2,48 +2,62 @@
 import { getActiveCalendars } from './supabase';
 import { devLog } from '@/lib/logger';
 
-// Minimal fallback for emergency cases only
-const EMERGENCY_FALLBACK_URLS = [
-  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM', // Zo House Bangalore
-  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ', // Zo House San Francisco
-  '/api/calendar?url=https://api2.luma.com/ics/get?entity=calendar&id=cal-4BIGfE8WhTFQj9H'  // ETHGlobal
+// Helper to get base URL for server-side requests
+function getBaseUrl(): string {
+  const isServerSide = typeof window === 'undefined';
+  return isServerSide 
+    ? (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000')
+    : '';
+}
+
+// Minimal fallback for emergency cases - DISCOVER feeds have current events!
+const EMERGENCY_FALLBACK_CALENDAR_URLS = [
+  'https://api2.luma.com/ics/get?entity=discover&id=discplace-BDj7GNbGlsF7Cka', // SF Discover (has 2026 events!)
+  'https://api2.luma.com/ics/get?entity=discover&id=discplace-mUbtdfNjfWaLQ72', // Singapore (has 2026 events!)
+  'https://api2.luma.com/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM', // Zo House Bangalore
+  'https://api2.luma.com/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ', // Zo House San Francisco
 ];
+
+// Convert calendar URL to API proxy URL
+function toProxyUrl(calendarUrl: string): string {
+  const baseUrl = getBaseUrl();
+  const relativeUrl = `/api/calendar?url=${encodeURIComponent(calendarUrl)}`;
+  return baseUrl ? `${baseUrl}${relativeUrl}` : relativeUrl;
+}
 
 // Dynamic calendar URLs from database
 export async function getCalendarUrls(): Promise<string[]> {
+  const isServerSide = typeof window === 'undefined';
+  const baseUrl = getBaseUrl();
+  
   try {
     const calendars = await getActiveCalendars();
     if (!calendars || calendars.length === 0) {
       devLog.log('📅 Database unavailable, using emergency fallback calendar URLs');
-      return EMERGENCY_FALLBACK_URLS;
+      // Convert fallback URLs to proxy URLs
+      return EMERGENCY_FALLBACK_CALENDAR_URLS.map(toProxyUrl);
     }
-    
-    // Check if running server-side (for worker) or client-side
-    const isServerSide = typeof window === 'undefined';
-    const baseUrl = isServerSide 
-      ? (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001')
-      : '';
     
     // Convert URLs to use our proxy API to avoid CORS issues
     const urls = calendars.map(calendar => {
       if (calendar.url.startsWith('http')) {
         // Direct URL - proxy it through our API
-        const relativeUrl = `/api/calendar?url=${encodeURIComponent(calendar.url)}`;
-        return isServerSide ? `${baseUrl}${relativeUrl}` : relativeUrl;
+        return toProxyUrl(calendar.url);
       } else {
-        // Already a relative API URL
-        return isServerSide ? `${baseUrl}${calendar.url}` : calendar.url;
+        // Already a relative API URL - prepend base URL if server-side
+        return baseUrl ? `${baseUrl}${calendar.url}` : calendar.url;
       }
     });
     
     devLog.log('📅 Loaded calendar URLs from database:', urls.length, 'calendars');
     if (isServerSide) {
-      devLog.log('🔧 Server-side mode: using absolute URLs');
+      devLog.log('🔧 Server-side mode: using absolute URLs with base:', baseUrl);
     }
     return urls;
   } catch (error) {
     devLog.error('Error fetching calendar URLs, using emergency fallback:', error);
-    return EMERGENCY_FALLBACK_URLS;
+    // Convert fallback URLs to proxy URLs
+    return EMERGENCY_FALLBACK_CALENDAR_URLS.map(toProxyUrl);
   }
 }
 

@@ -24,7 +24,7 @@ interface DesktopDashboardProps {
 }
 
 const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [], onLaunchGame }) => {
-  const { userProfile, isLoading } = useZoAuth();
+  const { userProfile, isLoading, reloadProfile } = useZoAuth();
 
   if (isLoading) {
     return (
@@ -69,7 +69,7 @@ const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onClose, events = [
         <LeftSidebar userProfile={userProfile} />
         
         {/* Center Column */}
-          <CenterColumn userProfile={userProfile} onOpenMap={onClose} onLaunchGame={onLaunchGame} />
+          <CenterColumn userProfile={userProfile} onOpenMap={onClose} onLaunchGame={onLaunchGame} reloadProfile={reloadProfile} />
         
         {/* Right Sidebar */}
           <RightSidebar userProfile={userProfile} events={events} />

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { hasServiceRole, supabaseAdmin } from '@/lib/supabaseAdmin';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(_req: NextRequest) {
   try {
-    const { data, error } = await supabase
+    // Use admin client if available (bypasses RLS), otherwise fall back to anon
+    const client = hasServiceRole && supabaseAdmin ? supabaseAdmin : supabase;
+    const usingAdmin = hasServiceRole && supabaseAdmin ? true : false;
+
+    const { data, error, count } = await client
       .from('nodes')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('name');
 
     if (error) {
@@ -17,7 +22,7 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, nodes: data ?? [] });
+    return NextResponse.json({ ok: true, nodes: data ?? [], count, usingAdmin });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

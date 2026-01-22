@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hasServiceRole, supabaseAdmin } from '@/lib/supabaseAdmin';
-import { PartnerNodeRecord } from '@/lib/supabase';
+import { NodeType } from '@/lib/supabase';
+import { ZoneType } from '@/lib/nodeTypes';
+
+// Node data
+interface NodeInput {
+  id: string;
+  name: string;
+  type: NodeType;
+  description: string;
+  city: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  website?: string | null;
+  twitter?: string | null;
+  status: 'active' | 'developing' | 'planning';
+  image?: string | null;
+  contact_email?: string | null;
+  address?: string | null;
+  instagram?: string | null;
+  phone?: string | null;
+}
+
+// Zone data
+interface ZoneInput {
+  node_id: string;
+  zone_type: ZoneType;
+  name: string;
+  description?: string;
+  capacity?: number;
+  floor?: string;
+  is_available?: boolean;
+}
 
 export async function POST(_req: NextRequest) {
   try {
@@ -8,155 +40,175 @@ export async function POST(_req: NextRequest) {
       return NextResponse.json({ error: 'Service role not configured' }, { status: 500 });
     }
 
-    // 🦄 UNICORN: SF-focused nodes for the Bay Area crypto/tech scene
-    const rows: PartnerNodeRecord[] = [
+    // BLRxZo - Zo House Bangalore (flagship location)
+    const nodes: NodeInput[] = [
       {
-        id: 'zo-sf',
-        name: 'Zo House San Francisco',
-        type: 'culture_house',
-        description: 'West Coast hub for tech builders and consciousness explorers in SOMA.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7817309,
-        longitude: -122.401198,
-        website: 'https://zo.house',
-        twitter: '@zohousesf',
-        features: ['Co-living', 'Co-working', 'Investor Network', 'Art Studios'],
+        id: 'blrxzo',
+        name: 'BLRxZo',
+        type: 'zo_house',
+        description: 'The flagship Zo House in Koramangala, Bangalore. A 24/7 creative sanctuary for builders, artists, and conscious explorers.',
+        city: 'Bangalore',
+        country: 'India',
+        latitude: 12.932658,
+        longitude: 77.634402,
+        website: 'https://zo.xyz',
         status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'noisebridge',
-        name: 'Noisebridge',
-        type: 'hacker_space',
-        description: 'SF\'s legendary anarchist hacker space and community workshop.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7626,
-        longitude: -122.4194,
-        website: 'https://www.noisebridge.net',
-        twitter: '@noisebridge',
-        features: ['Hackathons', 'Workshops', 'Open Source', '24/7 Access'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'the-archive',
-        name: 'The Archive',
-        type: 'culture_house',
-        description: 'Mission district hacker house and creative collective.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7599,
-        longitude: -122.4148,
-        website: null,
-        twitter: null,
-        features: ['Co-living', 'Builders', 'Art', 'Community'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'react',
-        name: 'ReAct',
-        type: 'flo_zone',
-        description: 'Coworking space for builders and creators in Hayes Valley.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7764,
-        longitude: -122.4242,
-        website: null,
-        twitter: null,
-        features: ['Coworking', 'Focus', 'Community', 'Events'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'crypto-commons',
-        name: 'Crypto Commons',
-        type: 'hacker_space',
-        description: 'Web3 community space in the heart of SF.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7899,
-        longitude: -122.4094,
-        website: null,
-        twitter: null,
-        features: ['Web3', 'Workshops', 'Community', 'Events'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'hackerdojo',
-        name: 'Hacker Dojo',
-        type: 'hacker_space',
-        description: 'Mountain View hacker space for Silicon Valley builders.',
-        city: 'Mountain View',
-        country: 'USA',
-        latitude: 37.4027,
-        longitude: -122.0679,
-        website: 'https://www.hackerdojo.com',
-        twitter: '@hackerdojo',
-        features: ['Coworking', 'Events', 'Workshops', '24/7 Access'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'founder-house-sf',
-        name: 'Founder House SF',
-        type: 'culture_house',
-        description: 'Exclusive co-living for YC founders and startup builders.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7866,
-        longitude: -122.4090,
-        website: null,
-        twitter: null,
-        features: ['Co-living', 'Startups', 'Networking', 'Events'],
-        status: 'active',
-        image: null,
-        contact_email: null,
-      },
-      {
-        id: 'impact-hub-sf',
-        name: 'Impact Hub SF',
-        type: 'flo_zone',
-        description: 'Coworking space for social entrepreneurs in Mid-Market.',
-        city: 'San Francisco',
-        country: 'USA',
-        latitude: 37.7815,
-        longitude: -122.4134,
-        website: 'https://sanfrancisco.impacthub.net',
-        twitter: '@ImpactHubSF',
-        features: ['Coworking', 'Social Impact', 'Community', 'Events'],
-        status: 'active',
-        image: null,
-        contact_email: null,
+        address: '33, 80 Feet Rd, Koramangala 4th Block, Koramangala, Bengaluru, Karnataka 560034',
+        instagram: '@zo.house',
+        phone: '+91 80 4567 8900',
       },
     ];
 
-    const ids = rows.map(r => r.id);
+    // All 13 zones for BLRxZo
+    const zones: ZoneInput[] = [
+      {
+        node_id: 'blrxzo',
+        zone_type: 'schelling_point',
+        name: 'The Schelling Point',
+        description: 'Main coordination and event space. Where the community gathers for talks, workshops, and spontaneous collisions.',
+        capacity: 100,
+        floor: 'Ground Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'degen_lounge',
+        name: 'Degen Lounge',
+        description: 'Social space for traders, crypto enthusiasts, and late-night builders. Screens, charts, and vibes.',
+        capacity: 30,
+        floor: 'Ground Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'zo_studio',
+        name: 'Zo Studio',
+        description: 'Professional recording and production studio for podcasts, music, and content creation.',
+        capacity: 6,
+        floor: '1st Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'flo_zone',
+        name: 'Flo Zone',
+        description: 'Silent deep work space. No calls, no meetings, just flow state.',
+        capacity: 40,
+        floor: '1st Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'liquidity_pool',
+        name: 'Liquidity Pool',
+        description: 'Rooftop pool and lounge area. Perfect for poolside calls and sunset vibes.',
+        capacity: 20,
+        floor: 'Rooftop',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'multiverse',
+        name: 'The Multiverse',
+        description: 'Flexible multi-purpose space that transforms for different needs - meetings, workshops, or chill sessions.',
+        capacity: 25,
+        floor: '2nd Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'battlefield',
+        name: 'The Battlefield',
+        description: 'Gaming and competition zone. Consoles, PCs, and tournament-ready setup.',
+        capacity: 16,
+        floor: 'Basement',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'bio_hack',
+        name: 'Bio Hack Lab',
+        description: 'Health optimization zone with cold plunge, sauna, and biohacking equipment.',
+        capacity: 8,
+        floor: 'Ground Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'zo_cafe',
+        name: 'Zo Cafe',
+        description: 'In-house cafe serving specialty coffee, healthy meals, and midnight snacks for builders.',
+        capacity: 35,
+        floor: 'Ground Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: '420',
+        name: '420 Terrace',
+        description: 'Designated smoking area with comfortable seating and good ventilation.',
+        capacity: 10,
+        floor: 'Terrace',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'showcase',
+        name: 'The Showcase',
+        description: 'Gallery and exhibition space for art, prototypes, and community projects.',
+        capacity: 40,
+        floor: 'Ground Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'dorms',
+        name: 'Dorms',
+        description: 'Shared dormitory-style accommodation for short-term stays and community members.',
+        capacity: 24,
+        floor: '3rd Floor',
+        is_available: true,
+      },
+      {
+        node_id: 'blrxzo',
+        zone_type: 'private_rooms',
+        name: 'Private Rooms',
+        description: 'Private rooms for longer stays and members who need their own space.',
+        capacity: 12,
+        floor: '3rd Floor',
+        is_available: true,
+      },
+    ];
 
-    // Replace strategy: clear all, then upsert desired rows
-    const { error: deleteAllError } = await supabaseAdmin.from('nodes').delete().neq('id', '__keep_none__');
-    if (deleteAllError) {
-      return NextResponse.json({ error: deleteAllError.message }, { status: 500 });
+    // Clear and replace nodes
+    const { error: deleteNodesError } = await supabaseAdmin.from('nodes').delete().neq('id', '__keep_none__');
+    if (deleteNodesError) {
+      return NextResponse.json({ error: 'Delete nodes: ' + deleteNodesError.message }, { status: 500 });
     }
 
-    const { error: upsertError } = await supabaseAdmin.from('nodes').upsert(rows, { onConflict: 'id' });
-    if (upsertError) {
-      return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    const { error: insertNodesError } = await supabaseAdmin.from('nodes').insert(nodes);
+    if (insertNodesError) {
+      return NextResponse.json({ error: 'Insert nodes: ' + insertNodesError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, kept: ids, count: rows.length });
+    // Clear and replace zones
+    const { error: deleteZonesError } = await supabaseAdmin.from('node_zones').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (deleteZonesError) {
+      return NextResponse.json({ error: 'Delete zones: ' + deleteZonesError.message }, { status: 500 });
+    }
+
+    const { error: insertZonesError } = await supabaseAdmin.from('node_zones').insert(zones);
+    if (insertZonesError) {
+      return NextResponse.json({ error: 'Insert zones: ' + insertZonesError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      ok: true, 
+      node: 'blrxzo',
+      zonesCount: zones.length,
+      message: 'BLRxZo with all 13 zones created successfully'
+    });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
-
-

@@ -25,7 +25,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
   onClose,
   onLaunchGame 
 }) => {
-  const { userProfile, isLoading } = useZoAuth();
+  const { userProfile, isLoading, reloadProfile } = useZoAuth();
   const [balance, setBalance] = useState(0);
   const [stats, setStats] = useState({
     quantum_syncs: 0,
@@ -170,7 +170,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         </div>
         
         {/* Mini Map */}
-        <MobileMiniMap onOpenMap={onClose} userProfile={userProfile} />
+        <MobileMiniMap onOpenMap={onClose} userProfile={userProfile} reloadProfile={reloadProfile} />
         
         {/* Leaderboard */}
         <MobileLeaderboard 

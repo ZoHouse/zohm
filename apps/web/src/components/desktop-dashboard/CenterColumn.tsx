@@ -23,18 +23,85 @@ interface CenterColumnProps {
   userProfile: PrivyUserProfile | null;
   onOpenMap?: () => void;
   onLaunchGame?: (userId: string) => void;
+  reloadProfile?: () => Promise<void>;
 }
 
-const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onLaunchGame }) => {
+const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onLaunchGame, reloadProfile }) => {
   const { visitedNodes } = useDashboardData();
   const [mapKey, setMapKey] = React.useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [balance, setBalance] = useState(0);
+  const [isEnteringMap, setIsEnteringMap] = useState(false);
   
   // Get user location for map centering
   const userLat = userProfile?.lat || 0;
   const userLng = userProfile?.lng || 0;
   const hasLocation = userLat !== 0 && userLng !== 0;
+
+  // Handle "Enter Map" - fetch current location, save, then open map
+  const handleEnterMap = async () => {
+    if (!navigator.geolocation) {
+      onOpenMap?.();
+      return;
+    }
+
+    setIsEnteringMap(true);
+    
+    try {
+      // Get current GPS location
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+      
+      devLog.log('📍 Got current location for Enter Map:', { 
+        lat, 
+        lng, 
+        accuracy: `${accuracy}m`,
+        timestamp: new Date(position.timestamp).toISOString()
+      });
+      
+      // Log to console for debugging
+      console.log(`📍 LOCATION FETCHED: ${lat}, ${lng} (accuracy: ${accuracy}m)`);
+
+      // Save to database if user is logged in
+      if (userProfile?.id) {
+        const response = await fetch(`/api/users/${userProfile.id}/location`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lng })
+        });
+
+        if (response.ok) {
+          devLog.log('✅ Location saved to database');
+          // CRITICAL: Wait for profile reload to complete before opening map
+          // This ensures the map uses the fresh location, not stale cached data
+          if (reloadProfile) {
+            await reloadProfile();
+            devLog.log('✅ Profile reloaded with new location');
+            // Small delay to ensure state has propagated
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        } else {
+          const errorText = await response.text();
+          devLog.error('❌ Failed to save location:', errorText);
+        }
+      }
+    } catch (error) {
+      devLog.error('❌ Error getting/saving location:', error);
+    }
+
+    setIsEnteringMap(false);
+    // Open map AFTER location is saved and profile is reloaded
+    onOpenMap?.();
+  };
   
   // game1111 quest cooldown (12 hours)
   // Hook signature: useQuestCooldown(questId, userId)
@@ -330,35 +397,34 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
             />
           </div>
 
-          {/* Overlay - Enter Map Button (only show when user has location) */}
-          {hasLocation && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
-              <button
-                onClick={onOpenMap}
-                className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200"
-                style={{
-                  backgroundColor: 'rgba(18, 18, 18, 0.3)',
-                  backdropFilter: `blur(${DashboardBlur.light})`,
-                  WebkitBackdropFilter: `blur(${DashboardBlur.light})`,
-                  borderColor: 'rgba(255, 255, 255, 0.16)',
-                  borderRadius: DashboardRadius.pill,
-                  padding: `${DashboardSpacing.md} ${DashboardSpacing.xl}`,
-                }}
-              >
-                <p style={{
-                  fontFamily: DashboardTypography.fontFamily.primary,
-                  fontWeight: DashboardTypography.fontWeight.medium,
-                  fontSize: DashboardTypography.size.small.fontSize,
-                  lineHeight: DashboardTypography.size.small.lineHeight,
-                  letterSpacing: '0.1em',
-                  color: DashboardColors.text.primary,
-                  textTransform: 'uppercase',
-                }}>
-                  Enter Map
-                </p>
-              </button>
-            </div>
-          )}
+          {/* Overlay - Enter Map Button */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1000 }}>
+            <button
+              onClick={handleEnterMap}
+              disabled={isEnteringMap}
+              className="pointer-events-auto border border-solid hover:opacity-80 transition-all duration-200 disabled:opacity-50"
+              style={{
+                backgroundColor: 'rgba(18, 18, 18, 0.3)',
+                backdropFilter: `blur(${DashboardBlur.light})`,
+                WebkitBackdropFilter: `blur(${DashboardBlur.light})`,
+                borderColor: 'rgba(255, 255, 255, 0.16)',
+                borderRadius: DashboardRadius.pill,
+                padding: `${DashboardSpacing.md} ${DashboardSpacing.xl}`,
+              }}
+            >
+              <p style={{
+                fontFamily: DashboardTypography.fontFamily.primary,
+                fontWeight: DashboardTypography.fontWeight.medium,
+                fontSize: DashboardTypography.size.small.fontSize,
+                lineHeight: DashboardTypography.size.small.lineHeight,
+                letterSpacing: '0.1em',
+                color: DashboardColors.text.primary,
+                textTransform: 'uppercase',
+              }}>
+                {isEnteringMap ? '📍 Getting Location...' : 'Enter Map'}
+              </p>
+            </button>
+          </div>
         </div>
       </div>
 

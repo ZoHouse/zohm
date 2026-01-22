@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
               id: user.id,  // Use zo_user_id as the primary id
               zo_user_id: user.id,
               zo_pid: user.pid,
-              name: `${user.first_name} ${user.last_name}`.trim(),
+              // Name priority: selected_nickname > custom_nickname > nickname > first_name + last_name
+              name: user.selected_nickname || user.custom_nickname || user.nickname || `${user.first_name || ''} ${user.last_name || ''}`.trim() || null,
               phone: user.mobile_number,
               email: user.email_address,
               created_at: new Date().toISOString(),
@@ -191,7 +192,8 @@ export async function POST(request: NextRequest) {
         zo_client_key: client_key,
         zo_device_info: device_info || {},
         zo_membership: user.membership,
-        name: `${user.first_name} ${user.last_name}`.trim() || user.first_name,
+        // Name priority: selected_nickname > custom_nickname > nickname > first_name + last_name
+        name: user.selected_nickname || user.custom_nickname || user.nickname || `${user.first_name || ''} ${user.last_name || ''}`.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', targetUserId);
@@ -245,7 +247,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id,
         pid: user.pid,
-        name: `${user.first_name} ${user.last_name}`.trim(),
+        name: user.selected_nickname || user.custom_nickname || user.nickname || `${user.first_name || ''} ${user.last_name || ''}`.trim() || null,
         phone: user.mobile_number,
       },
       tokens: {

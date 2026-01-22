@@ -98,9 +98,18 @@ const ZoPassport: React.FC<ZoPassportProps> = ({ className, userProfile: propUse
       }
     }
 
+    // Get name from profile, fallback to localStorage nickname (from onboarding)
+    let name = profileForName?.name;
+    if (!name && typeof window !== 'undefined') {
+      const storedNickname = localStorage.getItem('zo_nickname');
+      if (storedNickname) {
+        name = storedNickname;
+      }
+    }
+
     return {
       avatar: avatar || undefined,
-      name: profileForName?.name || undefined,
+      name: name || undefined,
       isFounder,
     };
   }, [authUserProfile, userProfile, isFounder, propUserProfile]);

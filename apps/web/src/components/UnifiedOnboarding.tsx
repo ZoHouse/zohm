@@ -27,6 +27,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
   const [city, setCity] = useState('');
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Logic State
   const [isSaving, setIsSaving] = useState(false);
@@ -61,8 +62,16 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
+            // Store coordinates for home location
+            const coords = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            setHomeLocation(coords);
+            devLog.log('📍 Home location captured:', coords);
+            
             const response = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&localityLanguage=en`
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.lat}&longitude=${coords.lng}&localityLanguage=en`
             );
             const data = await response.json();
             const detectedCity = data.city || data.locality || data.principalSubdivision || 'Unknown City';
@@ -117,12 +126,19 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
         email: null // Email might not be available for phone auth users initially
       };
 
-      // 1. Save user data to Supabase
+      // 1. Save user data to Supabase (including home location!)
       await upsertUser(userObj, {
         name: nickname,
         city: city,
-        body_type: bodyType
+        body_type: bodyType,
+        // Save home location BOTH as zo_home_location (permanent) AND lat/lng (initial current)
+        ...(homeLocation && {
+          zo_home_location: homeLocation,  // Permanent home for local/global toggle
+          lat: homeLocation.lat,           // Initial current location
+          lng: homeLocation.lng,
+        }),
       });
+      devLog.log('✅ Saved user data with home location:', homeLocation);
 
       // 2. Save to localStorage
       localStorage.setItem('zo_nickname', nickname);

@@ -79,6 +79,10 @@ export interface UserRecord {
   zo_synced_at: string | null;  // Last sync timestamp from ZO API
   zo_sync_status: 'never' | 'synced' | 'stale' | 'error' | null;  // Sync status
 
+  // Home location (from onboarding - permanent)
+  // This is the user's "home base" for local/global toggle calculations
+  zo_home_location: { lat: number; lng: number } | null;
+
   // Timestamps
   created_at: string;
   last_seen: string | null;

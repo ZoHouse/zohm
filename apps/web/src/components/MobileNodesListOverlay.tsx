@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getNodesFromDB, PartnerNodeRecord } from '@/lib/supabase';
 import { GlowChip, GlowCard, GlowButton } from '@/components/ui';
+import { NodeType, getNodeTypeEmoji } from '@/lib/nodeTypes';
 
 interface MobileNodesListOverlayProps {
   isVisible: boolean;
@@ -61,16 +62,8 @@ const MobileNodesListOverlay: React.FC<MobileNodesListOverlayProps> = ({
     );
   });
 
-  const getTypeIcon = (type: string): string => {
-    switch (type) {
-      case 'hacker_space': return '⚡';
-      case 'culture_house': return '🏠';
-      case 'schelling_point': return '🎯';
-      case 'flo_zone': return '🧭';
-      case 'staynode': return '🛏️';
-      default: return '🔗';
-    }
-  };
+  // Use centralized icon function from nodeTypes.ts
+  const getTypeIcon = (type: string): string => getNodeTypeEmoji(type as NodeType);
 
   return (
     <AnimatePresence>

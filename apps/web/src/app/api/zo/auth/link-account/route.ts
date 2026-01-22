@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id,
         pid: user.pid,
-        name: `${user.first_name} ${user.last_name}`.trim(),
+        name: user.selected_nickname || user.custom_nickname || user.nickname || `${user.first_name || ''} ${user.last_name || ''}`.trim() || null,
         phone: user.mobile_number,
       },
       avatarUrl,

@@ -13,7 +13,8 @@
  *   await syncCanonicalEvents({ calendarId: 'cal-123' }) // Single source
  */
 
-import { supabase } from './supabase';
+import { supabaseAdmin, hasServiceRole } from './supabaseAdmin';
+import { supabase as supabaseAnon } from './supabase';
 import { fetchAllCalendarEvents } from './icalParser';
 import { getCalendarUrls } from './calendarConfig';
 import { canonicalUid } from './canonicalUid';
@@ -21,6 +22,9 @@ import { geocodeLocation } from './icalParser';
 import type { ParsedEvent } from './icalParser';
 import { shouldWorkerWrite, FEATURE_FLAGS } from './featureFlags';
 import { devLog } from '@/lib/logger';
+
+// Use admin client (bypasses RLS) for worker operations, fall back to anon
+const supabase = supabaseAdmin || supabaseAnon;
 
 /**
  * Worker configuration
@@ -73,11 +77,17 @@ export async function syncCanonicalEvents(config: WorkerConfig = {}): Promise<Sy
   };
   
   try {
+    // Check for service role (needed to bypass RLS)
+    if (!hasServiceRole) {
+      devLog.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not set - worker may fail due to RLS policies');
+    }
+    
     // Log worker start
     devLog.log('🔄 Starting canonical event sync', {
       dryRun: isDryRun,
       writeEnabled: FEATURE_FLAGS.CANONICAL_EVENTS_WRITE,
       calendarId: config.calendarId,
+      hasServiceRole,
     });
     
     // Fetch calendar URLs

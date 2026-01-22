@@ -49,6 +49,7 @@ interface DesktopViewProps {
   globalCount: number;
   isRequestingLocation?: boolean;
   shouldAnimateFromSpace?: boolean;
+  onLocationSaved?: (lat: number, lng: number) => void;
 }
 
 const DesktopView: React.FC<DesktopViewProps> = ({
@@ -72,6 +73,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
   globalCount,
   isRequestingLocation = false,
   shouldAnimateFromSpace = false,
+  onLocationSaved,
 }) => {
   const [activeSection, setActiveSection] = useState<'events' | 'nodes' | 'quests'>('events');
   const [isDashboardOpen, setIsDashboardOpen] = useState(true);
@@ -164,10 +166,7 @@ const DesktopView: React.FC<DesktopViewProps> = ({
         shouldAnimateFromSpace={shouldAnimateFromSpace}
         userLocation={userLocation}
         userId={userId}
-        onLocationSaved={(lat, lng) => {
-          devLog.log('✅ Location saved from full map! Reloading...');
-          window.location.reload();
-        }}
+        onLocationSaved={onLocationSaved}
       />
 
       {/* User Balance and Avatar Header */}

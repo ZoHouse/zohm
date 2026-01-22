@@ -5,7 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import { ParsedEvent } from '@/lib/icalParser';
 import { PartnerNodeRecord } from '@/lib/supabase';
 import { MAPBOX_TOKEN, DEFAULT_CENTER } from '@/lib/calendarConfig';
-import { getNodeTypeColor } from '@/lib/nodeTypes';
+import { getNodeTypeColor, getNodeIcon, isLogoNode, getNodeTypeEmoji, NodeType } from '@/lib/nodeTypes';
 import { useMapGeoJSON } from '@/hooks/useMapGeoJSON';
 import {
   GEOJSON_SOURCE_ID,
@@ -115,6 +115,22 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       }
     }
   }, [mapLoaded, geoJSONLoading]);
+
+  // 💫 Inject CSS animations for markers
+  useEffect(() => {
+    const styleId = 'zo-marker-animations';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes zoPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(255, 77, 109, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4); }
+          50% { transform: scale(1.05); box-shadow: 0 6px 24px rgba(255, 77, 109, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   // Mobile detection function
   const isMobile = () => window.innerWidth <= 768;
@@ -545,15 +561,83 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       }
 
       try {
-        // 🦄 UNICORN: All nodes use the Zo flexing white logo
-        const markerElement = document.createElement('img');
-        markerElement.src = '/Zo_flexing_white.png';
-        markerElement.style.width = '50px';
-        markerElement.style.height = '50px';
-        markerElement.style.borderRadius = '50%';
-        markerElement.style.cursor = 'pointer';
-        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-        markerElement.title = node.name;
+        // 🎯 Create marker element based on node type
+        const nodeIcon = getNodeIcon(node.type as NodeType);
+        const nodeColor = getNodeTypeColor(node.type as NodeType);
+        
+        let markerElement: HTMLElement;
+        
+        if (nodeIcon.type === 'logo') {
+          // Use logo for zo_house and zostel
+          const container = document.createElement('div');
+          container.style.cssText = `
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+          `;
+          container.title = node.name;
+          
+          if (node.type === 'zo_house') {
+            // Zo House: Animated GIF with glow effect
+            container.innerHTML = `
+              <div style="
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                background: #000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 20px rgba(255, 77, 109, 0.8), 0 0 40px rgba(255, 77, 109, 0.4);
+                animation: zoPulse 2s ease-in-out infinite;
+                border: 3px solid #ff4d6d;
+                overflow: hidden;
+              ">
+                <img 
+                  src="/zo.gif" 
+                  alt="${node.name}"
+                  style="width: 60px; height: 60px; object-fit: contain;"
+                />
+              </div>
+            `;
+          } else {
+            // For zostel and other logo nodes
+            container.innerHTML = `
+              <img 
+                src="${nodeIcon.value}" 
+                alt="${node.name}"
+                style="
+                  width: 56px;
+                  height: 56px;
+                  border-radius: 50%;
+                  object-fit: contain;
+                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                  border: 2px solid rgba(255, 255, 255, 0.9);
+                  background: white;
+                "
+              />
+            `;
+          }
+          
+          markerElement = container;
+        } else {
+          // Use emoji for all other node types
+          const emojiContainer = document.createElement('div');
+          emojiContainer.style.width = '44px';
+          emojiContainer.style.height = '44px';
+          emojiContainer.style.borderRadius = '50%';
+          emojiContainer.style.backgroundColor = nodeColor;
+          emojiContainer.style.display = 'flex';
+          emojiContainer.style.alignItems = 'center';
+          emojiContainer.style.justifyContent = 'center';
+          emojiContainer.style.cursor = 'pointer';
+          emojiContainer.style.boxShadow = `0 4px 12px ${nodeColor}66, 0 2px 4px rgba(0, 0, 0, 0.3)`;
+          emojiContainer.style.border = '2px solid rgba(255, 255, 255, 0.9)';
+          emojiContainer.style.fontSize = '22px';
+          emojiContainer.innerHTML = nodeIcon.value;
+          emojiContainer.title = node.name;
+          markerElement = emojiContainer;
+        }
 
         const nodeMarker = new mapboxgl.Marker(markerElement)
           .setLngLat([node.longitude, node.latitude])
@@ -965,19 +1049,19 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           onMapReady(map.current, closeAllPopups);
         }
 
-        // Get user location - use saved location first, otherwise prompt
+        // Get user location - use provided location or request current
         if (userLocation?.lat && userLocation?.lng) {
-          mapLog('📍 Using saved user location:', userLocation);
+          mapLog('📍 Using provided user location:', userLocation);
           mapLog('🎬 Should animate from space?', shouldAnimateFromSpace);
 
-          // Create marker and trigger animation if needed
+          // Create marker at provided location and trigger animation if needed
           createUserLocationMarker(userLocation.lat, userLocation.lng);
-        } else if (!shouldAnimateFromSpace) {
-          // Only prompt for location if NOT animating (returning users without location)
-          mapLog('📍 No saved location, prompting user...');
-          getUserLocation();
+          
+          // Don't fetch again - location was already saved by Enter Map button
         } else {
-          mapLog('⏭️ Animating from space - waiting for location...');
+          // No location provided - request current GPS location
+          mapLog('📍 No location provided, requesting current GPS location...');
+          getUserLocation();
         }
 
         // Note: All node markers (including Zo Houses) are added via useEffect when nodes prop is available
@@ -1164,6 +1248,19 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         const lng = position.coords.longitude;
 
         devLog.log('📍 Got user location:', { lat, lng });
+        
+        // Fly to user's current location with animation
+        map.current?.flyTo({
+          center: [lng, lat],
+          zoom: 16,
+          pitch: 60,
+          bearing: -20,
+          duration: 3000,
+          essential: true,
+          easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+        });
+        
+        // Create the user marker
         createUserLocationMarker(lat, lng);
 
         // Save to database if userId is provided
@@ -1575,13 +1672,15 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         .setLngLat([lng, lat])
         .setHTML(popupContent);
 
-      // Animate camera to node location
+      // Animate camera to node location with cinematic tilt
       map.current.flyTo({
         center: [lng, lat],
         zoom: 17.5,
-        speed: 1.2,
-        curve: 1.4,
-        easing: (t: number) => t
+        pitch: 60,        // Tilted angle for 3D effect
+        bearing: -20,     // Slight rotation for dramatic view
+        speed: 1.0,
+        curve: 1.6,
+        easing: (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2 // Smooth ease-in-out
       });
 
       const onMoveEnd = () => {

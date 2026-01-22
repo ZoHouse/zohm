@@ -13,21 +13,11 @@
  */
 
 const isDevelopment = (): boolean => {
-    // Server-side check
-    if (typeof window === 'undefined') {
-        return process.env.NODE_ENV === 'development';
+    // Logging disabled - set NEXT_PUBLIC_DEBUG_LOGS=true to enable
+    if (typeof window !== 'undefined') {
+        return window.localStorage.getItem('debug_logs') === 'true';
     }
-
-    // Client-side check
-    const hostname = window.location.hostname;
-    return (
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname.startsWith('192.168.') ||
-        hostname.startsWith('10.0.') ||
-        hostname.endsWith('.local') ||
-        process.env.NODE_ENV === 'development'
-    );
+    return process.env.NEXT_PUBLIC_DEBUG_LOGS === 'true';
 };
 
 /**

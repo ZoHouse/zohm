@@ -106,7 +106,12 @@ export async function syncZoProfileToSupabase(
       }),
 
       // Profile fields (from ZO API)
-      name: `${profile.first_name} ${profile.last_name || ''}`.trim(),
+      // Name priority: selected_nickname > custom_nickname > nickname > first_name + last_name
+      name: profile.selected_nickname 
+        || profile.custom_nickname 
+        || profile.nickname 
+        || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() 
+        || null,
       bio: profile.bio,
       email: profile.email_address,
       phone: profile.mobile_number,

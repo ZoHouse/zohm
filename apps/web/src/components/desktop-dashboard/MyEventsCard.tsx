@@ -19,8 +19,7 @@ interface MyEvent {
   starts_at: string;
   ends_at: string;
   location_name: string;
-  status: string;
-  rsvp_count?: number;
+  submission_status: string; // draft, pending, published, rejected, cancelled
   max_capacity?: number;
 }
 
@@ -54,7 +53,8 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
         }
 
         const data = await res.json();
-        setEvents(data.events || []);
+        // API returns { hosted: [], rsvps: [], past: [], stats: {} }
+        setEvents(data.hosted || []);
         setError(null);
       } catch (err) {
         devLog.error('Failed to fetch my events:', err);
@@ -81,12 +81,14 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Get status color
+  // Get status color based on submission_status
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published': return '#4CAF50';
+      case 'pending': return '#FF9800';
       case 'draft': return '#FFC107';
-      case 'cancelled': return '#F44336';
+      case 'rejected': return '#F44336';
+      case 'cancelled': return '#9E9E9E';
       default: return DashboardColors.text.secondary;
     }
   };
@@ -128,39 +130,15 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p style={{
-          fontFamily: DashboardTypography.fontFamily.primary,
-          fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-          fontSize: DashboardTypography.size.bodyMedium.fontSize,
-          lineHeight: '16px',
-          letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-          color: DashboardColors.text.tertiary,
-          textTransform: 'uppercase',
-        }}>MY EVENTS</p>
-        
-        {onHostEvent && (
-          <button
-            onClick={onHostEvent}
-            className="flex items-center gap-1 border border-solid hover:opacity-80 transition-opacity"
-            style={{
-              backgroundColor: '#ff4d6d',
-              borderColor: '#ff4d6d',
-              borderRadius: DashboardRadius.pill,
-              padding: `${DashboardSpacing.xs} ${DashboardSpacing.md}`,
-              height: '28px',
-            }}
-          >
-            <Plus size={14} color="#fff" />
-            <span style={{
-              fontFamily: DashboardTypography.fontFamily.primary,
-              fontWeight: DashboardTypography.size.caption.fontWeight,
-              fontSize: '11px',
-              color: '#fff',
-            }}>Host</span>
-          </button>
-        )}
-      </div>
+      <p style={{
+        fontFamily: DashboardTypography.fontFamily.primary,
+        fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
+        fontSize: DashboardTypography.size.bodyMedium.fontSize,
+        lineHeight: '16px',
+        letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
+        color: DashboardColors.text.tertiary,
+        textTransform: 'uppercase',
+      }}>MY EVENTS</p>
 
       {/* Content */}
       {loading ? (
@@ -270,14 +248,14 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
                 <span 
                   className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs"
                   style={{
-                    backgroundColor: `${getStatusColor(event.status)}20`,
-                    color: getStatusColor(event.status),
+                    backgroundColor: `${getStatusColor(event.submission_status)}20`,
+                    color: getStatusColor(event.submission_status),
                     fontSize: '10px',
                     fontWeight: 600,
                     textTransform: 'capitalize',
                   }}
                 >
-                  {event.status}
+                  {event.submission_status === 'published' ? 'Live' : event.submission_status}
                 </span>
               </div>
 
@@ -306,7 +284,7 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
                   </div>
                 )}
 
-                {event.rsvp_count !== undefined && (
+                {event.max_capacity && (
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <Users size={12} color={DashboardColors.text.tertiary} />
                     <span style={{
@@ -314,8 +292,7 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
                       fontSize: '11px',
                       color: DashboardColors.text.secondary,
                     }}>
-                      {event.rsvp_count}
-                      {event.max_capacity && `/${event.max_capacity}`}
+                      {event.max_capacity} max
                     </span>
                   </div>
                 )}

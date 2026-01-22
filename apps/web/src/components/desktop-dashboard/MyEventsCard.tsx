@@ -5,22 +5,32 @@
  * 
  * Shows community events hosted by the current user in the dashboard.
  * Fetches from /api/events/mine endpoint.
+ * Supports editing events via EditEventModal.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Users, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, Calendar, MapPin, Users, ExternalLink, Pencil, ChevronRight } from 'lucide-react';
 import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius, DashboardBlur } from '@/styles/dashboard-tokens';
 import { devLog } from '@/lib/logger';
+import { EditEventModal } from '@/components/events/EditEventModal';
+import { getCultureAssetUrl, EventCulture } from '@/types/events';
+import { getEventCoverImage } from '@/lib/eventCoverDefaults';
 
 interface MyEvent {
   id: string;
   title: string;
+  description?: string;
   culture: string;
   starts_at: string;
   ends_at: string;
   location_name: string;
-  submission_status: string; // draft, pending, published, rejected, cancelled
+  location_raw?: string;
+  lat?: number;
+  lng?: number;
+  submission_status: string; // draft, pending, approved, rejected, cancelled
   max_capacity?: number;
+  cover_image_url?: string;
 }
 
 interface MyEventsCardProps {
@@ -29,43 +39,49 @@ interface MyEventsCardProps {
 }
 
 const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
+  const router = useRouter();
   const [events, setEvents] = useState<MyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<MyEvent | null>(null);
 
-  useEffect(() => {
+  const fetchMyEvents = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
 
-    async function fetchMyEvents() {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/events/mine', {
-          headers: {
-            'x-user-id': userId || '',
-          },
-        });
+    try {
+      setLoading(true);
+      const res = await fetch('/api/events/mine', {
+        headers: {
+          'x-user-id': userId || '',
+        },
+      });
 
-        if (!res.ok) {
-          throw new Error('Failed to fetch events');
-        }
-
-        const data = await res.json();
-        // API returns { hosted: [], rsvps: [], past: [], stats: {} }
-        setEvents(data.hosted || []);
-        setError(null);
-      } catch (err) {
-        devLog.error('Failed to fetch my events:', err);
-        setError('Failed to load events');
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error('Failed to fetch events');
       }
-    }
 
-    fetchMyEvents();
+      const data = await res.json();
+      // API returns { hosted: [], rsvps: [], past: [], stats: {} }
+      // Filter out cancelled events for the dashboard card (they show on the full page)
+      const activeEvents = (data.hosted || []).filter(
+        (e: MyEvent) => e.submission_status !== 'cancelled'
+      );
+      setEvents(activeEvents);
+      setError(null);
+    } catch (err) {
+      devLog.error('Failed to fetch my events:', err);
+      setError('Failed to load events');
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  useEffect(() => {
+    fetchMyEvents();
+  }, [fetchMyEvents]);
 
   // Format date for display
   const formatEventDate = (dateStr: string) => {
@@ -93,27 +109,29 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
     }
   };
 
-  // Get culture emoji
-  const getCultureEmoji = (culture: string) => {
-    const cultureEmojis: Record<string, string> = {
-      'science_technology': '🔬',
-      'business': '💼',
-      'design': '🎨',
-      'food': '🍕',
-      'game': '🎮',
-      'health_fitness': '💪',
-      'home_lifestyle': '🛋️',
-      'music_entertainment': '🎸',
-      'nature_wildlife': '🌻',
-      'photography': '📸',
-      'spiritual': '🧘',
-      'travel_adventure': '✈️',
-      'television_cinema': '🎬',
-      'sport': '⚽',
-      'literature_stories': '📚',
-      'follow_your_heart': '❤️',
+  // Get culture asset file name for sticker image
+  const getCultureAssetFile = (culture: string) => {
+    const cultureAssets: Record<string, string> = {
+      'science_technology': 'Science&Technology.png',
+      'business': 'Business.png',
+      'design': 'Design.png',
+      'food': 'Food.png',
+      'game': 'Game.png',
+      'health_fitness': 'Health&Fitness.png',
+      'home_lifestyle': 'Home&Lifestyle.png',
+      'music_entertainment': 'Music&Entertainment.png',
+      'nature_wildlife': 'Nature&Wildlife.png',
+      'photography': 'Photography.png',
+      'spiritual': 'Spiritual.png',
+      'travel_adventure': 'Travel&Adventure.png',
+      'television_cinema': 'Television&Cinema.png',
+      'sport': 'Sport.png',
+      'literature_stories': 'Literature&Stories.png',
+      'follow_your_heart': 'FollowYourHeart.png',
+      'law': 'Law.png',
+      'stories_journal': 'Stories&Journal.png',
     };
-    return cultureEmojis[culture] || '📅';
+    return cultureAssets[culture] || 'FollowYourHeart.png';
   };
 
   return (
@@ -130,15 +148,25 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
       }}
     >
       {/* Header */}
-      <p style={{
-        fontFamily: DashboardTypography.fontFamily.primary,
-        fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-        fontSize: DashboardTypography.size.bodyMedium.fontSize,
-        lineHeight: '16px',
-        letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-        color: DashboardColors.text.tertiary,
-        textTransform: 'uppercase',
-      }}>MY EVENTS</p>
+      <div className="flex items-center justify-between">
+        <p style={{
+          fontFamily: DashboardTypography.fontFamily.primary,
+          fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
+          fontSize: DashboardTypography.size.bodyMedium.fontSize,
+          lineHeight: '16px',
+          letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
+          color: DashboardColors.text.tertiary,
+          textTransform: 'uppercase',
+        }}>MY EVENTS</p>
+        <button
+          onClick={() => router.push('/my-events')}
+          className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-[#ff4d6d]"
+          style={{ color: DashboardColors.text.secondary }}
+        >
+          View All
+          <ChevronRight size={16} />
+        </button>
+      </div>
 
       {/* Content */}
       {loading ? (
@@ -216,48 +244,78 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
             paddingRight: '4px',
           }}
         >
-          {events.slice(0, 5).map((event) => (
-            <div
-              key={event.id}
-              className="flex flex-col border border-solid hover:border-white/30 transition-colors cursor-pointer"
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                borderColor: DashboardColors.border.primary,
-                borderRadius: DashboardRadius.md,
-                padding: DashboardSpacing.md,
-                gap: DashboardSpacing.sm,
-                minHeight: '90px',
-                flexShrink: 0,
-              }}
-            >
-              {/* Title Row */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span style={{ fontSize: '16px' }}>{getCultureEmoji(event.culture)}</span>
-                  <p style={{
-                    fontFamily: DashboardTypography.fontFamily.primary,
-                    fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-                    fontSize: '13px',
-                    lineHeight: '18px',
-                    color: DashboardColors.text.primary,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>{event.title}</p>
+          {events.slice(0, 5).map((event) => {
+            const coverUrl = getEventCoverImage({
+              coverImageUrl: event.cover_image_url,
+              culture: event.culture as EventCulture,
+              category: 'community',
+            });
+            
+            return (
+              <div
+                key={event.id}
+                className="group flex flex-col border border-solid hover:border-white/30 transition-colors overflow-hidden"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                  borderColor: DashboardColors.border.primary,
+                  borderRadius: DashboardRadius.md,
+                  minHeight: '90px',
+                  flexShrink: 0,
+                }}
+              >
+                {/* Cover Image - always show with default fallback */}
+                <div className="w-full h-16 overflow-hidden">
+                  <img 
+                    src={coverUrl}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
-                <span 
-                  className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs"
-                  style={{
-                    backgroundColor: `${getStatusColor(event.submission_status)}20`,
-                    color: getStatusColor(event.submission_status),
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {event.submission_status === 'published' ? 'Live' : event.submission_status}
-                </span>
-              </div>
+                <div style={{ padding: DashboardSpacing.md, gap: DashboardSpacing.sm }} className="flex flex-col">
+                {/* Title Row */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <img 
+                      src={getCultureAssetUrl(getCultureAssetFile(event.culture))}
+                      alt={event.culture}
+                      className="w-6 h-6 object-contain"
+                      loading="lazy"
+                    />
+                    <p style={{
+                      fontFamily: DashboardTypography.fontFamily.primary,
+                      fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
+                      fontSize: '13px',
+                      lineHeight: '18px',
+                      color: DashboardColors.text.primary,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>{event.title}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Edit Button - visible on hover */}
+                    <button
+                      onClick={() => setEditingEvent(event)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-white/10 hover:bg-white/20"
+                      title="Edit event"
+                    >
+                      <Pencil size={12} color={DashboardColors.text.secondary} />
+                    </button>
+                    <span 
+                      className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs"
+                      style={{
+                        backgroundColor: `${getStatusColor(event.submission_status)}20`,
+                        color: getStatusColor(event.submission_status),
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {event.submission_status === 'approved' ? 'Live' : event.submission_status}
+                    </span>
+                  </div>
+                </div>
 
               {/* Details Row */}
               <div className="flex items-center gap-4">
@@ -297,8 +355,10 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
                   </div>
                 )}
               </div>
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -316,6 +376,18 @@ const MyEventsCard: React.FC<MyEventsCardProps> = ({ userId, onHostEvent }) => {
           <ExternalLink size={12} color="#ff4d6d" />
         </button>
       )}
+
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={!!editingEvent}
+        onClose={() => setEditingEvent(null)}
+        event={editingEvent}
+        userId={userId}
+        onSuccess={() => {
+          setEditingEvent(null);
+          fetchMyEvents(); // Refresh the list
+        }}
+      />
     </div>
   );
 };

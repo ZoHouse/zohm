@@ -88,6 +88,8 @@ export async function PUT(
     const userId = request.headers.get('x-user-id') || 
                    request.cookies.get('zo_user_id')?.value;
 
+    devLog.info('PUT /api/events/[id] - userId:', userId, 'eventId:', id);
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -95,12 +97,19 @@ export async function PUT(
       );
     }
 
+    // Use admin client to bypass RLS for all operations
+    const client = supabaseAdmin || supabase;
+
     // Check ownership
-    const { data: event } = await supabase
+    const { data: event, error: fetchError } = await client
       .from('canonical_events')
       .select('id, host_id')
       .eq('id', id)
       .single();
+
+    if (fetchError) {
+      devLog.error('Error fetching event for update:', fetchError);
+    }
 
     if (!event) {
       return NextResponse.json(
@@ -109,9 +118,11 @@ export async function PUT(
       );
     }
 
+    devLog.info('Event found - host_id:', event.host_id, 'userId:', userId);
+
     if (event.host_id !== userId) {
       // Check if admin
-      const { data: user } = await supabase
+      const { data: user } = await client
         .from('users')
         .select('zo_roles')
         .eq('id', userId)
@@ -141,7 +152,8 @@ export async function PUT(
 
     allowedUpdates.updated_at = new Date().toISOString();
 
-    const client = supabaseAdmin || supabase;
+    devLog.info('Updating event with:', allowedUpdates);
+
     const { data: updated, error } = await client
       .from('canonical_events')
       .update(allowedUpdates)
@@ -152,10 +164,12 @@ export async function PUT(
     if (error) {
       devLog.error('Failed to update event:', error);
       return NextResponse.json(
-        { error: 'Failed to update event' },
+        { error: 'Failed to update event: ' + error.message },
         { status: 500 }
       );
     }
+
+    devLog.info('Event updated successfully:', updated?.id);
 
     return NextResponse.json({
       success: true,
@@ -193,8 +207,11 @@ export async function DELETE(
       );
     }
 
+    // Use admin client to bypass RLS
+    const client = supabaseAdmin || supabase;
+
     // Check ownership
-    const { data: event } = await supabase
+    const { data: event } = await client
       .from('canonical_events')
       .select('id, host_id, starts_at')
       .eq('id', id)
@@ -209,7 +226,7 @@ export async function DELETE(
 
     if (event.host_id !== userId) {
       // Check if admin
-      const { data: user } = await supabase
+      const { data: user } = await client
         .from('users')
         .select('zo_roles')
         .eq('id', userId)
@@ -232,7 +249,6 @@ export async function DELETE(
     }
 
     // Soft delete - update status to cancelled
-    const client = supabaseAdmin || supabase;
     const { error } = await client
       .from('canonical_events')
       .update({

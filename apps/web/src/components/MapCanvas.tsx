@@ -14,6 +14,7 @@ import {
   removeClusteringLayers
 } from '@/lib/mapClustering';
 import { devLog } from '@/lib/logger';
+import { getEventCoverImage } from '@/lib/eventCoverDefaults';
 
 // 🔇 DISABLE VERBOSE LOGGING (causing console spam)
 const VERBOSE_LOGGING = false;
@@ -87,6 +88,39 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
   const traversalFrameRef = useRef<number | null>(null);
   const progressSourceIdRef = useRef<string>('user-to-destination-route-progress');
   const progressLayerIdRef = useRef<string>('user-to-destination-route-progress-layer');
+
+  // 📋 User RSVPs - track which events user has already RSVP'd to
+  const [userRsvps, setUserRsvps] = useState<Map<string, string>>(new Map()); // eventId -> status
+
+  // Fetch user RSVPs when userId changes
+  useEffect(() => {
+    if (!userId) {
+      setUserRsvps(new Map());
+      return;
+    }
+
+    const fetchUserRsvps = async () => {
+      try {
+        const res = await fetch('/api/events/mine', {
+          headers: { 'x-user-id': userId }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const rsvpMap = new Map<string, string>();
+          // Map RSVP events by event_id
+          data.rsvps?.forEach((rsvp: { event_id: string; status: string }) => {
+            rsvpMap.set(rsvp.event_id, rsvp.status);
+          });
+          setUserRsvps(rsvpMap);
+          devLog.log('📋 Loaded user RSVPs:', rsvpMap.size);
+        }
+      } catch (error) {
+        devLog.error('Failed to fetch user RSVPs:', error);
+      }
+    };
+
+    fetchUserRsvps();
+  }, [userId]);
 
   // 🗺️ GeoJSON clustering hook - auto-fetches events and nodes
   const { loading: geoJSONLoading, featureCount } = useMapGeoJSON({
@@ -1140,6 +1174,73 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             (window as any).clearRoute = () => {
               clearAllPopupsAndRoute();
             };
+            // RSVP function for event popups
+            (window as any).rsvpToEvent = async (eventId: string, eventName: string) => {
+              if (!userId) {
+                alert('Please sign in to RSVP for events');
+                return;
+              }
+              
+              const btn = document.getElementById(`rsvp-btn-${eventId}`);
+              if (btn) {
+                btn.innerHTML = 'Registering...';
+                btn.setAttribute('disabled', 'true');
+              }
+              
+              try {
+                const res = await fetch(`/api/events/${eventId}/rsvp`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId,
+                  },
+                  body: JSON.stringify({ status: 'going' }),
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                  // Update button to show registered status
+                  if (btn) {
+                    const statusText = data.rsvp?.status === 'going' ? '✓ Going' 
+                      : data.rsvp?.status === 'interested' ? '✓ Registered'
+                      : data.rsvp?.status === 'waitlist' ? '⏳ Waitlisted'
+                      : '✓ Registered';
+                    const statusColor = data.rsvp?.status === 'going' ? '#22c55e' 
+                      : data.rsvp?.status === 'waitlist' ? '#f59e0b' 
+                      : '#3b82f6';
+                    btn.innerHTML = statusText;
+                    btn.style.background = `${statusColor}20`;
+                    btn.style.color = statusColor;
+                    btn.style.border = 'none';
+                    btn.style.cursor = 'default';
+                  }
+                  // Update local RSVPs state via callback
+                  if ((window as any).updateUserRsvp) {
+                    (window as any).updateUserRsvp(eventId, data.rsvp?.status || 'interested');
+                  }
+                  devLog.log('✅ RSVP successful for:', eventName, 'status:', data.rsvp?.status);
+                } else {
+                  throw new Error(data.error || 'Failed to RSVP');
+                }
+              } catch (error) {
+                devLog.error('❌ RSVP error:', error);
+                if (btn) {
+                  btn.innerHTML = 'Register';
+                  btn.removeAttribute('disabled');
+                }
+                alert(error instanceof Error ? error.message : 'Failed to register. Please try again.');
+              }
+            };
+            
+            // Function to update user RSVP state (called after successful RSVP)
+            (window as any).updateUserRsvp = (eventId: string, status: string) => {
+              setUserRsvps(prev => {
+                const newMap = new Map(prev);
+                newMap.set(eventId, status);
+                return newMap;
+              });
+            };
           }
         } catch { }
 
@@ -1633,14 +1734,79 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // Determine the event URL - check Event URL field first, then Location if it contains luma.com
         const eventUrl = event['Event URL'] || (event.Location?.includes('luma.com') ? event.Location : null);
         const displayLocation = event.Location?.includes('luma.com') ? '' : event.Location;
+        
+        // Extract community event data
+        const eventAnyForPopup = event as any;
+        const eventId = eventAnyForPopup._id || eventAnyForPopup.id;
+        const isCommunityEventPopup = eventAnyForPopup._category === 'community';
+        const hostId = eventAnyForPopup._host_id;
+        const hostName = eventAnyForPopup._host_name;
+        const locationName = eventAnyForPopup._location_name;
+        const eventCulture = eventAnyForPopup._culture;
+        const eventCategory = eventAnyForPopup._category;
+        const coverImageUrl = getEventCoverImage({
+          coverImageUrl: eventAnyForPopup._cover_image_url,
+          culture: eventCulture,
+          category: eventCategory,
+        });
+        const isOwnEvent = userId && hostId && userId === hostId;
+        
+        // Build hosted by HTML
+        const hostedByHtml = hostName 
+          ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666; line-height: 1.4;">👤 Hosted by <strong>${hostName}</strong></p>`
+          : '';
+        
+        // Build location HTML - prefer location_name over raw location
+        const locationDisplay = locationName || displayLocation;
+        const locationHtml = locationDisplay 
+          ? `<p style="margin: 0 0 12px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${locationDisplay}</p>` 
+          : '<div style="margin-bottom: 12px;"></div>';
+        
+        // Build register button - different for community vs external events
+        // Check if user has already RSVP'd to this event
+        const existingRsvpStatus = eventId ? userRsvps.get(eventId) : null;
+        
+        let registerButtonHtml: string;
+        if (isCommunityEventPopup && eventId) {
+          if (isOwnEvent) {
+            // Host's own event - show "Your Event" badge
+            registerButtonHtml = `<span style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: #ff4d6d; background: rgba(255,77,109,0.1); border-radius: 100px;">Your Event</span>`;
+          } else if (existingRsvpStatus) {
+            // User has already RSVP'd - show status
+            const statusText = existingRsvpStatus === 'going' ? '✓ Going' 
+              : existingRsvpStatus === 'interested' ? '✓ Registered'
+              : existingRsvpStatus === 'waitlist' ? '⏳ Waitlisted'
+              : '✓ Registered';
+            const statusColor = existingRsvpStatus === 'going' ? '#22c55e' 
+              : existingRsvpStatus === 'waitlist' ? '#f59e0b' 
+              : '#3b82f6';
+            registerButtonHtml = `<span style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: ${statusColor}; background: ${statusColor}20; border-radius: 100px;">${statusText}</span>`;
+          } else {
+            // Community event - RSVP button
+            registerButtonHtml = `<button id="rsvp-btn-${eventId}" onclick="window.rsvpToEvent('${eventId}', '${(event['Event Name'] || '').replace(/'/g, "\\'")}'); event.stopPropagation();" class="glow-popup-button secondary" style="flex: 1;">Register</button>`;
+          }
+        } else if (eventUrl) {
+          // External event with URL
+          registerButtonHtml = `<a href="${eventUrl}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Register</a>`;
+        } else {
+          // No registration available
+          registerButtonHtml = `<button class="glow-popup-button secondary" style="flex: 1; opacity: 0.5; cursor: not-allowed;" disabled>Register</button>`;
+        }
+
+        // Build cover image HTML - always show (with default fallback)
+        const coverImageHtml = `<div style="margin: -12px -12px 12px -12px; border-radius: 12px 12px 0 0; overflow: hidden;">
+            <img src="${coverImageUrl}" alt="${event['Event Name']}" style="width: 100%; height: 100px; object-fit: cover; display: block;" />
+          </div>`;
 
         const popupContent = `
           <div style="padding: 0;">
-            <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${event['Event Name'] || "N/A"}</h3>
+            ${coverImageHtml}
+            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${event['Event Name'] || "N/A"}</h3>
+            ${hostedByHtml}
             <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📅 ${formattedDate}</p>
-            ${displayLocation ? `<p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${displayLocation}</p>` : '<div style="margin-bottom: 16px;"></div>'}
+            ${locationHtml}
             <div style="display: flex; gap: 8px;">
-              ${eventUrl ? `<a href="${eventUrl}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Register</a>` : `<button class="glow-popup-button secondary" style="flex: 1; opacity: 0.5; cursor: not-allowed;" disabled>Register</button>`}
+              ${registerButtonHtml}
               <button onclick="window.showRouteTo(${lng}, ${lat})" class="glow-popup-button" style="flex: 1;">Directions</button>
             </div>
           </div>

@@ -25,5 +25,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ZoHouse/zohm.git"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0"
   }
 }

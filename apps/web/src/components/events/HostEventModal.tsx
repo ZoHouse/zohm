@@ -12,6 +12,7 @@ import { GlowButton, GlowCard } from '@/components/ui';
 import { CultureSelector } from './CultureSelector';
 import { EventTypeSelector } from './EventTypeSelector';
 import { LocationSelector } from './LocationSelector';
+import { ImageUpload } from './ImageUpload';
 import type { 
   CreateEventInput, 
   CreateEventResponse 
@@ -58,6 +59,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
     location_name: '',
     location_address: '',
     max_capacity: undefined,
+    cover_image_url: undefined,
   });
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
         location_name: '',
         location_address: '',
         max_capacity: undefined,
+        cover_image_url: undefined,
       });
     }
   }, [isOpen]);
@@ -270,6 +273,15 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
                   />
                 </div>
               </div>
+
+              <div>
+                <label className={labelClass}>Cover Image (optional)</label>
+                <ImageUpload
+                  value={formData.cover_image_url}
+                  onChange={(url) => updateField('cover_image_url', url)}
+                  userId={userId || (typeof window !== 'undefined' ? localStorage.getItem('zo_user_id') || undefined : undefined)}
+                />
+              </div>
             </div>
           )}
 
@@ -299,6 +311,16 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
           {step === 5 && (
             <div className="space-y-4">
               <GlowCard className="!p-4">
+                {/* Cover Image Preview */}
+                {formData.cover_image_url && (
+                  <div className="mb-3 -mx-4 -mt-4">
+                    <img 
+                      src={formData.cover_image_url} 
+                      alt="Event cover"
+                      className="w-full h-32 object-cover rounded-t-xl"
+                    />
+                  </div>
+                )}
                 <h3 className="text-lg font-bold text-black mb-2">{formData.title}</h3>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-500/30 text-green-800 border border-green-500/40">

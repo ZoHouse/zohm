@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 import { HostEventModal } from '@/components/events';
+import { getEventCoverImage } from '@/lib/eventCoverDefaults';
 
 interface EventData {
   'Event Name': string;
@@ -120,6 +121,11 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
                   const eventAny = event as any;
                   const isCommunityEvent = eventAny._category === 'community';
                   const culture = eventAny._culture;
+                  const coverImageUrl = getEventCoverImage({
+                    coverImageUrl: eventAny._cover_image_url,
+                    culture: culture,
+                    category: eventAny._category,
+                  });
                   
                   return (
                     <motion.div
@@ -132,23 +138,34 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
                           onClose();
                         }}
                         hoverable
-                        className="cursor-pointer"
+                        className="cursor-pointer !p-0 overflow-hidden"
                       >
-                        {isCommunityEvent && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full">
-                              🌱 Community
-                            </span>
-                            {culture && culture !== 'default' && (
-                              <span className="text-[10px] text-gray-500 capitalize">
-                                {culture.replace('_', ' ')}
+                        {/* Cover Image - always show with default fallback */}
+                        <div className="w-full h-20 overflow-hidden">
+                          <img 
+                            src={coverImageUrl} 
+                            alt={event['Event Name']}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="p-3">
+                          {isCommunityEvent && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full">
+                                🌱 Community
                               </span>
-                            )}
-                          </div>
-                        )}
-                        <h3 className="font-bold text-black mb-1">{event['Event Name']}</h3>
-                        <p className="text-sm text-gray-700">📍 {event.Location}</p>
-                        <p className="text-xs text-gray-600 mt-1">🕐 {formatDate(event['Date & Time'])}</p>
+                              {culture && culture !== 'default' && (
+                                <span className="text-[10px] text-gray-500 capitalize">
+                                  {culture.replace('_', ' ')}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <h3 className="font-bold text-black mb-1">{event['Event Name']}</h3>
+                          <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                          <p className="text-xs text-gray-600 mt-1">🕐 {formatDate(event['Date & Time'])}</p>
+                        </div>
                       </GlowCard>
                     </motion.div>
                   );

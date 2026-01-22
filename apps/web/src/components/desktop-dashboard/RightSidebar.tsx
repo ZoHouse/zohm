@@ -6,6 +6,7 @@ import { DashboardColors, DashboardTypography, DashboardSpacing, DashboardRadius
 import { devLog } from '@/lib/logger';
 import MyEventsCard from './MyEventsCard';
 import { HostEventModal } from '@/components/events';
+import { getEventCoverImage } from '@/lib/eventCoverDefaults';
 
 interface EventData {
   'Event Name': string;
@@ -49,15 +50,24 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
     devLog.log('🎫 Upcoming events:', upcoming.length);
     
     return upcoming
-      .map((event, index) => ({
-        id: `${event['Event Name']}-${event['Date & Time']}-${index}`, // Unique key combining name, time, and index
-        title: event['Event Name'],
-        start_time: event['Date & Time'],
-        location: event.Location,
-        image_url: '/dashboard-assets/rectangle-738.png', // Default image
-        is_free: true, // Default to free
-        category: 'event', // Default category
-      }))
+      .map((event, index) => {
+        const eventAny = event as any;
+        const coverUrl = getEventCoverImage({
+          coverImageUrl: eventAny._cover_image_url,
+          culture: eventAny._culture,
+          category: eventAny._category,
+        });
+        return {
+          id: eventAny._id || `${event['Event Name']}-${event['Date & Time']}-${index}`, // Use event ID if available
+          title: event['Event Name'],
+          start_time: event['Date & Time'],
+          location: event.Location,
+          image_url: coverUrl, // Always has a value with default fallback
+          is_free: true, // Default to free
+          category: eventAny._category || 'event',
+          culture: eventAny._culture,
+        };
+      })
       .slice(0, 10); // Limit to 10 events
   }, [rawEvents]);
   
@@ -137,7 +147,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
           className="flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30"
           style={{
             gap: DashboardSpacing.md,
-            maxHeight: 'calc(3 * 140px + 2 * 16px)', // Show exactly 3 events (140px each + 16px gap)
+            maxHeight: 'calc(3 * 180px + 2 * 16px)', // Show exactly 3 events (180px each with cover + 16px gap)
             paddingRight: '4px',
           }}
         >
@@ -162,87 +172,96 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ userProfile, events: rawEve
             events.map((event) => (
               <div 
                 key={event.id}
-                className="flex flex-col border border-solid"
+                className="flex flex-col border border-solid overflow-hidden"
                 style={{
                   backgroundColor: 'rgba(0, 0, 0, 0.4)',
                   borderColor: DashboardColors.border.primary,
                   borderRadius: DashboardRadius.md,
-                  padding: DashboardSpacing.lg,
-                  gap: DashboardSpacing.md,
-                  height: '140px', // Fixed height for consistent 3-event display
+                  minHeight: '180px', // Fixed height with cover image
                   flexShrink: 0,
                 }}
               >
-                {/* Title */}
-                <p style={{
-                  fontFamily: DashboardTypography.fontFamily.primary,
-                  fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
-                  fontSize: DashboardTypography.size.bodyMedium.fontSize,
-                  lineHeight: '24px',
-                  letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
-                  color: DashboardColors.text.primary,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                }}>{event.title}</p>
-                
-                {/* Time */}
-                <p style={{
-                  fontFamily: DashboardTypography.fontFamily.primary,
-                  fontWeight: DashboardTypography.size.small.fontWeight,
-                  fontSize: DashboardTypography.size.small.fontSize,
-                  lineHeight: DashboardTypography.size.small.lineHeight,
-                  letterSpacing: DashboardTypography.size.small.letterSpacing,
-                  color: DashboardColors.text.secondary,
-                }}>{getTimeUntil(event.start_time)}</p>
-                
-                {/* Bottom Row: Location, Free/Paid, View - All aligned on same line */}
-                <div className="flex items-center justify-between" style={{ gap: DashboardSpacing.md }}>
-                  <div className="flex items-center flex-1" style={{ gap: DashboardSpacing.sm, minWidth: 0 }}>
-                    <span style={{ fontSize: '14px', flexShrink: 0 }}>📍</span>
-                    <p style={{
-                      fontFamily: DashboardTypography.fontFamily.primary,
-                      fontWeight: DashboardTypography.size.small.fontWeight,
-                      fontSize: DashboardTypography.size.small.fontSize,
-                      lineHeight: DashboardTypography.size.small.lineHeight,
-                      letterSpacing: DashboardTypography.size.small.letterSpacing,
-                      color: DashboardColors.text.secondary,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>{extractCity(event.location)}</p>
+                {/* Cover Image - always shown with default fallback */}
+                <div className="w-full h-20 overflow-hidden flex-shrink-0">
+                  <img 
+                    src={event.image_url}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
-                
-                  {/* Free/Paid and View button aligned on right */}
-                  <div className="flex items-center" style={{ gap: DashboardSpacing.md, flexShrink: 0 }}>
-                    <p style={{
-                      fontFamily: DashboardTypography.fontFamily.primary,
-                      fontWeight: DashboardTypography.size.small.fontWeight,
-                      fontSize: DashboardTypography.size.small.fontSize,
-                      lineHeight: DashboardTypography.size.small.lineHeight,
-                      letterSpacing: DashboardTypography.size.small.letterSpacing,
-                      color: DashboardColors.text.secondary,
-                    }}>{event.is_free ? 'Free' : 'Paid'}</p>
-                    <button 
-                      className="border border-solid hover:opacity-80 transition-opacity"
-                      style={{
-                        backgroundColor: '#000000',
-                        borderColor: DashboardColors.border.primary,
-                        borderRadius: DashboardRadius.pill,
-                        padding: `${DashboardSpacing.sm} ${DashboardSpacing.md}`,
-                        height: '32px',
-                      }}
-                    >
+                <div style={{ padding: DashboardSpacing.lg, gap: DashboardSpacing.md }} className="flex flex-col flex-1">
+                  {/* Title */}
+                  <p style={{
+                    fontFamily: DashboardTypography.fontFamily.primary,
+                    fontWeight: DashboardTypography.size.bodyMedium.fontWeight,
+                    fontSize: DashboardTypography.size.bodyMedium.fontSize,
+                    lineHeight: '24px',
+                    letterSpacing: DashboardTypography.size.bodyMedium.letterSpacing,
+                    color: DashboardColors.text.primary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                  }}>{event.title}</p>
+                  
+                  {/* Time */}
+                  <p style={{
+                    fontFamily: DashboardTypography.fontFamily.primary,
+                    fontWeight: DashboardTypography.size.small.fontWeight,
+                    fontSize: DashboardTypography.size.small.fontSize,
+                    lineHeight: DashboardTypography.size.small.lineHeight,
+                    letterSpacing: DashboardTypography.size.small.letterSpacing,
+                    color: DashboardColors.text.secondary,
+                  }}>{getTimeUntil(event.start_time)}</p>
+                  
+                  {/* Bottom Row: Location, Free/Paid, View - All aligned on same line */}
+                  <div className="flex items-center justify-between mt-auto" style={{ gap: DashboardSpacing.md }}>
+                    <div className="flex items-center flex-1" style={{ gap: DashboardSpacing.sm, minWidth: 0 }}>
+                      <span style={{ fontSize: '14px', flexShrink: 0 }}>📍</span>
                       <p style={{
                         fontFamily: DashboardTypography.fontFamily.primary,
-                        fontWeight: DashboardTypography.size.caption.fontWeight,
-                        fontSize: DashboardTypography.size.caption.fontSize,
-                        letterSpacing: DashboardTypography.size.caption.letterSpacing,
-                        color: DashboardColors.text.primary,
-                      }}>View</p>
-                    </button>
+                        fontWeight: DashboardTypography.size.small.fontWeight,
+                        fontSize: DashboardTypography.size.small.fontSize,
+                        lineHeight: DashboardTypography.size.small.lineHeight,
+                        letterSpacing: DashboardTypography.size.small.letterSpacing,
+                        color: DashboardColors.text.secondary,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>{extractCity(event.location)}</p>
+                  </div>
+                  
+                    {/* Free/Paid and View button aligned on right */}
+                    <div className="flex items-center" style={{ gap: DashboardSpacing.md, flexShrink: 0 }}>
+                      <p style={{
+                        fontFamily: DashboardTypography.fontFamily.primary,
+                        fontWeight: DashboardTypography.size.small.fontWeight,
+                        fontSize: DashboardTypography.size.small.fontSize,
+                        lineHeight: DashboardTypography.size.small.lineHeight,
+                        letterSpacing: DashboardTypography.size.small.letterSpacing,
+                        color: DashboardColors.text.secondary,
+                      }}>{event.is_free ? 'Free' : 'Paid'}</p>
+                      <button 
+                        className="border border-solid hover:opacity-80 transition-opacity"
+                        style={{
+                          backgroundColor: '#000000',
+                          borderColor: DashboardColors.border.primary,
+                          borderRadius: DashboardRadius.pill,
+                          padding: `${DashboardSpacing.sm} ${DashboardSpacing.md}`,
+                          height: '32px',
+                        }}
+                      >
+                        <p style={{
+                          fontFamily: DashboardTypography.fontFamily.primary,
+                          fontWeight: DashboardTypography.size.caption.fontWeight,
+                          fontSize: DashboardTypography.size.caption.fontSize,
+                          letterSpacing: DashboardTypography.size.caption.letterSpacing,
+                          color: DashboardColors.text.primary,
+                        }}>View</p>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

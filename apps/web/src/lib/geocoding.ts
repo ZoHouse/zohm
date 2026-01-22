@@ -208,6 +208,11 @@ export function clearGeocodeCache(): void {
 /**
  * Search for addresses using Mapbox Geocoding API (forward geocoding)
  * Used for address autocomplete in event creation
+ * 
+ * Optimized for speed with:
+ * - Session-based caching
+ * - AbortController support for cancellation
+ * - Autocomplete mode for faster responses
  */
 export interface AddressSearchResult {
   id: string;
@@ -218,31 +223,66 @@ export interface AddressSearchResult {
   context?: string;
 }
 
+// Session cache for address searches (cleared on page refresh)
+const addressSearchCache = new Map<string, { results: AddressSearchResult[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Store last known user proximity for better results
+let lastKnownProximity: { lat: number; lng: number } | null = null;
+
+export function setSearchProximity(coords: { lat: number; lng: number }) {
+  lastKnownProximity = coords;
+}
+
 export async function searchAddresses(
   query: string,
-  proximity?: { lat: number; lng: number }
+  proximity?: { lat: number; lng: number },
+  signal?: AbortSignal
 ): Promise<AddressSearchResult[]> {
-  if (!query || query.length < 3) return [];
+  // Start searching at 2 characters for faster feedback
+  if (!query || query.length < 2) return [];
   
   if (!MAPBOX_TOKEN) {
     devLog.warn('⚠️ Mapbox token not configured for address search');
     return [];
   }
 
+  // Use provided proximity or fall back to last known location
+  const effectiveProximity = proximity || lastKnownProximity;
+  
+  // Check cache first
+  const cacheKey = `${query.toLowerCase()}_${effectiveProximity?.lat?.toFixed(2) || 'none'}`;
+  const cached = addressSearchCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.results;
+  }
+
   try {
-    // Build URL with optional proximity bias
-    let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&types=address,poi,place&limit=5`;
+    // Build optimized URL
+    // - autocomplete=true for faster, partial match results
+    // - fuzzyMatch=true for typo tolerance
+    // - limit=6 for good coverage
+    let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+      `access_token=${MAPBOX_TOKEN}` +
+      `&types=address,poi,place,locality,neighborhood` +
+      `&autocomplete=true` +
+      `&fuzzyMatch=true` +
+      `&limit=6`;
     
-    if (proximity) {
-      url += `&proximity=${proximity.lng},${proximity.lat}`;
+    if (effectiveProximity) {
+      url += `&proximity=${effectiveProximity.lng},${effectiveProximity.lat}`;
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal });
+    
+    // Check if aborted
+    if (signal?.aborted) return [];
+    
     if (!response.ok) throw new Error('Address search failed');
 
     const data = await response.json();
     
-    return (data.features || []).map((feature: any) => ({
+    const results: AddressSearchResult[] = (data.features || []).map((feature: any) => ({
       id: feature.id,
       name: feature.text || feature.place_name?.split(',')[0] || '',
       address: feature.place_name || '',
@@ -250,10 +290,49 @@ export async function searchAddresses(
       lng: feature.center?.[0] || 0,
       context: feature.context?.map((c: any) => c.text).join(', ') || '',
     }));
+
+    // Cache results
+    addressSearchCache.set(cacheKey, { results, timestamp: Date.now() });
+    
+    // Clean old cache entries periodically
+    if (addressSearchCache.size > 50) {
+      const now = Date.now();
+      for (const [key, value] of addressSearchCache.entries()) {
+        if (now - value.timestamp > CACHE_TTL) {
+          addressSearchCache.delete(key);
+        }
+      }
+    }
+
+    return results;
   } catch (error) {
+    // Don't log abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return [];
+    }
     devLog.error('Address search error:', error);
     return [];
   }
+}
+
+/**
+ * Prefetch common location searches for faster UX
+ * Call this when the location selector is opened
+ */
+export function prefetchCommonSearches(proximity?: { lat: number; lng: number }) {
+  if (!MAPBOX_TOKEN) return;
+  
+  // Set proximity for future searches
+  if (proximity) {
+    setSearchProximity(proximity);
+  }
+  
+  // Prefetch won't block UI - just warm up cache
+  // These are common starting characters users type
+  const prefetchQueries = ['cafe', 'park', 'hotel'];
+  prefetchQueries.forEach(q => {
+    searchAddresses(q, proximity).catch(() => {});
+  });
 }
 
 /**

@@ -7,10 +7,16 @@
  * - Zo Property: Select from existing nodes
  * - Custom Location: Address autocomplete with Mapbox
  * - Online: Meeting link input
+ * 
+ * Optimized for fast address search with:
+ * - Reduced debounce (150ms)
+ * - Request cancellation on new input
+ * - Session caching
+ * - Proximity-based results
  */
 
-import { useState, useEffect } from 'react';
-import { searchAddresses, type AddressSearchResult } from '@/lib/geocoding';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { searchAddresses, setSearchProximity, prefetchCommonSearches, type AddressSearchResult } from '@/lib/geocoding';
 import type { LocationType } from '@/types/events';
 
 interface Node {
@@ -48,6 +54,29 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
   const [searchingAddress, setSearchingAddress] = useState(false);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [showCustomName, setShowCustomName] = useState(false);
+  
+  // Refs for search optimization
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize proximity from user's location for better results
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setSearchProximity(coords);
+          // Prefetch common searches for faster UX
+          prefetchCommonSearches(coords);
+        },
+        () => {
+          // Fallback to India center if location denied
+          setSearchProximity({ lat: 20.5937, lng: 78.9629 });
+        },
+        { enableHighAccuracy: false, timeout: 5000 }
+      );
+    }
+  }, []);
 
   // Fetch Zo nodes
   useEffect(() => {
@@ -72,26 +101,72 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
     fetchNodes();
   }, []);
 
-  // Debounced address search
+  // Optimized address search with fast debounce and cancellation
+  const performSearch = useCallback(async (query: string) => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    
+    setSearchingAddress(true);
+    try {
+      const results = await searchAddresses(
+        query,
+        undefined,
+        abortControllerRef.current.signal
+      );
+      setAddressResults(results);
+      setShowAddressDropdown(results.length > 0);
+    } catch {
+      // Ignore abort errors
+    } finally {
+      setSearchingAddress(false);
+    }
+  }, []);
+
+  // Debounced address search - reduced to 150ms for snappier feel
   useEffect(() => {
-    if (!addressQuery || addressQuery.length < 3) {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Require at least 2 characters
+    if (!addressQuery || addressQuery.length < 2) {
       setAddressResults([]);
+      setShowAddressDropdown(false);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setSearchingAddress(true);
-      try {
-        const results = await searchAddresses(addressQuery);
-        setAddressResults(results);
-        setShowAddressDropdown(true);
-      } finally {
-        setSearchingAddress(false);
-      }
-    }, 300);
+    // Show loading immediately for better perceived performance
+    setSearchingAddress(true);
+    
+    // Fast debounce of 150ms
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(addressQuery);
+    }, 150);
 
-    return () => clearTimeout(timer);
-  }, [addressQuery]);
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [addressQuery, performSearch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const selectLocationType = (type: LocationType) => {
     onChange({

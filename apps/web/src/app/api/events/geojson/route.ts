@@ -58,9 +58,14 @@ export async function GET(req: NextRequest) {
     });
 
     // Fetch ALL events first (to handle zo_property coordinate lookup)
+    // Include host info by joining with user_profiles
     let eventsQuery = client
       .from('canonical_events')
-      .select('id, title, lat, lng, starts_at, ends_at, location_raw, source_refs, raw_payload, zo_property_id, category, culture, submission_status')
+      .select(`
+        id, title, lat, lng, starts_at, ends_at, location_raw, location_name, source_refs, raw_payload, 
+        zo_property_id, category, culture, submission_status, host_id, host_type, max_capacity, cover_image_url,
+        host:user_profiles!canonical_events_host_id_fkey(id, display_name, avatar_url)
+      `)
       .eq('submission_status', 'approved');
 
     // Add time filters if provided
@@ -119,6 +124,9 @@ export async function GET(req: NextRequest) {
         // Ignore parsing errors
       }
 
+      // Extract host info
+      const hostInfo = event.host as { id?: string; display_name?: string; avatar_url?: string } | null;
+      
       features.push({
         type: 'Feature',
         id: `event-${event.id}`,
@@ -134,10 +142,18 @@ export async function GET(req: NextRequest) {
           ends_at: event.ends_at,
           event_url: eventUrl,
           location: event.location_raw,
+          location_name: event.location_name,
           metadata: event.raw_payload,
           // Community event fields
           category: event.category,
           culture: event.culture,
+          cover_image_url: (event as any).cover_image_url || null,
+          // Host info
+          host_id: event.host_id,
+          host_type: event.host_type,
+          host_name: hostInfo?.display_name || null,
+          host_avatar: hostInfo?.avatar_url || null,
+          max_capacity: event.max_capacity,
           // Add formatted date for popup
           formatted_date: new Date(event.starts_at).toLocaleDateString('en-US', {
             weekday: 'short',

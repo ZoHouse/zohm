@@ -310,7 +310,12 @@ export default function Home() {
                 '_category': event.category,
                 '_culture': event.culture,
                 '_host': event.host,
+                '_host_id': event.host_id,
+                '_host_name': event.host?.name || null,
+                '_host_avatar': event.host?.pfp || null,
+                '_location_name': event.location_name,
                 '_zo_property_id': event.zo_property_id,
+                '_cover_image_url': event.cover_image_url || null,
               };
             });
             devLog.log('✅ Loaded', communityEvents.length, 'community events from database');

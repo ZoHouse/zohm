@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 import { HostEventModal } from '@/components/events';
+import { getEventCoverImage } from '@/lib/eventCoverDefaults';
 
 interface EventData {
   'Event Name': string;
@@ -111,43 +112,59 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
               const eventAny = event as any;
               const isCommunityEvent = eventAny._category === 'community';
               const culture = eventAny._culture;
+              const coverImageUrl = getEventCoverImage({
+                coverImageUrl: eventAny._cover_image_url,
+                culture: culture,
+                category: eventAny._category,
+              });
               
               return (
                 <GlowCard
                   key={eventAny._id || index}
                   hoverable
                   onClick={() => handleEventClick(event)}
-                  className="cursor-pointer"
+                  className="cursor-pointer !p-0 overflow-hidden"
                 >
-                  {/* Community event badge */}
-                  {isCommunityEvent && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full border border-green-500/30">
-                        🌱 Community
-                      </span>
-                      {culture && culture !== 'default' && (
-                        <span className="text-xs text-gray-500 capitalize">
-                          {culture.replace('_', ' ')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <h3 className="font-semibold text-base mb-2 text-black">{event['Event Name']}</h3>
-                  <div className="space-y-1 mb-3">
-                    <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
-                    <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                  {/* Cover Image - always show with default fallback */}
+                  <div className="w-full h-24 overflow-hidden">
+                    <img 
+                      src={coverImageUrl} 
+                      alt={event['Event Name']}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
-                  {event['Event URL'] && (
-                    <a 
-                      href={event['Event URL']} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#ff4d6d] hover:underline inline-flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                    View Details →
-                  </a>
-                )}
+                  <div className="p-3">
+                    {/* Community event badge */}
+                    {isCommunityEvent && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500/20 text-green-700 rounded-full border border-green-500/30">
+                          🌱 Community
+                        </span>
+                        {culture && culture !== 'default' && (
+                          <span className="text-xs text-gray-500 capitalize">
+                            {culture.replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <h3 className="font-semibold text-base mb-2 text-black">{event['Event Name']}</h3>
+                    <div className="space-y-1 mb-3">
+                      <p className="text-sm text-gray-700">📅 {formatDate(event['Date & Time'])}</p>
+                      <p className="text-sm text-gray-700">📍 {event.Location}</p>
+                    </div>
+                    {event['Event URL'] && (
+                      <a 
+                        href={event['Event URL']} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-[#ff4d6d] hover:underline inline-flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                      View Details →
+                    </a>
+                  )}
+                  </div>
               </GlowCard>
               );
             })}

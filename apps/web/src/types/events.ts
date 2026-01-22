@@ -43,7 +43,7 @@ export type LocationType = 'zo_property' | 'custom' | 'online';
 
 export type SourceType = 'ical' | 'luma' | 'community' | 'activity_manager' | 'admin';
 
-export type RsvpStatus = 'going' | 'interested' | 'not_going' | 'waitlist' | 'cancelled';
+export type RsvpStatus = 'pending' | 'going' | 'interested' | 'not_going' | 'waitlist' | 'cancelled' | 'approved' | 'rejected';
 
 export type RsvpType = 'standard' | 'vip' | 'speaker' | 'organizer' | 'host';
 

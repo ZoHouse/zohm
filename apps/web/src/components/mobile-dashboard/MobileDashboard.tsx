@@ -12,6 +12,7 @@ import MobileCooldownTimer from './MobileCooldownTimer';
 import MobileStatsCard from './MobileStatsCard';
 import MobileLeaderboard from './MobileLeaderboard';
 import MobileMiniMap from './MobileMiniMap';
+import MobileMyEventsCard from './MobileMyEventsCard';
 import { devLog } from '@/lib/logger';
 
 interface MobileDashboardProps {
@@ -171,6 +172,9 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
         
         {/* Mini Map */}
         <MobileMiniMap onOpenMap={onClose} userProfile={userProfile} reloadProfile={reloadProfile} />
+        
+        {/* My Events */}
+        <MobileMyEventsCard userId={userProfile?.id} />
         
         {/* Leaderboard */}
         <MobileLeaderboard 

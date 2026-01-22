@@ -173,8 +173,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS
+    const client = supabaseAdmin || supabase;
+
     // Get user profile to determine host type
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await client
       .from('users')
       .select('id, name, pfp, role, zo_membership, founder_nfts_count, zo_roles')
       .eq('id', userId)
@@ -273,9 +276,6 @@ export async function POST(request: NextRequest) {
       external_rsvp_url: body.external_rsvp_url || null,
       cover_image_url: body.cover_image_url || null,
     };
-
-    // Use admin client if available to bypass RLS
-    const client = supabaseAdmin || supabase;
 
     const { data: event, error: insertError } = await client
       .from('canonical_events')

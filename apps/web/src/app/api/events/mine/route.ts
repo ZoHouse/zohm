@@ -66,28 +66,38 @@ export async function GET(request: NextRequest) {
       devLog.error('Failed to fetch RSVPs:', rsvpsError);
     }
 
-    // Fetch event details for RSVPs
-    const rsvpsWithEvents = await Promise.all(
-      (rsvps || []).map(async (rsvp) => {
-        const { data: event } = await client
-          .from('canonical_events')
-          .select(`
-            id,
-            title,
-            category,
-            culture,
-            starts_at,
-            ends_at,
-            location_name,
-            lat,
-            lng,
-            submission_status
-          `)
-          .eq('id', rsvp.event_id)
-          .single();
-        return { ...rsvp, event };
-      })
-    );
+    // Batch fetch all events in a single query (fixes N+1 problem)
+    let rsvpsWithEvents: any[] = [];
+    if (rsvps && rsvps.length > 0) {
+      const eventIds = [...new Set(rsvps.map(r => r.event_id))];
+      const { data: events, error: eventsError } = await client
+        .from('canonical_events')
+        .select(`
+          id,
+          title,
+          category,
+          culture,
+          starts_at,
+          ends_at,
+          location_name,
+          lat,
+          lng,
+          submission_status
+        `)
+        .in('id', eventIds);
+
+      if (!eventsError && events) {
+        // Create a map for quick lookup
+        const eventMap = new Map(events.map(e => [e.id, e]));
+        rsvpsWithEvents = rsvps.map(rsvp => ({
+          ...rsvp,
+          event: eventMap.get(rsvp.event_id) || null,
+        }));
+      } else {
+        // Fallback: return RSVPs without event details
+        rsvpsWithEvents = rsvps.map(rsvp => ({ ...rsvp, event: null }));
+      }
+    }
 
     // Filter out past events for upcoming RSVPs
     const upcomingRsvps = rsvpsWithEvents.filter(

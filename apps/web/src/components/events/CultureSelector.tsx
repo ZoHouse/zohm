@@ -5,10 +5,11 @@
  * 
  * A grid of culture icons for selecting event theme/vibe.
  * Matches the app's glassmorphic design.
+ * 
+ * Optimized for mobile: uses native img with lazy loading to prevent crashes
  */
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import type { EventCultureConfig, EventCulture } from '@/types/events';
 import { getCultureAssetUrl } from '@/types/events';
 
@@ -82,7 +83,8 @@ export function CultureSelector({ value, onChange, disabled }: CultureSelectorPr
     <div className="space-y-4">
       <p className="text-black/70 text-sm font-medium">What&apos;s the vibe of your event?</p>
       
-      <div className="grid grid-cols-4 gap-2">
+      {/* Grid with touch-action for smooth mobile scrolling */}
+      <div className="grid grid-cols-4 gap-2" style={{ touchAction: 'pan-y' }}>
         {cultures.map((culture, index) => (
           <button
             key={culture.slug || `culture-${index}`}
@@ -90,22 +92,25 @@ export function CultureSelector({ value, onChange, disabled }: CultureSelectorPr
             disabled={disabled}
             onClick={() => onChange(culture.slug as EventCulture)}
             className={`
-              relative aspect-square rounded-2xl border-2 p-1.5 transition-all
+              relative aspect-square rounded-2xl border-2 p-1.5
               flex flex-col items-center justify-center gap-1
               disabled:opacity-50 disabled:cursor-not-allowed
+              transform-gpu transition-colors duration-150
               ${value === culture.slug
                 ? 'border-[#ff4d6d] bg-[#ff4d6d]/10 shadow-lg scale-105'
-                : 'border-white/30 bg-white/10 hover:bg-white/20 hover:scale-102 hover:border-white/50'
+                : 'border-white/30 bg-white/10 active:bg-white/30'
               }
             `}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <div className="relative w-9 h-9">
-              <Image
+            <div className="w-9 h-9 flex items-center justify-center">
+              {/* Use native img with lazy loading to prevent mobile crashes */}
+              <img
                 src={getCultureAssetUrl(culture.asset_file)}
                 alt={culture.name}
-                fill
-                className="object-contain"
-                unoptimized
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-contain"
               />
             </div>
             <span className="text-[9px] text-center leading-tight text-black font-bold line-clamp-1">
@@ -126,13 +131,13 @@ export function CultureSelector({ value, onChange, disabled }: CultureSelectorPr
         <div 
           className="flex items-center gap-3 p-3 rounded-2xl bg-white/20 border border-white/30"
         >
-          <div className="relative w-12 h-12 flex-shrink-0">
-            <Image
+          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+            <img
               src={getCultureAssetUrl(selectedCulture.asset_file)}
               alt={selectedCulture.name}
-              fill
-              className="object-contain"
-              unoptimized
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-contain"
             />
           </div>
           <div>

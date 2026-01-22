@@ -169,13 +169,41 @@ export function setupClusterClickHandlers(map: mapboxgl.Map) {
       coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
     }
 
+    // Build cover image HTML
+    const coverImageUrl = props?.cover_image_url || '/dashboard-assets/event-placeholder.jpg';
+    const coverImageHtml = `<div style="margin: -12px -12px 12px -12px; border-radius: 12px 12px 0 0; overflow: hidden;">
+        <img src="${coverImageUrl}" alt="${props?.name || 'Event'}" style="width: 100%; height: 100px; object-fit: cover; display: block;" onerror="this.src='/dashboard-assets/event-placeholder.jpg'" />
+      </div>`;
+
+    // Build hosted by HTML
+    const hostedByHtml = props?.host_name 
+      ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666; line-height: 1.4;">👤 Hosted by <strong>${props.host_name}</strong></p>`
+      : '';
+
+    // Build location HTML
+    const locationDisplay = props?.location_name || (props?.location && !props.location.includes('luma.com') ? props.location : '');
+    const locationHtml = locationDisplay 
+      ? `<p style="margin: 0 0 12px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${locationDisplay}</p>` 
+      : '<div style="margin-bottom: 12px;"></div>';
+
+    // Build register button
+    const isCommunityEvent = props?.category === 'community';
+    let registerButtonHtml = '';
+    if (isCommunityEvent && props?.id) {
+      registerButtonHtml = `<button id="rsvp-btn-${props.id}" onclick="window.rsvpToEvent && window.rsvpToEvent('${props.id}', '${(props?.name || '').replace(/'/g, "\\'")}'); event.stopPropagation();" class="glow-popup-button secondary" style="flex: 1;">Register</button>`;
+    } else if (props?.event_url) {
+      registerButtonHtml = `<a href="${props.event_url}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Register</a>`;
+    }
+
     const popupContent = `
       <div style="padding: 0;">
-        <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${props?.name || "Event"}</h3>
+        ${coverImageHtml}
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${props?.name || "Event"}</h3>
+        ${hostedByHtml}
         <p style="margin: 0 0 6px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📅 ${props?.formatted_date || ''}</p>
-        ${props?.location && !props.location.includes('luma.com') ? `<p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${props.location}</p>` : '<div style="margin-bottom: 16px;"></div>'}
+        ${locationHtml}
         <div style="display: flex; gap: 8px;">
-          ${props?.event_url ? `<a href="${props.event_url}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Register</a>` : ''}
+          ${registerButtonHtml}
           <button onclick="window.showRouteTo(${coordinates[0]}, ${coordinates[1]})" class="glow-popup-button" style="flex: 1;">Directions</button>
         </div>
       </div>

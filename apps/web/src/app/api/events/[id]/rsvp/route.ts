@@ -17,10 +17,10 @@ import type { RsvpInput, RsvpResponse, EventAttendeesResponse } from '@/types/ev
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: eventId } = params;
+    const { id: eventId } = await params;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
@@ -97,10 +97,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: eventId } = params;
+    const { id: eventId } = await params;
     const body: RsvpInput = await request.json();
 
     // Get user ID

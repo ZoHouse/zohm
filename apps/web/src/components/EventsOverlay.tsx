@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { GlowChip, GlowButton, GlowCard } from '@/components/ui';
 import { HostEventModal } from '@/components/events';
 import { getEventCoverImage } from '@/lib/eventCoverDefaults';
+import { devLog } from '@/lib/logger';
 
 interface EventData {
   'Event Name': string;
@@ -77,10 +78,8 @@ const EventsOverlay: React.FC<EventsOverlayProps> = ({
         isOpen={isHostModalOpen}
         onClose={() => setIsHostModalOpen(false)}
         userId={userId}
-        onSuccess={(response) => {
-          console.log('Event created:', response);
+        onSuccess={() => {
           setIsHostModalOpen(false);
-          // TODO: Refresh events list or show success toast
         }}
       />
 

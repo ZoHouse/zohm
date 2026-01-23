@@ -27,6 +27,12 @@
   --glow-chip-radius: 9999px; /* full rounded */
   --glow-chip-font-weight: 600;
   --glow-chip-letter-spacing: 0.02em;
+
+  /* Safe Area Insets for Mobile Notch/Status Bar */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
 }
 
 /* Hide scrollbar but keep scroll functionality */
@@ -37,6 +43,23 @@
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Safe Area Utilities for Mobile Notch/Status Bar */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 1rem);
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+.safe-left {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+}
+
+.safe-right {
+  padding-right: max(env(safe-area-inset-right), 1rem);
 }
 
 

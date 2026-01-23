@@ -307,7 +307,7 @@ const MobileMyEventsCard: React.FC<MobileMyEventsCardProps> = ({ userId }) => {
                   </button>
                 </div>
               </div>
-              );
+            );
             })}
 
             {/* View All / Host Button */}

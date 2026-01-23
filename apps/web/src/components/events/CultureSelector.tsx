@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import type { EventCultureConfig, EventCulture } from '@/types/events';
 import { getCultureAssetUrl } from '@/types/events';
+import { devLog } from '@/lib/logger';
 
 interface CultureSelectorProps {
   value?: EventCulture;
@@ -52,7 +53,7 @@ export function CultureSelector({ value, onChange, disabled }: CultureSelectorPr
         const fetchedCultures = data.cultures || [];
         setCultures(fetchedCultures.length > 0 ? fetchedCultures : FALLBACK_CULTURES);
       } catch (err) {
-        console.error('Failed to fetch cultures, using fallback:', err);
+        devLog.error('Failed to fetch cultures, using fallback:', err);
         setCultures(FALLBACK_CULTURES);
       } finally {
         setLoading(false);

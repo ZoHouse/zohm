@@ -66,8 +66,7 @@ const MobileEventsListOverlay: React.FC<MobileEventsListOverlayProps> = ({
         isOpen={isHostModalOpen}
         onClose={() => setIsHostModalOpen(false)}
         userId={userId}
-        onSuccess={(response) => {
-          console.log('Event created:', response);
+        onSuccess={() => {
           setIsHostModalOpen(false);
         }}
       />

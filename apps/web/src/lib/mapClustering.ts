@@ -177,7 +177,7 @@ export function setupClusterClickHandlers(map: mapboxgl.Map) {
 
     // Build hosted by HTML
     const hostedByHtml = props?.host_name 
-      ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666; line-height: 1.4;">👤 Hosted by <strong>${props.host_name}</strong></p>`
+      ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #1a1a1a; line-height: 1.4;">👤 Hosted by <strong>${props.host_name}</strong></p>`
       : '';
 
     // Build location HTML

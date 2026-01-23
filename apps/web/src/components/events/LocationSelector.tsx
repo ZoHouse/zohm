@@ -18,6 +18,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { searchAddresses, setSearchProximity, prefetchCommonSearches, type AddressSearchResult } from '@/lib/geocoding';
 import type { LocationType } from '@/types/events';
+import { devLog } from '@/lib/logger';
 
 interface Node {
   id: string;
@@ -93,7 +94,7 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
           setNodes(zoNodes);
         }
       } catch (err) {
-        console.error('Failed to fetch nodes:', err);
+        devLog.error('Failed to fetch nodes:', err);
       } finally {
         setLoadingNodes(false);
       }

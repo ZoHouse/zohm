@@ -110,9 +110,10 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           // Map RSVP events by event_id
           data.rsvps?.forEach((rsvp: { event_id: string; status: string }) => {
             rsvpMap.set(rsvp.event_id, rsvp.status);
+            devLog.log('  📌 Event:', rsvp.event_id, '→ Status:', rsvp.status);
           });
           setUserRsvps(rsvpMap);
-          devLog.log('📋 Loaded user RSVPs:', rsvpMap.size);
+          devLog.log('📋 Loaded user RSVPs:', rsvpMap.size, 'events');
         }
       } catch (error) {
         devLog.error('Failed to fetch user RSVPs:', error);
@@ -1177,7 +1178,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             // RSVP function for event popups
             (window as any).rsvpToEvent = async (eventId: string, eventName: string) => {
               if (!userId) {
-                alert('Please sign in to RSVP for events');
+                const shouldLogin = confirm(
+                  'Please sign in to RSVP for events.\n\n' +
+                  'Click OK to go to Zo Passport and sign in, or Cancel to stay here.'
+                );
+                if (shouldLogin) {
+                  window.location.href = '/zopassport';
+                }
                 return;
               }
               
@@ -1188,6 +1195,15 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
               }
               
               try {
+                devLog.log('🎫 RSVP request starting...');
+                devLog.log('   Event ID:', eventId);
+                devLog.log('   Event Name:', eventName);
+                devLog.log('   User ID:', userId);
+
+                if (!eventId) {
+                  throw new Error('No event ID found');
+                }
+
                 const res = await fetch(`/api/events/${eventId}/rsvp`, {
                   method: 'POST',
                   headers: {
@@ -1196,18 +1212,32 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                   },
                   body: JSON.stringify({ status: 'going' }),
                 });
-                
-                const data = await res.json();
-                
+
+                devLog.log('🎫 RSVP response received');
+                devLog.log('   Status:', res.status);
+                devLog.log('   Status Text:', res.statusText);
+
+                const responseText = await res.text();
+                devLog.log('   Response Text:', responseText);
+
+                let data;
+                try {
+                  data = JSON.parse(responseText);
+                  devLog.log('   Parsed Data:', data);
+                } catch (parseError) {
+                  devLog.error('   Failed to parse JSON:', parseError);
+                  throw new Error('Invalid JSON response from server');
+                }
+
                 if (res.ok) {
                   // Update button to show registered status
                   if (btn) {
-                    const statusText = data.rsvp?.status === 'going' ? '✓ Going' 
+                    const statusText = data.rsvp?.status === 'going' ? '✓ Going'
                       : data.rsvp?.status === 'interested' ? '✓ Registered'
                       : data.rsvp?.status === 'waitlist' ? '⏳ Waitlisted'
                       : '✓ Registered';
-                    const statusColor = data.rsvp?.status === 'going' ? '#22c55e' 
-                      : data.rsvp?.status === 'waitlist' ? '#f59e0b' 
+                    const statusColor = data.rsvp?.status === 'going' ? '#22c55e'
+                      : data.rsvp?.status === 'waitlist' ? '#f59e0b'
                       : '#3b82f6';
                     btn.innerHTML = statusText;
                     btn.style.background = `${statusColor}20`;
@@ -1220,6 +1250,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                     (window as any).updateUserRsvp(eventId, data.rsvp?.status || 'interested');
                   }
                   devLog.log('✅ RSVP successful for:', eventName, 'status:', data.rsvp?.status);
+
+                  // Show success message to user
+                  if (data.message) {
+                    alert(data.message);
+                  }
                 } else {
                   throw new Error(data.error || 'Failed to RSVP');
                 }
@@ -1753,7 +1788,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         
         // Build hosted by HTML
         const hostedByHtml = hostName 
-          ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #666; line-height: 1.4;">👤 Hosted by <strong>${hostName}</strong></p>`
+          ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #1a1a1a; line-height: 1.4;">👤 Hosted by <strong>${hostName}</strong></p>`
           : '';
         
         // Build location HTML - prefer location_name over raw location
@@ -1765,7 +1800,12 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // Build register button - different for community vs external events
         // Check if user has already RSVP'd to this event
         const existingRsvpStatus = eventId ? userRsvps.get(eventId) : null;
-        
+
+        // Debug log to check RSVP status
+        if (eventId && userId) {
+          devLog.log('🎫 Popup for event:', eventId, '| User RSVP status:', existingRsvpStatus || 'none', '| Total RSVPs loaded:', userRsvps.size);
+        }
+
         let registerButtonHtml: string;
         if (isCommunityEventPopup && eventId) {
           if (isOwnEvent) {

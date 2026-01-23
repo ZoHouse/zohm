@@ -36,8 +36,6 @@ async function updateEventRsvpCount(client: typeof supabase, eventId: string): P
 
   if (updateError) {
     devLog.error('Failed to update event RSVP count:', updateError);
-  } else {
-    devLog.log('📊 Updated event RSVP count:', eventId, 'count:', count);
   }
 }
 
@@ -74,7 +72,7 @@ async function promoteFromWaitlist(client: typeof supabase, eventId: string): Pr
     return null;
   }
 
-  devLog.log('🎉 Promoted user from waitlist:', waitlistEntry.user_id);
+  devLog.log('Promoted user from waitlist:', waitlistEntry.user_id);
   return waitlistEntry.user_id;
 }
 
@@ -158,7 +156,6 @@ export async function GET(
       meta: stats,
     };
 
-    devLog.log('✅ Fetched RSVPs for event:', eventId, 'count:', stats.total);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -340,7 +337,6 @@ export async function POST(
         : `Successfully RSVP'd as ${finalStatus}`,
     };
 
-    devLog.log('✅ RSVP saved:', eventId, userId, finalStatus, promotedUserId ? `(promoted ${promotedUserId})` : '');
 
     return NextResponse.json(response);
   } catch (error) {
@@ -498,12 +494,10 @@ export async function PATCH(
         const promotedUserId = await promoteFromWaitlist(client, eventId);
         if (promotedUserId) {
           await updateEventRsvpCount(client, eventId);
-          devLog.log('🎉 Promoted user from waitlist after host update:', promotedUserId);
         }
       }
     }
 
-    devLog.log('✅ RSVP updated by host:', eventId, updated?.id, status);
 
     return NextResponse.json({
       success: true,

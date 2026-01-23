@@ -168,7 +168,12 @@ Join me: ${baseUrl}/share/${userId}
         }
       `}</style>
 
-      <div className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12">
+      <div
+        className="max-w-[1400px] mx-auto p-4 md:p-8 pb-12"
+        style={{
+          paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        }}
+      >
         {/* Back Button */}
         <button
           onClick={() => router.back()}

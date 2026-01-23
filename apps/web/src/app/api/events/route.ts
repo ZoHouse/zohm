@@ -123,12 +123,24 @@ export async function GET(request: NextRequest) {
     const eventsWithHosts = await Promise.all(
       (events || []).map(async (event) => {
         if (event.host_id) {
-          const { data: host } = await client
+          const { data: host, error: hostError } = await client
             .from('users')
-            .select('id, name, pfp, role, zo_membership')
+            .select('*')
             .eq('id', event.host_id)
             .single();
-          return { ...event, host };
+
+          if (hostError) {
+            devLog.error('Failed to fetch host for event:', event.id, hostError);
+          }
+
+          // Add display_name field for frontend compatibility
+          // Note: Never expose phone number for privacy
+          const hostWithDisplayName = host ? {
+            ...host,
+            display_name: host.name || 'Host'
+          } : null;
+
+          return { ...event, host: hostWithDisplayName };
         }
         return event;
       })

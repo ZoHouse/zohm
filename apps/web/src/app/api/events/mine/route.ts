@@ -30,8 +30,6 @@ export async function GET(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    devLog.log('🎫 Fetching events for user:', userId);
-
     // 1. Fetch events user is hosting (use admin client to bypass RLS)
     const { data: hosted, error: hostedError } = await client
       .from('canonical_events')
@@ -43,8 +41,6 @@ export async function GET(request: NextRequest) {
     if (hostedError) {
       devLog.error('Failed to fetch hosted events:', hostedError);
     }
-
-    devLog.log('🎫 Found hosted events:', hosted?.length || 0, hosted?.map(e => ({ id: e.id, title: e.title, status: e.submission_status })));
 
     // 2. Fetch user's RSVPs with event details
     const { data: rsvps, error: rsvpsError } = await client

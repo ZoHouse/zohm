@@ -28,6 +28,23 @@ interface HostEventModalProps {
 
 const DEFAULT_SPONSORED_FORM_URL = 'https://zostel.typeform.com/to/LgcBfa0M';
 
+// Helper to convert ISO string to datetime-local format in local timezone
+const isoToLocalDatetime = (iso: string | undefined): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper to get current datetime in local timezone for min attribute
+const getLocalNow = (): string => {
+  return isoToLocalDatetime(new Date().toISOString());
+};
+
 const STEPS = [
   { id: 1, title: 'Type', subtitle: 'What kind of event?' },
   { id: 2, title: 'Vibe', subtitle: 'What\'s the theme?' },
@@ -256,9 +273,9 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
                   <label className={labelClass}>Start *</label>
                   <input
                     type="datetime-local"
-                    value={formData.starts_at?.slice(0, 16) || ''}
+                    value={isoToLocalDatetime(formData.starts_at)}
                     onChange={(e) => updateField('starts_at', new Date(e.target.value).toISOString())}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={getLocalNow()}
                     className={inputClass + " text-sm"}
                   />
                 </div>
@@ -266,9 +283,9 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
                   <label className={labelClass}>End *</label>
                   <input
                     type="datetime-local"
-                    value={formData.ends_at?.slice(0, 16) || ''}
+                    value={isoToLocalDatetime(formData.ends_at)}
                     onChange={(e) => updateField('ends_at', new Date(e.target.value).toISOString())}
-                    min={formData.starts_at?.slice(0, 16) || new Date().toISOString().slice(0, 16)}
+                    min={isoToLocalDatetime(formData.starts_at) || getLocalNow()}
                     className={inputClass + " text-sm"}
                   />
                 </div>

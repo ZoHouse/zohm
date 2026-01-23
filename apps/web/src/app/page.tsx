@@ -311,7 +311,7 @@ export default function Home() {
                 '_culture': event.culture,
                 '_host': event.host,
                 '_host_id': event.host_id,
-                '_host_name': event.host?.display_name || event.host?.name || null,
+                '_host_name': event.host?.display_name || event.host?.nickname || event.host?.name || 'Host',
                 '_host_avatar': event.host?.avatar_url || event.host?.pfp || null,
                 '_location_name': event.location_name,
                 '_zo_property_id': event.zo_property_id,

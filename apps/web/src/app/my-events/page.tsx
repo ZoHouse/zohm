@@ -289,7 +289,12 @@ export default function MyEventsPage() {
   return (
     <div className="min-h-screen h-screen overflow-y-auto overflow-x-hidden bg-gradient-to-b from-black via-[#1a0a10] to-black scrollbar-hide">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/80 border-b border-white/10">
+      <header
+        className="sticky top-0 z-50 backdrop-blur-xl bg-black/80 border-b border-white/10"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button

@@ -61,15 +61,7 @@ const CenterColumn: React.FC<CenterColumnProps> = ({ userProfile, onOpenMap, onL
       const lng = position.coords.longitude;
       const accuracy = position.coords.accuracy;
       
-      devLog.log('📍 Got current location for Enter Map:', { 
-        lat, 
-        lng, 
-        accuracy: `${accuracy}m`,
-        timestamp: new Date(position.timestamp).toISOString()
-      });
-      
-      // Log to console for debugging
-      console.log(`📍 LOCATION FETCHED: ${lat}, ${lng} (accuracy: ${accuracy}m)`);
+      devLog.log('Location fetched for Enter Map:', { lat, lng, accuracy: `${accuracy}m` });
 
       // Save to database if user is logged in
       if (userProfile?.id) {

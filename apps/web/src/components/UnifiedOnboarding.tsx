@@ -82,14 +82,14 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
             setIsLoadingLocation(false);
             setError('');
           } catch (err) {
-            console.error('Failed to get city:', err);
+            devLog.error('Failed to get city:', err);
             setError('Failed to detect location. Please try again.');
             setLocationEnabled(false);
             setIsLoadingLocation(false);
           }
         },
         (err) => {
-          console.error('Location error:', err);
+          devLog.error('Location error:', err);
           setError('Location access denied. Please enable permissions.');
           setLocationEnabled(false);
           setIsLoadingLocation(false);

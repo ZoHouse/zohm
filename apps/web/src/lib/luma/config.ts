@@ -20,7 +20,7 @@ export const LUMA_CALENDARS: Record<string, LumaCalendarConfig> = {
   },
   zo_events: {
     apiKey: process.env.LUMA_ZO_EVENTS_API_KEY || '',
-    calendarId: 'cal-global-zo',
+    calendarId: 'cal-3YNnBTToy9fnnjQ',
     name: 'Zo Events (Global)',
   },
 };

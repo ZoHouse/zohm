@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 **/node_modules
+package-lock.json
 /.pnp
 .pnp.*
 .yarn/*
@@ -44,6 +45,8 @@ yarn-error.log*
 *.pem
 *.key
 .secret*
+.zo-admin-token
+**/.zo-admin-token
 
 # MCP and cursor configuration (may contain sensitive tokens)
 .cursor/mcp.json
@@ -71,6 +74,9 @@ GLOW_*.md
 LEADERBOARD_*.md
 QUESTS_*.md
 GIT_CLEANUP_ANALYSIS.md
+# Exception: Docs/ is the main documentation directory — always track it
+!Docs/
+!Docs/**
 
 # Reference and archived code
 reference/
@@ -80,8 +86,9 @@ working*/
 TEST_*.html
 test-*.html
 
-# Internal documentation (development notes) - lowercase only
-docs/
+# Internal documentation (development notes)
+# NOTE: Do NOT use "docs/" here — macOS case-insensitive FS makes it match Docs/ too
+Docs/docs copy/
 
 # Temporary design assets
 public/duration/

@@ -23,7 +23,7 @@
 | Doc | Description | Lines |
 |-----|-------------|-------|
 | **[Architecture](./ARCHITECTURE.md)** | 4-layer system architecture, tech stack, data flows, security model | 772 |
-| **[System Flows](./SYSTEM_FLOWS.md)** | How users login (Phone OTP), create events (5-step), and Vibe Check governance | 639 |
+| **[System Flows](./SYSTEM_FLOWS.md)** | How users login (Phone OTP), create events (5-step), and Vibe Check Telegram governance (implemented) | 639 |
 | **[Database Schema](./DATABASE.md)** | Complete database tables and relationships | — |
 | **[App Overview](./APP_OVERVIEW.md)** | Current app features and implementation status | 98 |
 
@@ -101,7 +101,7 @@ Phone OTP via ZOHM API (which proxies to ZO API) → Supabase user → localStor
 
 - [x] Phone-based Auth (OTP via ZO API)
 - [x] Event Creation (5-step wizard)
-- [x] Vibe Check (Token-gated governance proposal)
+- [x] Vibe Check Telegram Bot (simple majority voting, 24h window, cron resolution)
 - [x] Zo Passport identity system
 - [x] Interactive Node Map (Mapbox 3D)
 - [x] Quest System (Social, Creative, Physical, Digital)
@@ -113,7 +113,6 @@ Phone OTP via ZOHM API (which proxies to ZO API) → Supabase user → localStor
 
 ### In Progress
 
-- [ ] Vibe Check Telegram Bot (inline voting in token-gated founder groups)
 - [ ] City Nodes management
 - [ ] Roles Matrix
 

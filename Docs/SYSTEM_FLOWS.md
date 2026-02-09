@@ -8,8 +8,8 @@
 ## Table of Contents
 
 1. [User Authentication (Login)](#1-user-authentication-login)
-2. [Event Creation (Current)](#2-event-creation-current-flow)
-3. [Event Creation (Proposed — Vibe Check)](#3-event-creation-proposed--vibe-check-governance)
+2. [Event Creation](#2-event-creation-current-flow)
+3. [Vibe Check — Telegram Event Governance](#3-vibe-check--telegram-event-governance)
 4. [Key Database Tables](#4-key-database-tables)
 5. [File Reference](#5-file-reference)
 
@@ -224,190 +224,167 @@ POST /api/events/[id]/rsvp
        └── Someone cancels → oldest waitlisted auto-promoted to 'going'
 ```
 
-### The Problem
+### What Happens to Pending Events?
 
-When a **Citizen** creates an event, `submission_status` = `'pending'` — but **nothing happens next**. There is no review queue, no notification to admins, and no community input. The event just sits in the database unseen.
+When a **Citizen** creates an event, `submission_status` = `'pending'`. If the **Vibe Check** feature flag is enabled (`FEATURE_VIBE_CHECK_TELEGRAM`), the event is automatically sent to the Telegram approval group for community voting. See [Section 3](#3-vibe-check--telegram-event-governance) for the full flow.
 
 ---
 
-## 3. Event Creation (Proposed — Vibe Check Governance)
+## 3. Vibe Check — Telegram Event Governance
 
-### Concept
+### Overview
 
-Instead of events going into a black hole when pending, they enter a **Vibe Check** — sent directly to the city's **token-gated Telegram group**. Each city has a Telegram group that's gated by Founder NFT ownership. The founders in that group upvote or downvote the proposal via a Telegram bot. They are the gatekeepers of the city's event quality.
+When a **Citizen** or **Member** creates an event, `submission_status` is set to `'pending'`. If the `FEATURE_VIBE_CHECK_TELEGRAM` flag is enabled, the event is automatically sent to a **single Telegram approval group** ("Zo Events Approval") where any group member can vote. After a **24-hour window**, a cron worker resolves the check: **simple majority** (upvotes > downvotes) = approved, otherwise rejected.
 
-### The Pieces
+This replaces the previous black hole where pending events sat indefinitely.
 
-**1. City Founders** — who can vote:
-- Hold a Founder NFT (contract `0xf9e6...ba12`) → `founder_nfts_count > 0`
-- Or `users.role = 'Founder'` / `zo_membership = 'founder'`
-- Scoped to city via `home_city_id`
+### Key Design Decisions
 
-**2. Token-Gated Telegram Groups** — where voting happens:
-- Each city has a Telegram group (e.g. "Zo Founders - Bangalore")
-- Entry gated by Founder NFT ownership (verified on join)
-- This is where the vibe check bot posts proposals
-- Founders vote with inline buttons directly in Telegram
-
-**3. Zo Vibe Check Bot** — the bridge (new component):
-- Telegram bot that posts event proposals to the right city group
-- Provides inline keyboard: [Upvote] [Downvote] + optional reply for feedback
-- Tallies votes and syncs results back to the database
-- Resolves the vibe check when threshold is met or window expires
+| Decision | What Was Built |
+|----------|---------------|
+| **Single group** | One approval group (env: `TELEGRAM_VIBE_CHECK_CHAT_ID`), not per-city |
+| **Any member votes** | Any Telegram group member can vote — not restricted to founders |
+| **Simple majority** | `upvotes > downvotes` = approved. No quorum, no 60% threshold |
+| **24-hour window** | Fixed expiry, not variable based on event start time |
+| **Cron resolution** | Worker runs every 15 min, resolves expired checks in batch |
+| **Non-blocking** | `createVibeCheck()` errors are caught and logged, never block event creation |
+| **Feature-flagged** | Behind `FEATURE_VIBE_CHECK_TELEGRAM` (default: `false`) |
 
 ### Architecture
 
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────────┐
-│  ZOHM Web   │─────▶│  ZOHM API    │─────▶│  Telegram Bot API   │
-│  (Frontend) │      │  (Next.js)   │      │  (Bot posts to TG)  │
-└─────────────┘      └──────┬───────┘      └──────────┬──────────┘
-                            │                         │
-                            ▼                         ▼
-                     ┌──────────────┐      ┌─────────────────────┐
-                     │  Supabase    │◀─────│  City Founders TG   │
-                     │  (DB)        │      │  Group (token-gated) │
-                     └──────────────┘      └─────────────────────┘
-                                                      │
-                                           Founders vote via
-                                           inline buttons
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
+│  ZOHM Web   │────▶│  POST /api/events    │────▶│  Telegram Bot API   │
+│  (Frontend) │     │  (Next.js API route) │     │  (sendMessage /     │
+└─────────────┘     └──────────┬───────────┘     │   sendPhoto)        │
+                               │                 └──────────┬──────────┘
+                               │                            │
+                               ▼                            ▼
+                        ┌──────────────┐          ┌─────────────────────┐
+                        │  Supabase    │◀─────────│  Zo Events Approval │
+                        │  (DB)        │          │  TG Group           │
+                        └──────┬───────┘          └──────────┬──────────┘
+                               │                             │
+                               │                  Members vote via
+                               │                  inline buttons
+                               ▼                             │
+                  ┌────────────────────────┐                 │
+                  │  Webhook: /api/        │◀────────────────┘
+                  │  webhooks/telegram     │   (callback_query)
+                  │  → handleVote()        │
+                  └────────────────────────┘
+                               │
+                  ┌────────────────────────┐
+                  │  Cron (every 15 min):  │
+                  │  /api/worker/          │
+                  │  resolve-vibe-checks   │
+                  │  → resolveExpired()    │
+                  └────────────────────────┘
 ```
 
-### Proposed Flow
+### Flow
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  CITIZEN CREATES EVENT (same 5-step modal)               │
+│  CITIZEN/MEMBER CREATES EVENT (same 5-step modal)        │
 │  submission_status = 'pending'                           │
 └──────────────┬───────────────────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────────────────────────────────┐
-│  VIBE CHECK CREATED                                      │
+│  VIBE CHECK CREATED (non-blocking)                       │
+│  Condition: FEATURE_VIBE_CHECK_TELEGRAM=true             │
+│             AND submission_status='pending'               │
 │                                                          │
-│  1. Determine city from event location                   │
-│  2. Look up city's Telegram group chat_id                │
-│     (stored in `cities` table or config)                 │
-│  3. Insert row in `vibe_checks` table                    │
-│  4. Bot posts proposal card to Telegram group:           │
+│  1. Insert row in `vibe_checks` table                    │
+│     - event_id, tg_chat_id from env                      │
+│     - expires_at = now + 24 hours                        │
+│                                                          │
+│  2. Bot posts proposal card to TG group:                 │
 │                                                          │
 │  ┌────────────────────────────────────────┐              │
-│  │  NEW VIBE CHECK                        │              │
+│  │  🎯 NEW VIBE CHECK                    │              │
 │  │                                        │              │
-│  │  "Rooftop Yoga at Zo House"            │              │
-│  │  Culture: Health & Fitness             │              │
-│  │  When: Feb 15, 6:00 PM                │              │
-│  │  Where: Zo House Bangalore            │              │
-│  │  By: @username                         │              │
+│  │  📌 "Rooftop Yoga at Zo House"        │              │
+│  │  🎨 Health & Fitness                  │              │
+│  │  📅 Feb 15, 6:00 PM                  │              │
+│  │  📍 Zo House Bangalore               │              │
+│  │  👤 Hosted by: @username              │              │
 │  │                                        │              │
-│  │  [  Upvote  ]  [  Downvote  ]         │              │
-│  │  0 up / 0 down — needs 3 votes        │              │
-│  │  Expires in 48 hours                   │              │
+│  │  👍 0  |  👎 0                        │              │
+│  │  ⏰ Voting ends: [expires_at]         │              │
+│  │                                        │              │
+│  │  [👍 Upvote]  [👎 Downvote]           │              │
 │  └────────────────────────────────────────┘              │
 │                                                          │
-│  Inline keyboard buttons for voting                      │
-│  Bot tracks who voted to enforce 1-vote-per-founder      │
+│  3. Store tg_message_id back on vibe_checks row          │
+│     - If event has cover_image_url → sendPhoto()         │
+│     - Otherwise → sendMessage()                          │
+│     - tg_message_type tracks which was used              │
 └──────────────┬───────────────────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────────────────────────────────┐
-│  FOUNDERS VOTE IN TELEGRAM                               │
+│  GROUP MEMBERS VOTE IN TELEGRAM                          │
 │                                                          │
-│  Founder taps [Upvote] or [Downvote]                     │
-│  Bot:                                                    │
-│    1. Verify voter is in eligible_founder_ids            │
-│    2. Check no duplicate vote                            │
-│    3. Record vote in `vibe_check_votes` table            │
+│  Member taps [👍 Upvote] or [👎 Downvote]               │
+│  → POST /api/webhooks/telegram (callback_query)          │
+│  → callback_data format: "vibe:{up|down}:{vibeCheckId}"  │
+│                                                          │
+│  handleVote():                                           │
+│    1. Parse callback_data                                │
+│    2. Insert vote in `vibe_check_votes`                  │
+│       (UNIQUE constraint prevents duplicates)            │
+│    3. Recount upvotes/downvotes from votes table         │
 │    4. Update tallies on `vibe_checks` row                │
-│    5. Edit the Telegram message to show updated count    │
-│    6. Founders can also reply to the message as feedback │
-│       → bot captures reply as vote comment               │
-│                                                          │
-│  After each vote, check if resolution triggered:         │
-│    - All founders voted? → resolve now                   │
-│    - Quorum met + clear majority? → resolve now          │
+│    5. Edit TG message with updated counts                │
+│    6. answerCallbackQuery() to dismiss loading state     │
 └──────────────┬───────────────────────────────────────────┘
                │
                ▼
 ┌──────────────────────────────────────────────────────────┐
-│  RESOLUTION                                              │
+│  RESOLUTION (cron every 15 min)                          │
+│  POST /api/worker/resolve-vibe-checks                    │
+│  → resolveExpiredVibeChecks()                            │
 │                                                          │
-│  Auto-approve if:                                        │
-│    - Quorum met (>= 3 founder votes) AND                 │
-│    - >= 60% upvotes                                      │
-│    → event.submission_status = 'approved'                │
-│    → Bot edits TG message: "APPROVED"                   │
-│    → Proposer notified in-app                            │
+│  Finds: all vibe_checks WHERE status='open'              │
+│         AND expires_at <= now                             │
 │                                                          │
-│  Auto-reject if:                                         │
-│    - Quorum met AND < 60% upvotes                        │
-│    → event.submission_status = 'rejected'                │
-│    → Bot edits TG message: "REJECTED"                   │
-│    → Proposer notified with founder feedback             │
+│  For each expired check:                                 │
+│    upvotes > downvotes → APPROVED                        │
+│    otherwise           → REJECTED                        │
 │                                                          │
-│  Voting window expires without quorum:                   │
-│    - Bot posts reminder 12h before expiry                │
-│    - If still no quorum → escalate to admin              │
-│    - Bot edits TG message: "EXPIRED — sent to admin"    │
-│                                                          │
-│  Override:                                               │
-│    - Admin / Vibe Curator can /approve or /reject        │
-│      via bot command in TG, bypassing the vote           │
-│    - Or via admin dashboard on web                       │
+│  Actions:                                                │
+│    1. Update vibe_checks.status + resolved_at            │
+│    2. Update canonical_events.submission_status           │
+│    3. Edit TG message: "✅ APPROVED" or "❌ REJECTED"    │
+│       (inline buttons removed)                           │
+│    4. If approved + FEATURE_LUMA_API_SYNC=true:          │
+│       → pushEventToLuma() (publish to Luma calendar)     │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### Proposed Database Schema
+### Database Schema
 
-**Add `tg_founders_chat_id` to `cities` table** — maps each city to its Telegram group:
-
-```sql
-ALTER TABLE cities
-  ADD COLUMN tg_founders_chat_id TEXT,           -- Telegram chat ID for the city's founders group
-  ADD COLUMN tg_founders_group_name TEXT;         -- e.g. "Zo Founders - Bangalore"
-```
-
-**`vibe_checks` table** — one row per proposal:
+**`vibe_checks` table** — one row per pending event:
 
 ```sql
 CREATE TABLE vibe_checks (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  -- What's being voted on
-  event_id        UUID REFERENCES canonical_events(id) ON DELETE CASCADE,
-  city_id         TEXT REFERENCES cities(id),
-
-  -- Who proposed it
-  proposer_id     TEXT REFERENCES users(id),
-
-  -- Founders group snapshot (captured at creation time)
-  eligible_founder_ids  TEXT[] NOT NULL,          -- array of user IDs
-  eligible_founder_count INTEGER NOT NULL,
-
-  -- Telegram integration
-  tg_chat_id      TEXT NOT NULL,                  -- Telegram group where proposal was posted
-  tg_message_id   INTEGER,                        -- Telegram message ID (for editing vote counts)
-
-  -- Voting rules
-  approval_threshold  NUMERIC DEFAULT 0.6,        -- 60% upvotes needed
-  min_quorum          INTEGER DEFAULT 3,           -- minimum founder votes required
-  voting_window_hours INTEGER DEFAULT 48,
-
-  -- Current tallies (denormalized for fast reads)
+  event_id        UUID NOT NULL REFERENCES canonical_events(id) ON DELETE CASCADE,
+  tg_chat_id      TEXT NOT NULL,                  -- Telegram group ID (from env)
+  tg_message_id   INTEGER,                        -- Telegram message ID (for editing)
+  tg_message_type TEXT DEFAULT 'text',            -- 'text' or 'photo'
   upvotes         INTEGER DEFAULT 0,
   downvotes       INTEGER DEFAULT 0,
-  total_votes     INTEGER DEFAULT 0,
-
-  -- Lifecycle
-  status          TEXT DEFAULT 'open',            -- open | approved | rejected | expired | overridden
+  status          TEXT DEFAULT 'open'
+                  CHECK (status IN ('open', 'approved', 'rejected')),
   resolved_at     TIMESTAMPTZ,
-  resolved_by     TEXT REFERENCES users(id),      -- null if auto-resolved, set if admin/curator override
-  resolution_note TEXT,
-
-  -- Timestamps
   created_at      TIMESTAMPTZ DEFAULT now(),
-  expires_at      TIMESTAMPTZ                     -- created_at + voting_window_hours
+  expires_at      TIMESTAMPTZ NOT NULL            -- created_at + 24 hours
 );
+
+CREATE INDEX idx_vibe_checks_status_expires ON vibe_checks(status, expires_at);
 ```
 
 **`vibe_check_votes` table** — one row per vote:
@@ -415,182 +392,59 @@ CREATE TABLE vibe_checks (
 ```sql
 CREATE TABLE vibe_check_votes (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  vibe_check_id   UUID REFERENCES vibe_checks(id) ON DELETE CASCADE,
-  user_id         TEXT REFERENCES users(id),
-
-  vote            TEXT NOT NULL,                  -- 'up' | 'down'
-  comment         TEXT,                           -- optional feedback (captured from TG reply)
-  tg_user_id      TEXT,                           -- Telegram user ID (for linking TG identity to Zo user)
-
+  vibe_check_id   UUID NOT NULL REFERENCES vibe_checks(id) ON DELETE CASCADE,
+  tg_user_id      TEXT NOT NULL,                  -- Telegram user ID (string for large IDs)
+  vote            TEXT NOT NULL CHECK (vote IN ('up', 'down')),
   created_at      TIMESTAMPTZ DEFAULT now(),
-
-  UNIQUE(vibe_check_id, user_id)                 -- one vote per founder
+  UNIQUE(vibe_check_id, tg_user_id)              -- one vote per TG user
 );
 ```
 
-### Telegram Bot — Identity Linking
+### Environment Variables
 
-The bot needs to map **Telegram users → Zo users** to verify founder status. Two approaches:
-
-**Option A: Link on first vote** (lightweight)
-```
-1. Founder taps [Upvote] in Telegram
-2. Bot checks: is this tg_user_id linked to a Zo user?
-   - YES → verify founder status, record vote
-   - NO  → Bot DMs them a link: "Link your Zo account to vote"
-           → Link opens ZOHM web with a one-time token
-           → User confirms → tg_user_id saved to users table
-```
-
-**Option B: Link on group join** (stricter)
-```
-1. When founder joins the token-gated TG group, bot verifies NFT
-2. Bot asks them to link Zo account at that point
-3. All future votes are pre-linked
-```
-
-**New column on `users` table**:
-```sql
-ALTER TABLE users ADD COLUMN tg_user_id TEXT UNIQUE;
-```
-
-### Voter Eligibility
-
-Only **Founders in the event's city who are in the Telegram group** can vote:
-
-**At vibe check creation** (snapshot):
-```sql
-SELECT id FROM users
-WHERE home_city_id = :event_city_id
-  AND (role = 'Founder' OR founder_nfts_count > 0)
-  AND onboarding_completed = true
-  AND tg_user_id IS NOT NULL           -- must have linked Telegram
-→ stored as eligible_founder_ids[]
-```
-
-**At vote time** (bot verifies):
-```
-1. Map tg_user_id → Zo user_id via users table
-2. user_id must be IN vibe_checks.eligible_founder_ids
-3. No existing vote on this vibe_check (one vote per founder)
-```
-
-### How It Connects to Existing Systems
-
-| Existing System | Role in Vibe Check |
-|----------------|-------------------|
-| **users.role / founder_nfts_count** | Determines who is in the founders group |
-| **users.home_city_id** | Scopes the founders group to the event's city |
-| **Host Type** | Founders creating events bypass vibe check (already auto-approved) — only Citizens go through it |
-| **City Stages** | Small cities (Stage 1, < 10 users) may have 0-1 founders — fallback to admin review |
-| **Reputation** (4 traits) | Not used for vote weight, but visible on voter profiles for context |
-| **Admin / Vibe Curator role** | Override power — can approve/reject at any time |
+| Variable | Purpose |
+|----------|---------|
+| `FEATURE_VIBE_CHECK_TELEGRAM` | Enable/disable vibe check system (default: `false`) |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot API auth token |
+| `TELEGRAM_VIBE_CHECK_CHAT_ID` | Target Telegram group ID |
 
 ### Edge Cases
 
 | Scenario | Handling |
 |----------|---------|
-| **City has no TG group configured** | Skip vibe check, escalate to admin queue |
-| **City has 0 founders in TG** | Skip vibe check, escalate to admin queue |
-| **City has < 3 founders** (below quorum) | Lower quorum to match founder count (min 1), or escalate to admin |
-| **Founder votes then loses NFT** | Vote stands — eligibility was locked at snapshot time |
-| **TG user not linked to Zo account** | Bot DMs them a link to connect accounts before voting |
-| **Proposer withdraws event** | Cancel vibe check, bot edits TG message: "WITHDRAWN", set status = 'withdrawn' |
-| **Event start date is < 48 hours away** | Shorten voting window to `starts_at - 2 hours`, or fast-track to admin |
-| **Same user proposes multiple events** | Each gets its own vibe check — no rate limiting yet (could add later) |
-| **Bot goes down** | Votes in DB are source of truth; bot catches up on restart, edits stale TG messages |
+| **Feature flag disabled** | Pending events sit until manual admin action (pre-vibe-check behavior) |
+| **Bot API error on create** | Caught and logged, event still created as pending |
+| **Duplicate vote attempt** | UNIQUE constraint on `(vibe_check_id, tg_user_id)` — vote silently rejected |
+| **Zero votes at expiry** | 0 > 0 is false → rejected |
+| **Tie (equal up/down)** | Not strictly greater → rejected |
+| **Event cancelled before resolution** | Vibe check still resolves on schedule (no cascading cancel yet) |
 
-### Telegram Bot Commands
+### File Reference
 
-| Command | Who | What |
-|---------|-----|------|
-| (inline button) **Upvote** | Founders | Vote up on a proposal |
-| (inline button) **Downvote** | Founders | Vote down on a proposal |
-| (reply to proposal) | Founders | Adds comment/feedback to the vibe check |
-| `/approve <event_id>` | Admin / Vibe Curator | Override: instant approve |
-| `/reject <event_id>` | Admin / Vibe Curator | Override: instant reject |
-| `/status <event_id>` | Anyone in group | Show current vote tally |
-| `/link` | Anyone | Link Telegram account to Zo account |
+| File | Purpose |
+|------|---------|
+| `lib/telegram/vibeCheck.ts` | `createVibeCheck()`, `handleVote()`, `resolveExpiredVibeChecks()` |
+| `lib/telegram/bot.ts` | Raw Telegram Bot API wrapper (sendMessage, sendPhoto, editMessage, answerCallbackQuery) |
+| `lib/telegram/types.ts` | Telegram API + domain types (`VibeCheck`, `VibeCheckVote`, `VibeCheckStatus`) |
+| `app/api/webhooks/telegram/route.ts` | Webhook receiver — parses `callback_data` and calls `handleVote()` |
+| `app/api/worker/resolve-vibe-checks/route.ts` | Cron endpoint — calls `resolveExpiredVibeChecks()` |
+| `lib/featureFlags.ts` | `isVibeCheckEnabled()` — reads `FEATURE_VIBE_CHECK_TELEGRAM` |
 
-### Updated Event Creation Flow (Complete)
-
-```
-User creates event
-       │
-       ├── Is user Founder/Admin/Vibe-Curator?
-       │     YES → auto-approve, skip vibe check, event is live
-       │
-       │     NO (Citizen) ↓
-       │
-       ├── Determine city from event location
-       │     - zo_property → look up node's city
-       │     - custom address → nearest city by lat/lng
-       │     - online → proposer's home_city_id
-       │
-       ├── Find City Founders Group
-       │     SELECT * FROM users
-       │       WHERE home_city_id = :city AND role/NFT = Founder
-       │
-       │     ├── 0 founders? → skip vibe check, send to admin queue
-       │     └── 1+ founders? ↓
-       │
-       ├── Create vibe_check row
-       │     - Link to event + city
-       │     - Snapshot eligible_founder_ids[]
-       │     - Set expiry (now + 48h, or sooner if event is soon)
-       │     - Set quorum = min(3, founder_count)
-       │
-       ├── Notify City Founders Group
-       │     - Push notification / in-app alert
-       │     - "New event proposal in [City] — cast your vibe check"
-       │     - Shows: event title, culture, date, location, proposer
-       │
-       ├── Founders Vote (up to 48 hours)
-       │     - Each founder: upvote / downvote + optional comment
-       │     - Proposer sees: vote count + comments (not who voted)
-       │     - If all founders voted early → resolve immediately
-       │     - Proposer can withdraw event during this phase
-       │
-       └── Resolution
-             ├── Quorum met + >= 60% up → APPROVED, event goes live
-             ├── Quorum met + < 60% up  → REJECTED, host gets feedback
-             ├── No quorum at expiry    → escalate to admin queue
-             └── Admin/Curator override → instant approve/reject
-```
+*All paths relative to `apps/web/src/`*
 
 ---
 
 ## 4. Key Database Tables
 
-### Existing Tables (Modified)
+### Tables Involved in Auth + Events + Vibe Check
 
-| Table | Change | Purpose |
-|-------|--------|---------|
-| `users` | Add `tg_user_id TEXT UNIQUE` | Link Zo identity to Telegram identity |
-| `cities` | Add `tg_founders_chat_id TEXT`, `tg_founders_group_name TEXT` | Map city to its token-gated TG group |
-
-### Existing Tables (Unchanged, but involved)
-
-| Table | Role in This System |
-|-------|-------------------|
-| `users` | Identity, role, home_city_id, founder_nfts_count — determines founders group |
-| `canonical_events` | The event being proposed |
+| Table | Role |
+|-------|------|
+| `users` | Identity, role, membership — determines host type and auto-approval |
+| `canonical_events` | The event record. `submission_status` drives the vibe check trigger |
 | `event_rsvps` | Post-approval attendance tracking |
-| `cities` | City identity, stage (affects quorum rules) |
-| `nodes` | Zo property locations (for city lookup from zo_property events) |
-
-### New Tables
-
-| Table | Purpose |
-|-------|---------|
-| `vibe_checks` | One proposal per pending citizen event, tracks TG message ID + founders snapshot + vote tallies |
-| `vibe_check_votes` | Individual founder votes with TG user mapping and optional feedback comments |
-
-### New Component
-
-| Component | Tech | Purpose |
-|-----------|------|---------|
-| **Zo Vibe Check Bot** | Node.js + Telegram Bot API (or `grammy`/`telegraf` library) | Posts proposals to TG, handles inline votes, syncs results to Supabase |
+| `vibe_checks` | One row per pending event sent to Telegram. Tracks message ID, vote tallies, expiry |
+| `vibe_check_votes` | Individual votes keyed by Telegram user ID. UNIQUE constraint prevents duplicates |
 
 ---
 
@@ -625,7 +479,18 @@ User creates event
 | `app/api/events/geojson/route.ts` | Map markers |
 | `types/events.ts` | All event TypeScript types |
 
-### Reputation & City (For Vibe Check Eligibility)
+### Vibe Check (Telegram Governance)
+
+| File | Purpose |
+|------|---------|
+| `lib/telegram/vibeCheck.ts` | `createVibeCheck()`, `handleVote()`, `resolveExpiredVibeChecks()` |
+| `lib/telegram/bot.ts` | Raw Telegram Bot API wrapper |
+| `lib/telegram/types.ts` | Telegram + domain types |
+| `app/api/webhooks/telegram/route.ts` | Webhook receiver for inline button votes |
+| `app/api/worker/resolve-vibe-checks/route.ts` | Cron endpoint (every 15 min) |
+| `lib/featureFlags.ts` | `isVibeCheckEnabled()` |
+
+### Reputation & City
 
 | File | Purpose |
 |------|---------|

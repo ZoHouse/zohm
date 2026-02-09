@@ -419,38 +419,39 @@ RSVP records.
 
 ### vibe_checks
 
-Community governance proposals.
+Telegram-based community governance for pending events. One row per pending event sent to the approval group.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | UUID | Primary key |
-| `event_id` | UUID | → canonical_events |
-| `city_id` | TEXT | → cities |
-| `proposer_id` | TEXT | → users |
-| `eligible_founder_ids` | TEXT[] | Voter snapshot |
-| `tg_chat_id` | TEXT | Telegram group |
-| `tg_message_id` | INTEGER | TG message |
-| `upvotes`, `downvotes` | INTEGER | Vote tallies |
-| `approval_threshold` | NUMERIC | Default 0.6 |
-| `min_quorum` | INTEGER | Default 3 |
-| `status` | TEXT | `open`, `approved`, `rejected`, `expired` |
-| `expires_at` | TIMESTAMPTZ | Voting deadline |
+| `event_id` | UUID | → canonical_events (CASCADE delete) |
+| `tg_chat_id` | TEXT | Telegram group ID (from env) |
+| `tg_message_id` | INTEGER | Telegram message ID (for editing vote counts) |
+| `tg_message_type` | TEXT | `text` or `photo` (default: `text`) |
+| `upvotes` | INTEGER | Current upvote count (default: 0) |
+| `downvotes` | INTEGER | Current downvote count (default: 0) |
+| `status` | TEXT | `open`, `approved`, `rejected` |
+| `resolved_at` | TIMESTAMPTZ | When cron resolved the check |
+| `created_at` | TIMESTAMPTZ | Creation time |
+| `expires_at` | TIMESTAMPTZ | Voting deadline (created_at + 24h) |
+
+**Index:** `idx_vibe_checks_status_expires` on `(status, expires_at)` — used by cron to find expired open checks.
 
 ---
 
 ### vibe_check_votes
 
-Individual founder votes.
+Individual votes from Telegram group members. One vote per user per vibe check.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | UUID | Primary key |
-| `vibe_check_id` | UUID | → vibe_checks |
-| `user_id` | TEXT | → users |
-| `vote` | TEXT | `up`, `down` |
-| `comment` | TEXT | Optional feedback |
-| `tg_user_id` | TEXT | TG identity |
+| `vibe_check_id` | UUID | → vibe_checks (CASCADE delete) |
+| `tg_user_id` | TEXT | Telegram user ID (string for large IDs) |
+| `vote` | TEXT | `up` or `down` |
 | `created_at` | TIMESTAMPTZ | Vote time |
+
+**Constraint:** `UNIQUE(vibe_check_id, tg_user_id)` — one vote per TG user per check.
 
 ---
 

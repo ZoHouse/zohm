@@ -1,8 +1,9 @@
-# Zo World Events System Documentation
+# Zo World Events System — Technical Documentation
 
-**Version**: 1.0  
-**Last Updated**: January 22, 2026  
-**Status**: Active (Legacy iCal Mode)
+**Version**: 2.0
+**Last Updated**: February 9, 2026
+**Status**: Active (Dual-mode: Community Events + Legacy iCal)
+**Code-verified**: All types, routes, and components audited against source
 
 ---
 
@@ -10,550 +11,1048 @@
 
 1. [Overview](#overview)
 2. [Architecture](#architecture)
-3. [Data Flow](#data-flow)
-4. [Database Schema](#database-schema)
+3. [Database Schema](#database-schema)
+4. [Type System](#type-system)
 5. [API Endpoints](#api-endpoints)
-6. [Frontend Components](#frontend-components)
-7. [Configuration](#configuration)
-8. [Feature Flags](#feature-flags)
-9. [Current Issues](#current-issues)
-10. [Improvement Recommendations](#improvement-recommendations)
-11. [RSVP System](#rsvp-system) ⭐ NEW
-12. [Authentication System](#authentication-system) ⭐ NEW
-13. [Event Admin System](#event-admin-system) ⭐ NEW
-14. [Users Table Schema Reference](#users-table-schema-reference)
-15. [Implementation Checklist](#implementation-checklist)
+6. [Event Creation Flow](#event-creation-flow)
+7. [Vibe Check — Pending Event Governance](#vibe-check--pending-event-governance)
+8. [RSVP System](#rsvp-system)
+9. [Cover Images & Culture Stickers](#cover-images--culture-stickers)
+10. [iCal Ingestion Pipeline](#ical-ingestion-pipeline)
+11. [Canonical Events Worker](#canonical-events-worker)
+12. [Feature Flags](#feature-flags)
+13. [GeoJSON & Map Integration](#geojson--map-integration)
+14. [Frontend Components](#frontend-components)
+15. [Authentication & Authorization](#authentication--authorization)
+16. [File Reference](#file-reference)
 
 ---
 
 ## Overview
 
-The Events System displays events on the map and in list overlays. Events are sourced from **iCal/Luma calendar feeds** and can optionally be stored in a **canonical events table** for better performance and deduplication.
+The Events System powers community-driven events across the Zo World network. It operates in **dual mode**:
 
-### Current Status
-- **Primary Mode**: Legacy iCal parsing (client-side)
-- **Canonical Events**: Implemented but empty (worker not running)
-- **Calendars in DB**: 2 active calendars
+| Mode | Status | Source | Description |
+|------|--------|--------|-------------|
+| **Community Events** | Active | `canonical_events` table | User-created events with RSVP, cultures, cover images |
+| **Legacy iCal** | Active | Luma iCal feeds | External events ingested via iCal proxy |
+| **Canonical Worker** | Standby | Feature-flagged | Syncs iCal events to database (not yet enabled) |
 
-### Key Files
-| Category | Files |
-|----------|-------|
-| **Data Fetching** | `lib/icalParser.ts`, `lib/calendarConfig.ts`, `lib/eventWorker.ts` |
-| **API Routes** | `api/calendar/route.ts`, `api/events/canonical/route.ts`, `api/events/geojson/route.ts` |
-| **Components** | `EventsOverlay.tsx`, `MobileEventsListOverlay.tsx`, `MapCanvas.tsx` |
-| **Hooks** | `useMapGeoJSON.ts` |
-| **Config** | `lib/featureFlags.ts` |
+### Key Numbers (from source code)
+
+- **19 event cultures** (17 named + `follow_your_heart` + `default`)
+- **3 event categories**: `community`, `sponsored`, `ticketed`
+- **3 location types**: `zo_property`, `custom`, `online`
+- **8 RSVP statuses**: `pending`, `going`, `interested`, `not_going`, `waitlist`, `cancelled`, `approved`, `rejected`
+- **5 host types**: `citizen`, `founder_member`, `admin`, `sponsor`, `vibe_curator`
+- **11 API routes** handling events
+- **5-step** event creation modal
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          EVENT SOURCES                                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Luma Calendars (iCal)                                                  │
-│  ├── Zo House Bangalore (cal-ZVonmjVxLk7F2oM)                          │
-│  ├── Zo House San Francisco (cal-3YNnBTToy9fnnjQ)                      │
-│  └── Discover Feeds (SF, Singapore)                                     │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       INGESTION LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────────────────┐         ┌──────────────────────┐              │
-│  │  LEGACY MODE (Active)│         │ CANONICAL MODE (Off) │              │
-│  │                      │         │                      │              │
-│  │  /api/calendar       │         │  eventWorker.ts      │              │
-│  │       │              │         │       │              │              │
-│  │       ▼              │         │       ▼              │              │
-│  │  iCal Proxy          │         │  Sync to DB          │              │
-│  │       │              │         │       │              │              │
-│  │       ▼              │         │       ▼              │              │
-│  │  icalParser.ts       │         │  canonical_events    │              │
-│  │  (client-side)       │         │  (Supabase)          │              │
-│  └──────────────────────┘         └──────────────────────┘              │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          GEOCODING                                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Mapbox Geocoding API                                                   │
-│  ├── Location string → lat/lng                                          │
-│  ├── Hardcoded coords for Zo Houses                                     │
-│  └── Results cached in canonical_events table                           │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         DISPLAY LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐         │
-│  │   MapCanvas     │  │  EventsOverlay  │  │ MobileEvents    │         │
-│  │                 │  │   (Desktop)     │  │   ListOverlay   │         │
-│  │  - Markers      │  │                 │  │                 │         │
-│  │  - Popups       │  │  - Search       │  │  - Search       │         │
-│  │  - Fly-to       │  │  - List         │  │  - List         │         │
-│  │  - Clustering   │  │  - Details      │  │  - Host button  │         │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+                     ┌──────────────────────────────────────────┐
+                     │           EVENT SOURCES                   │
+                     ├──────────────────────────────────────────┤
+                     │                                          │
+                     │  ┌─────────────┐    ┌─────────────────┐ │
+                     │  │  Community   │    │  Luma iCal      │ │
+                     │  │  Users       │    │  Calendar Feeds │ │
+                     │  │  (5-step     │    │  (BLR, SF,      │ │
+                     │  │   modal)     │    │   Discover)     │ │
+                     │  └──────┬──────┘    └───────┬─────────┘ │
+                     └─────────┼───────────────────┼───────────┘
+                               │                   │
+                               ▼                   ▼
+              ┌────────────────────────┐  ┌─────────────────────────┐
+              │   POST /api/events     │  │   /api/calendar         │
+              │   (Create + validate   │  │   (iCal proxy, CORS     │
+              │    + auto-RSVP host)   │  │    bypass)              │
+              └────────┬───────────────┘  └────────┬────────────────┘
+                       │                           │
+                       ▼                           ▼
+              ┌────────────────────────┐  ┌─────────────────────────┐
+              │   canonical_events     │  │   icalParser.ts         │
+              │   (Supabase table)     │  │   (Client-side parse    │
+              │                        │  │    + Mapbox geocode)    │
+              └────────┬───────────────┘  └────────┬────────────────┘
+                       │                           │
+                       ▼                           ▼
+              ┌────────────────────────────────────────────────────┐
+              │                  DISPLAY LAYER                      │
+              ├────────────────────────────────────────────────────┤
+              │                                                    │
+              │  /api/events/geojson ──► MapCanvas (markers)       │
+              │  /api/events          ──► EventsOverlay (desktop)  │
+              │  /api/events/mine     ──► MyEventsCard (dashboard) │
+              │  /api/events/[id]/rsvp──► RSVP management          │
+              │                                                    │
+              └────────────────────────────────────────────────────┘
 ```
 
----
+### Dual Data Path
 
-## Data Flow
+The system currently serves events through two independent paths:
 
-### Current Flow (Legacy iCal Mode)
+1. **Community Events Path** (database-backed):
+   - User creates event via `HostEventModal` (5-step form)
+   - `POST /api/events` validates, determines host type, inserts to `canonical_events`
+   - Host auto-RSVP'd as "going" with `rsvp_type: 'host'`
+   - Events appear in map via `/api/events/geojson` and lists via `/api/events`
+   - RSVPs managed via `/api/events/[id]/rsvp`
 
-```
-1. User opens app
-         │
-         ▼
-2. page.tsx: loadLiveEvents()
-         │
-         ▼
-3. getCalendarUrls() → Fetches from `calendars` table
-         │
-         ▼
-4. URLs converted to proxy: /api/calendar?url={encoded_url}
-         │
-         ▼
-5. /api/calendar/route.ts → Fetches raw iCal from Luma
-         │
-         ▼
-6. fetchAllCalendarEventsWithGeocoding()
-         │
-         ├── parseICS() → Extract events from iCal
-         │
-         └── geocodeLocation() → Get lat/lng from Mapbox
-                  │
-                  ▼
-7. setEvents(liveEvents) → State updated
-         │
-         ▼
-8. Components receive events via props
-         │
-         ├── MapCanvas → Renders markers
-         ├── EventsOverlay → Renders list (desktop)
-         └── MobileEventsListOverlay → Renders list (mobile)
-```
-
-### Canonical Events Flow (Not Active)
-
-```
-1. Worker triggered (manual or cron)
-         │
-         ▼
-2. syncCanonicalEvents()
-         │
-         ▼
-3. Fetch events from all calendars
-         │
-         ▼
-4. For each event:
-         │
-         ├── Generate canonical_uid (hash of title + date + location)
-         │
-         ├── Check if exists in canonical_events
-         │
-         ├── Geocode if needed
-         │
-         └── Upsert to canonical_events table
-                  │
-                  ▼
-5. UI fetches from /api/events/canonical or /api/events/geojson
-```
+2. **Legacy iCal Path** (client-side parsing):
+   - `page.tsx` calls `loadLiveEvents()` on mount
+   - `calendarConfig.ts` fetches active calendar URLs from `calendars` table
+   - URLs proxied through `/api/calendar` (CORS bypass)
+   - `icalParser.ts` parses iCal data client-side
+   - `geocodeLocation()` adds lat/lng via Mapbox API
+   - Hardcoded Zo House coordinates as fallback (BLR, SF, Whitefield)
 
 ---
 
 ## Database Schema
 
-### `calendars` Table
+### 7 Tables
 
-Stores calendar source configurations.
+#### 1. `canonical_events` — Primary event store
 
+All events (community-created and synced) live here.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID PK | Auto-generated |
+| `canonical_uid` | TEXT UNIQUE | Deduplication key. Community: `community-{userId}-{timestamp}`. iCal: hash of title+date+location |
+| `title` | TEXT NOT NULL | Event name (min 5 chars enforced by API) |
+| `description` | TEXT | Event description |
+| `category` | TEXT | `community` \| `sponsored` \| `ticketed` |
+| `culture` | TEXT | One of 19 `EventCulture` slugs |
+| `source_type` | TEXT | `community` \| `ical` \| `luma` \| `activity_manager` \| `admin` |
+| `starts_at` | TIMESTAMPTZ NOT NULL | Event start time |
+| `ends_at` | TIMESTAMPTZ | Event end time |
+| `tz` | TEXT | Timezone (default: `Asia/Kolkata` for community, `UTC` for iCal) |
+| `location_type` | TEXT | `zo_property` \| `custom` \| `online` |
+| `location_name` | TEXT | Venue name |
+| `location_raw` | TEXT | Raw address string |
+| `location_address` | TEXT | Formatted address |
+| `lat` | DOUBLE PRECISION | Latitude |
+| `lng` | DOUBLE PRECISION | Longitude |
+| `zo_property_id` | UUID FK | References `nodes.id` if at a Zo property |
+| `meeting_point` | TEXT | Specific meeting instructions |
+| `max_capacity` | INTEGER | Max attendees (null = unlimited) |
+| `current_rsvp_count` | INTEGER | Denormalized count of "going" RSVPs |
+| `host_id` | UUID FK | References `users.id` |
+| `host_type` | TEXT | `citizen` \| `founder_member` \| `admin` \| `sponsor` \| `vibe_curator` |
+| `submission_status` | TEXT | `draft` \| `pending` \| `approved` \| `rejected` \| `cancelled` |
+| `is_ticketed` | BOOLEAN | Whether event requires ticket purchase |
+| `ticket_price` | NUMERIC | Price (if ticketed) |
+| `ticket_currency` | TEXT | Currency code (default: `INR`) |
+| `external_rsvp_url` | TEXT | External registration link |
+| `luma_event_id` | TEXT | Luma event ID (for synced events) |
+| `cover_image_url` | TEXT | Supabase Storage URL or default sticker path |
+| `geocode_status` | TEXT | `success` \| `failed` \| `cached` (for synced events) |
+| `geocode_attempted_at` | TIMESTAMPTZ | Last geocoding attempt |
+| `source_refs` | JSONB | Array of `{ event_url, fetched_at }` |
+| `raw_payload` | JSONB | Original iCal data (for synced events) |
+| `event_version` | INTEGER | Incremented on update (default: 1) |
+| `created_at` | TIMESTAMPTZ | Record creation time |
+| `updated_at` | TIMESTAMPTZ | Last modification time |
+
+**Indexes:**
 ```sql
-CREATE TABLE calendars (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        TEXT NOT NULL,
-  url         TEXT NOT NULL,           -- iCal feed URL
-  type        TEXT DEFAULT 'ical',     -- 'ical' | 'google' | 'manual'
-  is_active   BOOLEAN DEFAULT true,
-  description TEXT,
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  updated_at  TIMESTAMPTZ DEFAULT now()
-);
-```
-
-**Current Records:**
-| Name | URL | Status |
-|------|-----|--------|
-| Zo House San Francisco | `https://api2.luma.com/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ` | Active |
-| Zo House Bangalore | `https://api2.luma.com/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM` | Active |
-
----
-
-### `canonical_events` Table
-
-Deduplicated, geocoded event store (currently empty).
-
-```sql
-CREATE TABLE canonical_events (
-  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  canonical_uid         TEXT UNIQUE NOT NULL,  -- Hash for deduplication
-  title                 TEXT NOT NULL,
-  description           TEXT,
-  location_raw          TEXT,                  -- Original location string
-  lat                   DOUBLE PRECISION,
-  lng                   DOUBLE PRECISION,
-  geocode_status        TEXT,                  -- 'success' | 'failed' | 'cached'
-  geocode_attempted_at  TIMESTAMPTZ,
-  starts_at             TIMESTAMPTZ NOT NULL,
-  ends_at               TIMESTAMPTZ,
-  tz                    TEXT DEFAULT 'UTC',
-  source_refs           JSONB,                 -- Array of source URLs
-  raw_payload           JSONB,                 -- Original iCal data
-  event_version         INTEGER DEFAULT 1,     -- For updates
-  created_at            TIMESTAMPTZ DEFAULT now(),
-  updated_at            TIMESTAMPTZ DEFAULT now()
-);
-
--- Indexes
 CREATE INDEX idx_canonical_events_starts_at ON canonical_events(starts_at);
 CREATE INDEX idx_canonical_events_geo ON canonical_events(lat, lng);
 CREATE INDEX idx_canonical_events_uid ON canonical_events(canonical_uid);
 ```
 
-**Current Status:** Empty (0 records)
+**Key view:** `user_profiles` (joined via `canonical_events_host_id_fkey`) provides `display_name` and `avatar_url` for GeoJSON host info.
 
 ---
 
-### `canonical_event_changes` Table (Audit)
+#### 2. `event_rsvps` — Attendance tracking
 
-Tracks all changes to canonical events for debugging.
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID PK | Auto-generated |
+| `event_id` | UUID FK | References `canonical_events.id` |
+| `user_id` | UUID FK | References `users.id` |
+| `status` | TEXT NOT NULL | `pending` \| `going` \| `interested` \| `not_going` \| `waitlist` \| `cancelled` \| `approved` \| `rejected` |
+| `rsvp_type` | TEXT | `standard` \| `vip` \| `speaker` \| `organizer` \| `host` |
+| `checked_in` | BOOLEAN | Whether user checked in at event (default: false) |
+| `checked_in_at` | TIMESTAMPTZ | Check-in timestamp |
+| `checked_in_by` | UUID FK | Admin/host who performed check-in |
+| `notes` | TEXT | Admin notes |
+| `metadata` | JSONB | Additional data |
+| `created_at` | TIMESTAMPTZ | RSVP creation time |
+| `updated_at` | TIMESTAMPTZ | Last modification time |
 
+**Constraints:**
 ```sql
-CREATE TABLE canonical_event_changes (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  canonical_event_id  UUID REFERENCES canonical_events(id),
-  change_type         TEXT NOT NULL,  -- 'insert' | 'update' | 'dry-run'
-  payload             JSONB,
-  created_at          TIMESTAMPTZ DEFAULT now()
-);
+CONSTRAINT unique_user_event UNIQUE (event_id, user_id)
+```
+
+---
+
+#### 3. `event_cultures` — Culture definitions
+
+Stored in database, served via `/api/events/cultures`. Fallback hardcoded in `CultureSelector.tsx`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `slug` | TEXT PK | e.g. `science_technology`, `food`, `follow_your_heart` |
+| `name` | TEXT | Display name (e.g. "Science & Tech") |
+| `emoji` | TEXT | Emoji icon |
+| `color` | TEXT | Hex color code |
+| `asset_file` | TEXT | Filename in `/Cultural Stickers/` |
+| `description` | TEXT | Short description |
+| `tags` | TEXT[] | Searchable tags |
+| `is_active` | BOOLEAN | Whether shown in selector |
+| `sort_order` | INTEGER | Display order |
+
+**19 Culture Slugs** (from `types/events.ts`):
+`science_technology`, `business`, `design`, `food`, `game`, `health_fitness`, `home_lifestyle`, `law`, `literature_stories`, `music_entertainment`, `nature_wildlife`, `photography`, `spiritual`, `travel_adventure`, `television_cinema`, `stories_journal`, `sport`, `follow_your_heart`, `default`
+
+---
+
+#### 4. `calendars` — iCal feed sources
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID PK | Auto-generated |
+| `name` | TEXT NOT NULL | Calendar display name |
+| `url` | TEXT NOT NULL | iCal feed URL |
+| `type` | TEXT | `ical` \| `google` \| `manual` (default: `ical`) |
+| `is_active` | BOOLEAN | Whether to fetch (default: true) |
+| `description` | TEXT | Notes about this calendar |
+| `created_at` | TIMESTAMPTZ | Record creation |
+| `updated_at` | TIMESTAMPTZ | Last modification |
+
+**Active calendars:**
+| Name | Feed |
+|------|------|
+| Zo House Bangalore | `cal-ZVonmjVxLk7F2oM` |
+| Zo House San Francisco | `cal-3YNnBTToy9fnnjQ` |
+
+**Emergency fallback feeds** (hardcoded in `calendarConfig.ts`):
+- SF Discover: `discplace-BDj7GNbGlsF7Cka`
+- Singapore Discover: `discplace-mUbtdfNjfWaLQ72`
+- BLR Calendar: `cal-ZVonmjVxLk7F2oM`
+- SF Calendar: `cal-3YNnBTToy9fnnjQ`
+
+---
+
+#### 5. `canonical_event_changes` — Audit trail
+
+Tracks all worker operations for debugging.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID PK | Auto-generated |
+| `canonical_event_id` | UUID FK | References `canonical_events.id` |
+| `change_type` | TEXT NOT NULL | `insert` \| `update` \| `dry-run` |
+| `payload` | JSONB | Operation details |
+| `created_at` | TIMESTAMPTZ | Timestamp |
+
+---
+
+#### 6. `nodes` — Zo properties (used for event locations)
+
+Events with `location_type: 'zo_property'` reference a node. The GeoJSON route looks up node coordinates when events lack lat/lng.
+
+---
+
+#### 7. `users` — User accounts (host info)
+
+Events join to `users` for host info. Key fields used by events API:
+- `id`, `name`, `pfp`, `role`, `zo_membership`, `founder_nfts_count`, `zo_roles`
+- View `user_profiles` provides `display_name` and `avatar_url`
+
+---
+
+## Type System
+
+All event types are defined in `apps/web/src/types/events.ts` (406 lines).
+
+### Core Enums
+
+```typescript
+type EventCategory   = 'community' | 'sponsored' | 'ticketed';
+type EventCulture    = 'science_technology' | 'business' | ... | 'follow_your_heart' | 'default';  // 19 values
+type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled';
+type HostType        = 'citizen' | 'founder_member' | 'admin' | 'sponsor' | 'vibe_curator';
+type LocationType    = 'zo_property' | 'custom' | 'online';
+type SourceType      = 'ical' | 'luma' | 'community' | 'activity_manager' | 'admin';
+type RsvpStatus      = 'pending' | 'going' | 'interested' | 'not_going' | 'waitlist' | 'cancelled' | 'approved' | 'rejected';
+type RsvpType        = 'standard' | 'vip' | 'speaker' | 'organizer' | 'host';
+```
+
+### Key Interfaces
+
+| Interface | Description |
+|-----------|-------------|
+| `CommunityEvent` | Full event record from database (34 fields) |
+| `EventHost` | Host info joined from users table |
+| `EventMarkerData` | Simplified event for map markers |
+| `CreateEventInput` | Input for creating events (maps to 5-step modal) |
+| `CreateEventResponse` | API response after creating event |
+| `EventRsvp` | RSVP record with optional joined user/event data |
+| `RsvpUser` | User info for RSVP display (id, name, pfp, phone, zo_pid) |
+| `EventsListResponse` | Paginated events list with meta |
+| `MyEventsResponse` | User's hosted events, RSVPs, past events, and stats |
+| `EventAttendeesResponse` | Attendee list with going/interested/waitlist/checked_in counts |
+| `EventFilters` | Query parameters for filtering events |
+| `EventCultureConfig` | Culture definition (slug, name, emoji, color, asset, etc.) |
+| `HostEventModalState` | UI state for the creation modal |
+
+### Display Helpers
+
+```typescript
+const EVENT_CATEGORY_CONFIG: Record<EventCategory, { label, emoji, color, bgColor }>
+// community → { label: 'Community', emoji: '🌱', color: '#22c55e' }
+// sponsored → { label: 'Sponsored', emoji: '⭐', color: '#a855f7' }
+// ticketed  → { label: 'Ticketed',  emoji: '🎟️', color: '#eab308' }
 ```
 
 ---
 
 ## API Endpoints
 
-### 1. `/api/calendar` - iCal Proxy
+### Overview Table
 
-**Purpose:** Fetches raw iCal data from external sources (avoids CORS).
-
-**Method:** `GET`
-
-**Query Parameters:**
-| Param | Required | Description |
-|-------|----------|-------------|
-| `url` | Yes* | Direct URL to iCal feed (encoded) |
-| `id` | Yes* | Luma calendar ID (legacy) |
-
-*One of `url` or `id` is required.
-
-**Response:** Raw iCal text (`text/calendar`)
-
-**Example:**
-```bash
-GET /api/calendar?url=https%3A%2F%2Fapi2.luma.com%2Fics%2Fget%3Fentity%3Dcalendar%26id%3Dcal-3YNnBTToy9fnnjQ
-```
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/events` | No | List events with filters |
+| `POST` | `/api/events` | Yes | Create community event |
+| `GET` | `/api/events/[id]` | No | Get event details + RSVP stats |
+| `PUT` | `/api/events/[id]` | Yes | Update event (host/admin only) |
+| `DELETE` | `/api/events/[id]` | Yes | Cancel event (soft delete) |
+| `GET` | `/api/events/[id]/rsvp` | No | Get attendees list |
+| `POST` | `/api/events/[id]/rsvp` | Yes | Create/update user RSVP |
+| `PATCH` | `/api/events/[id]/rsvp` | Yes | Host manages RSVPs (approve/check-in) |
+| `GET` | `/api/events/mine` | Yes | User's hosted events + RSVPs |
+| `POST` | `/api/events/upload-cover` | Yes | Upload cover image to Supabase Storage |
+| `GET` | `/api/events/cultures` | No | List active cultures |
+| `GET` | `/api/events/geojson` | No | GeoJSON for map markers |
+| `GET` | `/api/events/canonical` | No | Legacy canonical events (feature-flagged) |
+| `GET` | `/api/calendar` | No | iCal proxy (CORS bypass) |
+| `POST` | `/api/worker/sync-events` | No | Trigger canonical event sync |
+| `POST` | `/api/add-calendar` | No | Add new calendar source |
 
 ---
 
-### 2. `/api/events/canonical` - Canonical Events API
+### 1. `GET /api/events` — List Events
 
-**Purpose:** Fetch events from database with filtering.
-
-**Method:** `GET`
+Fetches approved events from `canonical_events` with filtering.
 
 **Query Parameters:**
-| Param | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `lat` | No | - | User latitude (for distance filtering) |
-| `lng` | No | - | User longitude |
-| `radius` | No | - | Radius in km |
-| `from` | No | now | Start date filter |
-| `to` | No | - | End date filter |
-| `limit` | No | 100 | Max results |
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `category` | `all` | Filter: `community`, `sponsored`, `ticketed`, or `all` |
+| `culture` | — | Filter by culture slug |
+| `status` | `approved` | Filter by submission status |
+| `host_id` | — | Filter by host user ID |
+| `start_date` | `now` | ISO timestamp, defaults to current time |
+| `end_date` | — | ISO timestamp upper bound |
+| `limit` | `50` | Max results |
+| `offset` | `0` | Pagination offset |
+
+**Response:** `EventsListResponse`
+```json
+{
+  "events": [{ ...CommunityEvent, "host": { "id", "name", "pfp", "display_name" } }],
+  "meta": { "total": 12, "page": 1, "limit": 50, "has_more": false }
+}
+```
+
+**Implementation notes:**
+- Uses `supabaseAdmin` to bypass RLS for reading
+- Fetches host info separately per event (N+1 — noted in LAUNDRY)
+- Host `display_name` defaults to `host.name || 'Host'`
+- Phone number is never exposed (privacy)
+
+---
+
+### 2. `POST /api/events` — Create Event
+
+Creates a new community event. Auto-determines host type and submission status.
+
+**Auth:** Required (`x-user-id` header or `zo_user_id` cookie)
+
+**Body:** `CreateEventInput`
+
+**Validation:**
+- Title must be >= 5 characters
+- `starts_at` and `ends_at` required
+- Start must be in the future
+- End must be after start
+
+**Host Type Determination** (`getHostTypeAndStatus()`):
+
+```
+User has zo_roles 'admin' or 'vibe-curator'
+  → host_type: 'admin', submission_status: 'approved'
+
+User has role='Founder' OR zo_membership='founder' OR founder_nfts_count > 0
+  → host_type: 'founder_member', submission_status: 'approved'
+
+Otherwise (citizen)
+  → host_type: 'citizen', submission_status: 'pending'
+```
+
+**Key behavior:**
+- `canonical_uid` set to `community-{userId}-{timestamp}`
+- `source_type` always set to `community`
+- Default timezone: `Asia/Kolkata`
+- Default currency: `INR`
+- Host is auto-RSVP'd as `{ status: 'going', rsvp_type: 'host' }`
+- Returns different message based on approval status
+
+---
+
+### 3. `GET /api/events/[id]` — Event Details
+
+Returns single event with host info and RSVP stats.
 
 **Response:**
 ```json
 {
-  "events": [
-    {
-      "Event Name": "Zo Chill",
-      "Date & Time": "2026-01-25T18:00:00Z",
-      "Location": "Zo House Bangalore",
-      "Latitude": "12.932658",
-      "Longitude": "77.634402",
-      "Event URL": "https://lu.ma/zochill",
-      "_canonical": {
-        "id": "uuid",
-        "uid": "hash",
-        "geocode_status": "success"
-      }
-    }
-  ],
-  "meta": {
-    "total": 1,
-    "source": "canonical_events"
-  }
+  "event": { ...CommunityEvent, "host": { "id", "name", "pfp", "role", "zo_membership" } },
+  "stats": { "going": 12, "interested": 5, "waitlist": 2 }
 }
 ```
 
-**Feature Flag:** Requires `FEATURE_CANONICAL_EVENTS_READ=true`
+---
+
+### 4. `PUT /api/events/[id]` — Update Event
+
+**Auth:** Host or admin only.
+
+**Editable fields:**
+`title`, `description`, `culture`, `starts_at`, `ends_at`, `location_name`, `location_raw`, `lat`, `lng`, `meeting_point`, `max_capacity`, `cover_image_url`
+
+Fields NOT editable via API: `category`, `source_type`, `host_id`, `host_type`, `submission_status`, `is_ticketed`
 
 ---
 
-### 3. `/api/events/geojson` - GeoJSON API
+### 5. `DELETE /api/events/[id]` — Cancel Event
 
-**Purpose:** Returns events and nodes as GeoJSON for map clustering.
+**Auth:** Host or admin only. Soft delete — sets `submission_status: 'cancelled'`. Cannot cancel past events.
 
-**Method:** `GET`
+---
+
+### 6. `GET /api/events/[id]/rsvp` — Get Attendees
+
+Returns all RSVPs for an event with user info. Uses batch user fetch to avoid N+1.
+
+**Query params:** `status` — filter by RSVP status
+
+**Response:** `EventAttendeesResponse`
+```json
+{
+  "attendees": [{ ...EventRsvp, "user": { "id", "name", "pfp", "phone", "zo_pid" } }],
+  "meta": { "total": 45, "going": 40, "interested": 5, "waitlist": 0, "checked_in": 12 }
+}
+```
+
+---
+
+### 7. `POST /api/events/[id]/rsvp` — User RSVP
+
+**Auth:** Required.
+
+**Body:** `{ status: RsvpStatus, rsvp_type?: RsvpType }`
+
+**RSVP Flow:**
+
+```
+New user RSVPs with status="going"
+  → Overridden to "interested" (requires host approval)
+
+User RSVPs with status="going" AND event at max_capacity
+  → Overridden to "waitlist"
+
+Existing RSVP
+  → Updated in place
+
+User changes FROM "going" to something else AND event has max_capacity
+  → Oldest waitlisted user auto-promoted to "going"
+```
+
+**Side effects:**
+- `current_rsvp_count` on `canonical_events` is recalculated after every RSVP change
+- Waitlist promotion happens automatically via `promoteFromWaitlist()`
+
+---
+
+### 8. `PATCH /api/events/[id]/rsvp` — Host Manages RSVPs
+
+**Auth:** Host or admin only.
+
+**Body:** `{ rsvp_id?: string, user_id?: string, status?: string, checked_in?: boolean }`
+
+Hosts can:
+- Approve RSVPs (set `status: 'going'`)
+- Reject RSVPs
+- Check in attendees (`checked_in: true` sets `checked_in_at` and `checked_in_by`)
+- Must provide either `rsvp_id` or `user_id`
+
+---
+
+### 9. `GET /api/events/mine` — My Events
+
+**Auth:** Required.
+
+Returns three sections for the authenticated user:
+
+| Section | Query | Description |
+|---------|-------|-------------|
+| `hosted` | `canonical_events WHERE host_id={userId} AND source_type='community'` | Events user is hosting (upcoming only) |
+| `rsvps` | `event_rsvps WHERE user_id={userId} AND status IN ('going','interested','waitlist')` | Upcoming RSVPs with event details (batch fetched) |
+| `past` | `event_rsvps WHERE user_id={userId} AND checked_in=true` | Past attended events (max 20) |
+
+**Response:** `MyEventsResponse`
+```json
+{
+  "hosted": [...],
+  "rsvps": [...],
+  "past": [...],
+  "stats": { "total_hosted": 3, "total_attended": 12, "upcoming_count": 2 }
+}
+```
+
+---
+
+### 10. `POST /api/events/upload-cover` — Upload Cover Image
+
+Uploads event cover image to Supabase Storage bucket `event-covers`.
+
+**Auth:** Required.
+
+**Content-Type:** `multipart/form-data`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `file` | File | Image file (JPEG, PNG, GIF, WebP) |
+| `eventId` | string | Optional event ID for path organization |
+
+**Constraints:**
+- Max size: 5MB
+- Allowed types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+- Path: `{userId}/{eventId|new}/{uuid}.{ext}`
+- UUID generated via `uuid` package
+
+**Response:**
+```json
+{ "success": true, "url": "https://...supabase.co/storage/v1/object/public/event-covers/...", "path": "..." }
+```
+
+---
+
+### 11. `GET /api/events/cultures` — List Cultures
+
+Returns active cultures from `event_cultures` table, sorted by `sort_order`. Excludes `default` slug.
+
+**Response:** `CulturesResponse`
+```json
+{ "cultures": [{ "slug": "science_technology", "name": "Science & Tech", "emoji": "🔬", ... }] }
+```
+
+---
+
+### 12. `GET /api/events/geojson` — GeoJSON for Map
+
+Returns events (and optionally nodes) as GeoJSON `FeatureCollection` for Mapbox clustering.
 
 **Query Parameters:**
+
 | Param | Required | Description |
 |-------|----------|-------------|
 | `bbox` | Yes | Bounding box: `west,south,east,north` |
 | `from` | No | Start date filter |
 | `to` | No | End date filter |
-| `includeNodes` | No | Include nodes in response |
+| `includeNodes` | No | Include node markers (default: false) |
 
-**Response:**
+**Implementation details:**
+- Fetches ALL approved events first, then filters by bbox
+- For events with `zo_property_id` but no lat/lng, looks up coordinates from `nodes` table
+- Joins `user_profiles` view for host display_name and avatar_url
+- Extracts `event_url` from `source_refs[0].event_url`
+- Safety limit: 500 events max
+- Cache: `public, s-maxage=60, stale-while-revalidate=300`
+- Content-Type: `application/geo+json`
+
+**GeoJSON Feature properties (events):**
 ```json
 {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "id": "event-uuid",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [77.634402, 12.932658]
-      },
-      "properties": {
-        "id": "uuid",
-        "name": "Zo Chill",
-        "type": "event",
-        "starts_at": "2026-01-25T18:00:00Z"
-      }
-    }
-  ]
+  "id": "uuid", "name": "Event Title", "type": "event",
+  "starts_at": "...", "ends_at": "...", "event_url": "...",
+  "location": "raw address", "location_name": "venue name",
+  "category": "community", "culture": "food",
+  "cover_image_url": "...",
+  "host_id": "uuid", "host_type": "founder_member",
+  "host_name": "display name", "host_avatar": "url",
+  "max_capacity": 50, "formatted_date": "Sat, Feb 15, 2026"
 }
 ```
 
 ---
 
-### 4. `/api/worker/sync-events` - Manual Sync Trigger
+### 13. `GET /api/events/canonical` — Legacy Canonical Events
 
-**Purpose:** Manually trigger event sync worker.
+Feature-flagged (`FEATURE_CANONICAL_EVENTS_READ`). Returns events transformed to match the legacy `ParsedEvent` interface for UI compatibility.
 
-**Method:** `POST`
+- Uses Haversine distance calculation for radius filtering
+- Transforms to `{ 'Event Name', 'Date & Time', Location, Latitude, Longitude, 'Event URL', _canonical }`
+- 5-minute cache
+
+---
+
+### 14. `GET /api/calendar` — iCal Proxy
+
+Fetches raw iCal data from external sources (avoids CORS).
+
+| Param | Description |
+|-------|-------------|
+| `url` | Direct URL to iCal feed (encoded) |
+| `id` | Luma calendar ID (legacy) |
+
+Returns: raw iCal text (`text/calendar`)
+
+---
+
+### 15. `POST /api/worker/sync-events` — Trigger Worker
+
+Manual trigger for canonical event sync worker.
 
 **Body:**
 ```json
-{
-  "dryRun": true,
-  "calendarId": "cal-123",
-  "verbose": true
-}
+{ "dryRun": true, "calendarId": "cal-123", "verbose": true }
 ```
 
 ---
 
-## Frontend Components
+## Event Creation Flow
 
-### `EventsOverlay.tsx` (Desktop)
+The `HostEventModal` component implements a 5-step wizard:
 
-**Location:** `components/EventsOverlay.tsx`
+```
+Step 1: TYPE          Step 2: VIBE         Step 3: DETAILS
+───────────────────   ──────────────────   ──────────────────
+"What kind of         "What's the          "Tell us more"
+ event?"               theme?"
+                                           - Title (min 5 chars)
+┌──────────────┐      ┌────────────────┐   - Description
+│  Community   │      │  4x4 grid of   │   - Start date/time
+│  Sponsored→  │      │  16 culture    │   - End date/time
+│  typeform    │      │  stickers      │   - Cover image upload
+│  Ticketed    │      │  (lazy loaded) │   - Max capacity
+└──────────────┘      └────────────────┘
+       │                     │                    │
+       ▼                     ▼                    ▼
+Step 4: LOCATION      Step 5: REVIEW
+──────────────────    ──────────────────
+"Where is it?"        "Confirm & create"
 
-**Features:**
-- Search filter by name/location
-- Chronological sorting
-- Click to fly to event on map
-- "Host Your Event" CTA
-
-**Props:**
-```typescript
-interface EventsOverlayProps {
-  isVisible: boolean;
-  events: EventData[];
-  onEventClick?: (event: EventData) => void;
-  closeMapPopups?: (() => void) | null;
-  onClose?: () => void;
-}
+┌────────────────┐    Summary of all
+│ Zo Property    │    fields with edit
+│ Custom Address │    buttons per section
+│ Online         │
+└────────────────┘    [Create Event] →
+                      POST /api/events
 ```
 
+### Step Details
+
+**Step 1 — Event Type:**
+- `community`: Standard community event (continues to step 2)
+- `sponsored`: Opens external Typeform (`zostel.typeform.com/to/LgcBfa0M`)
+- `ticketed`: Creates ticketed event with price fields
+
+**Step 2 — Culture/Vibe:**
+- Fetches cultures from `/api/events/cultures` (falls back to 16 hardcoded cultures)
+- 4-column grid of culture stickers from `/Cultural Stickers/` directory
+- Each sticker is a `.png` image loaded with lazy loading for mobile performance
+- Selected culture shows preview with emoji, name, and description
+
+**Step 3 — Details:**
+- Title input (min 5 characters)
+- Description textarea
+- Start/end datetime pickers (HTML5 `datetime-local`)
+- Cover image upload via `ImageUpload` component → `/api/events/upload-cover`
+- Optional max capacity input
+
+**Step 4 — Location:**
+Three modes via `LocationSelector` component:
+- **Zo Property**: Fetches nodes list, user selects from dropdown
+- **Custom Address**: Mapbox address autocomplete (150ms debounce, request cancellation, proximity-based results)
+- **Online**: Meeting link text input
+- Auto-detects user geolocation for search proximity (fallback: India center)
+
+**Step 5 — Review:**
+- Summary card showing all entered information
+- Edit buttons to jump back to any step
+- Submit button → `POST /api/events`
+- Success message varies by approval status
+
 ---
 
-### `MobileEventsListOverlay.tsx` (Mobile)
+## Vibe Check — Pending Event Governance
 
-**Location:** `components/MobileEventsListOverlay.tsx`
+When a pending event is created (Citizens/Members), the system can automatically trigger a **Telegram-based community vote** via the Vibe Check system. This is feature-flagged and non-blocking.
 
-**Features:**
-- Bottom sheet with spring animation
-- Search filter
-- Chronological sorting
-- Auto-close on event select
+### Trigger Point
 
-**Props:**
-```typescript
-interface MobileEventsListOverlayProps {
-  isVisible: boolean;
-  onClose: () => void;
-  events: EventData[];
-  onEventClick?: (event: EventData) => void;
-}
+In `POST /api/events` (after event insert and host auto-RSVP):
+
+```
+Event inserted with submission_status = 'pending'
+       │
+       ├── Is FEATURE_VIBE_CHECK_TELEGRAM enabled?
+       │     NO  → Event sits pending (manual admin action required)
+       │     YES ↓
+       │
+       └── createVibeCheck(event)  ← non-blocking (.catch() swallows errors)
+             │
+             ├── Insert vibe_checks row (expires_at = now + 24h)
+             ├── Post message to Telegram group (with inline vote buttons)
+             └── Store tg_message_id on vibe_checks row
 ```
 
----
+### Resolution
 
-### `MapCanvas.tsx` - Event Markers
+A cron worker (`POST /api/worker/resolve-vibe-checks`) runs every 15 minutes:
 
-**Location:** `components/MapCanvas.tsx` (lines 1456-1564)
+1. Finds all `vibe_checks` where `status = 'open'` and `expires_at <= now()`
+2. For each: if `upvotes > downvotes` → approved, else → rejected
+3. Updates `canonical_events.submission_status` to match
+4. Edits the Telegram message to show final result (buttons removed)
+5. If approved and `FEATURE_LUMA_API_SYNC` is enabled, pushes to Luma
 
-**Features:**
-- Custom image markers (`/event-marker.jpg`)
-- Popup with event details
-- Fly-to animation
-- RSVP button linking to Luma
+### Key Properties
 
----
+- **Non-blocking**: Errors in `createVibeCheck()` are caught and logged, never fail the event creation
+- **Simple majority**: No quorum, no percentage threshold — just `upvotes > downvotes`
+- **24-hour window**: Fixed, not adjusted for event proximity
+- **Any group member**: Not restricted to founders — anyone in the TG group can vote
+- **One vote per user**: UNIQUE constraint on `(vibe_check_id, tg_user_id)`
 
-### `useMapGeoJSON.ts` - GeoJSON Hook
-
-**Location:** `hooks/useMapGeoJSON.ts`
-
-**Features:**
-- Auto-fetch on map move (debounced 300ms)
-- Abort previous requests
-- Bounds change detection
-- Mapbox clustering integration
+For full architectural details, see [SYSTEM_FLOWS.md — Section 3](./SYSTEM_FLOWS.md#3-vibe-check--telegram-event-governance).
 
 ---
 
-## Configuration
+## RSVP System
 
-### Environment Variables
+### Status State Machine
 
-```bash
-# Calendar & Geocoding
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxx           # Required for geocoding
-NEXT_PUBLIC_BASE_URL=http://localhost:3000 # For server-side iCal fetches
+```
+New user RSVPs
+  ├─ (auto) → "interested" (waiting for host approval)
+  └─ (at capacity) → "waitlist"
 
-# Feature Flags (Canonical Events)
-FEATURE_CANONICAL_EVENTS_READ=false        # UI reads from DB
-FEATURE_CANONICAL_EVENTS_WRITE=false       # Worker writes to DB
-CANONICAL_DRY_RUN=true                     # Worker in test mode
+Host approves
+  └─ "interested" → "going"
 
-# Supabase (for canonical events)
-SUPABASE_SERVICE_ROLE_KEY=xxx             # Required for RLS bypass
+Host rejects
+  └─ "interested" → "rejected"
+
+User cancels
+  └─ any → "cancelled" / "not_going"
+
+User leaves "going" + event has capacity limit
+  └─ triggers promoteFromWaitlist() → oldest waitlisted → "going"
 ```
 
+### Capacity & Waitlist Logic
+
+1. When a user RSVPs and event is at `max_capacity`:
+   - Status auto-set to `waitlist`
+2. When someone leaves "going":
+   - `promoteFromWaitlist()` finds oldest `waitlist` RSVP
+   - Promotes to `going`
+   - Recalculates `current_rsvp_count`
+3. `current_rsvp_count` is denormalized on `canonical_events`:
+   - Updated via `updateEventRsvpCount()` after every RSVP change
+   - Counts only `status: 'going'` RSVPs
+
+### Check-In
+
+Hosts can check in attendees via `PATCH /api/events/[id]/rsvp`:
+```json
+{ "rsvp_id": "uuid", "checked_in": true }
+```
+Sets `checked_in_at` to current timestamp and `checked_in_by` to the host's user ID.
+
 ---
+
+## Cover Images & Culture Stickers
+
+### Image Priority (from `eventCoverDefaults.ts`)
+
+```
+1. Uploaded cover image (Supabase Storage)
+     ↓ fallback
+2. Culture-based default sticker (e.g. /Cultural Stickers/Food.png)
+     ↓ fallback
+3. Category-based default (e.g. /dashboard-assets/community-demo-day.jpg)
+     ↓ fallback
+4. General fallback: /dashboard-assets/event-placeholder.jpg
+```
+
+### Culture Sticker Mapping
+
+All 19 cultures map to sticker images in `/public/Cultural Stickers/`:
+
+| Culture | File |
+|---------|------|
+| `science_technology` | `Science&Technology.png` |
+| `business` | `Business.png` |
+| `design` | `Design.png` |
+| `food` | `Food.png` |
+| `game` | `Game.png` |
+| `health_fitness` | `Health&Fitness.png` |
+| `home_lifestyle` | `Home&Lifestyle.png` |
+| `law` | `Law.png` |
+| `literature_stories` | `Literature&Stories.png` |
+| `music_entertainment` | `Music&Entertainment.png` |
+| `nature_wildlife` | `Nature&Wildlife.png` |
+| `photography` | `Photography.png` |
+| `spiritual` | `Spiritual.png` |
+| `sport` | `Sport.png` |
+| `stories_journal` | `Stories&Journal.png` |
+| `television_cinema` | `Television&Cinema.png` |
+| `travel_adventure` | `Travel&Adventure.png` |
+| `follow_your_heart` | `FollowYourHeart.png` |
+| `default` | `/dashboard-assets/event-placeholder.jpg` |
+
+### Upload Specs
+
+- **Bucket**: `event-covers` (Supabase Storage)
+- **Max size**: 5MB
+- **Allowed types**: JPEG, PNG, GIF, WebP
+- **Path format**: `{userId}/{eventId|new}/{uuid}.{ext}`
+
+---
+
+## iCal Ingestion Pipeline
+
+### Flow
+
+```
+calendars table → getCalendarUrls() → CORS proxy → parseICS() → geocode → display
+```
 
 ### `calendarConfig.ts`
 
-**Emergency Fallback URLs:**
+- Fetches active calendars from `calendars` Supabase table
+- Falls back to 4 hardcoded emergency URLs if database unavailable
+- Converts external URLs to proxy format: `/api/calendar?url={encoded}`
+- Handles server-side vs client-side URL resolution
+
+### `icalParser.ts`
+
+**`parseICS(icsData)`:**
+- Splits iCal data into lines, handles multi-line values
+- Extracts: `SUMMARY` → Event Name, `DTSTART` → Date & Time, `LOCATION`, `DESCRIPTION` → Event URL, `GEO` → Latitude/Longitude
+- Handles UTC format (`YYYYMMDDTHHMMSSZ`) and basic date format
+- Filters to future events only
+- Sorts chronologically
+
+**`geocodeLocation(locationName)`:**
+- Mapbox Geocoding API v5
+- Returns `{ lat, lng }` or null
+
+**`fetchAllCalendarEventsWithGeocoding(calendarUrls)`:**
+- Fetches all calendars, parses iCal, geocodes missing coordinates
+- **Hardcoded Zo House coordinates** as fast fallback:
+  - Bangalore/Koramangala: `12.932658, 77.634402`
+  - San Francisco: `37.7817309, -122.401198`
+  - Whitefield: `12.9725, 77.745`
+
+---
+
+## Canonical Events Worker
+
+Located in `lib/eventWorker.ts`. Syncs iCal events to `canonical_events` table.
+
+### Configuration
+
 ```typescript
-const EMERGENCY_FALLBACK_CALENDAR_URLS = [
-  'https://api2.luma.com/ics/get?entity=discover&id=discplace-BDj7GNbGlsF7Cka', // SF Discover
-  'https://api2.luma.com/ics/get?entity=discover&id=discplace-mUbtdfNjfWaLQ72', // Singapore
-  'https://api2.luma.com/ics/get?entity=calendar&id=cal-ZVonmjVxLk7F2oM',       // BLR
-  'https://api2.luma.com/ics/get?entity=calendar&id=cal-3YNnBTToy9fnnjQ',       // SF
-];
+interface WorkerConfig {
+  dryRun?: boolean;      // Log only (default: true via feature flag)
+  calendarId?: string;   // Process single calendar
+  verbose?: boolean;     // Extra logging
+}
+```
+
+### Sync Process
+
+```
+1. Fetch calendar URLs from config
+2. For each calendar, fetch + parse iCal events
+3. For each event:
+   a. Generate canonical_uid (hash of title+date+location)
+   b. Check if exists in DB
+   c. If dry-run: log to canonical_event_changes
+   d. If new: geocode + insert
+   e. If existing: retry geocoding if failed >24h ago
+4. Return stats: { processed, inserted, updated, skipped, errors }
+```
+
+### Safety Features
+
+- **Dry-run mode**: Logs to `canonical_event_changes` with `change_type: 'dry-run'`
+- **Idempotent**: Uses `canonical_uid` for deduplication
+- **Geocode retry**: Only retries failed geocoding after 24 hours
+- **Audit trail**: All operations logged to `canonical_event_changes`
+- **Feature-flagged**: Must enable `CANONICAL_EVENTS_WRITE` + disable `CANONICAL_DRY_RUN`
+
+### CLI Usage
+
+```bash
+# Dry run (default)
+npx ts-node lib/eventWorker.ts
+
+# Apply changes
+npx ts-node lib/eventWorker.ts --apply
+
+# Single calendar, verbose
+npx ts-node lib/eventWorker.ts --calendar=cal-ZVonmjVxLk7F2oM --verbose
 ```
 
 ---
 
 ## Feature Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `FEATURE_CANONICAL_EVENTS_READ` | `false` | UI fetches from database instead of iCal |
-| `FEATURE_CANONICAL_EVENTS_WRITE` | `false` | Worker writes to canonical_events table |
-| `CANONICAL_DRY_RUN` | `true` | Worker logs only, no writes |
+Defined in `lib/featureFlags.ts`. Controls the canonical events rollout.
+
+| Flag | Env Variable | Default | Description |
+|------|-------------|---------|-------------|
+| `CANONICAL_EVENTS_READ` | `FEATURE_CANONICAL_EVENTS_READ` | `false` | UI fetches from database instead of iCal |
+| `CANONICAL_EVENTS_WRITE` | `FEATURE_CANONICAL_EVENTS_WRITE` | `false` | Worker writes to `canonical_events` table |
+| `CANONICAL_DRY_RUN` | `CANONICAL_DRY_RUN` | `true` | Worker logs only, no writes |
+
+### Helper Functions
+
+```typescript
+isCanonicalEventsEnabled()  // true if both READ and WRITE are true
+shouldWorkerWrite()         // true if WRITE=true AND DRY_RUN=false
+getFeatureFlagState()       // Returns full state object for debugging
+```
 
 ### Rollout Plan (Not Started)
 
-1. **Phase 1:** Enable `WRITE` + `DRY_RUN` → Validate worker logic
-2. **Phase 2:** Disable `DRY_RUN` → Populate canonical_events
-3. **Phase 3:** Enable `READ` for 10% → A/B test
-4. **Phase 4:** Enable `READ` for 100% → Full migration
+```
+Phase 1: WRITE=true, DRY_RUN=true   → Validate worker logic (72h staging)
+Phase 2: WRITE=true, DRY_RUN=false  → Populate canonical_events (24h staging)
+Phase 3: READ=true (10%)            → A/B test against iCal
+Phase 4: READ=true (100%)           → Full migration, retire iCal path
+```
 
 ---
 
-## Current Issues
+## GeoJSON & Map Integration
 
-### 🔴 Critical
-1. **`canonical_events` table is empty** - Worker not running
-2. **No cron job** - Events not automatically synced
+### Data Flow
 
-### 🟡 Medium
-3. **Geocoding on every load** - No caching in legacy mode
-4. **No event deduplication** - Same event from multiple sources shows twice
-5. **Hardcoded Zo House coordinates** - In `icalParser.ts` instead of database
+```
+MapCanvas (Mapbox GL) ← useMapGeoJSON hook
+                           │
+                           ├── Debounced 300ms on map move
+                           ├── Aborts previous requests
+                           └── GET /api/events/geojson?bbox={w,s,e,n}&includeNodes=true
+                                    │
+                                    ├── Fetch all approved events
+                                    ├── Look up node coords for zo_property events
+                                    ├── Filter by bounding box
+                                    ├── Join user_profiles for host info
+                                    └── Return GeoJSON FeatureCollection
+```
 
-### 🟢 Minor
-6. **No event categories/tags** - Can't filter by type
-7. **No event images** - All events use same marker
-8. **No RSVP tracking** - Can't see who's attending
+### Node Coordinate Fallback
+
+When events have `zo_property_id` but no lat/lng:
+1. GeoJSON route fetches all nodes: `SELECT id, latitude, longitude FROM nodes`
+2. Builds lookup map: `nodesMap[nodeId] = { lat, lng }`
+3. For each event missing coords, looks up `nodesMap[event.zo_property_id]`
 
 ---
 
-## Improvement Recommendations
+## Frontend Components
 
-### Immediate (This Sprint)
+### Event Components (`components/events/`)
 
-1. **Enable Canonical Events System**
-   ```bash
-   FEATURE_CANONICAL_EVENTS_WRITE=true
-   CANONICAL_DRY_RUN=false
-   ```
-   Then run worker manually or set up cron.
+| Component | File | Lines | Description |
+|-----------|------|-------|-------------|
+| `HostEventModal` | `events/HostEventModal.tsx` | ~425 | 5-step event creation wizard |
+| `EditEventModal` | `events/EditEventModal.tsx` | ~372 | Event editing (reuses similar UI) |
+| `CultureSelector` | `events/CultureSelector.tsx` | 159 | 4-column grid of culture stickers |
+| `LocationSelector` | `events/LocationSelector.tsx` | ~434 | 3-mode location picker with Mapbox |
+| `EventTypeSelector` | `events/EventTypeSelector.tsx` | — | Community/Sponsored/Ticketed selector |
+| `ImageUpload` | `events/ImageUpload.tsx` | — | Cover image upload with preview |
 
-2. **Add More Calendars**
-   - Insert new rows in `calendars` table
-   - Support community-submitted calendars
+### Event Display Components
 
-3. **Add Event Categories**
-   ```sql
-   ALTER TABLE canonical_events ADD COLUMN category TEXT;
-   -- Values: 'social', 'workshop', 'party', 'meetup', 'conference'
-   ```
+| Component | File | Description |
+|-----------|------|-------------|
+| `EventsOverlay` | `components/EventsOverlay.tsx` | Desktop sidebar — search, list, "Host Your Event" CTA |
+| `MobileEventsListOverlay` | `components/MobileEventsListOverlay.tsx` | Mobile bottom sheet with spring animation |
+| `MapCanvas` | `components/MapCanvas.tsx` | Mapbox GL map with event/node markers and clustering |
+| `MyEventsCard` | `desktop-dashboard/MyEventsCard.tsx` | Desktop dashboard widget showing hosted/upcoming events |
+| `MobileMyEventsCard` | `mobile-dashboard/MobileMyEventsCard.tsx` | Mobile dashboard events widget |
 
-### Future Enhancements
+### Event Pages
 
-4. **Event Images**
-   - Parse image from Luma description
-   - Store `image_url` in canonical_events
+| Page | Route | Description |
+|------|-------|-------------|
+| `my-events/page.tsx` | `/my-events` | Full events management — hosted events, RSVPs, past events (~789 lines) |
 
-5. **RSVP Integration**
-   - Track which users RSVP'd
-   - Show attendee count
+### Utility Libraries
 
-6. **User-Generated Events**
-   - Allow users to create events
-   - Moderation workflow
+| Library | File | Description |
+|---------|------|-------------|
+| `icalParser.ts` | `lib/icalParser.ts` | iCal parsing, geocoding, Zo House coordinate fallback |
+| `calendarConfig.ts` | `lib/calendarConfig.ts` | Calendar URL management, emergency fallbacks, CORS proxy |
+| `eventWorker.ts` | `lib/eventWorker.ts` | Canonical event sync worker with dry-run mode |
+| `eventCoverDefaults.ts` | `lib/eventCoverDefaults.ts` | Cover image fallback chain (culture → category → default) |
+| `featureFlags.ts` | `lib/featureFlags.ts` | Canonical events feature flag management |
+| `geocoding.ts` | `lib/geocoding.ts` | Mapbox address search with session caching, proximity, prefetch |
+| `canonicalUid.ts` | `lib/canonicalUid.ts` | UID generation for deduplication |
 
-7. **Push Notifications**
-   - Notify users of events near them
-   - Event reminders
+---
+
+## Authentication & Authorization
+
+### Auth Pattern (all event APIs)
+
+```typescript
+const userId = request.headers.get('x-user-id') ||
+               request.cookies.get('zo_user_id')?.value;
+```
+
+Auth is checked at the API level. No middleware — each route validates independently.
+
+### Permission Matrix
+
+| Action | Citizen | Founder/Member | Admin | Vibe Curator |
+|--------|---------|----------------|-------|--------------|
+| Create event | Pending approval | Auto-approved | Auto-approved | Auto-approved |
+| Edit own event | Yes | Yes | Yes | Yes |
+| Edit others' events | No | No | Yes | No |
+| Cancel own event | Yes | Yes | Yes | Yes |
+| Cancel others' events | No | No | Yes | No |
+| RSVP to events | Yes | Yes | Yes | Yes |
+| View attendees | Yes | Yes | Yes | Yes |
+| Manage RSVPs (approve/reject) | Own events only | Own events only | All events | Own events only |
+| Check in attendees | Own events only | Own events only | All events | Own events only |
+
+### RLS Bypass
+
+All event API routes use `supabaseAdmin || supabase` pattern:
+- `supabaseAdmin` (service role key) bypasses Row Level Security
+- Falls back to anonymous `supabase` client if service role unavailable
 
 ---
 
@@ -561,685 +1060,72 @@ const EMERGENCY_FALLBACK_CALENDAR_URLS = [
 
 ```
 apps/web/src/
+├── types/
+│   └── events.ts                           # All type definitions (406 lines)
 ├── app/
 │   ├── api/
-│   │   ├── calendar/route.ts           # iCal proxy
+│   │   ├── calendar/route.ts               # iCal proxy
+│   │   ├── add-calendar/route.ts           # Add calendar source
 │   │   ├── events/
-│   │   │   ├── canonical/route.ts      # DB events API
-│   │   │   └── geojson/route.ts        # GeoJSON API
+│   │   │   ├── route.ts                    # GET (list) + POST (create)
+│   │   │   ├── [id]/
+│   │   │   │   ├── route.ts               # GET/PUT/DELETE single event
+│   │   │   │   └── rsvp/route.ts          # GET/POST/PATCH RSVP management
+│   │   │   ├── mine/route.ts              # GET user's events
+│   │   │   ├── upload-cover/route.ts      # POST cover image upload
+│   │   │   ├── cultures/route.ts          # GET active cultures
+│   │   │   ├── geojson/route.ts           # GET GeoJSON for map
+│   │   │   └── canonical/route.ts         # GET canonical events (flagged)
 │   │   └── worker/
-│   │       └── sync-events/route.ts    # Manual sync trigger
-│   └── page.tsx                        # Main page (loadLiveEvents)
+│   │       └── sync-events/route.ts       # POST trigger sync
+│   ├── my-events/page.tsx                  # Events management page
+│   └── page.tsx                            # Main page (loadLiveEvents)
 ├── components/
-│   ├── EventsOverlay.tsx               # Desktop overlay
-│   ├── MobileEventsListOverlay.tsx     # Mobile overlay
-│   └── MapCanvas.tsx                   # Map with markers
+│   ├── events/
+│   │   ├── HostEventModal.tsx             # 5-step creation wizard
+│   │   ├── EditEventModal.tsx             # Event editing
+│   │   ├── CultureSelector.tsx            # Culture grid selector
+│   │   ├── LocationSelector.tsx           # 3-mode location picker
+│   │   ├── EventTypeSelector.tsx          # Category selector
+│   │   └── ImageUpload.tsx                # Cover image upload
+│   ├── EventsOverlay.tsx                  # Desktop events sidebar
+│   ├── MobileEventsListOverlay.tsx        # Mobile events sheet
+│   ├── MapCanvas.tsx                      # Map with markers
+│   ├── desktop-dashboard/
+│   │   └── MyEventsCard.tsx               # Desktop dashboard widget
+│   └── mobile-dashboard/
+│       └── MobileMyEventsCard.tsx         # Mobile dashboard widget
 ├── hooks/
-│   └── useMapGeoJSON.ts               # GeoJSON fetching hook
+│   └── useMapGeoJSON.ts                   # GeoJSON fetching hook
 └── lib/
-    ├── calendarConfig.ts              # Calendar URL management
-    ├── canonicalUid.ts                # UID generation
-    ├── eventWorker.ts                 # Sync worker
-    ├── featureFlags.ts                # Feature toggles
-    ├── icalParser.ts                  # iCal parsing + geocoding
-    └── supabase.ts                    # DB helpers (getActiveCalendars)
+    ├── calendarConfig.ts                  # Calendar URL management
+    ├── canonicalUid.ts                    # UID generation
+    ├── eventCoverDefaults.ts              # Cover image fallback chain
+    ├── eventWorker.ts                     # Canonical sync worker
+    ├── featureFlags.ts                    # Feature toggles
+    ├── geocoding.ts                       # Mapbox address search
+    ├── icalParser.ts                      # iCal parsing + geocoding
+    └── supabase.ts                        # DB helpers (getActiveCalendars)
 ```
 
 ---
 
-## Quick Commands
+## Environment Variables
 
 ```bash
-# Check calendar count
-curl "https://elvaqxadfewcsohrswsi.supabase.co/rest/v1/calendars?select=*" \
-  -H "apikey: YOUR_ANON_KEY"
+# Required
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxx           # Mapbox for geocoding + map
+NEXT_PUBLIC_BASE_URL=http://localhost:3000 # For server-side iCal fetches
 
-# Manually sync events (dry run)
-curl -X POST http://localhost:3000/api/worker/sync-events \
-  -H "Content-Type: application/json" \
-  -d '{"dryRun": true, "verbose": true}'
+# Supabase
+SUPABASE_SERVICE_ROLE_KEY=xxx             # Required for RLS bypass in event APIs
 
-# Check canonical_events count
-curl "https://elvaqxadfewcsohrswsi.supabase.co/rest/v1/canonical_events?select=count" \
-  -H "apikey: YOUR_ANON_KEY"
+# Feature Flags (Canonical Events)
+FEATURE_CANONICAL_EVENTS_READ=false        # UI reads from DB vs iCal
+FEATURE_CANONICAL_EVENTS_WRITE=false       # Worker writes to DB
+CANONICAL_DRY_RUN=true                     # Worker in test mode
 ```
 
 ---
 
-## RSVP System
-
-### Overview
-
-The RSVP system allows authenticated users to register their attendance for events. This integrates with the ZO authentication system and stores attendance data in Supabase.
-
-### Proposed Database Schema
-
-#### `event_rsvps` Table
-
-```sql
-CREATE TABLE event_rsvps (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id            UUID NOT NULL,                    -- References canonical_events OR external event ID
-  event_source        TEXT NOT NULL DEFAULT 'canonical', -- 'canonical' | 'luma' | 'external'
-  external_event_id   TEXT,                             -- Luma event ID if external
-  user_id             UUID NOT NULL REFERENCES users(id),
-  status              TEXT NOT NULL DEFAULT 'going',    -- 'going' | 'interested' | 'not_going' | 'waitlist'
-  rsvp_type           TEXT DEFAULT 'standard',         -- 'standard' | 'vip' | 'speaker' | 'organizer'
-  checked_in          BOOLEAN DEFAULT false,
-  checked_in_at       TIMESTAMPTZ,
-  checked_in_by       UUID REFERENCES users(id),        -- Admin who checked them in
-  notes               TEXT,                             -- Admin notes
-  metadata            JSONB DEFAULT '{}',               -- Additional data (ticket type, etc.)
-  created_at          TIMESTAMPTZ DEFAULT now(),
-  updated_at          TIMESTAMPTZ DEFAULT now(),
-  
-  CONSTRAINT unique_user_event UNIQUE (event_id, user_id, event_source)
-);
-
--- Indexes
-CREATE INDEX idx_event_rsvps_event ON event_rsvps(event_id, event_source);
-CREATE INDEX idx_event_rsvps_user ON event_rsvps(user_id);
-CREATE INDEX idx_event_rsvps_status ON event_rsvps(status);
-CREATE INDEX idx_event_rsvps_checked_in ON event_rsvps(checked_in) WHERE checked_in = true;
-```
-
-#### `event_organizers` Table (Admin Access)
-
-```sql
-CREATE TABLE event_organizers (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id    UUID NOT NULL,                          -- References canonical_events OR external
-  event_source TEXT NOT NULL DEFAULT 'canonical',
-  user_id     UUID NOT NULL REFERENCES users(id),
-  role        TEXT NOT NULL DEFAULT 'organizer',      -- 'owner' | 'organizer' | 'volunteer' | 'check_in_only'
-  permissions JSONB DEFAULT '{}',                     -- Granular permissions
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  
-  CONSTRAINT unique_organizer_event UNIQUE (event_id, user_id, event_source)
-);
-```
-
-### RSVP States
-
-| Status | Description | UI Indicator |
-|--------|-------------|--------------|
-| `going` | Confirmed attendance | ✅ Green badge |
-| `interested` | Maybe attending | 🤔 Yellow badge |
-| `not_going` | Declined | ❌ Gray badge |
-| `waitlist` | Event full, on waitlist | ⏳ Orange badge |
-
-### RSVP API Endpoints (Proposed)
-
-#### 1. `POST /api/events/{eventId}/rsvp` - Create/Update RSVP
-
-**Auth Required:** Yes (ZO Bearer Token)
-
-**Body:**
-```json
-{
-  "status": "going",
-  "eventSource": "canonical"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "rsvp": {
-    "id": "uuid",
-    "status": "going",
-    "created_at": "2026-01-22T10:00:00Z"
-  }
-}
-```
-
-#### 2. `GET /api/events/{eventId}/rsvps` - Get Event Attendees
-
-**Auth Required:** Yes (organizer or admin)
-
-**Query Params:**
-| Param | Description |
-|-------|-------------|
-| `status` | Filter by status |
-| `checkedIn` | Filter by check-in status |
-| `limit` | Pagination limit |
-| `offset` | Pagination offset |
-
-**Response:**
-```json
-{
-  "rsvps": [
-    {
-      "id": "uuid",
-      "user": {
-        "id": "user-uuid",
-        "name": "John Doe",
-        "pfp": "https://...",
-        "phone": "+91...",
-        "zo_pid": "ZO123"
-      },
-      "status": "going",
-      "checked_in": false,
-      "created_at": "2026-01-22T10:00:00Z"
-    }
-  ],
-  "meta": {
-    "total": 45,
-    "going": 40,
-    "interested": 5,
-    "checked_in": 12
-  }
-}
-```
-
-#### 3. `POST /api/events/{eventId}/rsvps/{rsvpId}/check-in` - Check In User
-
-**Auth Required:** Yes (organizer or admin)
-
-**Response:**
-```json
-{
-  "success": true,
-  "checked_in_at": "2026-01-22T18:30:00Z"
-}
-```
-
-#### 4. `GET /api/users/me/rsvps` - Get User's RSVPs
-
-**Auth Required:** Yes
-
-**Response:**
-```json
-{
-  "rsvps": [
-    {
-      "id": "uuid",
-      "event": {
-        "id": "event-uuid",
-        "title": "Zo Chill Friday",
-        "starts_at": "2026-01-25T18:00:00Z",
-        "location": "Zo House Bangalore"
-      },
-      "status": "going",
-      "checked_in": false
-    }
-  ]
-}
-```
-
----
-
-## Authentication System
-
-### Overview
-
-Zo World uses **ZO API** as the primary authentication provider. Users authenticate via phone number + OTP, and the system maintains session tokens in both localStorage (client) and Supabase (server).
-
-### Authentication Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          USER LOGIN FLOW                                 │
-└─────────────────────────────────────────────────────────────────────────┘
-
-1. User enters phone number
-         │
-         ▼
-2. POST /api/zo/auth/send-otp
-         │
-         ├── Calls ZOHM Proxy: POST /auth/otp/send-otp
-         │
-         └── Response: { success: true, message: "OTP sent" }
-                  │
-                  ▼
-3. User enters 6-digit OTP
-         │
-         ▼
-4. POST /api/zo/auth/verify-otp
-         │
-         ├── Calls ZOHM Proxy: POST /auth/otp/verify-otp
-         │
-         ├── Response includes:
-         │   ├── access_token (JWT)
-         │   ├── refresh_token
-         │   ├── device_id + device_secret
-         │   └── user profile
-         │
-         ├── Creates/updates user in Supabase
-         │
-         └── Syncs full profile from ZO API
-                  │
-                  ▼
-5. Client stores tokens in localStorage:
-   ├── zo_user_id
-   ├── zo_access_token
-   ├── zo_device_id
-   └── zo_device_secret
-                  │
-                  ▼
-6. Subsequent API calls include:
-   ├── Authorization: Bearer {access_token}
-   ├── client-key: {platform_key}
-   ├── client-device-id: {device_id}
-   └── client-device-secret: {device_secret}
-```
-
-### Session Storage
-
-#### Client-Side (localStorage)
-
-| Key | Description |
-|-----|-------------|
-| `zo_user_id` | ZO API user ID (primary identifier) |
-| `zo_access_token` | JWT access token for API calls |
-| `zo_token` | Same as access_token (legacy compat) |
-| `zo_device_id` | Device ID (required for all ZO API calls) |
-| `zo_device_secret` | Device secret (required for all ZO API calls) |
-| `zo_nickname` | User's nickname (fallback for display) |
-
-#### Server-Side (Supabase `users` table)
-
-```typescript
-interface UserAuthFields {
-  // ZO Identity
-  zo_user_id: string;        // ZO API user.id
-  zo_pid: string;            // ZO Passport ID (e.g., "ZO-12345")
-  
-  // Access Tokens
-  zo_token: string;          // JWT access token
-  zo_token_expiry: string;   // Access token expiry
-  zo_refresh_token: string;  // Refresh token
-  zo_refresh_token_expiry: string;
-  
-  // Device Credentials (required for all API calls)
-  zo_device_id: string;
-  zo_device_secret: string;
-  
-  // Legacy Fields
-  zo_legacy_token: string;
-  zo_legacy_token_valid_till: string;
-  zo_client_key: string;
-  zo_device_info: object;    // Device metadata from ZO API
-  
-  // Roles & Membership
-  zo_roles: string[];        // e.g., ["property-manager", "housekeeping-admin"]
-  zo_membership: string;     // 'founder' | 'citizen' | 'none'
-}
-```
-
-### Authentication Hooks
-
-#### `useZoAuth()` Hook
-
-Primary hook for authentication state and profile management.
-
-```typescript
-const {
-  // User data
-  userProfile,           // Full user profile from Supabase
-  userId,                // User ID
-  
-  // Auth state
-  isAuthenticated,       // Boolean: user is logged in
-  isLoading,             // Boolean: profile is loading
-  hasCompletedOnboarding,
-  isFounder,             // Has founder NFTs
-  
-  // Actions
-  logout,                // Clear session and logout
-  reloadProfile,         // Refresh profile from DB
-  syncZoProfile,         // Sync from ZO API
-} = useZoAuth();
-```
-
-#### `usePhoneAuth()` Hook (for login flow)
-
-```typescript
-const {
-  sendOtp,              // (countryCode, phone) => Promise
-  verifyOtp,            // (countryCode, phone, otp) => Promise
-  isLoading,
-  error,
-} = usePhoneAuth();
-```
-
-### Session Expiry Handling
-
-When a ZO API call returns `403 "Session expired"`:
-
-1. `zoApiClient` interceptor catches the error
-2. Dispatches `zoSessionExpired` custom event
-3. `useZoAuth` hook listens and triggers logout
-4. User is prompted to re-login
-
-```typescript
-// In zoApiClient.ts
-if (status === 403 && errorDetail === 'Session expired.') {
-  window.dispatchEvent(new CustomEvent('zoSessionExpired', {
-    detail: { message: 'Your session has expired. Please login again.' }
-  }));
-  localStorage.removeItem('zo_access_token');
-}
-```
-
-### Required Headers for ZO API Calls
-
-All ZO API calls (via ZOHM proxy) require these headers:
-
-| Header | Source | Description |
-|--------|--------|-------------|
-| `Authorization` | `Bearer {zo_access_token}` | JWT token |
-| `client-key` | `ZO_CLIENT_KEY_WEB` env var | Platform API key |
-| `client-device-id` | `zo_device_id` localStorage | Device identifier |
-| `client-device-secret` | `zo_device_secret` localStorage | Device secret |
-
-### API Proxy Architecture
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Client (Browser)│────▶│ /api/zo/*        │────▶│ ZOHM Proxy      │
-│                 │     │ (Next.js API)    │     │ (Railway)       │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                         │
-                                                         ▼
-                                               ┌─────────────────┐
-                                               │  ZO API         │
-                                               │  (zo.xyz)       │
-                                               └─────────────────┘
-```
-
-**ZOHM Proxy URL:** `https://zohm-api.up.railway.app`
-
----
-
-## Event Admin System
-
-### Overview
-
-The Event Admin system allows organizers to manage events, view RSVPs, and check in attendees. Access is controlled via the `event_organizers` table.
-
-### Admin Roles & Permissions
-
-| Role | Can View Attendees | Can Check In | Can Edit Event | Can Manage Organizers |
-|------|-------------------|--------------|----------------|----------------------|
-| `owner` | ✅ | ✅ | ✅ | ✅ |
-| `organizer` | ✅ | ✅ | ✅ | ❌ |
-| `volunteer` | ✅ | ✅ | ❌ | ❌ |
-| `check_in_only` | ✅ (limited) | ✅ | ❌ | ❌ |
-
-### Admin API Endpoints (Proposed)
-
-#### 1. `GET /api/admin/events` - List Organizer's Events
-
-**Auth Required:** Yes (must have organizer role for at least one event)
-
-**Response:**
-```json
-{
-  "events": [
-    {
-      "id": "uuid",
-      "title": "Zo Chill Friday",
-      "starts_at": "2026-01-25T18:00:00Z",
-      "my_role": "owner",
-      "stats": {
-        "total_rsvps": 45,
-        "going": 40,
-        "checked_in": 12
-      }
-    }
-  ]
-}
-```
-
-#### 2. `GET /api/admin/events/{eventId}` - Event Dashboard
-
-**Auth Required:** Yes (organizer)
-
-**Response:**
-```json
-{
-  "event": {
-    "id": "uuid",
-    "title": "Zo Chill Friday",
-    "description": "Weekly community hangout",
-    "starts_at": "2026-01-25T18:00:00Z",
-    "ends_at": "2026-01-25T22:00:00Z",
-    "location": "Zo House Bangalore",
-    "lat": 12.932658,
-    "lng": 77.634402
-  },
-  "stats": {
-    "total_rsvps": 45,
-    "going": 40,
-    "interested": 5,
-    "checked_in": 12,
-    "check_in_rate": "30%"
-  },
-  "organizers": [
-    { "user_id": "uuid", "name": "Samurai", "role": "owner" }
-  ]
-}
-```
-
-#### 3. `POST /api/admin/events/{eventId}/organizers` - Add Organizer
-
-**Auth Required:** Yes (owner only)
-
-**Body:**
-```json
-{
-  "user_id": "uuid",
-  "role": "volunteer"
-}
-```
-
-#### 4. `GET /api/admin/events/{eventId}/export` - Export Attendees
-
-**Auth Required:** Yes (organizer)
-
-**Query Params:**
-- `format`: `csv` | `json`
-- `include`: `all` | `going` | `checked_in`
-
-**Response (CSV):**
-```csv
-name,phone,email,status,checked_in,checked_in_at
-John Doe,+919876543210,john@email.com,going,true,2026-01-25T18:30:00Z
-Jane Smith,+919876543211,jane@email.com,going,false,
-```
-
-### Admin UI Components (Proposed)
-
-```
-apps/web/src/
-├── app/
-│   └── admin/
-│       └── events/
-│           ├── page.tsx                  # Events list
-│           └── [eventId]/
-│               ├── page.tsx              # Event dashboard
-│               ├── attendees/page.tsx    # Attendee list
-│               └── check-in/page.tsx     # Check-in interface
-├── components/
-│   └── admin/
-│       ├── EventDashboard.tsx
-│       ├── AttendeeList.tsx
-│       ├── CheckInScanner.tsx            # QR code scanner
-│       ├── AttendeeSearch.tsx
-│       └── ExportButton.tsx
-```
-
-### Check-In Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          CHECK-IN FLOW                                   │
-└─────────────────────────────────────────────────────────────────────────┘
-
-Option A: QR Code Scan
-─────────────────────
-1. Admin opens check-in page
-2. Scans user's ZO Passport QR (contains zo_pid)
-3. System looks up RSVP by zo_pid + event_id
-4. Marks as checked in
-
-Option B: Manual Search
-─────────────────────
-1. Admin opens attendee list
-2. Searches by name or phone
-3. Clicks "Check In" button
-4. System marks as checked in
-
-Option C: Self Check-In (Kiosk Mode)
-─────────────────────
-1. Kiosk displays event check-in page
-2. User scans their QR or enters phone
-3. OTP verification (optional)
-4. Auto check-in
-```
-
-### Signal Integration
-
-All RSVP and check-in actions emit signals for the Reality Engine:
-
-| Action | Signal Type | Payload |
-|--------|-------------|---------|
-| User RSVPs | `event_rsvp_created` | `{ userId, eventId, status }` |
-| User checks in | `event_check_in` | `{ userId, eventId, nodeId }` |
-| Attendance confirmed | `event_attended` | `{ userId, eventId, duration }` |
-
-### RLS Policies (Proposed)
-
-```sql
--- Users can read their own RSVPs
-CREATE POLICY "Users can view own RSVPs"
-  ON event_rsvps FOR SELECT
-  USING (user_id = auth.uid());
-
--- Users can create/update their own RSVPs
-CREATE POLICY "Users can manage own RSVPs"
-  ON event_rsvps FOR ALL
-  USING (user_id = auth.uid());
-
--- Organizers can view all RSVPs for their events
-CREATE POLICY "Organizers can view event RSVPs"
-  ON event_rsvps FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM event_organizers
-      WHERE event_organizers.event_id = event_rsvps.event_id
-        AND event_organizers.user_id = auth.uid()
-    )
-  );
-
--- Organizers can update RSVPs (check-in)
-CREATE POLICY "Organizers can check in attendees"
-  ON event_rsvps FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM event_organizers
-      WHERE event_organizers.event_id = event_rsvps.event_id
-        AND event_organizers.user_id = auth.uid()
-    )
-  );
-```
-
----
-
-## Users Table Schema Reference
-
-The `users` table stores all user data including authentication fields.
-
-### Core Identity Fields
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary key (same as `zo_user_id` for ZO users) |
-| `name` | TEXT | Display name (from nickname fields) |
-| `bio` | TEXT | User bio/description |
-| `pfp` | TEXT | Profile picture URL |
-| `phone` | TEXT | Phone number |
-| `email` | TEXT | Email address |
-
-### ZO Identity Fields
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `zo_user_id` | TEXT | ZO API user.id |
-| `zo_pid` | TEXT | ZO Passport ID (e.g., "ZO-12345") |
-| `zo_membership` | TEXT | 'founder' \| 'citizen' \| 'none' |
-| `zo_roles` | TEXT[] | Array of roles from ZO API |
-
-### ZO Auth Token Fields
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `zo_token` | TEXT | JWT access token |
-| `zo_token_expiry` | TIMESTAMPTZ | Access token expiry |
-| `zo_refresh_token` | TEXT | Refresh token |
-| `zo_refresh_token_expiry` | TIMESTAMPTZ | Refresh token expiry |
-| `zo_device_id` | TEXT | Device ID for API calls |
-| `zo_device_secret` | TEXT | Device secret for API calls |
-| `zo_legacy_token` | TEXT | Legacy token format |
-| `zo_client_key` | TEXT | Client key used |
-| `zo_device_info` | JSONB | Device metadata |
-
-### Location Fields
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `lat` | DOUBLE | Current latitude (dynamic) |
-| `lng` | DOUBLE | Current longitude (dynamic) |
-| `zo_home_location` | JSONB | Home base: `{ lat, lng }` |
-| `city` | TEXT | City name |
-
-### Profile Sync Fields
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `zo_synced_at` | TIMESTAMPTZ | Last ZO API sync time |
-| `zo_sync_status` | TEXT | 'never' \| 'synced' \| 'stale' \| 'error' |
-| `onboarding_completed` | BOOLEAN | Has completed onboarding |
-| `onboarding_step` | INTEGER | Current onboarding step |
-
----
-
-## Implementation Checklist
-
-### Phase 1: Database Setup
-- [ ] Create `event_rsvps` table
-- [ ] Create `event_organizers` table
-- [ ] Add RLS policies
-- [ ] Add indexes
-
-### Phase 2: API Endpoints
-- [ ] `POST /api/events/{id}/rsvp` - User RSVP
-- [ ] `GET /api/events/{id}/rsvps` - Admin list attendees
-- [ ] `POST /api/events/{id}/rsvps/{id}/check-in` - Check in
-- [ ] `GET /api/users/me/rsvps` - User's events
-- [ ] `GET /api/admin/events` - Organizer's events
-- [ ] `GET /api/admin/events/{id}/export` - Export CSV
-
-### Phase 3: Admin UI
-- [ ] Events list page
-- [ ] Event dashboard with stats
-- [ ] Attendee list with search
-- [ ] Check-in interface
-- [ ] Export functionality
-
-### Phase 4: User-Facing UI
-- [ ] RSVP button on event cards
-- [ ] "My Events" section in profile
-- [ ] Event reminder notifications
-
-### Phase 5: Advanced Features
-- [ ] QR code check-in scanner
-- [ ] Kiosk mode for self check-in
-- [ ] Waitlist management
-- [ ] Capacity limits
-
----
-
-*Document maintained by Platform Team. Last audit: January 2026.*
+*Document code-verified against source. Last audit: February 9, 2026.*

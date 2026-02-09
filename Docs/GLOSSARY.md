@@ -250,7 +250,7 @@ Source: `apps/web/src/types/events.ts`
 | Term | What It Is | Where Defined |
 |------|-----------|--------------|
 | **Vibe Score** | Real-time alignment percentage (0-100%). Computed from node presence, quests, connections, creative output. | ARCHITECTURE.md, DASHBOARD.md |
-| **Vibe Check** | Token-gated governance proposal. Community voting on pending citizen events via Telegram. Requires founder quorum + 60% approval. | SYSTEM_FLOWS.md |
+| **Vibe Check** | Telegram governance for pending citizen events. Posted to approval group; any member votes; simple majority (upvotes > downvotes) after 24h. Resolved by cron every 15 min. Feature-flagged behind `FEATURE_VIBE_CHECK_TELEGRAM`. | SYSTEM_FLOWS.md |
 | **Quantum Sync** | Voice quest engine. Dual transcription (AssemblyAI + Web Speech API). Includes Game1111 mechanic. | VOICE_TRANSCRIPTION.md |
 | **Game1111** | Voice quest mini-game: say "Zo" to start counter, stop at exactly 1111ms. | VOICE_TRANSCRIPTION.md |
 | **Reality Engine** | The core loop: Observe → Model → Simulate → Reinforce. Processes signals into opportunities. Also called "Life Design Simulation Engine". | LORE.md, ARCHITECTURE.md |

@@ -2,12 +2,12 @@
 
 > **Branch**: `staging` (from `main` at `d5efada`)
 > **Date**: February 9, 2026
-> **Total Changes**: 118 files changed, +11,241 lines, -19,143 lines (net: -7,902 lines)
+> **Total Changes**: ~130 files changed
 > **Build Status**: Passing (Next.js 15 production build, 0 TypeScript errors)
 
 ---
 
-## Commits (5)
+## Commits (9)
 
 | # | Hash | Message | Files |
 |---|------|---------|-------|
@@ -16,6 +16,10 @@
 | 3 | `bfcca03` | `feat: Zostel nodes, vibe score API, docs viewer, and asset dedup` | 14 files |
 | 4 | `35c59af` | `chore: Add admin scripts, swagger docs, and remove stale scripts` | 17 files |
 | 5 | `1a839e9` | `chore: trigger Vercel deploy on staging` | 0 files |
+| 6 | `be3be8b` | `docs: Add staging branch summary` | 1 file |
+| 7 | `8b3f2ed` | `chore: Remove CAS download scripts — data already in Supabase` | 5 files |
+| 8 | `6178e73` | `feat: Telegram vibe check for pending community events` | 9 files |
+| 9 | *(pending)* | `docs: Update vibe check docs to match implementation` | — |
 
 ---
 

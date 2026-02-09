@@ -15,6 +15,7 @@
 export type NodeType =
   | 'zo_house'
   | 'zostel'
+  | 'staynode'
   | 'food'
   | 'stay'
   | 'park'
@@ -65,7 +66,12 @@ const NODE_TYPE_CONFIG: Record<NodeType, { icon: NodeIcon; displayName: string; 
     color: '#ff4d6d', // Zo pink
   },
   zostel: {
-    icon: { type: 'logo', value: '/logos/zostel.svg' },
+    icon: { type: 'logo', value: '/zostellogo.png' },
+    displayName: 'Zostel',
+    color: '#f97316', // orange
+  },
+  staynode: {
+    icon: { type: 'logo', value: '/zostellogo.png' },
     displayName: 'Zostel',
     color: '#f97316', // orange
   },
@@ -247,6 +253,7 @@ export const getNodeTypeEmoji = (type: NodeType): string => {
   // Fallback emojis for logo types
   if (type === 'zo_house') return '🏠';
   if (type === 'zostel') return '🏨';
+  if (type === 'staynode') return '🏨';
   return '📍';
 };
 
@@ -261,7 +268,7 @@ export const isLogoNode = (type: NodeType): boolean => {
  * Check if node is Zo-owned (zo_house or zostel)
  */
 export const isZoOwned = (type: NodeType): boolean => {
-  return type === 'zo_house' || type === 'zostel';
+  return type === 'zo_house' || type === 'zostel' || type === 'staynode';
 };
 
 /**

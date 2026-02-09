@@ -313,7 +313,7 @@ export default function UnifiedOnboarding({ onComplete, userId }: UnifiedOnboard
 
       {/* Zo Logo */}
       <div className="absolute left-6 top-10 w-10 h-10 md:left-[60px] md:top-[60px] md:w-[60px] md:h-[60px] z-50">
-        <img src="/figma-assets/landing-zo-logo.png" alt="Zo" className="w-full h-full object-cover" />
+        <img src="/quest-audio-assets/zo-logo.png" alt="Zo" className="w-full h-full object-cover" />
       </div>
 
       {/* Main Container */}

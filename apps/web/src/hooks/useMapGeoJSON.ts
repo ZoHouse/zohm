@@ -9,11 +9,11 @@ interface UseMapGeoJSONOptions {
   enabled?: boolean;
 }
 
-export function useMapGeoJSON({ 
-  map, 
-  sourceId, 
+export function useMapGeoJSON({
+  map,
+  sourceId,
   includeNodes = false,
-  enabled = true 
+  enabled = true
 }: UseMapGeoJSONOptions) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function useMapGeoJSON({
         setLoading(false);
         return;
       }
-      
+
       const west = bounds.getWest();
       const south = bounds.getSouth();
       const east = bounds.getEast();
@@ -75,7 +75,7 @@ export function useMapGeoJSON({
 
       const geojson = await response.json();
       const duration = performance.now() - startTime;
-      
+
       devLog.log(`✅ Loaded ${geojson.features.length} features in ${duration.toFixed(0)}ms`);
       setFeatureCount(geojson.features.length);
 
@@ -87,7 +87,7 @@ export function useMapGeoJSON({
         map.addSource(sourceId, {
           type: 'geojson',
           data: geojson,
-          cluster: true,
+          cluster: false,  // Clustering disabled - show all markers individually
           clusterMaxZoom: 14, // Max zoom to cluster points on
           clusterRadius: 50 // Radius of each cluster when clustering points
         });
@@ -147,11 +147,11 @@ export function useMapGeoJSON({
     };
   }, [map, sourceId, includeNodes, enabled]);
 
-  return { 
-    loading, 
-    error, 
+  return {
+    loading,
+    error,
     featureCount,
-    refetch: fetchGeoJSON 
+    refetch: fetchGeoJSON
   };
 }
 

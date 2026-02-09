@@ -61,7 +61,7 @@ export default function LandingPage({ }: LandingPageProps) {
 
       {/* Zo Logo */}
       <img
-        src="/figma-assets/landing-zo-logo.png"
+        src="/quest-audio-assets/zo-logo.png"
         alt="Zo"
         className="absolute left-[24px] top-[40px] w-[40px] h-[40px] md:w-[60px] md:h-[60px] md:left-[60px] md:top-[60px] overflow-clip z-10 object-cover"
       />

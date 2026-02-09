@@ -131,9 +131,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     enabled: mapLoaded // Only fetch after map loads
   });
 
+  // CLUSTERING DISABLED - Commented out to show all markers individually
+  /*
   // 🎯 Setup clustering layers AFTER GeoJSON source is loaded
   useEffect(() => {
-    if (!map.current || !mapLoaded || geoJSONLoading) return;
+    if (!map.current || !mapLoaded) return;
 
     // Check if source exists and clustering layers don't
     const source = map.current.getSource(GEOJSON_SOURCE_ID);
@@ -149,7 +151,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         devLog.error('❌ Error setting up clustering layers:', error);
       }
     }
-  }, [mapLoaded, geoJSONLoading]);
+  }, [mapLoaded]);
+  */
 
   // 💫 Inject CSS animations for markers
   useEffect(() => {
@@ -177,18 +180,10 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             box-shadow: 0 3px 12px rgba(255, 77, 109, 0.8);
           }
         }
-        /* Hide event badges when zoomed out */
-        .map-zoomed-out .node-event-badge,
-        .map-zoomed-out .node-event-count {
-          opacity: 0 !important;
-          transform: scale(0) !important;
-          pointer-events: none !important;
-        }
-        /* Hide all custom markers when very zoomed out */
-        .map-zoomed-out .mapboxgl-marker {
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
+        /* Smooth transitions for marker scaling - apply to children to preserve positioning */
+        .mapboxgl-marker > * {
+          transition: transform 0.3s ease;
+          transform-origin: center center;
         }
       `;
       document.head.appendChild(style);
@@ -625,7 +620,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // Parse coordinates as numbers (same as event markers)
       const nodeLat = typeof node.latitude === 'number' ? node.latitude : parseFloat(String(node.latitude));
       const nodeLng = typeof node.longitude === 'number' ? node.longitude : parseFloat(String(node.longitude));
-      
+
       if (!nodeLat || !nodeLng || isNaN(nodeLat) || isNaN(nodeLng)) {
         devLog.warn(`⚠️ Skipping ${node.name} - missing or invalid coordinates: lat=${node.latitude}, lng=${node.longitude}`);
         return;
@@ -635,7 +630,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // 🎯 Create marker element based on node type
         const nodeIcon = getNodeIcon(node.type as NodeType);
         const nodeColor = getNodeTypeColor(node.type as NodeType);
-        
+
         // Simple flat marker element - EXACT same pattern as working event markers
         let markerElement: HTMLDivElement;
 
@@ -655,7 +650,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           markerElement.style.border = '3px solid #ff4d6d';
           markerElement.className = 'zo-house-marker-pulse zo-node-marker';
           markerElement.title = node.name;
-          
+
           const img = document.createElement('img');
           img.src = '/zo.gif';
           img.alt = node.name;
@@ -679,7 +674,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           markerElement.style.border = '2px solid rgba(255, 255, 255, 0.9)';
           markerElement.className = 'zo-node-marker';
           markerElement.title = node.name;
-          
+
           const img = document.createElement('img');
           img.src = nodeIcon.value;
           img.alt = node.name;
@@ -704,7 +699,16 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           markerElement.style.fontSize = '22px';
           markerElement.className = 'zo-node-marker';
           markerElement.title = node.name;
-          markerElement.textContent = nodeIcon.value;
+
+          // Wrap emoji in span so we can scale it
+          const emojiSpan = document.createElement('span');
+          emojiSpan.textContent = nodeIcon.value;
+          emojiSpan.style.display = 'flex';
+          emojiSpan.style.alignItems = 'center';
+          emojiSpan.style.justifyContent = 'center';
+          emojiSpan.style.width = '100%';
+          emojiSpan.style.height = '100%';
+          markerElement.appendChild(emojiSpan);
         }
 
         // Create node marker using parsed coordinates
@@ -715,7 +719,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         })
           .setLngLat([nodeLng, nodeLat])
           .addTo(map.current!);
-        
+
         devLog.log(`📍 Node marker for ${node.name} at [${nodeLng}, ${nodeLat}]`);
 
         mapLog(`🦄 Added marker for ${node.name}`);
@@ -1060,28 +1064,33 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           devLog.warn('Post-load resize error:', error);
         }
 
-        // Add zoom listener to show/hide markers based on zoom level
-        const MARKER_MIN_ZOOM = 10; // Markers only visible at zoom 10+
+        // Scale markers based on zoom level - always visible but smaller when zoomed out
         const container = mapContainer.current;
-        
-        // Set initial state to zoomed-out (hidden) - markers will fade in as we zoom
-        if (container) {
-          container.classList.add('map-zoomed-out');
-        }
-        
-        const updateMarkerVisibility = () => {
+
+        const updateMarkerScale = () => {
           if (!map.current || !container) return;
           const zoom = map.current.getZoom();
-          if (zoom < MARKER_MIN_ZOOM) {
-            container.classList.add('map-zoomed-out');
-          } else {
-            container.classList.remove('map-zoomed-out');
-          }
+
+          // Calculate scale: 0.1 at zoom 0, 1.0 at zoom 12+
+          // Formula gives extremely tiny markers (5px) at world view, growing to full size by city view
+          const scale = Math.min(1, Math.max(0.1, 0.1 + (zoom / 12) * 0.9));
+
+          // Apply scale to marker children (not the container, to preserve Mapbox positioning)
+          const markers = container.querySelectorAll('.mapboxgl-marker');
+          markers.forEach((marker: Element) => {
+            const child = marker.firstElementChild as HTMLElement;
+            if (child) {
+              child.style.transform = `scale(${scale})`;
+            }
+          });
         };
-        
+
         // Listen for zoom changes
-        map.current.on('zoom', updateMarkerVisibility);
-        map.current.on('zoomend', updateMarkerVisibility);
+        map.current.on('zoom', updateMarkerScale);
+        map.current.on('zoomend', updateMarkerScale);
+
+        // Set initial scale
+        updateMarkerScale();
 
         // Set up lighting - use DAY mode so colors stay bright!
         try {
@@ -1154,7 +1163,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
 
           // Create marker at provided location and trigger animation if needed
           createUserLocationMarker(userLocation.lat, userLocation.lng);
-          
+
           // Don't fetch again - location was already saved by Enter Map button
         } else {
           // No location provided - request current GPS location
@@ -1187,13 +1196,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                 }
                 return;
               }
-              
+
               const btn = document.getElementById(`rsvp-btn-${eventId}`);
               if (btn) {
                 btn.innerHTML = 'Registering...';
                 btn.setAttribute('disabled', 'true');
               }
-              
+
               try {
                 devLog.log('🎫 RSVP request starting...');
                 devLog.log('   Event ID:', eventId);
@@ -1234,11 +1243,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                   if (btn) {
                     const statusText = data.rsvp?.status === 'going' ? '✓ Going'
                       : data.rsvp?.status === 'interested' ? '✓ Registered'
-                      : data.rsvp?.status === 'waitlist' ? '⏳ Waitlisted'
-                      : '✓ Registered';
+                        : data.rsvp?.status === 'waitlist' ? '⏳ Waitlisted'
+                          : '✓ Registered';
                     const statusColor = data.rsvp?.status === 'going' ? '#22c55e'
                       : data.rsvp?.status === 'waitlist' ? '#f59e0b'
-                      : '#3b82f6';
+                        : '#3b82f6';
                     btn.innerHTML = statusText;
                     btn.style.background = `${statusColor}20`;
                     btn.style.color = statusColor;
@@ -1267,7 +1276,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
                 alert(error instanceof Error ? error.message : 'Failed to register. Please try again.');
               }
             };
-            
+
             // Function to update user RSVP state (called after successful RSVP)
             (window as any).updateUserRsvp = (eventId: string, status: string) => {
               setUserRsvps(prev => {
@@ -1451,7 +1460,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         const lng = position.coords.longitude;
 
         devLog.log('📍 Got user location:', { lat, lng });
-        
+
         // Fly to user's current location with animation
         map.current?.flyTo({
           center: [lng, lat],
@@ -1462,7 +1471,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           essential: true,
           easing: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
         });
-        
+
         // Create the user marker
         createUserLocationMarker(lat, lng);
 
@@ -1657,14 +1666,14 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
     const newMarkersMap = new Map<string, mapboxgl.Marker>();
 
     devLog.log('📋 Processing events for markers:', events.length);
-    devLog.log('📋 Events data:', events.map((e: any) => ({ 
-      name: e['Event Name'], 
-      lat: e.Latitude, 
+    devLog.log('📋 Events data:', events.map((e: any) => ({
+      name: e['Event Name'],
+      lat: e.Latitude,
       lng: e.Longitude,
       zo_property_id: e._zo_property_id,
-      category: e._category 
+      category: e._category
     })));
-    
+
     events.forEach((event, index) => {
       devLog.log(`📍 Processing event ${index + 1}: ${event['Event Name']} at [${event.Latitude}, ${event.Longitude}]`);
 
@@ -1696,11 +1705,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         markerElement.style.justifyContent = 'center';
         markerElement.style.overflow = 'hidden';
         markerElement.className = 'zo-event-marker';
-        
+
         // Check if this is a community event with a culture
         const culture = eventAny._culture;
         const isCommunityEvent = eventAny._category === 'community';
-        
+
         if (isCommunityEvent && culture && culture !== 'default') {
           // Use culture PNG as marker for community events
           const cultureAssets: Record<string, string> = {
@@ -1724,11 +1733,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             'follow_your_heart': 'FollowYourHeart.png',
           };
           const assetFile = cultureAssets[culture] || 'Default%20(2).jpg';
-          
+
           markerElement.style.backgroundColor = '#fff';
           markerElement.style.border = '3px solid #ff4d6d';
           markerElement.style.boxShadow = '0 4px 12px rgba(255, 77, 109, 0.4)';
-          
+
           const img = document.createElement('img');
           img.src = `/Cultural%20Stickers/${assetFile}`;
           img.style.width = '85%';
@@ -1738,8 +1747,8 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         } else {
           // Default event marker for sponsored/iCal events
           markerElement.style.backgroundColor = '#000';
-        markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-          
+          markerElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+
           const img = document.createElement('img');
           img.src = '/event-marker.jpg';
           img.alt = 'Event location';
@@ -1769,7 +1778,7 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
         // Determine the event URL - check Event URL field first, then Location if it contains luma.com
         const eventUrl = event['Event URL'] || (event.Location?.includes('luma.com') ? event.Location : null);
         const displayLocation = event.Location?.includes('luma.com') ? '' : event.Location;
-        
+
         // Extract community event data
         const eventAnyForPopup = event as any;
         const eventId = eventAnyForPopup._id || eventAnyForPopup.id;
@@ -1785,18 +1794,18 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
           category: eventCategory,
         });
         const isOwnEvent = userId && hostId && userId === hostId;
-        
+
         // Build hosted by HTML
-        const hostedByHtml = hostName 
+        const hostedByHtml = hostName
           ? `<p style="margin: 0 0 8px 0; font-size: 12px; color: #1a1a1a; line-height: 1.4;">👤 Hosted by <strong>${hostName}</strong></p>`
           : '';
-        
+
         // Build location HTML - prefer location_name over raw location
         const locationDisplay = locationName || displayLocation;
-        const locationHtml = locationDisplay 
-          ? `<p style="margin: 0 0 12px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${locationDisplay}</p>` 
+        const locationHtml = locationDisplay
+          ? `<p style="margin: 0 0 12px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${locationDisplay}</p>`
           : '<div style="margin-bottom: 12px;"></div>';
-        
+
         // Build register button - different for community vs external events
         // Check if user has already RSVP'd to this event
         const existingRsvpStatus = eventId ? userRsvps.get(eventId) : null;
@@ -1813,13 +1822,13 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
             registerButtonHtml = `<span style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: #ff4d6d; background: rgba(255,77,109,0.1); border-radius: 100px;">Your Event</span>`;
           } else if (existingRsvpStatus) {
             // User has already RSVP'd - show status
-            const statusText = existingRsvpStatus === 'going' ? '✓ Going' 
+            const statusText = existingRsvpStatus === 'going' ? '✓ Going'
               : existingRsvpStatus === 'interested' ? '✓ Registered'
-              : existingRsvpStatus === 'waitlist' ? '⏳ Waitlisted'
-              : '✓ Registered';
-            const statusColor = existingRsvpStatus === 'going' ? '#22c55e' 
-              : existingRsvpStatus === 'waitlist' ? '#f59e0b' 
-              : '#3b82f6';
+                : existingRsvpStatus === 'waitlist' ? '⏳ Waitlisted'
+                  : '✓ Registered';
+            const statusColor = existingRsvpStatus === 'going' ? '#22c55e'
+              : existingRsvpStatus === 'waitlist' ? '#f59e0b'
+                : '#3b82f6';
             registerButtonHtml = `<span style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: ${statusColor}; background: ${statusColor}20; border-radius: 100px;">${statusText}</span>`;
           } else {
             // Community event - RSVP button
@@ -2000,11 +2009,11 @@ export default function MapCanvas({ events, nodes, onMapReady, flyToEvent, flyTo
       // Prepare popup content for the node
       const popupContent = `
         <div style="padding: 0;">
-          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">${flyToNode.name}</h3>
-          <p style="margin: 4px 0; font-size: 13px;">📍 ${flyToNode.city}, ${flyToNode.country}</p>
-          <div style="margin-top: 12px; display: flex; gap: 8px;">
-            ${flyToNode.website ? `<a href="${flyToNode.website}" target="_blank" class="paper-button" style="flex: 1; text-align: center; font-size: 13px;">Visit</a>` : ''}
-            <button onclick="window.showRouteTo(${lng}, ${lat})" class="paper-button" style="flex: 1; font-size: 13px;">Directions</button>
+          <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 900; color: #000; font-family: 'Space Grotesk', sans-serif;">${flyToNode.name}</h3>
+          <p style="margin: 0 0 16px 0; font-size: 13px; color: #1a1a1a; line-height: 1.5;">📍 ${flyToNode.city}, ${flyToNode.country}</p>
+          <div style="display: flex; gap: 8px;">
+            ${flyToNode.website ? `<a href="${flyToNode.website}" target="_blank" class="glow-popup-button secondary" style="flex: 1;">Visit</a>` : ''}
+            <button onclick="window.showRouteTo(${lng}, ${lat})" class="glow-popup-button" style="flex: 1;">Directions</button>
           </div>
         </div>
       `;

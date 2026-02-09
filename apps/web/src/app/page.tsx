@@ -15,7 +15,8 @@ import { useOnboardingTransition } from '@/hooks/useOnboardingTransition';
 import { fetchAllCalendarEventsWithGeocoding } from '@/lib/icalParser';
 import { getCalendarUrls } from '@/lib/calendarConfig';
 import { isWithinRadius } from '@/lib/geoUtils';
-import { isWithinBangalore, getBangaloreNodesForLocalView } from '@/lib/bangaloreNodes';
+// Removed: import { isWithinBangalore, getBangaloreNodesForLocalView } from '@/lib/bangaloreNodes';
+// All Bangalore nodes are now managed in the database via partner_nodes table
 import mapboxgl from 'mapbox-gl';
 import { devLog } from '@/lib/logger';
 

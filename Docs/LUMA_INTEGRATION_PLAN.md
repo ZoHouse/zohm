@@ -321,8 +321,8 @@ async function syncLumaGuests(eventId):
 ### Env Vars
 
 ```bash
-LUMA_BLR_API_KEY=secret-yDPI1zfyTSL3es234fYAQGeGp
-LUMA_ZO_EVENTS_API_KEY=secret-uCIWwOf31Y8WcG3xjUDBD0il0
+LUMA_BLR_API_KEY=<your-blr-api-key>
+LUMA_ZO_EVENTS_API_KEY=<your-zo-events-api-key>
 LUMA_API_SYNC=true  # Feature flag
 ```
 
@@ -718,8 +718,8 @@ ALTER TABLE calendars ADD COLUMN sync_method TEXT DEFAULT 'ical';
 
 ```bash
 # .env.local (NEVER commit)
-LUMA_BLR_API_KEY=secret-yDPI1zfyTSL3es234fYAQGeGp
-LUMA_ZO_EVENTS_API_KEY=secret-uCIWwOf31Y8WcG3xjUDBD0il0
+LUMA_BLR_API_KEY=<your-blr-api-key>
+LUMA_ZO_EVENTS_API_KEY=<your-zo-events-api-key>
 # LUMA_WEBHOOK_SECRET=  # Auto-generated when registering webhooks via API
 ```
 

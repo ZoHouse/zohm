@@ -10,7 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
-import type { RsvpInput, RsvpResponse, EventAttendeesResponse } from '@/types/events';
+import { isLumaApiEnabled } from '@/lib/featureFlags';
+import { pushRsvpToLuma, updateRsvpStatusOnLuma } from '@/lib/luma/rsvpSync';
+import type { RsvpInput, RsvpResponse, EventAttendeesResponse, CommunityEvent } from '@/types/events';
 
 // ============================================
 // Helper: Update event RSVP count
@@ -320,6 +322,22 @@ export async function POST(
       }
     }
 
+    // Push RSVP to Luma if enabled and event is on Luma (non-blocking)
+    if (isLumaApiEnabled() && event) {
+      // Fetch full event to check for luma_event_id
+      const { data: fullEvent } = await client
+        .from('canonical_events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (fullEvent?.luma_event_id) {
+        pushRsvpToLuma(fullEvent as CommunityEvent, userId).catch(err => {
+          devLog.error('[Luma] Non-blocking RSVP push failed:', err);
+        });
+      }
+    }
+
     // Get user info for response
     const { data: user } = await client
       .from('users')
@@ -498,6 +516,24 @@ export async function PATCH(
       }
     }
 
+    // Sync RSVP status change to Luma if enabled (non-blocking)
+    if (isLumaApiEnabled() && status && event) {
+      const { data: fullEvent } = await client
+        .from('canonical_events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (fullEvent?.luma_event_id) {
+        const targetUserId = user_id || (updated as any)?.user_id;
+        if (targetUserId) {
+          const lumaStatus = (status === 'going' || status === 'approved') ? 'approved' : 'declined';
+          updateRsvpStatusOnLuma(fullEvent as CommunityEvent, targetUserId, lumaStatus).catch(err => {
+            devLog.error('[Luma] Non-blocking RSVP status sync failed:', err);
+          });
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

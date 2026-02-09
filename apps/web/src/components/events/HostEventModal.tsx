@@ -77,6 +77,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
     location_address: '',
     max_capacity: undefined,
     cover_image_url: undefined,
+    meeting_url: undefined,
   });
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
         location_address: '',
         max_capacity: undefined,
         cover_image_url: undefined,
+        meeting_url: undefined,
       });
     }
   }, [isOpen]);
@@ -111,7 +113,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
     switch (step) {
       case 1: return !!formData.category;
       case 2: return !!formData.culture;
-      case 3: return !!(formData.title && formData.title.length >= 5 && formData.starts_at && formData.ends_at);
+      case 3: return !!(formData.title && formData.title.length >= 5 && formData.starts_at && formData.ends_at && formData.cover_image_url);
       case 4: return !!(formData.location_type && (formData.location_type === 'online' || formData.location_name));
       case 5: return true;
       default: return false;
@@ -292,7 +294,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
               </div>
 
               <div>
-                <label className={labelClass}>Cover Image (optional)</label>
+                <label className={labelClass}>Cover Image *</label>
                 <ImageUpload
                   value={formData.cover_image_url}
                   onChange={(url) => updateField('cover_image_url', url)}
@@ -314,6 +316,7 @@ export function HostEventModal({ isOpen, onClose, onSuccess, userId, sponsoredFo
                 zo_property_id: formData.zo_property_id,
                 meeting_point: formData.meeting_point,
                 max_capacity: formData.max_capacity,
+                meeting_url: formData.meeting_url,
               }}
               onChange={(locationData) => {
                 setFormData(prev => ({

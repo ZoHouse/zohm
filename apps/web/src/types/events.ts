@@ -127,7 +127,11 @@ export interface CommunityEvent {
   external_rsvp_url?: string;
   luma_event_id?: string;
   cover_image_url?: string;
-  
+  meeting_url?: string;
+
+  // Luma sync
+  luma_sync_status?: 'pending' | 'pushed' | 'pulled' | 'push_failed' | 'synced';
+
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -204,6 +208,9 @@ export interface CreateEventInput {
   
   // Cover image
   cover_image_url?: string;
+
+  // Meeting link (for online/hybrid events)
+  meeting_url?: string;
 }
 
 /**

@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
+import { isLumaApiEnabled } from '@/lib/featureFlags';
+import { updateEventOnLuma, pushEventToLuma } from '@/lib/luma/eventPush';
 import type { CommunityEvent } from '@/types/events';
 
 // ============================================
@@ -141,12 +143,20 @@ export async function PUT(
     const editableFields = [
       'title', 'description', 'culture', 'starts_at', 'ends_at',
       'location_name', 'location_raw', 'lat', 'lng', 'meeting_point',
-      'max_capacity', 'cover_image_url'
+      'max_capacity', 'cover_image_url', 'meeting_url'
     ];
 
     for (const field of editableFields) {
       if (body[field] !== undefined) {
         allowedUpdates[field] = body[field];
+      }
+    }
+
+    // Allow admins to update submission_status (for approval flow)
+    if (body.submission_status !== undefined) {
+      const validStatuses = ['draft', 'pending', 'approved', 'rejected', 'cancelled'];
+      if (validStatuses.includes(body.submission_status)) {
+        allowedUpdates.submission_status = body.submission_status;
       }
     }
 
@@ -170,6 +180,24 @@ export async function PUT(
     }
 
     devLog.info('Event updated successfully:', updated?.id);
+
+    // Luma sync (non-blocking)
+    if (isLumaApiEnabled() && updated) {
+      if (updated.luma_event_id) {
+        // Event already on Luma — sync updates
+        updateEventOnLuma(updated as CommunityEvent).catch(err => {
+          devLog.error('[Luma] Non-blocking update failed:', err);
+        });
+      } else if (
+        body.submission_status === 'approved' &&
+        !updated.luma_event_id
+      ) {
+        // Newly approved event — push to Luma for the first time
+        pushEventToLuma(updated as CommunityEvent).catch(err => {
+          devLog.error('[Luma] Non-blocking push on approval failed:', err);
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,

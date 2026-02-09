@@ -40,6 +40,7 @@ interface LocationData {
   zo_property_id?: string;
   meeting_point?: string;
   max_capacity?: number;
+  meeting_url?: string;
 }
 
 interface LocationSelectorProps {
@@ -402,8 +403,13 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
             <label className={labelClass}>Meeting Link</label>
             <input
               type="url"
-              value={value.location_name || ''}
-              onChange={(e) => onChange({ ...value, location_name: e.target.value })}
+              value={value.meeting_url || ''}
+              onChange={(e) => onChange({
+                ...value,
+                meeting_url: e.target.value,
+                // Keep backward compat: also set location_name for display
+                location_name: e.target.value || 'Online Event',
+              })}
               placeholder="https://zoom.us/j/... or https://meet.google.com/..."
               className={inputClass}
             />
@@ -411,6 +417,23 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
               You can also add the link later before the event
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Meeting Link (optional, for in-person + hybrid events) */}
+      {(value.location_type === 'zo_property' || value.location_type === 'custom') && (
+        <div className="pt-2">
+          <label className={labelClass}>Meeting Link (optional)</label>
+          <input
+            type="url"
+            value={value.meeting_url || ''}
+            onChange={(e) => onChange({ ...value, meeting_url: e.target.value })}
+            placeholder="Add a virtual link for hybrid events"
+            className={inputClass}
+          />
+          <p className="text-xs text-black/50 mt-1">
+            For hybrid events with both in-person and virtual attendance
+          </p>
         </div>
       )}
 

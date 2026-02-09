@@ -31,7 +31,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "swagger-ui-react": "^5.30.2",
-    "three": "^0.181.1"
+    "three": "^0.181.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

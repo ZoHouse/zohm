@@ -1,6 +1,7 @@
 // Calendar Configuration - Using Supabase for scalable calendar management
 import { getActiveCalendars } from './supabase';
 import { devLog } from '@/lib/logger';
+import { isLumaApiEnabled } from '@/lib/featureFlags';
 
 // Helper to get base URL for server-side requests
 function getBaseUrl(): string {
@@ -38,8 +39,24 @@ export async function getCalendarUrls(): Promise<string[]> {
       return EMERGENCY_FALLBACK_CALENDAR_URLS.map(toProxyUrl);
     }
     
+    // When Luma API sync is enabled, filter out calendars that are now served via API
+    // These calendar IDs correspond to our Luma API-connected calendars
+    const LUMA_API_CALENDAR_IDS = ['cal-ZVonmjVxLk7F2oM', 'cal-3YNnBTToy9fnnjQ'];
+
+    let activeCalendars = calendars;
+    if (isLumaApiEnabled()) {
+      activeCalendars = calendars.filter(calendar => {
+        const isLumaApiCalendar = LUMA_API_CALENDAR_IDS.some(id => calendar.url.includes(id));
+        if (isLumaApiCalendar) {
+          devLog.log(`📅 Skipping iCal for Luma API calendar: ${calendar.url}`);
+        }
+        return !isLumaApiCalendar;
+      });
+      devLog.log(`📅 Luma API enabled: ${calendars.length - activeCalendars.length} calendar(s) moved to API sync`);
+    }
+
     // Convert URLs to use our proxy API to avoid CORS issues
-    const urls = calendars.map(calendar => {
+    const urls = activeCalendars.map(calendar => {
       if (calendar.url.startsWith('http')) {
         // Direct URL - proxy it through our API
         return toProxyUrl(calendar.url);

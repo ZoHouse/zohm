@@ -3,30 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "description": "Zo World monorepo: webapp, API, contracts, SDK",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "bootstrap": "npm install",
-    "dev": "npm run dev:web",
-    "dev:web": "npm --workspace apps/web run dev",
-    "build": "npm run build:web",
-    "build:web": "npm --workspace apps/web run build",
-    "start": "npm --workspace apps/web run start",
-    "lint": "npm --workspace apps/web run lint",
+    "dev": "pnpm --filter @zohm/web dev",
+    "build": "pnpm --filter @zohm/web build",
+    "start": "pnpm --filter @zohm/web start",
+    "lint": "pnpm --filter @zohm/web lint",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-    "clean:install": "npm run clean && npm install"
+    "clean:install": "pnpm run clean && pnpm install"
   },
   "engines": {
     "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "pnpm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ZoHouse/zohm.git"
-  },
-  "dependencies": {
-    "uuid": "^13.0.0"
   }
 }

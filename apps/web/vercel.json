@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/worker/resolve-vibe-checks",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

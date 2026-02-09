@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
+import { isLumaApiEnabled, isVibeCheckEnabled } from '@/lib/featureFlags';
+import { pushEventToLuma } from '@/lib/luma/eventPush';
+import { createVibeCheck } from '@/lib/telegram/vibeCheck';
 import type {
   CommunityEvent,
   CreateEventInput,
@@ -287,6 +290,7 @@ export async function POST(request: NextRequest) {
       // External
       external_rsvp_url: body.external_rsvp_url || null,
       cover_image_url: body.cover_image_url || null,
+      meeting_url: body.meeting_url || null,
     };
 
     const { data: event, error: insertError } = await client
@@ -310,6 +314,20 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         status: 'going',
         rsvp_type: 'host',
+      });
+    }
+
+    // Push to Luma if enabled and auto-approved (non-blocking)
+    if (isLumaApiEnabled() && submission_status === 'approved' && event) {
+      pushEventToLuma({ ...event, host: user } as CommunityEvent).catch(err => {
+        devLog.error('[Luma] Non-blocking push failed:', err);
+      });
+    }
+
+    // Trigger Telegram vibe check for pending events (non-blocking)
+    if (isVibeCheckEnabled() && submission_status === 'pending' && event) {
+      createVibeCheck({ ...event, host: user } as CommunityEvent).catch(err => {
+        devLog.error('[Vibe Check] Non-blocking trigger failed:', err);
       });
     }
 

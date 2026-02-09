@@ -60,6 +60,34 @@ export const FEATURE_FLAGS = {
    * Default: true (safest)
    */
   CANONICAL_DRY_RUN: process.env.CANONICAL_DRY_RUN !== 'false', // default true
+
+  /**
+   * LUMA_API_SYNC
+   *
+   * When true: Enables bidirectional Luma API integration
+   *   - Read: Pull events from Luma API (replaces iCal for configured calendars)
+   *   - Write: Push approved community events to Luma
+   *   - RSVP: Sync RSVPs between platforms
+   *   - Webhooks: Receive real-time updates from Luma
+   * When false: All Luma API features disabled, iCal-only mode
+   *
+   * Default: false (safe)
+   */
+  LUMA_API_SYNC: process.env.FEATURE_LUMA_API_SYNC === 'true',
+
+  /**
+   * VIBE_CHECK_TELEGRAM
+   *
+   * When true: Pending community events trigger a Telegram vibe check
+   *   - Bot posts a rich card to a Telegram group
+   *   - Members vote with inline buttons (upvote/downvote)
+   *   - After 24h, majority decides approval/rejection
+   *   - Cron worker resolves expired vibe checks every 15 min
+   * When false: Pending events sit in DB with no review flow
+   *
+   * Default: false (safe)
+   */
+  VIBE_CHECK_TELEGRAM: process.env.FEATURE_VIBE_CHECK_TELEGRAM === 'true',
 } as const;
 
 /**
@@ -77,6 +105,20 @@ export function shouldWorkerWrite(): boolean {
 }
 
 /**
+ * Helper to check if Luma API sync is enabled
+ */
+export function isLumaApiEnabled(): boolean {
+  return FEATURE_FLAGS.LUMA_API_SYNC;
+}
+
+/**
+ * Helper to check if Telegram vibe check is enabled
+ */
+export function isVibeCheckEnabled(): boolean {
+  return FEATURE_FLAGS.VIBE_CHECK_TELEGRAM;
+}
+
+/**
  * Get current feature flag state (for debugging/monitoring)
  */
 export function getFeatureFlagState() {
@@ -87,6 +129,12 @@ export function getFeatureFlagState() {
       dryRun: FEATURE_FLAGS.CANONICAL_DRY_RUN,
       fullyEnabled: isCanonicalEventsEnabled(),
       workerWriting: shouldWorkerWrite(),
+    },
+    luma: {
+      apiSync: FEATURE_FLAGS.LUMA_API_SYNC,
+    },
+    vibeCheck: {
+      telegram: FEATURE_FLAGS.VIBE_CHECK_TELEGRAM,
     },
     environment: process.env.NODE_ENV || 'unknown',
     timestamp: new Date().toISOString(),

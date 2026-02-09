@@ -355,23 +355,7 @@ page.tsx (Home)
 
 ## API Architecture
 
-### The Two APIs
-
-The system uses two external APIs:
-
-| API | Base URL | Env Var | Role |
-|-----|----------|---------|------|
-| **ZOHM API** | `zohm-api.up.railway.app/api/v1` | `ZOHM_API_BASE_URL` | Community dev API. All client-facing auth, profile, and avatar calls go here. Proxies to ZO API under the hood. |
-| **ZO API** | `api.io.zo.xyz` | `ZO_CAS_API_URL` | Main identity database (CAS — Central Auth Service). Admin operations, bulk user queries, founder data. Never called directly from client code. |
-
-```
-Browser → Next.js API Routes → ZOHM API (proxy) → ZO API (main DB)
-                              ↘ Supabase (app data)
-```
-
-The ZOHM API client is configured in `apps/web/src/lib/zo-api/client.ts`. All requests include `client-key`, `client-device-id`, and `client-device-secret` headers.
-
-### Internal API Routes Structure
+### API Routes Structure
 
 ```
 /api/

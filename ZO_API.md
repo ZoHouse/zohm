@@ -1,26 +1,35 @@
 # ZO API Documentation
 
-**Version**: 1.0  
-**Last Updated**: November 22, 2025  
-**Base URL**: `https://api.io.zo.xyz`  
+**Version**: 1.0
+**Last Updated**: February 2026
 **Authentication**: Phone-based OTP (SMS)
+
+### Two APIs, One System
+
+| API | Base URL | Who Uses It |
+|-----|----------|-------------|
+| **ZOHM API** | `https://zohm-api.up.railway.app/api/v1` | Community devs, game.zo.xyz, all client-facing code. This is the API you should use. |
+| **ZO API** | `https://api.io.zo.xyz` | Main identity database (CAS). Admin/internal only. Never call directly from client code. |
+
+The ZOHM API proxies auth, profile, and avatar requests to the ZO API. Community developers should always use the ZOHM API. The endpoints documented below are available through both, but **use `ZOHM_API_BASE_URL` in your code**.
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Authentication Flow](#authentication-flow)
-3. [Required Headers](#required-headers)
-4. [Endpoints](#endpoints)
+2. [Interactive API Documentation (Swagger UI)](#interactive-api-documentation-swagger-ui)
+3. [Authentication Flow](#authentication-flow)
+4. [Required Headers](#required-headers)
+5. [Endpoints](#endpoints)
    - [Authentication](#authentication-endpoints)
    - [Profile](#profile-endpoints)
    - [Avatar](#avatar-endpoints)
-5. [Response Formats](#response-formats)
-6. [Error Handling](#error-handling)
-7. [Code Examples](#code-examples)
-8. [Session Management](#session-management)
-9. [TypeScript Types](#typescript-types)
+6. [Response Formats](#response-formats)
+7. [Error Handling](#error-handling)
+8. [Code Examples](#code-examples)
+9. [Session Management](#session-management)
+10. [TypeScript Types](#typescript-types)
 
 ---
 
@@ -43,6 +52,68 @@ https://api.io.zo.xyz
 ```
 
 **Environment Variable**: `ZO_API_BASE_URL` or `NEXT_PUBLIC_ZO_API_BASE_URL`
+
+---
+
+## Interactive API Documentation (Swagger UI)
+
+The ZO House project includes interactive API documentation powered by Swagger UI, making it easy to test endpoints directly from your browser.
+
+### Accessing Swagger UI
+
+#### Internal APIs
+- **URL**: http://localhost:3000/api-docs (development)
+- **Specification**: `/public/openapi-internal.yaml`
+- **Endpoints**: NFT verification, user inventory, quests, leaderboards, calendar events, city data
+
+#### External ZO Backend APIs
+- **URL**: http://localhost:3000/api-docs/zo (development)
+- **Specification**: `/public/openapi-external.yaml`
+- **Endpoints**: Authentication, profile management, avatar generation
+
+### Using Swagger UI
+
+**Features:**
+- **Try It Out**: Click "Try it out" on any endpoint to make test requests
+- **Search**: Use the search bar to filter endpoints
+- **Deep Linking**: Share direct links to specific endpoints
+- **Persistent Authorization**: Saved tokens persist across page reloads
+- **Response Duration**: See how long each request takes
+
+**Testing External ZO APIs:**
+
+⚠️ **Important**: External ZO APIs require authentication credentials.
+
+1. Navigate to http://localhost:3000/api-docs/zo
+2. Click "Authorize" in the top right
+3. Enter your credentials:
+   - Bearer token (from login response)
+   - client-key header
+   - client-device-id header
+   - client-device-secret header
+4. Test endpoints using "Try it out"
+
+### Updating OpenAPI Specifications
+
+**When to Update:**
+- Add a new API endpoint
+- Modify request/response schemas
+- Change endpoint parameters
+- Update authentication requirements
+
+**How to Update:**
+
+1. For Internal APIs: Edit `/public/openapi-internal.yaml`
+2. For External ZO APIs: Edit `/public/openapi-external.yaml`
+3. Validate at https://editor.swagger.io/
+4. Reload the Swagger UI page to see changes
+
+**Best Practices:**
+- Keep specs in sync with actual implementations
+- Use `$ref` for reusable schemas
+- Include realistic example values
+- Document all possible error responses
+- Update the `version` field when making breaking changes
 
 ---
 
@@ -961,8 +1032,18 @@ import { generateAvatar, pollAvatarStatus } from '@/lib/zo-api/avatar';
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: November 22, 2025  
+**Document Version**: 1.1  
+**Last Updated**: January 28, 2026  
 **Maintained By**: Zo World Development Team  
 **Status**: ✅ Production Ready
+
+---
+
+## Additional Resources
+
+- [OpenAPI 3.0 Specification](https://swagger.io/specification/)
+- [Swagger UI Documentation](https://swagger.io/docs/open-source-tools/swagger-ui/usage/installation/)
+- [Swagger Editor](https://editor.swagger.io/) - Online spec editor/validator
+- Internal APIs: http://localhost:3000/api-docs
+- External ZO APIs: http://localhost:3000/api-docs/zo
 

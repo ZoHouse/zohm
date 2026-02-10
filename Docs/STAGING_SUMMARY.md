@@ -2,9 +2,9 @@
 
 > **Branch**: `staging` (from `main` at `d5efada`)
 > **Date**: February 9, 2026
-> **Commits**: 11
-> **Total**: 139 files changed, +13,771 / -19,173 lines (60 deleted, 48 added, 21 modified, 10 renamed)
-> **Build**: Passing — 0 TypeScript errors, 41 static pages, 55 API routes
+> **Commits**: 14
+> **Total**: 152 files changed, +16,883 / -19,189 lines (60 deleted, 61 added, 21 modified, 10 renamed)
+> **Build**: Passing — 0 TypeScript errors, 41 static pages, 58 API routes
 
 ---
 
@@ -23,6 +23,9 @@
 | 9 | `9aa2f44` | `docs: Update vibe check docs to match implementation` | 7 files — rewrote vibe check across 6 docs, deleted applied SQL |
 | 10 | `bb9e081` | `feat: Luma API integration + event system improvements` | 20 files — Luma client, geo-routed push, RSVP sync, webhook, worker |
 | 11 | `bdd9c6c` | `fix: Use correct Luma calendar ID for Zo Events` | 1 file — replaced placeholder with API-verified calendar ID |
+| 12 | `efcd027` | `zo zo zo` | Misc |
+| 13 | `96a08c5` | `feat: Sponsored events inquiry pipeline` | 11 files — Typeform webhook, venue matcher, quote engine, TG notifications, email sender |
+| 14 | `25ab922` | `docs: Add sponsored events system design and comparison` | 2 files — ZO_EVENTS_SYSTEM.md, EVENTS_CURRENT_VS_PROPOSED.md |
 
 ---
 
@@ -48,6 +51,19 @@ Bidirectional event sync with Luma calendars via geo-routed push.
 - **Webhook**: Receives Luma guest updates in real-time
 - **Feature flag**: `FEATURE_LUMA_API_SYNC` (default: `false`)
 - **Files**: `lib/luma/` (client.ts, config.ts, eventPush.ts, rsvpSync.ts, syncWorker.ts, types.ts), `api/luma/setup/`, `api/webhooks/luma/`, `api/worker/sync-luma/`
+
+### Sponsored Events Inquiry Pipeline (commit #13)
+
+End-to-end pipeline for sponsored/corporate event inquiries via Typeform.
+
+- **Flow**: Typeform submission → webhook/poll → venue matching → Telegram notification → quote generation → email delivery
+- **Venue Matching**: Scores 103 Zoeventsmaster venues on location (40), capacity (20), requirements (30), operational (10). Returns top 3.
+- **Quote Engine**: Calculates from venue pricing data (rate + F&B + services + 18% GST). Falls back to manual quote if no pricing.
+- **Telegram**: Posts inquiry card with [Generate Quote] / [Request Manual Quote] buttons to approval group
+- **Email**: Sends professional HTML quote to host via Resend API
+- **Fallback Polling**: Cron worker polls Typeform every 10-15 min for missed webhooks
+- **Feature flag**: `FEATURE_EVENT_INQUIRY_PIPELINE` (default: `false`)
+- **Files**: `types/inquiry.ts`, `lib/venue/` (matcher.ts, quoteEngine.ts), `lib/typeform/parser.ts`, `lib/telegram/` (inquiryNotification.ts, inquiryCallbacks.ts), `lib/email/quoteSender.ts`, `api/webhooks/typeform/`, `api/worker/poll-typeform/`
 
 ### Vibe Score API (commit #3)
 
@@ -142,6 +158,10 @@ Bidirectional event sync with Luma calendars via geo-routed push.
 | `FEATURE_LUMA_API_SYNC` | Luma integration | Set `true` to enable |
 | `LUMA_BLR_API_KEY` | Luma BLR calendar | If Luma enabled |
 | `LUMA_ZO_EVENTS_API_KEY` | Luma Zo Events calendar | If Luma enabled |
+| `FEATURE_EVENT_INQUIRY_PIPELINE` | Inquiry pipeline | Set `true` to enable |
+| `TYPEFORM_API_TOKEN` | Typeform poll worker | If pipeline enabled |
+| `TYPEFORM_FORM_ID` | Typeform form | Defaults to `LgcBfa0M` |
+| `RESEND_API_KEY` | Email delivery | For quote emails |
 
 ---
 

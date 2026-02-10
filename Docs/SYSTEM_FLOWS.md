@@ -10,8 +10,9 @@
 1. [User Authentication (Login)](#1-user-authentication-login)
 2. [Event Creation](#2-event-creation-current-flow)
 3. [Vibe Check — Telegram Event Governance](#3-vibe-check--telegram-event-governance)
-4. [Key Database Tables](#4-key-database-tables)
-5. [File Reference](#5-file-reference)
+4. [Sponsored Events — Inquiry Pipeline](#4-sponsored-events--inquiry-pipeline)
+5. [Key Database Tables](#5-key-database-tables)
+6. [File Reference](#6-file-reference)
 
 ---
 
@@ -116,7 +117,7 @@ Zo uses **phone-based OTP** authentication via the ZO API. There is no email/pas
 
 ### Overview
 
-Users create events through a **5-step modal**. Events are either **auto-approved** (Founders/Admins) or **pending review** (Citizens). Currently there is no community voting — pending events just sit until an admin acts.
+Users create events through a **5-step modal**. Events are either **auto-approved** (Founders/Admins) or **pending review** (Citizens). Pending events are resolved by the **Vibe Check** system via Telegram community voting (see [Section 3](#3-vibe-check--telegram-event-governance)). There are three event types: **Community** (5-step modal), **Sponsored** (Typeform → inquiry pipeline), and **Ticketed** (coming soon).
 
 ### Flow
 
@@ -177,8 +178,10 @@ Users create events through a **5-step modal**. Events are either **auto-approve
 └──────────────┬───────────────────────────────────────────┘
                │
                ├── If approved → Event is live immediately
+               │                 (+ pushed to Luma if FEATURE_LUMA_API_SYNC=true)
                │
-               └── If pending → ??? (no review process exists)
+               └── If pending → Vibe Check (see Section 3)
+                                 Bot posts to TG group → community votes → 24h → resolved
 ```
 
 ### What's Stored
@@ -434,9 +437,110 @@ CREATE TABLE vibe_check_votes (
 
 ---
 
-## 4. Key Database Tables
+## 4. Sponsored Events — Inquiry Pipeline
 
-### Tables Involved in Auth + Events + Vibe Check
+### Overview
+
+When a user selects **"Sponsored"** in the event type selector, the modal closes and an external Typeform opens. The submission triggers an automated pipeline: parse → venue match → Telegram notification → quote generation → email delivery.
+
+### Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  USER SELECTS "SPONSORED" IN HOST EVENT MODAL            │
+│  → window.open(typeformUrl) → modal closes               │
+│  → Typeform: zostel.typeform.com/to/LgcBfa0M             │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│  TYPEFORM SUBMISSION RECEIVED                            │
+│                                                          │
+│  Path A: POST /api/webhooks/typeform (real-time)         │
+│  Path B: POST /api/worker/poll-typeform (cron fallback)  │
+│                                                          │
+│  1. Check duplicate by typeform_token                    │
+│  2. Parse response (match fields by title keywords)      │
+│  3. Insert into `event_inquiries` table                  │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│  VENUE MATCHING                                          │
+│  matchVenues(inquiry)                                    │
+│                                                          │
+│  Scores all 103 active Zoeventsmaster venues:            │
+│    Location   (0-40)  exact city / region / keyword      │
+│    Capacity   (0-20)  convention hall fits headcount     │
+│    Requirements (0-30) projector, music, catering, etc.  │
+│    Operational (0-10)  active status, venue category     │
+│                                                          │
+│  Returns: best match + 2 alternatives                    │
+│  Saves match results to event_inquiries row              │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│  TELEGRAM NOTIFICATION                                   │
+│  postInquiryToTelegram(inquiry)                          │
+│                                                          │
+│  Posts inquiry card to approval group:                   │
+│  ┌────────────────────────────────────────┐              │
+│  │  📋 NEW EVENT INQUIRY                 │              │
+│  │                                        │              │
+│  │  👤 Host: name, email, phone          │              │
+│  │  🏢 Organization: company             │              │
+│  │  📅 Date: preferred date              │              │
+│  │  👥 Guests: expected headcount        │              │
+│  │  💰 Budget: stated budget             │              │
+│  │                                        │              │
+│  │  🏆 Best Match: Zostel Goa (72/100)  │              │
+│  │                                        │              │
+│  │  [Generate Quote]  [Manual Quote]     │              │
+│  └────────────────────────────────────────┘              │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               ├── Team clicks [Generate Quote]
+               │     → generateQuote() from venue pricing data
+               │     → saveQuote() to DB
+               │     → sendQuoteEmail() via Resend API
+               │     → Edit TG message with quote summary
+               │
+               └── Team clicks [Request Manual Quote]
+                     → Update status to 'reviewing'
+                     → Post follow-up to TG: "Manual quote needed"
+```
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `FEATURE_EVENT_INQUIRY_PIPELINE` | Enable/disable inquiry pipeline (default: `false`) |
+| `TYPEFORM_API_TOKEN` | Typeform API auth for polling worker |
+| `TYPEFORM_FORM_ID` | Form ID (default: `LgcBfa0M`) |
+| `RESEND_API_KEY` | Email delivery for quote emails |
+
+### File Reference
+
+| File | Purpose |
+|------|---------|
+| `lib/typeform/parser.ts` | Parse Typeform responses by field title keywords |
+| `lib/venue/matcher.ts` | Score venues against inquiry requirements (100-point scale) |
+| `lib/venue/quoteEngine.ts` | Calculate quotes from venue pricing (rate + F&B + GST 18%) |
+| `lib/telegram/inquiryNotification.ts` | Post/update inquiry cards in Telegram |
+| `lib/telegram/inquiryCallbacks.ts` | Handle Generate Quote / Manual Quote button presses |
+| `lib/email/quoteSender.ts` | Send HTML quote emails via Resend API |
+| `app/api/webhooks/typeform/route.ts` | Typeform webhook receiver |
+| `app/api/worker/poll-typeform/route.ts` | Cron fallback for missed webhooks |
+| `types/inquiry.ts` | EventInquiry, VenueMatchResult, QuoteBreakdown types |
+
+*All paths relative to `apps/web/src/`*
+
+---
+
+## 5. Key Database Tables
+
+### Tables Involved in Auth + Events + Vibe Check + Inquiries
 
 | Table | Role |
 |-------|------|
@@ -445,10 +549,12 @@ CREATE TABLE vibe_check_votes (
 | `event_rsvps` | Post-approval attendance tracking |
 | `vibe_checks` | One row per pending event sent to Telegram. Tracks message ID, vote tallies, expiry |
 | `vibe_check_votes` | Individual votes keyed by Telegram user ID. UNIQUE constraint prevents duplicates |
+| `event_inquiries` | Sponsored event inquiries from Typeform. Tracks venue match, quote, status |
+| `Zoeventsmaster` | 103 venue properties with 239 columns — used by venue matching engine |
 
 ---
 
-## 5. File Reference
+## 6. File Reference
 
 ### Authentication
 

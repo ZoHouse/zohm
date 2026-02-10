@@ -35,6 +35,7 @@ The Events System powers community-driven events across the Zo World network. It
 | Mode | Status | Source | Description |
 |------|--------|--------|-------------|
 | **Community Events** | Active | `canonical_events` table | User-created events with RSVP, cultures, cover images |
+| **Sponsored Events** | Active | `event_inquiries` table | Typeform → venue match → TG → quote → email pipeline |
 | **Legacy iCal** | Active | Luma iCal feeds | External events ingested via iCal proxy |
 | **Canonical Worker** | Standby | Feature-flagged | Syncs iCal events to database (not yet enabled) |
 
@@ -667,9 +668,9 @@ Step 4: LOCATION      Step 5: REVIEW
 ### Step Details
 
 **Step 1 — Event Type:**
-- `community`: Standard community event (continues to step 2)
-- `sponsored`: Opens external Typeform (`zostel.typeform.com/to/LgcBfa0M`)
-- `ticketed`: Creates ticketed event with price fields
+- `community`: Standard community event (continues to step 2 → full 5-step flow → POST /api/events)
+- `sponsored`: Opens external Typeform (`zostel.typeform.com/to/LgcBfa0M`) in new tab, modal closes. Submission triggers the inquiry pipeline (venue matching → TG notification → quote generation). See [SYSTEM_FLOWS.md Section 4](./SYSTEM_FLOWS.md#4-sponsored-events--inquiry-pipeline).
+- `ticketed`: Disabled with "Coming Soon" badge. Schema supports `is_ticketed`, `ticket_price`, `ticket_currency` but the creation flow is not wired up.
 
 **Step 2 — Culture/Vibe:**
 - Fetches cultures from `/api/events/cultures` (falls back to 16 hardcoded cultures)
@@ -926,7 +927,17 @@ npx ts-node lib/eventWorker.ts --calendar=cal-ZVonmjVxLk7F2oM --verbose
 
 ## Feature Flags
 
-Defined in `lib/featureFlags.ts`. Controls the canonical events rollout.
+Defined in `lib/featureFlags.ts`. Controls feature rollout across multiple systems.
+
+### Event System Flags
+
+| Flag | Env Variable | Default | Description |
+|------|-------------|---------|-------------|
+| `VIBE_CHECK_TELEGRAM` | `FEATURE_VIBE_CHECK_TELEGRAM` | `false` | Pending events trigger Telegram community vote |
+| `LUMA_API_SYNC` | `FEATURE_LUMA_API_SYNC` | `false` | Auto-push approved events to Luma calendars |
+| `EVENT_INQUIRY_PIPELINE` | `FEATURE_EVENT_INQUIRY_PIPELINE` | `false` | Sponsored events Typeform → venue match → quote pipeline |
+
+### Canonical Events Flags (Legacy)
 
 | Flag | Env Variable | Default | Description |
 |------|-------------|---------|-------------|
@@ -937,12 +948,15 @@ Defined in `lib/featureFlags.ts`. Controls the canonical events rollout.
 ### Helper Functions
 
 ```typescript
-isCanonicalEventsEnabled()  // true if both READ and WRITE are true
-shouldWorkerWrite()         // true if WRITE=true AND DRY_RUN=false
-getFeatureFlagState()       // Returns full state object for debugging
+isVibeCheckEnabled()           // true if FEATURE_VIBE_CHECK_TELEGRAM=true
+isLumaApiEnabled()             // true if FEATURE_LUMA_API_SYNC=true
+isInquiryPipelineEnabled()     // true if FEATURE_EVENT_INQUIRY_PIPELINE=true
+isCanonicalEventsEnabled()     // true if both READ and WRITE are true
+shouldWorkerWrite()            // true if WRITE=true AND DRY_RUN=false
+getFeatureFlagState()          // Returns full state object for debugging
 ```
 
-### Rollout Plan (Not Started)
+### Rollout Plan (Canonical Events — Not Started)
 
 ```
 Phase 1: WRITE=true, DRY_RUN=true   → Validate worker logic (72h staging)
@@ -1061,13 +1075,14 @@ All event API routes use `supabaseAdmin || supabase` pattern:
 ```
 apps/web/src/
 ├── types/
-│   └── events.ts                           # All type definitions (406 lines)
+│   ├── events.ts                           # All event type definitions (406 lines)
+│   └── inquiry.ts                          # Inquiry pipeline types (EventInquiry, VenueMatchResult, QuoteBreakdown)
 ├── app/
 │   ├── api/
 │   │   ├── calendar/route.ts               # iCal proxy
 │   │   ├── add-calendar/route.ts           # Add calendar source
 │   │   ├── events/
-│   │   │   ├── route.ts                    # GET (list) + POST (create)
+│   │   │   ├── route.ts                    # GET (list) + POST (create + vibe check trigger)
 │   │   │   ├── [id]/
 │   │   │   │   ├── route.ts               # GET/PUT/DELETE single event
 │   │   │   │   └── rsvp/route.ts          # GET/POST/PATCH RSVP management
@@ -1076,8 +1091,15 @@ apps/web/src/
 │   │   │   ├── cultures/route.ts          # GET active cultures
 │   │   │   ├── geojson/route.ts           # GET GeoJSON for map
 │   │   │   └── canonical/route.ts         # GET canonical events (flagged)
+│   │   ├── webhooks/
+│   │   │   ├── telegram/route.ts          # TG bot: vibe check votes + inquiry callbacks
+│   │   │   ├── typeform/route.ts          # Typeform inquiry submission webhook
+│   │   │   └── luma/route.ts              # Luma guest update webhook
 │   │   └── worker/
-│   │       └── sync-events/route.ts       # POST trigger sync
+│   │       ├── sync-events/route.ts       # POST trigger canonical sync
+│   │       ├── resolve-vibe-checks/route.ts # Cron: resolve expired vibe checks
+│   │       ├── poll-typeform/route.ts     # Cron: fallback polling for missed webhooks
+│   │       └── sync-luma/route.ts         # Cron: pull Luma RSVPs
 │   ├── my-events/page.tsx                  # Events management page
 │   └── page.tsx                            # Main page (loadLiveEvents)
 ├── components/
@@ -1086,7 +1108,7 @@ apps/web/src/
 │   │   ├── EditEventModal.tsx             # Event editing
 │   │   ├── CultureSelector.tsx            # Culture grid selector
 │   │   ├── LocationSelector.tsx           # 3-mode location picker
-│   │   ├── EventTypeSelector.tsx          # Category selector
+│   │   ├── EventTypeSelector.tsx          # Category selector (community/sponsored/ticketed)
 │   │   └── ImageUpload.tsx                # Cover image upload
 │   ├── EventsOverlay.tsx                  # Desktop events sidebar
 │   ├── MobileEventsListOverlay.tsx        # Mobile events sheet
@@ -1102,10 +1124,30 @@ apps/web/src/
     ├── canonicalUid.ts                    # UID generation
     ├── eventCoverDefaults.ts              # Cover image fallback chain
     ├── eventWorker.ts                     # Canonical sync worker
-    ├── featureFlags.ts                    # Feature toggles
+    ├── featureFlags.ts                    # Feature toggles (vibe check, Luma, inquiry, canonical)
     ├── geocoding.ts                       # Mapbox address search
     ├── icalParser.ts                      # iCal parsing + geocoding
-    └── supabase.ts                        # DB helpers (getActiveCalendars)
+    ├── supabase.ts                        # DB helpers (getActiveCalendars)
+    ├── telegram/
+    │   ├── bot.ts                         # Raw Telegram Bot API wrapper
+    │   ├── types.ts                       # Telegram + domain types
+    │   ├── vibeCheck.ts                   # createVibeCheck, handleVote, resolveExpired
+    │   ├── inquiryNotification.ts         # Post/update inquiry cards in TG
+    │   └── inquiryCallbacks.ts            # Handle Generate Quote / Manual Quote
+    ├── venue/
+    │   ├── matcher.ts                     # Score venues against inquiry (100-point scale)
+    │   └── quoteEngine.ts                 # Calculate quotes (rate + F&B + GST 18%)
+    ├── typeform/
+    │   └── parser.ts                      # Parse Typeform responses by field title
+    ├── email/
+    │   └── quoteSender.ts                 # Send HTML quote emails via Resend
+    └── luma/
+        ├── client.ts                      # Luma API client
+        ├── config.ts                      # Calendar IDs, geo-routing config
+        ├── eventPush.ts                   # Push events to Luma
+        ├── rsvpSync.ts                    # Pull RSVPs from Luma
+        ├── syncWorker.ts                  # Full sync worker
+        └── types.ts                       # Luma API types
 ```
 
 ---
@@ -1120,12 +1162,28 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000 # For server-side iCal fetches
 # Supabase
 SUPABASE_SERVICE_ROLE_KEY=xxx             # Required for RLS bypass in event APIs
 
-# Feature Flags (Canonical Events)
+# Feature Flags
+FEATURE_VIBE_CHECK_TELEGRAM=false          # Pending events → TG community vote
+FEATURE_LUMA_API_SYNC=false                # Push approved events to Luma calendars
+FEATURE_EVENT_INQUIRY_PIPELINE=false       # Typeform → venue match → quote pipeline
 FEATURE_CANONICAL_EVENTS_READ=false        # UI reads from DB vs iCal
 FEATURE_CANONICAL_EVENTS_WRITE=false       # Worker writes to DB
 CANONICAL_DRY_RUN=true                     # Worker in test mode
+
+# Telegram (Vibe Check + Inquiry Pipeline)
+TELEGRAM_BOT_TOKEN=xxx                     # Telegram Bot API auth token
+TELEGRAM_VIBE_CHECK_CHAT_ID=xxx            # Target Telegram group ID
+
+# Luma Integration
+LUMA_BLR_API_KEY=xxx                       # Luma BLR calendar API key
+LUMA_ZO_EVENTS_API_KEY=xxx                 # Luma Zo Events calendar API key
+
+# Inquiry Pipeline
+TYPEFORM_API_TOKEN=xxx                     # Typeform API for poll worker
+TYPEFORM_FORM_ID=LgcBfa0M                  # Typeform form ID
+RESEND_API_KEY=xxx                         # Email delivery for quotes
 ```
 
 ---
 
-*Document code-verified against source. Last audit: February 9, 2026.*
+*Document code-verified against source. Last audit: February 10, 2026.*

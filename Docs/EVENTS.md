@@ -1,189 +1,192 @@
-# Zo Node: Events
+# Zo World — Events
 
-> **How a Zo Node runs events from inquiry to post-event nurturing.**
+> **How events work on game.zo.xyz — from citizen creation to post-event ops.**
 
 ---
 
-## Event Lifecycle
+## Three Event Types
 
-Events at a Zo Node follow a **3-phase lifecycle**:
+Every event on Zo World falls into one of three categories. Citizens choose their type in Step 1 of the Host Event modal.
+
+| Type | Who It's For | What Happens | Status |
+|------|-------------|--------------|--------|
+| **Community** | Any citizen or founder | 5-step modal → event created on game.zo.xyz | Live |
+| **Sponsored** | Brands, corporates, partners | Opens Typeform → inquiry pipeline → venue match → quote | Live |
+| **Ticketed** | Paid entry events | — | Coming Soon |
+
+---
+
+## Community Events
+
+### How Citizens Create Events
+
+Any logged-in user can host a community event via the **Host Event** button on game.zo.xyz.
 
 ```
-PRE-EVENT          DURING-EVENT         POST-EVENT
-(Weeks before)  →  (Day of)          →  (Days after)
-─────────────────────────────────────────────────────
-Planning           Check-in             Thank you sequence
-Marketing          Coordination         Feedback collection
-RSVP management    Content capture      Analytics
-Communications     Live updates         Vendor settlement
-                   Problem-solving      Guest nurturing
+Click "Host Event" → HostEventModal opens (5-step wizard)
+
+  Step 1: TYPE        → Select "Community-Led"
+  Step 2: VIBE        → Pick a culture (19 options — food, music, sport, etc.)
+  Step 3: DETAILS     → Title, description, start/end times, cover image (required)
+  Step 4: LOCATION    → Zo Property, custom address (Mapbox), or online link
+  Step 5: REVIEW      → Preview & submit → POST /api/events
 ```
 
----
+### What Happens After Submission
 
-## Pre-Event Workflows
+Your event's approval depends on your role:
 
-### 1. Inquiry & Qualification
+| Role | Result | Why |
+|------|--------|-----|
+| **Founder** (NFT holder or `zo_membership='founder'`) | Auto-approved, published immediately | Trusted community members |
+| **Admin** or **Vibe Curator** | Auto-approved, published immediately | Platform operators |
+| **Citizen** (default for new users) | Pending → Vibe Check | Needs community approval first |
 
-**Trigger**: Lead form submission, email inquiry, or referral
+### Vibe Check — How Pending Events Get Approved
 
-1. Respond within same business day
-2. Gather event details: type, date, guest count, F&B needs
-3. Check availability in Luma calendar
-4. Assess fit with Zo Node values
-5. Send initial venue information
+When a Citizen's event is created with `submission_status='pending'`, the **Vibe Check** system kicks in automatically (if enabled):
 
-**Systems**: Email, Google Forms, Luma Calendar
+1. **Bot posts** the event to the Telegram approval group ("Zo Events Approval")
+2. **Any group member** can vote with inline buttons (thumbs up / thumbs down)
+3. **After 24 hours**, a cron worker resolves the vote:
+   - `upvotes > downvotes` → **Approved** (event goes live on the map)
+   - Otherwise → **Rejected**
+4. The Telegram message is edited to show the final result
 
----
+**Key facts:**
+- Simple majority — no quorum, no percentage threshold
+- One vote per Telegram user (enforced by database constraint)
+- Non-blocking — if the bot fails, your event still exists as pending
+- Feature flag: `FEATURE_VIBE_CHECK_TELEGRAM` must be `true`
 
-### 2. Quotation & Booking
+If the vibe check flag is disabled, pending events sit until an admin manually approves them.
 
-**Trigger**: Qualified inquiry ready for proposal
+### After Approval
 
-1. Create cost breakdown quote based on:
-   - Space rental
-   - F&B package
-   - AV/equipment needs
-   - Staffing requirements
-2. Send quote via email
-3. Handle negotiations if needed
-4. Upon approval: Send booking confirmation
-5. Block calendar in Google Calendar
-6. Collect billing information via form
+Once approved, the event:
+- Appears on the **game map** as a GeoJSON marker
+- Shows up in the **events list** sidebar
+- Gets pushed to **Luma** calendar (if `FEATURE_LUMA_API_SYNC=true`) — geo-routed to BLR or Zo Events calendar
+- Is open for **RSVPs** from other citizens
 
-**Systems**: Email, Google Forms, Google Calendar
+### RSVP Flow
 
----
+```
+Citizen clicks RSVP on an event
+  → Status set to "interested" (waiting for host approval)
 
-### 3. Vendor & Venue Coordination
+Host approves → Status changes to "going"
+Host rejects  → Status changes to "rejected"
 
-**Trigger**: Booking confirmed (1 week before event)
+If event is at max capacity → auto-waitlisted
+If someone cancels "going" → oldest waitlisted person auto-promoted
+```
 
-1. Review confirmed booking details
-2. Coordinate with kitchen/catering team:
-   - Headcount
-   - F&B preferences
-   - Dietary restrictions
-3. Coordinate with AV/tech team:
-   - Projector, microphones, speakers
-   - Whiteboards, digital screens
-4. Coordinate with ops staff:
-   - Space setup
-   - Furniture arrangement
-   - Signage needs
-5. Create internal event brief
-6. Confirm all vendors 1 week before
-
-**Systems**: Google Sheets, Email, Slack (#property-ops), Google Docs
+Hosts can also **check in** attendees at the event via the RSVP management panel.
 
 ---
 
-### 4. Marketing & Promotion
+## Sponsored Events
 
-**Trigger**: Booking confirmed, host approves marketing
+### How It Works for the Submitter
 
-#### Luma Event Setup
-1. Check Luma calendar for conflicts
-2. Create event with:
-   - Title, date, time, timezone
-   - Venue address
-   - Description (bold tagline, "WHAT IT IS / WHAT IT'S NOT")
-   - Agenda (🔹 emoji, bold times, specific activities)
-   - Registration options (free/paid, early bird/VIP)
-   - Custom questions
-   - Zo-branded cover image (1200x630px)
-3. Publish event page
+1. User clicks **"Sponsored"** in the event type selector
+2. Modal closes → external Typeform opens (`zostel.typeform.com/to/LgcBfa0M`)
+3. User fills out the inquiry form (name, email, event type, location preference, headcount, budget, requirements)
+4. Typeform submits → webhook or poll worker picks it up
 
-#### Social Distribution
-- **LinkedIn**: Professional/community angle
-- **X/Twitter**: Broader audience
-- **Instagram**: Visual/community focus
-- **Farcaster**: Web3 community (if applicable)
+### What Happens Behind the Scenes (Inquiry Pipeline)
 
-**Systems**: Luma, LinkedIn, X/Twitter, Instagram, Google Sheets
+```
+Typeform submission
+       │
+       ▼
+POST /api/webhooks/typeform (or cron poll every 10-15 min)
+       │
+       ├── Parse response → insert into `event_inquiries` table
+       │
+       ├── Venue Matching Engine
+       │     Scores all 103 Zoeventsmaster venues:
+       │       Location (0-40) + Capacity (0-20) + Requirements (0-30) + Operational (0-10)
+       │     Returns: best match + 2 alternatives
+       │
+       ├── Post inquiry card to Telegram approval group
+       │     with [Generate Quote] and [Request Manual Quote] buttons
+       │
+       └── Team member clicks a button:
+             │
+             ├── [Generate Quote] → auto-calculate from venue pricing → email quote to host
+             │
+             └── [Request Manual Quote] → notify team that manual pricing is needed
+```
+
+**Feature flag**: `FEATURE_EVENT_INQUIRY_PIPELINE` must be `true`
+
+### Requirements the System Checks
+
+The Typeform asks about specific needs, and the venue matcher scores venues on:
+- Projector / AV equipment
+- Sound system / music setup
+- Catering (in-house buffet or external allowed)
+- Accommodation (all Zostel properties have rooms)
+- Convention hall
+- Outdoor area (garden, rooftop)
 
 ---
 
-### 5. RSVP & Registration Management
+## Ticketed Events
 
-**Trigger**: Luma event page goes live
-
-1. Monitor registrations in Luma dashboard
-2. Auto-approve OR manual approval (per event setting)
-3. Track headcount growth
-4. **3 days before**: Export attendee list
-5. Share list with property ops team
-6. Follow up on last-minute changes
-7. Keep host updated on attendance numbers
-
-**Metrics tracked**:
-- Expected vs. confirmed headcount
-- Registration conversion rate
-- Custom question responses
+**Status: Coming Soon** — disabled in the UI with a "Coming Soon" badge. The `EventTypeSelector` component has ticketed defined but `disabled: true`. The database schema supports `is_ticketed`, `ticket_price`, and `ticket_currency` fields but the creation flow is not yet wired up.
 
 ---
 
-### 6. Pre-Event Communications
+## Event Lifecycle (Operations)
+
+> The sections below describe the operational workflow for managing events at a Zo Node — primarily relevant to Zo Node staff and vibe curators.
+
+### Pre-Event
+
+| Phase | Actions |
+|-------|---------|
+| **Inquiry & Qualification** | Respond same business day, gather details (type, date, headcount, F&B), check Luma calendar, assess fit |
+| **Quotation & Booking** | Cost breakdown (space + F&B + AV + staffing), send quote, handle negotiation, collect billing info |
+| **Vendor Coordination** (1 week before) | Coordinate kitchen, AV, ops staff, create internal brief, confirm vendors |
+| **Marketing** | Create Luma event page, publish with Zo-branded cover (1200x630px), distribute to LinkedIn/X/Instagram |
+| **RSVP Management** | Monitor registrations, export attendee list 3 days before, share with ops |
+
+### Pre-Event Communications
 
 | Timeline | Action |
 |----------|--------|
 | Day of confirmation | Booking confirmation email |
-| Day +1 | Billing info follow-up (if needed) |
-| Day +2 | Send invoice (Proforma, bank/crypto options) |
-| Days +3-7 | Monitor payment status |
-| Payment received | Payment confirmation email |
+| Day +1 | Billing info follow-up |
+| Day +2 | Send invoice (bank/crypto options) |
+| Days +3-7 | Monitor payment |
 | 7 days before | Final details (headcount, F&B, AV, setup) |
-| 1 day before | Reminder (time, location, directions, contact) |
-| Day of event | Available for last-minute questions |
+| 1 day before | Reminder (time, location, directions) |
 
----
+### Day-Of Execution
 
-## During-Event Execution
+1. Confirm final headcount from Luma export
+2. Share with kitchen (finalize F&B quantities)
+3. Confirm AV tested and ready
+4. Brief ops team with full details
+5. Space walkthrough (furniture, signage, equipment)
+6. Test all equipment (projector, mics, WiFi, CCTV)
+7. Attendee check-in, content capture, live updates
 
-### Day-Before/Day-Of Prep
-
-1. Confirm final attendee count from Luma export
-2. Share headcount with kitchen (finalize F&B quantities)
-3. Confirm all AV equipment tested and ready
-4. Brief ops team on Slack with full details
-5. Final space walkthrough:
-   - Furniture placement
-   - Signage
-   - Equipment placement
-6. Test all equipment:
-   - Projector
-   - Mics, speakers
-   - WiFi
-   - CCTV
-   - Digital signage (PiSignage on Raspberry Pi)
-7. Prepare printed materials (name tags, wayfinders)
-8. Ensure property cleaning complete
-9. Send day-before reminder to host
-10. Be available for final check-in
-
-### Real-Time Coordination
-
-- Attendee check-in
-- Guest engagement
-- Content capture (photos/videos with consent)
-- Live updates to WhatsApp
-- Problem-solving as issues arise
-
----
-
-## Post-Event Workflow
+### Post-Event
 
 | Timeline | Action |
 |----------|--------|
 | Same evening | Thank you message to host |
-| Day +1 | Send feedback survey |
-| Day +2 | Share event photos (with permissions) |
-| Day +3-5 | Compile analytics report |
-| Day +7 | Vendor settlement & invoicing |
-| Ongoing | Guest nurturing for future events |
+| Day +1 | Feedback survey |
+| Day +2 | Share event photos |
+| Day +3-5 | Analytics report |
+| Day +7 | Vendor settlement |
+| Ongoing | Guest nurturing |
 
-### Analytics Tracked
+### Metrics Tracked
 
 - Attendance (registered vs. actual)
 - Satisfaction scores
@@ -209,8 +212,13 @@ Communications     Live updates         Vendor settlement
 
 | Platform | Use |
 |----------|-----|
-| **Luma** | Event registration & management |
-| **Google Calendar** | Space blocking |
-| **WhatsApp** | Community announcements |
-| **Slack** | Internal coordination |
-| **Google Sheets** | Tracking & analytics |
+| **game.zo.xyz** | Event creation (Community), browsing, RSVP |
+| **Typeform** | Sponsored event inquiry form |
+| **Telegram** | Vibe check voting, inquiry notifications |
+| **Luma** | Calendar sync (auto-push from game.zo.xyz) |
+| **Supabase** | Database (canonical_events, event_rsvps, event_inquiries) |
+
+---
+
+*See [EVENTS_SYSTEM.md](./EVENTS_SYSTEM.md) for full technical documentation (API endpoints, database schema, type system).*
+*See [SYSTEM_FLOWS.md](./SYSTEM_FLOWS.md) for detailed flow diagrams (auth, event creation, vibe check).*

@@ -5,6 +5,7 @@ import React from 'react';
 interface GlowChipProps {
   children: React.ReactNode;
   showDot?: boolean;
+  active?: boolean;
   className?: string;
   onClick?: () => void;
 }
@@ -22,22 +23,23 @@ interface GlowChipProps {
  * <GlowChip showDot>45 Events</GlowChip>
  * <GlowChip>Active</GlowChip>
  */
-export const GlowChip: React.FC<GlowChipProps> = ({ 
-  children, 
-  showDot = false, 
+export const GlowChip: React.FC<GlowChipProps> = ({
+  children,
+  showDot = false,
+  active = false,
   className = '',
-  onClick 
+  onClick
 }) => {
   return (
-    <div 
+    <div
       className={`
-        inline-flex items-center gap-3 
-        px-5 py-2 
-        rounded-full 
-        bg-white/20 backdrop-blur-md 
-        border border-white/40 
-        text-[#ff4d6d] text-sm font-semibold 
+        inline-flex items-center gap-3
+        px-5 py-2
+        rounded-full
+        backdrop-blur-md
+        border text-sm font-semibold
         shadow-lg
+        ${active ? 'bg-[#ff4d6d]/20 border-[#ff4d6d]/60 text-[#ff4d6d]' : 'bg-white/20 border-white/40 text-[#ff4d6d]'}
         ${onClick ? 'cursor-pointer hover:bg-white/30 transition-all' : ''}
         ${className}
       `}

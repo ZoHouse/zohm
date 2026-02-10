@@ -9,19 +9,31 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { isInquiryPipelineEnabled } from '@/lib/featureFlags';
+import { parseTypeformResponse } from '@/lib/typeform/parser';
 import { matchVenues, saveMatchResults } from '@/lib/venue/matcher';
 import { postInquiryToTelegram } from '@/lib/telegram/inquiryNotification';
 import { devLog } from '@/lib/logger';
-import type { EventInquiry, TypeformAnswer } from '@/types/inquiry';
+import type { EventInquiry, TypeformAnswer, TypeformWebhookPayload } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Typeform Poll] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
 const TYPEFORM_API_TOKEN = process.env.TYPEFORM_API_TOKEN || '';
 const TYPEFORM_FORM_ID = process.env.TYPEFORM_FORM_ID || 'LgcBfa0M';
+const CRON_SECRET = process.env.CRON_SECRET || '';
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify cron secret to prevent unauthorized invocations
+    if (CRON_SECRET) {
+      const authHeader = request.headers.get('authorization') || '';
+      if (authHeader !== `Bearer ${CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     if (!isInquiryPipelineEnabled()) {
       return NextResponse.json({ ok: true, message: 'Pipeline disabled' });
     }
@@ -66,43 +78,42 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Parse the response into an inquiry (simplified parsing for poll results)
-      const answers: TypeformAnswer[] = response.answers || [];
-      const fields = response.definition?.fields || [];
-
-      // Build a simple field map
-      const fieldValues = new Map<string, string>();
-      for (const answer of answers) {
-        const field = fields.find((f: { id: string }) => f.id === answer.field.id);
-        const title = (field?.title || '').toLowerCase().trim();
-        const value = answer.text || answer.email || answer.phone_number || answer.choice?.label || answer.choices?.labels?.join(', ') || '';
-        if (title) fieldValues.set(title, String(value));
-      }
-
-      const findVal = (keywords: string[]): string => {
-        for (const [title, value] of fieldValues) {
-          for (const kw of keywords) {
-            if (title.includes(kw)) return value;
-          }
-        }
-        return '';
+      // Reuse the shared Typeform parser for consistent field extraction
+      const fakePayload: TypeformWebhookPayload = {
+        event_id: '',
+        event_type: 'form_response',
+        form_response: {
+          form_id: TYPEFORM_FORM_ID,
+          token,
+          submitted_at: response.submitted_at || new Date().toISOString(),
+          definition: { fields: response.definition?.fields || [] },
+          answers: response.answers || [],
+        },
       };
+      const parsed = parseTypeformResponse(fakePayload);
 
       // Insert
       const { data: inquiry, error: insertError } = await db
         .from('event_inquiries')
         .insert({
-          typeform_token: token,
-          host_name: findVal(['name']),
-          host_email: findVal(['email']),
-          host_phone: findVal(['phone', 'mobile']),
-          organization: findVal(['company', 'org']),
-          event_type: findVal(['event type', 'type']),
-          venue_preference: findVal(['location', 'city', 'venue']),
-          event_date: findVal(['date', 'when']),
-          expected_headcount: findVal(['guest', 'people', 'headcount']),
-          budget: findVal(['budget']),
-          duration: findVal(['duration', 'how long']),
+          typeform_token: parsed.typeform_token,
+          host_name: parsed.host_name,
+          host_email: parsed.host_email,
+          host_phone: parsed.host_phone,
+          organization: parsed.organization,
+          event_type: parsed.event_type,
+          venue_preference: parsed.venue_preference,
+          event_date: parsed.event_date,
+          expected_headcount: parsed.expected_headcount,
+          budget: parsed.budget,
+          duration: parsed.duration,
+          needs_projector: parsed.needs_projector,
+          needs_music: parsed.needs_music,
+          needs_catering: parsed.needs_catering,
+          needs_accommodation: parsed.needs_accommodation,
+          needs_convention_hall: parsed.needs_convention_hall,
+          needs_outdoor_area: parsed.needs_outdoor_area,
+          additional_notes: parsed.additional_notes,
           inquiry_status: 'new',
         })
         .select()

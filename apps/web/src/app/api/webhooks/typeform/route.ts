@@ -10,15 +10,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { isInquiryPipelineEnabled } from '@/lib/featureFlags';
 import { parseTypeformResponse } from '@/lib/typeform/parser';
 import { matchVenues, saveMatchResults } from '@/lib/venue/matcher';
 import { postInquiryToTelegram } from '@/lib/telegram/inquiryNotification';
 import { devLog } from '@/lib/logger';
 import type { TypeformWebhookPayload, EventInquiry } from '@/types/inquiry';
+import crypto from 'crypto';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Typeform Webhook] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
+const TYPEFORM_WEBHOOK_SECRET = process.env.TYPEFORM_WEBHOOK_SECRET || '';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +30,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, message: 'Pipeline disabled' });
     }
 
-    const payload: TypeformWebhookPayload = await request.json();
+    // Verify Typeform webhook signature (HMAC-SHA256)
+    const rawBody = await request.text();
+    if (TYPEFORM_WEBHOOK_SECRET) {
+      const signature = request.headers.get('typeform-signature') || '';
+      const expectedSig = 'sha256=' + crypto
+        .createHmac('sha256', TYPEFORM_WEBHOOK_SECRET)
+        .update(rawBody)
+        .digest('base64');
+      if (signature !== expectedSig) {
+        devLog.error('[Typeform Webhook] Invalid signature');
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+    }
+
+    const payload: TypeformWebhookPayload = JSON.parse(rawBody);
 
     // Validate it's a form response
     if (payload.event_type !== 'form_response' || !payload.form_response) {

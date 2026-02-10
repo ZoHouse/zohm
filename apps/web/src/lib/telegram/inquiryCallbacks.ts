@@ -6,7 +6,6 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { devLog } from '@/lib/logger';
 import { answerCallbackQuery } from './bot';
 import { updateInquiryMessageWithQuote } from './inquiryNotification';
@@ -14,7 +13,10 @@ import { generateQuote, saveQuote } from '@/lib/venue/quoteEngine';
 import { sendQuoteEmail } from '@/lib/email/quoteSender';
 import type { EventInquiry } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Inquiry Callbacks] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
 
 /**
  * Handle [Generate Quote] button press.
@@ -35,8 +37,16 @@ export async function handleGenerateQuote(inquiryId: string, callbackQueryId: st
 
   const inq = inquiry as EventInquiry;
 
-  // Check if already quoted (idempotent)
-  if (inq.quote_json) {
+  // Atomically claim this inquiry for quoting (prevents race condition on double-click)
+  const { data: claimed, error: claimError } = await db
+    .from('event_inquiries')
+    .update({ inquiry_status: 'quoting', updated_at: new Date().toISOString() })
+    .eq('id', inquiryId)
+    .is('quote_json', null)
+    .select('id')
+    .maybeSingle();
+
+  if (claimError || !claimed) {
     await answerCallbackQuery(callbackQueryId, 'Quote already generated!');
     return;
   }

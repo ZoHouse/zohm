@@ -6,11 +6,13 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { devLog } from '@/lib/logger';
 import type { EventInquiry, QuoteBreakdown, QuoteLineItem, ZoeventsVenue } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Quote Engine] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
 const GST_RATE = 0.18;
 
 function parseAmount(val: string | null | undefined): number {
@@ -158,7 +160,7 @@ export async function generateQuote(inquiry: EventInquiry): Promise<QuoteBreakdo
  * Save the generated quote to the inquiry row
  */
 export async function saveQuote(inquiryId: string, quote: QuoteBreakdown): Promise<void> {
-  await db
+  const { error } = await db
     .from('event_inquiries')
     .update({
       quote_json: quote,
@@ -167,4 +169,8 @@ export async function saveQuote(inquiryId: string, quote: QuoteBreakdown): Promi
       updated_at: new Date().toISOString(),
     })
     .eq('id', inquiryId);
+
+  if (error) {
+    devLog.error('[Quote Engine] Failed to save quote:', error);
+  }
 }

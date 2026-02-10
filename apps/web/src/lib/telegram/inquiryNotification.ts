@@ -6,13 +6,15 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { devLog } from '@/lib/logger';
 import { sendMessage } from './bot';
 import type { InlineKeyboardMarkup } from './types';
 import type { EventInquiry, VenueMatchResult, QuoteBreakdown } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Inquiry TG] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
 const CHAT_ID = process.env.TELEGRAM_VIBE_CHECK_CHAT_ID || '';
 
 function escapeHtml(text: string): string {
@@ -185,14 +187,20 @@ function formatINR(amount: number): string {
 // ============================================
 
 function buildInquiryKeyboard(inquiry: EventInquiry): InlineKeyboardMarkup {
-  // Check if venue has pricing data to determine which button to show
-  const hasPricing = inquiry.matched_venue && inquiry.match_score && inquiry.match_score > 0;
+  if (inquiry.matched_venue) {
+    // Show both options — Generate Quote will auto-fallback to manual if no pricing data
+    return {
+      inline_keyboard: [
+        [{ text: '📊 Generate Quote', callback_data: `gen_quote:${inquiry.id}` }],
+        [{ text: '📝 Request Manual Quote', callback_data: `manual_quote:${inquiry.id}` }],
+      ],
+    };
+  }
 
+  // No venue match — manual quote only
   return {
     inline_keyboard: [[
-      hasPricing
-        ? { text: '📊 Generate Quote', callback_data: `gen_quote:${inquiry.id}` }
-        : { text: '📝 Request Manual Quote', callback_data: `manual_quote:${inquiry.id}` },
+      { text: '📝 Request Manual Quote', callback_data: `manual_quote:${inquiry.id}` },
     ]],
   };
 }

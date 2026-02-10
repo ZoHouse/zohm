@@ -6,11 +6,13 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { devLog } from '@/lib/logger';
 import type { EventInquiry, QuoteBreakdown } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Email] SUPABASE_SERVICE_ROLE_KEY is required');
+}
+const db = supabaseAdmin;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'events@zo.world';
 
@@ -76,16 +78,29 @@ export async function sendQuoteEmail(
   }
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function buildQuoteEmailHtml(inquiry: EventInquiry, quote: QuoteBreakdown): string {
-  const name = inquiry.host_name || 'there';
-  const eventType = inquiry.event_type || 'event';
+  const name = escapeHtml(inquiry.host_name || 'there');
+  const eventType = escapeHtml(inquiry.event_type || 'event');
   const validUntil = new Date(quote.valid_until).toLocaleDateString('en-IN', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
 
+  const venueName = escapeHtml(quote.venue_name);
+  const eventDate = escapeHtml(inquiry.event_date || 'Flexible');
+  const headcount = escapeHtml(inquiry.expected_headcount || '?');
+  const duration = escapeHtml(inquiry.duration || 'Not specified');
+
   const lineItemsHtml = quote.line_items.map(item =>
     `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;">${item.description}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eee;">${escapeHtml(item.description)}</td>
       <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-family:monospace;">₹${formatINR(item.amount)}</td>
     </tr>`
   ).join('');
@@ -103,18 +118,18 @@ function buildQuoteEmailHtml(inquiry: EventInquiry, quote: QuoteBreakdown): stri
 
 <p>Hi ${name},</p>
 
-<p>Thank you for your interest in hosting your ${eventType} at <strong>${quote.venue_name}</strong>!</p>
+<p>Thank you for your interest in hosting your ${eventType} at <strong>${venueName}</strong>!</p>
 
 <p>Based on your requirements, here is our proposed quote:</p>
 
 <div style="background:#fafafa;padding:20px;border-radius:8px;margin:20px 0;">
   <h3 style="margin:0 0 12px;font-size:16px;">Event Summary</h3>
   <table style="width:100%;font-size:14px;">
-    <tr><td style="padding:4px 0;color:#666;">Type:</td><td>${inquiry.event_type || 'Not specified'}</td></tr>
-    <tr><td style="padding:4px 0;color:#666;">Date:</td><td>${inquiry.event_date || 'Flexible'}</td></tr>
-    <tr><td style="padding:4px 0;color:#666;">Guests:</td><td>${inquiry.expected_headcount || '?'} people</td></tr>
-    <tr><td style="padding:4px 0;color:#666;">Duration:</td><td>${inquiry.duration || 'Not specified'}</td></tr>
-    <tr><td style="padding:4px 0;color:#666;">Venue:</td><td><strong>${quote.venue_name}</strong></td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Type:</td><td>${eventType}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Date:</td><td>${eventDate}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Guests:</td><td>${headcount} people</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Duration:</td><td>${duration}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Venue:</td><td><strong>${venueName}</strong></td></tr>
   </table>
 </div>
 
@@ -145,7 +160,7 @@ function buildQuoteEmailHtml(inquiry: EventInquiry, quote: QuoteBreakdown): stri
 <div style="background:#f0f7ff;padding:16px;border-radius:8px;margin:20px 0;font-size:13px;color:#555;">
   <p style="margin:0 0 8px;"><strong>Notes</strong></p>
   <ul style="margin:0;padding-left:20px;">
-    ${quote.notes.map(n => `<li style="margin:4px 0;">${n}</li>`).join('')}
+    ${quote.notes.map(n => `<li style="margin:4px 0;">${escapeHtml(n)}</li>`).join('')}
     <li style="margin:4px 0;">This quote is valid until ${validUntil}.</li>
   </ul>
 </div>

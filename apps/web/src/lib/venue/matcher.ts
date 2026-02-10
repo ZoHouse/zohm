@@ -7,11 +7,13 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase as supabaseAnon } from '@/lib/supabase';
 import { devLog } from '@/lib/logger';
 import type { EventInquiry, VenueMatchResult, ZoeventsVenue } from '@/types/inquiry';
 
-const db = supabaseAdmin || supabaseAnon;
+if (!supabaseAdmin) {
+  throw new Error('[Venue Matcher] SUPABASE_SERVICE_ROLE_KEY is required — cannot use anon client for server-side operations');
+}
+const db = supabaseAdmin;
 
 // Region mapping for fuzzy location matching
 const CITY_TO_REGION: Record<string, string> = {
@@ -198,7 +200,7 @@ export async function saveMatchResults(
   bestMatch: VenueMatchResult | null,
   alternatives: VenueMatchResult[]
 ): Promise<void> {
-  await db
+  const { error } = await db
     .from('event_inquiries')
     .update({
       matched_venue: bestMatch?.property_name || '',
@@ -209,4 +211,8 @@ export async function saveMatchResults(
       updated_at: new Date().toISOString(),
     })
     .eq('id', inquiryId);
+
+  if (error) {
+    devLog.error('[Venue Matcher] Failed to save match results:', error);
+  }
 }

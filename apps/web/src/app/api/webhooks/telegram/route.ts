@@ -17,8 +17,19 @@ import { handleGenerateQuote, handleManualQuote } from '@/lib/telegram/inquiryCa
 import { devLog } from '@/lib/logger';
 import type { TelegramUpdate } from '@/lib/telegram/types';
 
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+
 export async function POST(request: NextRequest) {
   try {
+    // Verify Telegram webhook secret token
+    if (TELEGRAM_WEBHOOK_SECRET) {
+      const secret = request.headers.get('x-telegram-bot-api-secret-token') || '';
+      if (secret !== TELEGRAM_WEBHOOK_SECRET) {
+        devLog.error('[Telegram Webhook] Invalid secret token');
+        return NextResponse.json({ ok: true });
+      }
+    }
+
     const update: TelegramUpdate = await request.json();
 
     // We only care about callback queries (inline button presses)

@@ -88,6 +88,21 @@ export const FEATURE_FLAGS = {
    * Default: false (safe)
    */
   VIBE_CHECK_TELEGRAM: process.env.FEATURE_VIBE_CHECK_TELEGRAM === 'true',
+
+  /**
+   * EVENT_INQUIRY_PIPELINE
+   *
+   * When true: Enables the sponsored event inquiry pipeline
+   *   - Typeform webhook receives inquiry submissions
+   *   - Venue matcher scores against Zoeventsmaster
+   *   - Bot posts inquiry summary to Telegram group
+   *   - Team can generate quotes via inline button
+   *   - Quote email sent to inquirer via Resend
+   * When false: Typeform submissions are not processed
+   *
+   * Default: false (safe)
+   */
+  EVENT_INQUIRY_PIPELINE: process.env.FEATURE_EVENT_INQUIRY_PIPELINE === 'true',
 } as const;
 
 /**
@@ -119,6 +134,13 @@ export function isVibeCheckEnabled(): boolean {
 }
 
 /**
+ * Helper to check if event inquiry pipeline is enabled
+ */
+export function isInquiryPipelineEnabled(): boolean {
+  return FEATURE_FLAGS.EVENT_INQUIRY_PIPELINE;
+}
+
+/**
  * Get current feature flag state (for debugging/monitoring)
  */
 export function getFeatureFlagState() {
@@ -135,6 +157,9 @@ export function getFeatureFlagState() {
     },
     vibeCheck: {
       telegram: FEATURE_FLAGS.VIBE_CHECK_TELEGRAM,
+    },
+    inquiryPipeline: {
+      enabled: FEATURE_FLAGS.EVENT_INQUIRY_PIPELINE,
     },
     environment: process.env.NODE_ENV || 'unknown',
     timestamp: new Date().toISOString(),

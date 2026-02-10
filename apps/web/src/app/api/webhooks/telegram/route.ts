@@ -4,21 +4,21 @@
  * Receives updates from the Telegram Bot API (inline button presses).
  * Always returns 200 to prevent Telegram retries.
  *
- * Callback data format: `vibe:{up|down}:{vibeCheckId}` (max 64 bytes)
+ * Callback data formats:
+ *   vibe:{up|down}:{vibeCheckId}     — Vibe check votes
+ *   gen_quote:{inquiryId}            — Generate quote for inquiry
+ *   manual_quote:{inquiryId}         — Request manual quote
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { isVibeCheckEnabled } from '@/lib/featureFlags';
+import { isVibeCheckEnabled, isInquiryPipelineEnabled } from '@/lib/featureFlags';
 import { handleVote } from '@/lib/telegram/vibeCheck';
+import { handleGenerateQuote, handleManualQuote } from '@/lib/telegram/inquiryCallbacks';
 import { devLog } from '@/lib/logger';
 import type { TelegramUpdate } from '@/lib/telegram/types';
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isVibeCheckEnabled()) {
-      return NextResponse.json({ ok: true });
-    }
-
     const update: TelegramUpdate = await request.json();
 
     // We only care about callback queries (inline button presses)
@@ -32,24 +32,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Parse callback_data: "vibe:{up|down}:{vibeCheckId}"
     const parts = data.split(':');
-    if (parts.length !== 3 || parts[0] !== 'vibe') {
-      devLog.log('[Telegram Webhook] Unknown callback_data:', data);
+    const action = parts[0];
+
+    // --- VIBE CHECK VOTES: "vibe:{up|down}:{vibeCheckId}" ---
+    if (action === 'vibe' && parts.length === 3 && isVibeCheckEnabled()) {
+      const vote = parts[1] as 'up' | 'down';
+      const vibeCheckId = parts[2];
+
+      if (vote === 'up' || vote === 'down') {
+        await handleVote(vibeCheckId, String(from.id), vote, callbackQueryId);
+      }
       return NextResponse.json({ ok: true });
     }
 
-    const vote = parts[1] as 'up' | 'down';
-    const vibeCheckId = parts[2];
-
-    if (vote !== 'up' && vote !== 'down') {
+    // --- GENERATE QUOTE: "gen_quote:{inquiryId}" ---
+    if (action === 'gen_quote' && parts.length === 2 && isInquiryPipelineEnabled()) {
+      const inquiryId = parts[1];
+      await handleGenerateQuote(inquiryId, callbackQueryId);
       return NextResponse.json({ ok: true });
     }
 
-    const tgUserId = String(from.id);
+    // --- MANUAL QUOTE: "manual_quote:{inquiryId}" ---
+    if (action === 'manual_quote' && parts.length === 2 && isInquiryPipelineEnabled()) {
+      const inquiryId = parts[1];
+      await handleManualQuote(inquiryId, callbackQueryId);
+      return NextResponse.json({ ok: true });
+    }
 
-    await handleVote(vibeCheckId, tgUserId, vote, callbackQueryId);
-
+    devLog.log('[Telegram Webhook] Unknown callback_data:', data);
     return NextResponse.json({ ok: true });
   } catch (error) {
     devLog.error('[Telegram Webhook] Error processing update:', error);

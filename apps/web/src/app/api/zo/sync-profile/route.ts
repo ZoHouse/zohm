@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     // Check if we have admin access
     if (!supabaseAdmin) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'SUPABASE_SERVICE_ROLE_KEY is not set. Cannot sync profile.' 
+        {
+          success: false,
+          error: 'SUPABASE_SERVICE_ROLE_KEY is not set. Cannot sync profile.'
         },
         { status: 500 }
       );
@@ -63,11 +63,11 @@ export async function POST(request: NextRequest) {
     // Check if token is expired and refresh if needed
     const tokenExpiry = userData.zo_token_expiry;
     const isTokenExpired = tokenExpiry && new Date(tokenExpiry) < new Date();
-    
+
     if (isTokenExpired && userData.zo_refresh_token) {
       devLog.log('🔄 [sync-profile] Token expired, refreshing...');
       const refreshResult = await refreshAccessToken(userData.zo_refresh_token);
-      
+
       if (refreshResult.success && refreshResult.tokens) {
         // Handle actual API response format (access_token, refresh_token, etc.)
         const tokens = refreshResult.tokens as any;
@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
         const newRefreshToken = tokens.refresh_token || tokens.refresh;
         const newAccessExpiry = tokens.access_token_expiry || tokens.access_expiry;
         const newRefreshExpiry = tokens.refresh_token_expiry || tokens.refresh_expiry;
-        
+
         if (newAccessToken) {
           tokenToUse = newAccessToken;
-          
+
           // Update tokens in database
           await supabaseAdmin
             .from('users')
@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
               zo_refresh_token_expiry: newRefreshExpiry || null,
             })
             .eq('id', userId);
-          
+
           devLog.log('✅ [sync-profile] Token refreshed and updated');
         } else {
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               error: 'Token refresh returned invalid format'
             },
             { status: 500 }
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
         }
       } else {
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: 'Token expired and refresh failed. Please log in again.'
           },
           { status: 401 }
@@ -128,13 +128,17 @@ export async function POST(request: NextRequest) {
     );
 
     if (!syncResult.success) {
+      devLog.warn('⚠️ [sync-profile] Profile sync failed (non-critical):', syncResult.error);
+      // Return 502 (Bad Gateway) for upstream API failures, not 500
+      // This is expected when the ZOHM API token is expired/invalid
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: syncResult.error || 'Profile sync failed',
-          details: 'Check server logs for more information'
+          details: 'ZOHM API returned an error. This is non-critical.',
+          retryable: true,
         },
-        { status: 500 }
+        { status: 502 }
       );
     }
 
@@ -159,9 +163,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     devLog.error('❌ Error in manual profile sync:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

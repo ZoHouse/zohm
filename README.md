@@ -83,7 +83,7 @@ Your real-time alignment percentage computed from multidimensional life signals.
 ---
 
 ### 🎮 Quest System - Reality Programs
-Structured quests that generate meaningful life signals and earn token rewards.
+Structured quests that generate meaningful life signals and earn zo token rewards.
 
 <div align="center">
 <img src="./apps/web/public/Readmescreenshots/mapquestsss.png" width="800" alt="Quest System" />

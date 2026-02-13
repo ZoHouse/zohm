@@ -266,10 +266,12 @@ export async function updateDeviceCredentials(
   }
 
   // Update database (if userId provided)
-  if (userId && typeof window !== 'undefined') {
+  if (userId) {
     try {
-      const { supabase } = await import('@/lib/supabase');
-      await supabase
+      // Use supabaseAdmin for writes (anon client blocked by RLS)
+      const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
+      const dbClient = supabaseAdmin || (await import('@/lib/supabase')).supabase;
+      await dbClient
         .from('users')
         .update({
           zo_device_id: deviceId,

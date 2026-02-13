@@ -4,11 +4,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/lib/zo-api/auth';
 import { syncZoProfileToSupabase } from '@/lib/zo-api/sync';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { devLog } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    // Guard: Ensure supabaseAdmin is available (requires SUPABASE_SERVICE_ROLE_KEY)
+    if (!supabaseAdmin) {
+      devLog.error('❌ supabaseAdmin not available - SUPABASE_SERVICE_ROLE_KEY is missing');
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { countryCode, phoneNumber, otp, userId } = body;
 
@@ -35,16 +44,16 @@ export async function POST(request: NextRequest) {
     devLog.log('✅ OTP verified, response data:', JSON.stringify(result.data, null, 2));
 
     // Extract ALL data from ZO API response (actual structure)
-    const { 
-      user, 
+    const {
+      user,
       token,                    // Legacy token
       valid_till,              // Legacy token expiry
-      access_token, 
-      refresh_token, 
-      access_token_expiry, 
-      refresh_token_expiry, 
+      access_token,
+      refresh_token,
+      access_token_expiry,
+      refresh_token_expiry,
       client_key,              // Client key
-      device_id, 
+      device_id,
       device_secret,
       device_info,             // Device info object
     } = result.data;
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     if (!targetUserId) {
       // Step 1: Check if user exists by zo_user_id (most reliable)
-      const { data: existingByZoId } = await supabase
+      const { data: existingByZoId } = await supabaseAdmin
         .from('users')
         .select('id')
         .eq('zo_user_id', user.id)
@@ -93,7 +102,7 @@ export async function POST(request: NextRequest) {
         devLog.log('✅ Found existing user by zo_user_id:', targetUserId);
       } else {
         // Step 2: Check if user exists by phone number
-        const { data: existingByPhone } = await supabase
+        const { data: existingByPhone } = await supabaseAdmin
           .from('users')
           .select('id')
           .eq('phone', user.mobile_number)
@@ -105,7 +114,7 @@ export async function POST(request: NextRequest) {
         } else {
           // Step 3: Create new user with ZO identity
           // For ZO users, use zo_user_id as the primary id
-          const { data: newUser, error: createError } = await supabase
+          const { data: newUser, error: createError } = await supabaseAdmin
             .from('users')
             .insert({
               id: user.id,  // Use zo_user_id as the primary id
@@ -125,9 +134,9 @@ export async function POST(request: NextRequest) {
             // If unique constraint violation (user already exists), try to find them
             if (createError?.code === '23505') {
               devLog.warn('⚠️ User already exists (unique constraint), trying to find...');
-              
+
               // Try to find by zo_user_id again
-              const { data: foundUser } = await supabase
+              const { data: foundUser } = await supabaseAdmin
                 .from('users')
                 .select('id')
                 .eq('zo_user_id', user.id)
@@ -160,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     // STEP 1: Save device credentials to database FIRST (required for all API calls)
     // This ensures getZoAuthHeaders can fetch them when needed
-    const { error: deviceError } = await supabase
+    const { error: deviceError } = await supabaseAdmin
       .from('users')
       .update({
         zo_device_id: device_id,
@@ -178,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     // STEP 2: Save basic ZO auth data to Supabase (fast)
     // Save essential auth data immediately for faster response
-    const { error: authUpdateError } = await supabase
+    const { error: authUpdateError } = await supabaseAdmin
       .from('users')
       .update({
         zo_user_id: user.id,
@@ -194,6 +203,9 @@ export async function POST(request: NextRequest) {
         zo_membership: user.membership,
         // Name priority: selected_nickname > custom_nickname > nickname > first_name + last_name
         name: user.selected_nickname || user.custom_nickname || user.nickname || `${user.first_name || ''} ${user.last_name || ''}`.trim() || null,
+        // Mark as synced so useZoAuth doesn't endlessly retry sync
+        zo_synced_at: new Date().toISOString(),
+        zo_sync_status: 'synced',
         updated_at: new Date().toISOString(),
       })
       .eq('id', targetUserId);
@@ -227,7 +239,7 @@ export async function POST(request: NextRequest) {
         zo_membership: user.membership,
       }
     );
-    
+
     if (!syncResult.success) {
       devLog.error('❌ Profile sync failed:', syncResult.error);
       // Log warning if it's a service role key issue
@@ -271,7 +283,7 @@ export async function POST(request: NextRequest) {
       hint: error?.hint,
     });
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to verify OTP',
         details: error?.message || 'Unknown error',
       },

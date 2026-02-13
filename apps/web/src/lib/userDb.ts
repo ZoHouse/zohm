@@ -8,6 +8,7 @@
  */
 
 import { supabase } from './supabase';
+import { supabaseAdmin } from './supabaseAdmin';
 import { getUnicornForAddress } from './unicornAvatars';
 import { devLog } from '@/lib/logger';
 
@@ -335,16 +336,38 @@ export async function upsertUser(
 
     devLog.log('📝 Attempting to upsert user:', userData);
 
-    const { data, error } = await supabase
-      .from('users')
-      .upsert(userData, { onConflict: 'id' })
-      .select()
-      .single();
+    let data: any;
 
-    if (error) {
-      devLog.error('❌ Error saving user to Supabase:', error);
-      devLog.error('❌ Error details:', { message: error.message, code: error.code, details: error.details, hint: error.hint });
-      throw new Error(`Supabase error: ${error.message || 'Unknown error'}`);
+    // Client-side: supabaseAdmin is null, route through server API
+    if (typeof window !== 'undefined') {
+      devLog.log('🌐 Client-side upsert - routing through /api/users/upsert');
+      const res = await fetch('/api/users/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userData, onConflict: 'id' }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        const errMsg = result.error || 'Upsert failed';
+        devLog.error('❌ Error saving user via API:', errMsg);
+        throw new Error(`Upsert error: ${errMsg}`);
+      }
+      data = result.data;
+    } else {
+      // Server-side: use supabaseAdmin directly
+      const dbClient = supabaseAdmin || supabase;
+      const { data: dbData, error } = await dbClient
+        .from('users')
+        .upsert(userData, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        devLog.error('❌ Error saving user to Supabase:', error);
+        throw new Error(`Supabase error: ${error.message || 'Unknown error'}`);
+      }
+      data = dbData;
     }
 
     if (!data) {
@@ -381,21 +404,44 @@ export async function updateUserProfile(
   try {
     devLog.log('🔄 Updating user profile:', { userId, updates });
 
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
+    let data: any;
 
-    if (error) {
-      devLog.error('❌ Supabase error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
+    // Client-side: route through server API (supabaseAdmin not available in browser)
+    if (typeof window !== 'undefined') {
+      devLog.log('🌐 Client-side update - routing through /api/users/upsert');
+      const res = await fetch('/api/users/upsert', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, updates }),
       });
-      throw error;
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        const errMsg = result.error || 'Update failed';
+        devLog.error('❌ Error updating user via API:', errMsg);
+        throw new Error(`Update error: ${errMsg}`);
+      }
+      data = result.data;
+    } else {
+      // Server-side: use supabaseAdmin directly
+      const dbClient = supabaseAdmin || supabase;
+      const { data: dbData, error } = await dbClient
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        devLog.error('❌ Supabase error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      data = dbData;
     }
 
     devLog.log('✅ Profile updated successfully:', data);
